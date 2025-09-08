@@ -1,0 +1,8 @@
+export enum AIProvider {
+    Gemini = "Gemini",
+    OpenAI = "OpenAI"
+};
+
+export enum AIProviderURL {
+    Gemini = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+}

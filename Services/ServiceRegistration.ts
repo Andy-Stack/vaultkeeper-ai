@@ -1,0 +1,31 @@
+import { AIProvider } from "Enums/ApiProvider";
+import type DmsAssistantPlugin from "main";
+import { OdbCache } from "ODB/Core/OdbCache";
+import { RegisterSingleton, RegisterTransient } from "./DependencyService";
+import { ModalService } from "./ModalService";
+import { Services } from "./Services";
+import { AIPrompt, type IPrompt } from "AIClasses/IPrompt";
+import { Actioner } from "Actioner/Actioner";
+import type { IActioner } from "Actioner/IActioner";
+import type { IAIClass } from "AIClasses/IAIClass";
+import { GeminiActionDefinitions } from "Actioner/Gemini/GeminiActionDefinitions";
+import type { IActionDefinitions } from "Actioner/IActionDefinitions";
+import { Gemini } from "AIClasses/Gemini/Gemini";
+
+export function RegisterDependencies(plugin: DmsAssistantPlugin) {
+    RegisterSingleton(Services.DmsAssistantPlugin, plugin);
+    RegisterSingleton(Services.OdbCache, new OdbCache());
+    RegisterSingleton(Services.ModalService, new ModalService())
+    
+    RegisterSingleton<IPrompt>(Services.IPrompt, new AIPrompt());
+    RegisterSingleton<IActioner>(Services.IActioner, new Actioner())
+
+    RegisterAiProvider(plugin);
+}
+
+export function RegisterAiProvider(plugin: DmsAssistantPlugin) {
+    if (plugin.settings.apiProvider == AIProvider.Gemini && plugin.settings.apiKey != "") {
+        RegisterTransient<IActionDefinitions>(Services.IActionDefinitions, () => new GeminiActionDefinitions());
+        RegisterSingleton<IAIClass>(Services.IAIClass, new Gemini(plugin.settings.apiKey));
+    }
+}

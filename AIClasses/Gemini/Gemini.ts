@@ -1,5 +1,4 @@
 import { AIProviderURL } from "Enums/ApiProvider";
-import { request, type RequestUrlParam } from "obsidian";
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
 import type { IActioner } from "Actioner/IActioner";
@@ -7,62 +6,63 @@ import type { GeminiActionDefinitions } from "Actioner/Gemini/GeminiActionDefini
 import { create_file } from "Actioner/Actions";
 import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIClasses/IPrompt";
-import type { GenerateContentResponse, Part } from "@google/genai";
+import type { Part } from "@google/genai";
+import { StreamingService, type StreamChunk } from "Services/StreamingService";
 
 export class Gemini implements IAIClass {
   private readonly apiKey: string;
   private readonly aiPrompt: IPrompt;
   private readonly actionDefinitions: GeminiActionDefinitions;
-
+  private readonly streamingService: StreamingService;
 
   public constructor(apiKey: string) {
     this.apiKey = apiKey;
-
     this.aiPrompt = Resolve(Services.IPrompt);
     this.actionDefinitions = Resolve(Services.IActionDefinitions);
+    this.streamingService = new StreamingService();
   }
 
-  public async apiRequest(userInput: string, actioner: IActioner): Promise<Part[] | null> {
-    let prompt: string = "The users prompt is: " + userInput;
+  /**
+   * Stream response from Gemini API
+   */
+  public async* streamRequest(
+    userInput: string,
+    actioner: IActioner
+  ): AsyncGenerator<StreamChunk, void, unknown> {
+    const prompt = "The users prompt is: " + userInput;
 
-    let requestBody = JSON.stringify({
+    const requestBody = {
       contents: [
         {
           role: "user",
           parts: [
             {
-              text: this.aiPrompt.instructions() + "\n" +
-                this.aiPrompt.responseFormat() + "\n" +
-                this.aiPrompt.getDirectories() + "\n" +
-                prompt + "\n" +
-                this.aiPrompt.instructionsReminder()
+              text:
+                this.aiPrompt.instructions() +
+                "\n" +
+                this.aiPrompt.responseFormat() +
+                "\n" +
+                this.aiPrompt.getDirectories() +
+                "\n" +
+                prompt +
+                "\n" +
+                this.aiPrompt.instructionsReminder(),
             },
           ],
         },
       ],
-      tools: [{
-        functionDeclarations: [this.actionDefinitions[create_file]]
-      }]
-    });
-
-    let reqParam: RequestUrlParam = {
-      url: AIProviderURL.Gemini,
-      method: "POST",
-      headers: {
-        "X-goog-api-key": this.apiKey,
-        "Content-Type": "application/json"
+      tools: [
+        {
+          functionDeclarations: [this.actionDefinitions[create_file]],
+        },
+      ],
+      // Add streaming-specific parameters
+      generationConfig: {
+        temperature: 0.9,
+        //maxOutputTokens: 2048,
       },
-      body: requestBody
     };
 
-    let response: GenerateContentResponse = JSON.parse(await request(reqParam));
-
-    console.log(response);
-
-    let ai_response: Part[] = response.candidates?.first()?.content?.parts ?? [];
-
-    console.log(ai_response);
-
-    return ai_response;
+    yield* this.streamingService.streamGeminiRequest(this.apiKey, requestBody);
   }
 }

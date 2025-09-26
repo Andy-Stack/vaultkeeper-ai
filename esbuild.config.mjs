@@ -2,7 +2,7 @@ import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
 import { copyFileSync, mkdirSync, existsSync, readdirSync, statSync } from "fs";
-import { join } from "path";
+import path, { join } from "path";
 
 import esbuildSvelte from 'esbuild-svelte';
 import { sveltePreprocess } from 'svelte-preprocess';
@@ -37,7 +37,7 @@ function copyDir(src, dest) {
   }
 }
 
-const context = await esbuild.context({
+const buildOptions = {
 	plugins: [
 		esbuildSvelte({
 			compilerOptions: { css: 'injected' },
@@ -71,28 +71,13 @@ const context = await esbuild.context({
 	treeShaking: true,
 	outfile: "main.js",
 	minify: prod,
-});
+};
 
 if (prod) {
-	await context.rebuild();
-	
-	// Copy styles after production build
-	if (existsSync("Styles")) {
-		copyDir("Styles", "styles");
-		console.log("✅ Copied Styles directory to styles/");
-	} else {
-		console.log("⚠️  Styles directory not found, skipping copy");
-	}
-	
-	process.exit(0);
+	await esbuild.build(buildOptions);
+	console.log("✅ Production build complete!");
 } else {
-	// Copy styles for development
-	if (existsSync("Styles")) {
-		copyDir("Styles", "styles");
-		console.log("✅ Copied Styles directory to styles/");
-	} else {
-		console.log("⚠️  Styles directory not found, skipping copy");
-	}
-	
-	await context.watch();
+	const ctx = await esbuild.context(buildOptions);
+	await ctx.watch();
+	console.log("👀 Watching for changes...");
 }

@@ -25,6 +25,18 @@ export async function createDirectories(vault: Vault, filePath: string) {
     }
 }
 
+export function loadExternalCSS(href: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = href;
+        link.onload = () => resolve();
+        link.onerror = reject;
+        document.head.appendChild(link);
+    });
+}
+
 export class Semaphore {
     private max: number;
     private count: number;

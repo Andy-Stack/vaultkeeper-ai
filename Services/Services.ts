@@ -2,7 +2,10 @@ export class Services {
     static DmsAssistantPlugin = Symbol("DmsAssistantPlugin");
     static OdbCache = Symbol("OdbCache");
     static ModalService = Symbol("ModalService");
+    static StreamingService = Symbol("StreamingService");
     static MarkdownService = Symbol("MarkdownService");
+    static StreamingMarkdownService = Symbol("StreamingMarkdownService");
+
     
     // interfaces
     static IAIClass = Symbol("IAIClass");

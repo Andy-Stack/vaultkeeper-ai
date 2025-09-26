@@ -1,6 +1,6 @@
-import type { Part } from "@google/genai";
 import type { IActioner } from "Actioner/IActioner";
+import type { StreamChunk } from "Services/StreamingService";
 
 export interface IAIClass {
-    apiRequest(req: string, actioner: IActioner): Promise<Part[] | null>;
+    streamRequest(userInput: string, actioner: IActioner): AsyncGenerator<StreamChunk, void, unknown>;
 }

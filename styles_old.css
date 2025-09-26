@@ -1,0 +1,179 @@
+/* Enhanced code block styling with better spacing */
+pre {
+    background-color: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 6px;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+    line-height: 1.4; /* Better line spacing */
+    font-size: 0.875rem; /* Slightly larger for readability */
+}
+
+pre code {
+    font-family: var(--font-monospace);
+    font-size: inherit;
+    background: none; /* Remove any inherited background */
+    padding: 0; /* Remove any inherited padding */
+    border: none;
+    display: block;
+    white-space: pre; /* Preserve all whitespace and indentation */
+    word-wrap: normal;
+    overflow-wrap: normal;
+}
+
+/* Fix indentation preservation */
+.hljs {
+    display: block;
+    overflow-x: auto;
+    padding: 0;
+    background: transparent;
+    tab-size: 4; /* Set consistent tab size */
+    -moz-tab-size: 4;
+}
+
+/* Ensure proper spacing for inline elements */
+.hljs * {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+/* Syntax highlighting colors (keep your existing colors) */
+.hljs-keyword, [data-token="keyword"] { 
+    color: #ff7b72;
+}
+
+.hljs-string, [data-token="string"] { 
+    color: #a5d6ff;
+}
+
+.hljs-comment, [data-token="comment"] { 
+    color: #8b949e;
+    font-style: italic;
+}
+
+.hljs-number, [data-token="number"] { 
+    color: #79c0ff;
+}
+
+.hljs-function, [data-token="function"] { 
+    color: #d2a8ff;
+}
+
+.hljs-variable, [data-token="variable"] { 
+    color: #ffa657;
+}
+
+.hljs-built_in, [data-token="builtin"] { 
+    color: #ff7b72;
+}
+
+.hljs-title, [data-token="title"] { 
+    color: #7ee787;
+}
+
+/* Additional fixes for better formatting */
+.hljs-params {
+    color: var(--text-normal);
+}
+
+.hljs-attr {
+    color: #79c0ff;
+}
+
+.hljs-punctuation {
+    color: var(--text-muted);
+}
+
+/* Method/function calls */
+.hljs-title.function_ {
+    color: #d2a8ff;
+}
+
+/* Variable names and identifiers */
+.hljs-variable, .hljs-name {
+    color: #79c0ff;
+}
+
+/* Built-in functions and methods */
+.hljs-built_in, .hljs-title.function {
+    color: #ffa657;
+}
+
+/* Property access and attributes */
+.hljs-property, .hljs-attr {
+    color: #79c0ff;
+}
+
+/* Operators */
+.hljs-operator {
+    color: #ff7b72;
+}
+
+/* Punctuation and delimiters */
+.hljs-punctuation {
+    color: var(--text-normal);
+}
+
+/* Language-specific: Python function definitions */
+.hljs-title.class_ {
+    color: #7ee787;
+}
+
+/* Parameters in function definitions */
+.hljs-params {
+    color: #ffa657;
+}
+
+/* Literals and constants */
+.hljs-literal, .hljs-constant {
+    color: #79c0ff;
+}
+
+/* Class names */
+.hljs-class .hljs-title {
+    color: #7ee787;
+}
+
+/* Module/import names */
+.hljs-module {
+    color: #ffa657;
+}
+
+/* Meta information (like decorators) */
+.hljs-meta {
+    color: #8b949e;
+}
+
+/* Type annotations */
+.hljs-type {
+    color: #7ee787;
+}
+
+.hljs-section { color: #7ee787; }
+.hljs-tag { color: #ff7b72; }
+.hljs-link { color: #a5d6ff; }
+.hljs-subst { color: var(--text-normal); }
+.hljs-formula { color: #a5d6ff; }
+.hljs-addition { color: #7ee787; background-color: rgba(46, 160, 67, 0.15); }
+.hljs-deletion { color: #ff7b72; background-color: rgba(248, 81, 73, 0.15); }
+.hljs-selector-id, .hljs-selector-class { color: #7ee787; }
+.hljs-doctag, .hljs-strong { font-weight: bold; }
+.hljs-emphasis { font-style: italic; }
+
+/* Ensure bold text renders properly */
+strong, b {
+    font-weight: bold;
+    color: var(--text-normal);
+}
+
+em, i {
+    font-style: italic;
+}
+
+/* For markdown-rendered content specifically */
+.markdown-rendered strong,
+.markdown-rendered b {
+    font-weight: 600 !important;
+}

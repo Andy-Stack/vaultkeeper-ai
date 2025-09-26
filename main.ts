@@ -8,8 +8,7 @@ import { OdbCache } from 'ODB/Core/OdbCache';
 import { FileAction } from 'Enums/FileAction';
 import { Path } from 'Enums/Path';
 import { RegisterAiProvider, RegisterDependencies } from 'Services/ServiceRegistration';
-
-import './styles/markdown.css';
+import { loadExternalCSS } from 'Helpers';
 
 interface DmsAssistantSettings {
 	apiProvider: string;
@@ -25,6 +24,11 @@ export default class DmsAssistantPlugin extends Plugin {
 	settings: DmsAssistantSettings;
 
 	async onload() {
+		const script = document.createElement('script');
+		script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js';
+		script.async = true;
+		document.head.appendChild(script);
+
 		await this.loadSettings();
 
 		RegisterDependencies(this);

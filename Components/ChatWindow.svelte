@@ -1,13 +1,12 @@
 <script lang="ts">
-	import type { Part } from "@google/genai";
-	import type { IActioner } from "Actioner/IActioner";
-	import type { IAIClass } from "AIClasses/IAIClass";
-	import { Semaphore } from "Helpers";
-	import { Resolve } from "Services/DependencyService";
-	import { Services } from "Services/Services";
+  import type { IActioner } from "Actioner/IActioner";
+  import { Semaphore } from "Helpers";
+  import { Resolve } from "Services/DependencyService";
+  import { Services } from "Services/Services";
   import ChatArea from "./ChatArea.svelte";
+	import type { IAIClassStreaming } from "AIClasses/Gemini/Gemini";
 
-  let ai: IAIClass = Resolve(Services.IAIClass);
+  let ai: IAIClassStreaming = Resolve(Services.IAIClass);
   let actioner: IActioner = Resolve(Services.IActioner);
 
   let semaphore: Semaphore = new Semaphore(1, false);
@@ -15,7 +14,12 @@
 
   let userRequest = "";
   let isSubmitting = false;
-  let messages: Array<{id: string, content: string, isUser: boolean}> = [];
+  let messages: Array<{
+    id: string, 
+    content: string, 
+    isUser: boolean, 
+    isStreaming: boolean
+  }> = [];
 
   async function handleSubmit() {
     if (userRequest.trim() === "" || isSubmitting) {
@@ -28,32 +32,62 @@
     textareaElement.value = "";
     autoResize();
 
+    if (!await semaphore.wait()) {
+      return;
+    }
+
     // Add user message to chat
     const userMessageId = `user-${Date.now()}`;
     messages = [...messages, {
       id: userMessageId,
       content: requestToSend,
-      isUser: true
+      isUser: true,
+      isStreaming: true
     }];
 
-    if (!await semaphore.wait()) {
-      return;
-    }
-
     try {
-      let response: Part[] | null = await ai.apiRequest(requestToSend, actioner);
-      console.log(response);
-      
-      // Add AI response to chat
-      if (response && response.length > 0) {
-        const aiMessageId = `ai-${Date.now()}`;
+      // Create AI message placeholder
+      const aiMessageId = `ai-${Date.now()}`;
+      messages = [...messages, {
+        id: aiMessageId,
+        content: "",
+        isUser: false,
+        isStreaming: true
+      }];
 
-        const responseText = response.map(part => part.text || '').join(' ');
-        messages = [...messages, {
-          id: aiMessageId,
-          content: responseText,
-          isUser: false
-        }];
+      // Stream the response
+      let accumulatedContent = "";
+      
+      for await (const chunk of ai.streamRequest(requestToSend, actioner)) {
+        if (chunk.error) {
+          console.error("Streaming error:", chunk.error);
+          // Update message with error
+          messages = messages.map(msg => 
+            msg.id === aiMessageId 
+              ? { ...msg, content: "Error: " + chunk.error, isStreaming: false }
+              : msg
+          );
+          break;
+        }
+
+        if (chunk.content) {
+          accumulatedContent += chunk.content;
+          // Update the message with accumulated content
+          messages = messages.map(msg => 
+            msg.id === aiMessageId 
+              ? { ...msg, content: accumulatedContent }
+              : msg
+          );
+        }
+
+        if (chunk.isComplete) {
+          // Mark streaming as complete
+          messages = messages.map(msg => 
+            msg.id === aiMessageId 
+              ? { ...msg, content: accumulatedContent, isStreaming: false }
+              : msg
+          );
+        }
       }
     } finally {
       semaphore.release();
@@ -155,6 +189,5 @@
 
   #submit:hover {
     background-color: var(--interactive-accent-hover);
-
   }
 </style>

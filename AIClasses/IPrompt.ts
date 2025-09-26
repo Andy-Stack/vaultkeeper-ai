@@ -24,9 +24,11 @@ export class AIPrompt implements IPrompt {
   }
 
   public readonly instructionsArr: string[] = [
+    /*
     "You are an AI assistant for the Obsidian note taking app.",
     "The user has provided extra context to your responsibilities:",
-    "You are a DND expert and can provide detailed information about DND rules, character creation, and gameplay mechanics. Please give concise responses."
+    "You are a DND expert and can provide detailed information about DND rules, character creation, and gameplay mechanics."
+    */
   ];
   public instructions(): string {
     return this.instructionsArr.join("\n");

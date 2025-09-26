@@ -10,8 +10,9 @@ import type { IActioner } from "Actioner/IActioner";
 import type { IAIClass } from "AIClasses/IAIClass";
 import { GeminiActionDefinitions } from "Actioner/Gemini/GeminiActionDefinitions";
 import type { IActionDefinitions } from "Actioner/IActionDefinitions";
-import { Gemini } from "AIClasses/Gemini/Gemini";
+import { Gemini, type IAIClassStreaming } from "AIClasses/Gemini/Gemini";
 import { MarkdownService } from "./MarkdownService";
+import { StreamingMarkdownService } from "./StreamingMarkdownService";
 
 export function RegisterDependencies(plugin: DmsAssistantPlugin) {
     RegisterSingleton(Services.DmsAssistantPlugin, plugin);
@@ -22,6 +23,9 @@ export function RegisterDependencies(plugin: DmsAssistantPlugin) {
     RegisterSingleton<IActioner>(Services.IActioner, new Actioner());
 
     RegisterTransient<MarkdownService>(Services.MarkdownService, () => new MarkdownService());
+    RegisterTransient<StreamingMarkdownService>(Services.StreamingMarkdownService, () => new StreamingMarkdownService());
+
+
     RegisterAiProvider(plugin);
 }
 

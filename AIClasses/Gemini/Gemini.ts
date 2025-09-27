@@ -42,7 +42,7 @@ export class Gemini implements IAIClass {
                 "\n" +
                 this.aiPrompt.responseFormat() +
                 "\n" +
-                this.aiPrompt.getDirectories() +
+                //this.aiPrompt.getDirectories() +
                 "\n" +
                 prompt +
                 "\n" +

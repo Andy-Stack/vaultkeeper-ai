@@ -1,4 +1,43 @@
 /* ============================== */
+/* CSS Variables for Theming */
+/* ============================== */
+
+:root {
+  --code-background: #24292e;
+  --code-background-inline: rgba(27, 31, 35, 0.05);
+  --text-color: #24292e;
+  --text-muted: #586069;
+  --link-color: #0969da;
+  --blockquote-border: #d0d7de;
+  --table-border: #d0d7de;
+  --table-header-background: #f6f8fa;
+  --hr-color: #d0d7de;
+  --checkbox-bg: #fff;
+  --checkbox-border: #d1d5da;
+  --checkbox-checked-bg: #0969da;
+  --footnote-border: #d0d7de;
+}
+
+/* Dark mode variables */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --code-background: #161b22;
+    --code-background-inline: rgba(240, 246, 252, 0.15);
+    --text-color: #c9d1d9;
+    --text-muted: #8b949e;
+    --link-color: #58a6ff;
+    --blockquote-border: #3b434b;
+    --table-border: #3b434b;
+    --table-header-background: #161b22;
+    --hr-color: #3b434b;
+    --checkbox-bg: #161b22;
+    --checkbox-border: #3b434b;
+    --checkbox-checked-bg: #58a6ff;
+    --footnote-border: #3b434b;
+  }
+}
+
+/* ============================== */
 /* Syntax Highlighting Styles */
 /* GitHub Dark Theme for highlight.js */
 /* ============================== */
@@ -9,6 +48,26 @@
   padding: 0.5em;
   color: #e1e4e8;
   background: #24292e;
+}
+
+/* Language indicator */
+.hljs.language-js::before,
+.hljs.language-javascript::before,
+.hljs.language-python::before,
+.hljs.language-css::before,
+.hljs.language-html::before,
+.hljs.language-typescript::before,
+.hljs.language-jsx::before,
+.hljs.language-tsx::before {
+  content: attr(class);
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.25em 0.5em;
+  font-size: 0.75em;
+  color: #8b949e;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 0 0 0 0.25em;
 }
 
 .hljs-doctag,
@@ -107,10 +166,142 @@
   color: #e1e4e8;
 }
 
+/* Additional highlight.js classes for better coverage */
+.hljs-selector-pseudo {
+  color: #79b8ff;
+}
+
+.hljs-selector-tag {
+  color: #85e89d;
+}
+
+.hljs-template-comment {
+  color: #6a737d;
+}
+
+.hljs-meta-keyword {
+  color: #f97583;
+}
+
+.hljs-meta-string {
+  color: #9ecbff;
+}
+
 /* Alternative dark theme colors if preferred */
 .hljs.github-dark-dimmed {
   color: #adbac7;
   background: #22272e;
+}
+
+/* ============================== */
+/* GFM Task Lists */
+/* ============================== */
+
+/* Task list container */
+.contains-task-list,
+ul.contains-task-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+/* Task list items */
+.task-list-item,
+li.task-list-item {
+  position: relative;
+  list-style: none;
+  padding-left: 1.75em;
+  margin-left: 0;
+}
+
+/* Task list checkboxes */
+.task-list-item > input[type="checkbox"],
+.task-list-item input[type="checkbox"] {
+  position: absolute;
+  left: 0;
+  top: 0.25em;
+  margin: 0;
+  width: 1em;
+  height: 1em;
+  cursor: pointer;
+  background-color: var(--checkbox-bg);
+  border: 1px solid var(--checkbox-border);
+  border-radius: 3px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* Checked state */
+.task-list-item > input[type="checkbox"]:checked,
+.task-list-item input[type="checkbox"]:checked {
+  background-color: var(--checkbox-checked-bg);
+  border-color: var(--checkbox-checked-bg);
+}
+
+/* Checkmark for checked boxes */
+.task-list-item > input[type="checkbox"]:checked::after,
+.task-list-item input[type="checkbox"]:checked::after {
+  content: "✓";
+  display: block;
+  text-align: center;
+  color: white;
+  font-size: 0.75em;
+  line-height: 1em;
+  font-weight: bold;
+}
+
+/* Disabled state */
+.task-list-item > input[type="checkbox"]:disabled,
+.task-list-item input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Nested task lists */
+.task-list-item .contains-task-list {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+/* ============================== */
+/* GFM Footnotes */
+/* ============================== */
+
+/* Footnote references */
+sup[data-footnote-ref],
+a[data-footnote-ref] {
+  font-weight: bold;
+  text-decoration: none;
+  color: var(--link-color);
+}
+
+sup[data-footnote-ref]::before {
+  content: "[";
+}
+
+sup[data-footnote-ref]::after {
+  content: "]";
+}
+
+/* Footnote section */
+section[data-footnotes],
+.footnotes {
+  margin-top: 2em;
+  padding-top: 1em;
+  border-top: 1px solid var(--footnote-border);
+  font-size: 0.9em;
+}
+
+/* Footnote list */
+section[data-footnotes] ol,
+.footnotes ol {
+  padding-left: 1.5em;
+}
+
+/* Footnote back references */
+a[data-footnote-backref] {
+  text-decoration: none;
+  margin-left: 0.25em;
 }
 
 /* ============================== */
@@ -764,41 +955,48 @@ body {
   font-size: 1.5em;
   font-weight: 600;
   margin: 0.67em 0;
+  line-height: 1.2;
 }
 
 .message-bubble.assistant h2 {
   font-size: 1.3em;
   font-weight: 600;
   margin: 0.75em 0;
+  line-height: 1.2;
 }
 
 .message-bubble.assistant h3 {
   font-size: 1.1em;
   font-weight: 600;
   margin: 0.83em 0;
+  line-height: 1.3;
 }
 
 .message-bubble.assistant h4 {
   font-size: 1em;
   font-weight: 600;
   margin: 1.12em 0;
+  line-height: 1.3;
 }
 
 .message-bubble.assistant h5 {
   font-size: 0.9em;
   font-weight: 600;
   margin: 1.5em 0;
+  line-height: 1.3;
 }
 
 .message-bubble.assistant h6 {
   font-size: 0.85em;
   font-weight: 600;
   margin: 1.67em 0;
+  line-height: 1.3;
 }
 
 /* Paragraphs */
 .message-bubble.assistant p {
   margin: 0.5em 0;
+  line-height: 1.6;
 }
 
 /* Lists */
@@ -806,23 +1004,66 @@ body {
 .message-bubble.assistant ol {
   margin: 0.5em 0;
   padding-left: 2em;
+  list-style-position: outside;
+}
+
+.message-bubble.assistant ol {
+  list-style-type: decimal;
+}
+
+.message-bubble.assistant ul {
+  list-style-type: disc;
 }
 
 .message-bubble.assistant li {
   margin: 0.25em 0;
+  padding-left: 0.25em;
+  display: list-item;
+}
+
+/* Handle nested lists properly */
+.message-bubble.assistant ol ol,
+.message-bubble.assistant ul ul,
+.message-bubble.assistant ol ul,
+.message-bubble.assistant ul ol {
+  margin: 0.25em 0;
+  padding-left: 1.5em;
+}
+
+/* Ensure nested list numbering works correctly */
+.message-bubble.assistant ol ol {
+  list-style-type: lower-alpha;
+}
+
+.message-bubble.assistant ol ol ol {
+  list-style-type: lower-roman;
+}
+
+/* Fix paragraph spacing inside list items */
+.message-bubble.assistant li > p {
+  margin: 0;
+}
+
+.message-bubble.assistant li > p:first-child {
+  margin-top: 0;
+}
+
+.message-bubble.assistant li > p:last-child {
+  margin-bottom: 0;
 }
 
 /* Code blocks */
 .message-bubble.assistant pre {
-  background-color: var(--code-background, #f6f8fa);
+  background-color: var(--code-background);
   border-radius: 4px;
   padding: 0.5em;
   overflow-x: auto;
   margin: 0.5em 0;
+  position: relative;
 }
 
 .message-bubble.assistant code {
-  background-color: var(--code-background, rgba(27, 31, 35, 0.05));
+  background-color: var(--code-background-inline);
   border-radius: 3px;
   padding: 0.2em 0.4em;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
@@ -832,11 +1073,12 @@ body {
 .message-bubble.assistant pre code {
   background-color: transparent;
   padding: 0;
+  border-radius: 0;
 }
 
 /* Blockquotes */
 .message-bubble.assistant blockquote {
-  border-left: 4px solid var(--blockquote-border, #d0d7de);
+  border-left: 4px solid var(--blockquote-border);
   padding-left: 1em;
   margin: 0.5em 0;
   color: var(--text-muted);
@@ -847,23 +1089,37 @@ body {
   border-collapse: collapse;
   margin: 0.5em 0;
   width: 100%;
+  overflow-x: auto;
+  display: block;
 }
 
 .message-bubble.assistant th,
 .message-bubble.assistant td {
-  border: 1px solid var(--table-border, #d0d7de);
+  border: 1px solid var(--table-border);
   padding: 0.5em;
   text-align: left;
+  min-width: 100px;
 }
 
 .message-bubble.assistant th {
-  background-color: var(--table-header-background, #f6f8fa);
+  background-color: var(--table-header-background);
   font-weight: 600;
+}
+
+/* Table alignment classes from GFM */
+.message-bubble.assistant th[align="center"],
+.message-bubble.assistant td[align="center"] {
+  text-align: center;
+}
+
+.message-bubble.assistant th[align="right"],
+.message-bubble.assistant td[align="right"] {
+  text-align: right;
 }
 
 /* Links */
 .message-bubble.assistant a {
-  color: var(--link-color, #0969da);
+  color: var(--link-color);
   text-decoration: none;
 }
 
@@ -874,7 +1130,7 @@ body {
 /* Horizontal rules */
 .message-bubble.assistant hr {
   border: none;
-  border-top: 1px solid var(--hr-color, #d0d7de);
+  border-top: 1px solid var(--hr-color);
   margin: 1em 0;
 }
 
@@ -898,4 +1154,160 @@ body {
 /* Strikethrough */
 .message-bubble.assistant del {
   text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* ============================== */
+/* Additional HTML Elements */
+/* ============================== */
+
+/* Keyboard input */
+.message-bubble.assistant kbd {
+  display: inline-block;
+  padding: 0.2em 0.4em;
+  font-size: 0.875em;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  line-height: 1;
+  color: var(--text-color);
+  vertical-align: middle;
+  background-color: var(--code-background-inline);
+  border: 1px solid var(--table-border);
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* Mark/highlight */
+.message-bubble.assistant mark {
+  background-color: #fff3cd;
+  color: #000;
+  padding: 0.2em;
+  border-radius: 2px;
+}
+
+/* Subscript and Superscript */
+.message-bubble.assistant sub {
+  font-size: 0.75em;
+  vertical-align: sub;
+}
+
+.message-bubble.assistant sup {
+  font-size: 0.75em;
+  vertical-align: super;
+}
+
+/* Abbreviations */
+.message-bubble.assistant abbr[title] {
+  text-decoration: underline dotted;
+  cursor: help;
+}
+
+/* Definition lists */
+.message-bubble.assistant dl {
+  margin: 0.5em 0;
+}
+
+.message-bubble.assistant dt {
+  font-weight: 600;
+  margin-top: 0.5em;
+}
+
+.message-bubble.assistant dd {
+  margin-left: 2em;
+  margin-bottom: 0.5em;
+}
+
+/* Details/Summary (collapsible sections) */
+.message-bubble.assistant details {
+  margin: 0.5em 0;
+  padding: 0.5em;
+  border: 1px solid var(--table-border);
+  border-radius: 4px;
+}
+
+.message-bubble.assistant summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.25em;
+  user-select: none;
+}
+
+.message-bubble.assistant details[open] summary {
+  margin-bottom: 0.5em;
+}
+
+/* ============================== */
+/* Emoji Support */
+/* ============================== */
+
+.message-bubble.assistant .emoji {
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-weight: normal;
+  line-height: 1;
+}
+
+/* ============================== */
+/* Line Numbers for Code Blocks (optional) */
+/* ============================== */
+
+/* If using line numbers with rehype-highlight */
+.hljs .code-line {
+  display: block;
+  padding-left: 1em;
+  margin-left: -1em;
+}
+
+.hljs .numbered-code-line::before {
+  content: attr(data-line-number);
+  display: inline-block;
+  width: 2em;
+  text-align: right;
+  margin-right: 1em;
+  color: #6a737d;
+  user-select: none;
+}
+
+/* ============================== */
+/* Responsive adjustments */
+/* ============================== */
+
+@media (max-width: 768px) {
+  .message-bubble.assistant table {
+    font-size: 0.875em;
+  }
+  
+  .message-bubble.assistant th,
+  .message-bubble.assistant td {
+    padding: 0.25em;
+    min-width: 50px;
+  }
+  
+  .message-bubble.assistant pre {
+    padding: 0.25em;
+  }
+}
+
+/* ============================== */
+/* Print styles */
+/* ============================== */
+
+@media print {
+  .message-bubble.assistant {
+    color: #000;
+  }
+  
+  .message-bubble.assistant a {
+    color: #0969da;
+    text-decoration: underline;
+  }
+  
+  .message-bubble.assistant pre,
+  .message-bubble.assistant code {
+    background-color: #f6f8fa;
+    color: #000;
+  }
+  
+  .hljs {
+    background: #fff;
+    color: #000;
+  }
 }

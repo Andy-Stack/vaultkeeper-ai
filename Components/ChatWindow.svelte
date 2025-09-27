@@ -4,9 +4,9 @@
   import { Resolve } from "Services/DependencyService";
   import { Services } from "Services/Services";
   import ChatArea from "./ChatArea.svelte";
-	import type { IAIClassStreaming } from "AIClasses/Gemini/Gemini";
+  import type { IAIClass } from "AIClasses/IAIClass";
 
-  let ai: IAIClassStreaming = Resolve(Services.IAIClass);
+  let ai: IAIClass = Resolve(Services.IAIClass);
   let actioner: IActioner = Resolve(Services.IActioner);
 
   let semaphore: Semaphore = new Semaphore(1, false);

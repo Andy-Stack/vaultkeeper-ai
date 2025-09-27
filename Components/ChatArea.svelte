@@ -1,51 +1,119 @@
 <script lang="ts">
   import { Resolve } from "Services/DependencyService";
-  import { MarkdownService } from "Services/MarkdownService";
   import { Services } from "Services/Services";
-	import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
+  import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
 
   export let messages: Array<{id: string, content: string, isUser: boolean, isStreaming: boolean}> = [];
   
   let chatContainer: HTMLDivElement;
   let streamingMarkdownService: StreamingMarkdownService = Resolve(Services.StreamingMarkdownService);
+  let messageElements = new Map<string, HTMLElement>();
+  let lastProcessedContent = new Map<string, string>();
 
-  
-  // Process each message content with markdown
-  $: processedMessages = messages.map((message) => {
-    if (message.isUser) {
-      return {
-        ...message,
-        htmlContent: `<p>${message.content}</p>`
-      };
+  // Track streaming messages and update them incrementally
+  $: {
+    messages.forEach((message) => {
+      if (!message.isUser) {
+        const lastContent = lastProcessedContent.get(message.id) || '';
+        
+        // Only update if content has changed
+        if (message.content !== lastContent) {
+          updateMessageContent(message);
+          lastProcessedContent.set(message.id, message.content);
+        }
+      }
+    });
+  }
+
+  function updateMessageContent(message: {id: string, content: string, isUser: boolean, isStreaming: boolean}) {
+    const element = messageElements.get(message.id);
+    if (!element) return;
+
+    if (message.isStreaming) {
+      // Use streaming update
+      streamingMarkdownService.streamChunk(message.id, message.content);
     } else {
-      let htmlContent;
+      // Finalize the message
+      streamingMarkdownService.finalizeStream(message.id, message.content);
+    }
+  }
+
+  function initializeMessageElement(messageId: string, element: HTMLElement) {
+    messageElements.set(messageId, element);
+    streamingMarkdownService.initializeStream(messageId, element);
+  }
+
+  // Svelte action to handle element initialization
+  function streamingAction(element: HTMLElement, messageId: string) {
+    initializeMessageElement(messageId, element);
+    
+    return {
+      destroy() {
+        // Cleanup when element is removed
+        messageElements.delete(messageId);
+      }
+    };
+  }
+
+  // Process static messages (user messages and initial load)
+  function getStaticHTML(message: {id: string, content: string, isUser: boolean, isStreaming: boolean}): string {
+    if (message.isUser) {
+      return `<p>${message.content}</p>`;
+    }
+    
+    // For assistant messages that aren't streaming, use traditional parsing
+    if (!message.isStreaming) {
       try {
-        htmlContent = streamingMarkdownService.formatText(message.content) || `<p>${message.content}</p>`;
+        return streamingMarkdownService.formatText(message.content) || `<p>${message.content}</p>`;
       } catch (err) {
         console.error('HTML processing failed:', err);
-        htmlContent = `<p>${message.content}</p>`;
+        return `<p>${message.content}</p>`;
       }
-      return {
-        ...message,
-        htmlContent
-      };
     }
-  });
+    
+    return ''; // Streaming messages will be handled by the streaming service
+  }
+
+  // Clean up when component is destroyed
+  function cleanup() {
+    messageElements.clear();
+    lastProcessedContent.clear();
+  }
+
+  // Make sure to clean up when messages are removed
+  $: {
+    const currentMessageIds = new Set(messages.map(m => m.id));
+    
+    // Remove tracking for messages that no longer exist
+    for (const [id] of messageElements) {
+      if (!currentMessageIds.has(id)) {
+        messageElements.delete(id);
+        lastProcessedContent.delete(id);
+      }
+    }
+  }
 </script>
 
 <div class="chat-area" bind:this={chatContainer}>
-  {#each processedMessages as message (message.id)}
+  {#each messages as message (message.id)}
     <div class="message-container" class:user={message.isUser} class:assistant={!message.isUser}>
       <div class="message-bubble" class:user={message.isUser} class:assistant={!message.isUser}>
         {#if message.isUser}
           <p>{message.content}</p>
         {:else}
-        <div class="markdown-content" class:streaming={message.isStreaming}>
-          {@html message.htmlContent}
-          {#if message.isStreaming}
-            <span class="streaming-indicator">● ● ●</span>
-          {/if}
-        </div>
+          <div class="markdown-content" class:streaming={message.isStreaming}>
+            {#if message.isStreaming}
+              <!-- Streaming message: use action for initialization -->
+              <div 
+                use:streamingAction={message.id}
+                class="streaming-content"
+              ></div>
+              <span class="streaming-indicator">● ● ●</span>
+            {:else}
+              <!-- Static message: use traditional rendering -->
+              {@html getStaticHTML(message)}
+            {/if}
+          </div>
         {/if}
       </div>
     </div>
@@ -103,6 +171,10 @@
     font-style: italic;
     color: var(--text-muted);
     pointer-events: none;
+  }
+
+  .streaming-content {
+    min-height: 1em; /* Ensure the element exists for binding */
   }
 
   .streaming-indicator {

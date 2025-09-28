@@ -5,10 +5,10 @@
 	import ChatAreaThought from "./ChatAreaThought.svelte";
 
   export let messages: Array<{id: string, content: string, isUser: boolean, isStreaming: boolean}> = [];
+  export let chatContainer: HTMLDivElement;
   
   let streamingMarkdownService: StreamingMarkdownService = Resolve(Services.StreamingMarkdownService);
 
-  let chatContainer: HTMLDivElement;
   let messageElements = new Map<string, HTMLElement>();
   let lastProcessedContent = new Map<string, string>();
 

@@ -5,15 +5,18 @@
   import { Services } from "Services/Services";
   import ChatArea from "./ChatArea.svelte";
   import type { IAIClass } from "AIClasses/IAIClass";
+	import { tick } from "svelte";
 
   let ai: IAIClass = Resolve(Services.IAIClass);
   let actioner: IActioner = Resolve(Services.IActioner);
 
   let semaphore: Semaphore = new Semaphore(1, false);
   let textareaElement: HTMLTextAreaElement;
+  let chatContainer: HTMLDivElement;
 
   let userRequest = "";
   let isSubmitting = false;
+  let userHasScrolled = false;
   let messages: Array<{
     id: string, 
     content: string, 
@@ -44,6 +47,9 @@
       isUser: true,
       isStreaming: true
     }];
+
+    scrollToBottom();
+    userHasScrolled = false;
 
     try {
       // Create AI message placeholder
@@ -112,11 +118,22 @@
       textareaElement.style.height = textareaElement.scrollHeight + 'px';
     }
   }
+
+  function scrollToBottom() {
+    tick().then(() => {
+      if (chatContainer) {
+        chatContainer.scroll({
+          top: chatContainer.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    });
+  }
 </script>
 
 <main class="container">
   <div id="chat-container">
-    <ChatArea bind:messages />
+    <ChatArea bind:messages bind:chatContainer={chatContainer}/>
   </div>
   
   <div id="input-container">

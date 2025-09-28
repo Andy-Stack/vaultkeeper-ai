@@ -12,8 +12,10 @@ import { GeminiActionDefinitions } from "Actioner/Gemini/GeminiActionDefinitions
 import type { IActionDefinitions } from "Actioner/IActionDefinitions";
 import { Gemini } from "AIClasses/Gemini/Gemini";
 import { StreamingMarkdownService } from "./StreamingMarkdownService";
+import { MessageService } from "./MessageService";
 
 export function RegisterDependencies(plugin: DmsAssistantPlugin) {
+    RegisterSingleton(Services.MessageService, new MessageService());
     RegisterSingleton(Services.DmsAssistantPlugin, plugin);
     RegisterSingleton(Services.OdbCache, new OdbCache());
     RegisterSingleton(Services.ModalService, new ModalService())

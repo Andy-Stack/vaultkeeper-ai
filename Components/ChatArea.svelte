@@ -2,11 +2,13 @@
   import { Resolve } from "Services/DependencyService";
   import { Services } from "Services/Services";
   import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
+	import ChatAreaThought from "./ChatAreaThought.svelte";
 
   export let messages: Array<{id: string, content: string, isUser: boolean, isStreaming: boolean}> = [];
   
-  let chatContainer: HTMLDivElement;
   let streamingMarkdownService: StreamingMarkdownService = Resolve(Services.StreamingMarkdownService);
+
+  let chatContainer: HTMLDivElement;
   let messageElements = new Map<string, HTMLElement>();
   let lastProcessedContent = new Map<string, string>();
 
@@ -30,10 +32,8 @@
     if (!element) return;
 
     if (message.isStreaming) {
-      // Use streaming update
       streamingMarkdownService.streamChunk(message.id, message.content);
     } else {
-      // Finalize the message
       streamingMarkdownService.finalizeStream(message.id, message.content);
     }
   }
@@ -49,7 +49,6 @@
     
     return {
       destroy() {
-        // Cleanup when element is removed
         messageElements.delete(messageId);
       }
     };
@@ -74,12 +73,6 @@
     return ''; // Streaming messages will be handled by the streaming service
   }
 
-  // Clean up when component is destroyed
-  function cleanup() {
-    messageElements.clear();
-    lastProcessedContent.clear();
-  }
-
   // Make sure to clean up when messages are removed
   $: {
     const currentMessageIds = new Set(messages.map(m => m.id));
@@ -102,16 +95,14 @@
           <p>{message.content}</p>
         {:else}
           <div class="markdown-content" class:streaming={message.isStreaming}>
+            <!-- Streaming message: use action for initialization -->
             {#if message.isStreaming}
-              <!-- Streaming message: use action for initialization -->
-              <div 
-                use:streamingAction={message.id}
-                class="streaming-content"
-              ></div>
-              <span class="streaming-indicator">● ● ●</span>
+            <div use:streamingAction={message.id} class="streaming-content"></div>
+            <span class="streaming-indicator">● ● ●</span>
+            <ChatAreaThought/>
             {:else}
-              <!-- Static message: use traditional rendering -->
-              {@html getStaticHTML(message)}
+            <!-- Static message: use traditional rendering -->
+            {@html getStaticHTML(message)}
             {/if}
           </div>
         {/if}

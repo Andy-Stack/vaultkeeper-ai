@@ -21,7 +21,7 @@
     align-items: center;
     position: relative;
     margin-left: 4px;
-    margin-top: 12px;
+    padding-top: 12px;
   }
 
   .📦 {

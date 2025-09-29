@@ -17,6 +17,8 @@
   let userRequest = "";
   let isSubmitting = false;
   let userHasScrolled = false;
+  let showChatPadding = false;
+
   let messages: Array<{
     id: string, 
     content: string, 
@@ -48,6 +50,7 @@
       isStreaming: true
     }];
 
+    showChatPadding = true;
     scrollToBottom();
     userHasScrolled = false;
 
@@ -94,8 +97,10 @@
               : msg
           );
         }
+        showChatPadding = false;
       }
     } finally {
+      showChatPadding = false;
       semaphore.release();
       isSubmitting = false;
     }
@@ -133,7 +138,7 @@
 
 <main class="container">
   <div id="chat-container">
-    <ChatArea bind:messages bind:chatContainer={chatContainer}/>
+    <ChatArea bind:messages bind:chatContainer={chatContainer} bind:showChatPadding={showChatPadding}/>
   </div>
   
   <div id="input-container">

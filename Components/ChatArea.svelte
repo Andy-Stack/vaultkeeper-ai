@@ -4,8 +4,10 @@
   import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
 	import ChatAreaThought from "./ChatAreaThought.svelte";
 	import StreamingIndicator from "./StreamingIndicator.svelte";
+	import { slide } from "svelte/transition";
 
   export let messages: Array<{id: string, content: string, isUser: boolean, isStreaming: boolean}> = [];
+  export let showChatPadding: boolean = false;
   export let chatContainer: HTMLDivElement;
   
   let streamingMarkdownService: StreamingMarkdownService = Resolve(Services.StreamingMarkdownService);
@@ -101,6 +103,9 @@
             <div use:streamingAction={message.id} class="streaming-content"></div>
             <StreamingIndicator/>
             <ChatAreaThought/>
+            {#if showChatPadding}
+            <div class="chat-padding" transition:slide={{duration: 2000, delay: 0}}></div>
+            {/if}
             {:else}
             <!-- Static message: use traditional rendering -->
             {@html getStaticHTML(message)}
@@ -130,6 +135,12 @@
 
   .chat-area::-webkit-scrollbar {
     display: none;
+  }
+
+  .chat-padding {
+    background-color: violet;
+    height: 40vh;
+    width: 100%;
   }
   
   .message-container {

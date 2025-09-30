@@ -21,7 +21,7 @@ export function RegisterDependencies(plugin: DmsAssistantPlugin) {
     RegisterSingleton(Services.DmsAssistantPlugin, plugin);
     RegisterSingleton(Services.OdbCache, new OdbCache());
     RegisterSingleton(Services.ModalService, new ModalService())
-    RegisterSingleton(Services.FileSystemService, new FileSystemService(plugin));
+    RegisterSingleton(Services.FileSystemService, new FileSystemService());
     RegisterSingleton(Services.ConversationFileSystemService, new ConversationFileSystemService());
 
     RegisterSingleton<IPrompt>(Services.IPrompt, new AIPrompt());

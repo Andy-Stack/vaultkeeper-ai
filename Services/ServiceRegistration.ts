@@ -13,13 +13,17 @@ import type { IActionDefinitions } from "Actioner/IActionDefinitions";
 import { Gemini } from "AIClasses/Gemini/Gemini";
 import { StreamingMarkdownService } from "./StreamingMarkdownService";
 import { MessageService } from "./MessageService";
+import { FileSystemService } from "./FileSystemService";
+import { ConversationFileSystemService } from "./ConversationFileSystemService";
 
 export function RegisterDependencies(plugin: DmsAssistantPlugin) {
     RegisterSingleton(Services.MessageService, new MessageService());
     RegisterSingleton(Services.DmsAssistantPlugin, plugin);
     RegisterSingleton(Services.OdbCache, new OdbCache());
     RegisterSingleton(Services.ModalService, new ModalService())
-    
+    RegisterSingleton(Services.FileSystemService, new FileSystemService(plugin));
+    RegisterSingleton(Services.ConversationFileSystemService, new ConversationFileSystemService());
+
     RegisterSingleton<IPrompt>(Services.IPrompt, new AIPrompt());
     RegisterSingleton<IActioner>(Services.IActioner, new Actioner());
 

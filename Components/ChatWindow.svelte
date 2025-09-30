@@ -1,14 +1,16 @@
 <script lang="ts">
   import type { IActioner } from "Actioner/IActioner";
-  import { Semaphore } from "Helpers";
+  import { Semaphore } from "Helpers/Semaphore";
   import { Resolve } from "Services/DependencyService";
   import { Services } from "Services/Services";
   import ChatArea from "./ChatArea.svelte";
   import type { IAIClass } from "AIClasses/IAIClass";
 	import { tick } from "svelte";
+  import { ConversationFileSystemService } from "Services/ConversationFileSystemService";
 
   let ai: IAIClass = Resolve(Services.IAIClass);
   let actioner: IActioner = Resolve(Services.IActioner);
+  let conversationService: ConversationFileSystemService = Resolve(Services.ConversationFileSystemService);
 
   let semaphore: Semaphore = new Semaphore(1, false);
   let textareaElement: HTMLTextAreaElement;
@@ -20,9 +22,9 @@
   let showChatPadding = false;
 
   let messages: Array<{
-    id: string, 
-    content: string, 
-    isUser: boolean, 
+    id: string,
+    content: string,
+    isUser: boolean,
     isStreaming: boolean
   }> = [];
 
@@ -47,8 +49,10 @@
       id: userMessageId,
       content: requestToSend,
       isUser: true,
-      isStreaming: true
+      isStreaming: false
     }];
+
+    await conversationService.saveConversation(messages);
 
     showChatPadding = true;
     scrollToBottom();
@@ -91,11 +95,12 @@
 
         if (chunk.isComplete) {
           // Mark streaming as complete
-          messages = messages.map(msg => 
-            msg.id === aiMessageId 
+          messages = messages.map(msg =>
+            msg.id === aiMessageId
               ? { ...msg, content: accumulatedContent, isStreaming: false }
               : msg
           );
+          await conversationService.saveConversation(messages);
         }
         showChatPadding = false;
       }

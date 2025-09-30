@@ -8,7 +8,7 @@ import { OdbCache } from 'ODB/Core/OdbCache';
 import { FileAction } from 'Enums/FileAction';
 import { Path } from 'Enums/Path';
 import { RegisterAiProvider, RegisterDependencies } from 'Services/ServiceRegistration';
-import { loadExternalCSS } from 'Helpers';
+import { loadExternalCSS } from 'Helpers/Helpers';
 
 interface DmsAssistantSettings {
 	apiProvider: string;

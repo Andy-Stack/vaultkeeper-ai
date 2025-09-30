@@ -6,7 +6,7 @@ import { Services } from "Services/Services";
 import { Path } from "Enums/Path";
 import { DynamicRecordProp } from "Enums/DynamicRecord";
 import { FileAction } from "Enums/FileAction";
-import { isValidJson } from "Helpers";
+import { isValidJson } from "Helpers/Helpers";
 
 export class OdbCache {
 

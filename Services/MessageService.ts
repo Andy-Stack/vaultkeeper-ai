@@ -3,6 +3,7 @@ import type { IMessage } from "Messages/IMessage";
 type MessageConstructor<T extends IMessage> = new (...args: any[]) => T;
 
 export class MessageService {
+  
   private handlers = new Map<MessageConstructor<any>, Set<(message: any) => void>>();
 
   register<T extends IMessage>(messageType: MessageConstructor<T>, handler: (message: T) => void): void {

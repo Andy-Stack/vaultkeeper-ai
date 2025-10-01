@@ -104,7 +104,7 @@
             <StreamingIndicator/>
             <ChatAreaThought/>
             {#if showChatPadding}
-            <div class="chat-padding" transition:slide={{duration: 4000, delay: 1000}}></div>
+            <div class="chat-padding" transition:slide={{duration: 3000, delay: 0}}></div>
             {/if}
             {:else}
             <!-- Static message: use traditional rendering -->

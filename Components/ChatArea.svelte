@@ -95,7 +95,7 @@
     <div class="message-container" class:user={message.isUser} class:assistant={!message.isUser}>
       <div class="message-bubble" class:user={message.isUser} class:assistant={!message.isUser}>
         {#if message.isUser}
-          <p>{message.content}</p>
+          <p class="message-text-user">{message.content}</p>
         {:else}
           <div class="markdown-content" class:streaming={message.isStreaming}>
             <!-- Streaming message: use action for initialization -->
@@ -104,7 +104,7 @@
             <StreamingIndicator/>
             <ChatAreaThought/>
             {#if showChatPadding}
-            <div class="chat-padding" transition:slide={{duration: 2000, delay: 0}}></div>
+            <div class="chat-padding" transition:slide={{duration: 4000, delay: 1000}}></div>
             {/if}
             {:else}
             <!-- Static message: use traditional rendering -->
@@ -128,9 +128,10 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    overflow-y: auto;
+    overflow: auto;
     padding: var(--size-4-3);
-    gap: var(--p-spacing);
+    gap: var(--size-4-2);
+    scroll-behavior: smooth;
   }
 
   .chat-area::-webkit-scrollbar {
@@ -144,6 +145,7 @@
   
   .message-container {
     display: flex;
+    margin: 0;
   }
   
   .message-container.user {
@@ -164,11 +166,16 @@
     border: var(--border-width) solid var(--background-modifier-border);
     border-radius: var(--radius-m);
     padding: 0px var(--size-4-2);
+    white-space: pre-wrap;
   }
 
   .message-bubble.assistant {
     word-wrap: break-word;
     max-width: 100%;
+  }
+
+  .message-text-user {
+    margin: var(--size-4-2);
   }
   
   .empty-state {

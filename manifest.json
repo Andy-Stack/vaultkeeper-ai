@@ -1,9 +1,9 @@
 {
-	"id": "dms_assistant",
-	"name": "DM's Assistant",
+	"id": "ai_agent",
+	"name": "AI Agent",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "AI powered Dungeon Master's assistant.",
+	"description": "AI powered agent assistant.",
 	"author": "Obsidian",
 	"authorUrl": "https://obsidian.md",
 	"fundingUrl": "https://obsidian.md/pricing",

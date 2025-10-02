@@ -1,7 +1,7 @@
 {
-	"name": "dms_assistant",
+	"name": "ai_agent",
 	"version": "1.0.0",
-	"description": "AI powered Dungeon Master's assistant.",
+	"description": "AI powered agent assistant.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",

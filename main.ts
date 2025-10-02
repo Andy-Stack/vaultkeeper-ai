@@ -8,20 +8,19 @@ import { OdbCache } from 'ODB/Core/OdbCache';
 import { FileAction } from 'Enums/FileAction';
 import { Path } from 'Enums/Path';
 import { RegisterAiProvider, RegisterDependencies } from 'Services/ServiceRegistration';
-import { loadExternalCSS } from 'Helpers/Helpers';
 
-interface DmsAssistantSettings {
+interface AIAgentSettings {
 	apiProvider: string;
 	apiKey: string;
 }
 
-const DEFAULT_SETTINGS: DmsAssistantSettings = {
+const DEFAULT_SETTINGS: AIAgentSettings = {
 	apiProvider: AIProvider.Gemini,
 	apiKey: ""
 }
 
-export default class DmsAssistantPlugin extends Plugin {
-	settings: DmsAssistantSettings;
+export default class AIAgentPlugin extends Plugin {
+	settings: AIAgentSettings;
 
 	async onload() {
 		const script = document.createElement('script');
@@ -83,7 +82,7 @@ export default class DmsAssistantPlugin extends Plugin {
 		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new DmsAssistantSettingTab(this.app, this));
+		this.addSettingTab(new AIAgentSettingTab(this.app, this));
 
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
@@ -163,10 +162,10 @@ class SampleModal extends Modal {
 	}
 }
 
-class DmsAssistantSettingTab extends PluginSettingTab {
-	plugin: DmsAssistantPlugin;
+class AIAgentSettingTab extends PluginSettingTab {
+	plugin: AIAgentPlugin;
 
-	constructor(app: App, plugin: DmsAssistantPlugin) {
+	constructor(app: App, plugin: AIAgentPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -203,7 +202,7 @@ class DmsAssistantSettingTab extends PluginSettingTab {
 	}
 }
 
-function CreateDirectories(plugin: DmsAssistantPlugin) {
+function CreateDirectories(plugin: AIAgentPlugin) {
 	this.app.workspace.onLayoutReady(async () => {
 		const vault = plugin.app.vault;
 		if (vault.getAbstractFileByPath(Path.Root) == null) {

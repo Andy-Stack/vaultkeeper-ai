@@ -1,6 +1,6 @@
 export class Services {
     static MessageService = Symbol("MessageService");
-    static DmsAssistantPlugin = Symbol("DmsAssistantPlugin");
+    static AIAgentPlugin = Symbol("AIAgentPlugin");
     static OdbCache = Symbol("OdbCache");
     static ModalService = Symbol("ModalService");
     static FileSystemService = Symbol("FileSystemService");

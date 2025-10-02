@@ -1,4 +1,4 @@
-import type DmsAssistantPlugin from "main";
+import type AIAgentPlugin from "main";
 import { TAbstractFile, TFile, type Vault } from "obsidian";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
@@ -9,7 +9,7 @@ export class FileSystemService {
     private vault: Vault;
 
     public constructor() {
-        this.vault = Resolve<DmsAssistantPlugin>(Services.DmsAssistantPlugin).app.vault;
+        this.vault = Resolve<AIAgentPlugin>(Services.AIAgentPlugin).app.vault;
     }
 
     public async readObjectFromFile(filePath: string): Promise<object | null> {

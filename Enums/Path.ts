@@ -1,5 +1,5 @@
 export enum Path {
-    Root = "DM's Assistant",
-    Schemas = "DM's Assistant/Schemas",
-    Records = "DM's Assistant/Records"
+    Root = "AI Agent",
+    Schemas = "AI Agent/Schemas",
+    Records = "AI Agent/Records"
 };

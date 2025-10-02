@@ -1,4 +1,4 @@
-import type DmsAssistantPlugin from "main";
+import type AIAgentPlugin from "main";
 import type { Vault } from "obsidian";
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
@@ -15,7 +15,7 @@ export class AIPrompt implements IPrompt {
   private vault: Vault;
 
   public constructor() {
-    this.vault = Resolve<DmsAssistantPlugin>(Services.DmsAssistantPlugin).app.vault;
+    this.vault = Resolve<AIAgentPlugin>(Services.AIAgentPlugin).app.vault;
   }
 
   public getDirectories(): string {

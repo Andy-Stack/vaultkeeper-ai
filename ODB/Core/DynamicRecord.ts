@@ -4,7 +4,7 @@ import { validate as uuidValidate } from 'uuid';
 import type { OdbCache } from './OdbCache';
 import { Resolve } from 'Services/DependencyService';
 import { Services } from 'Services/Services';
-import type DmsAssistantPlugin from 'main';
+import type AIAgentPlugin from 'main';
 import { TAbstractFile, TFile, type Vault } from 'obsidian';
 
 interface DynamicProps {
@@ -25,7 +25,7 @@ export class DynamicRecord {
 
     public constructor(recordPath: string, schema: object, record: { [key: string]: any }) {
         this.odbCache = Resolve<OdbCache>(Services.OdbCache);
-        this.vault = Resolve<DmsAssistantPlugin>(Services.DmsAssistantPlugin).app.vault;
+        this.vault = Resolve<AIAgentPlugin>(Services.AIAgentPlugin).app.vault;
 
         this.schema = schema;
         this.recordPath = recordPath;

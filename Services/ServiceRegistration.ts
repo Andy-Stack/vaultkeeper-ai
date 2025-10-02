@@ -1,5 +1,5 @@
 import { AIProvider } from "Enums/ApiProvider";
-import type DmsAssistantPlugin from "main";
+import type AIAgentPlugin from "main";
 import { OdbCache } from "ODB/Core/OdbCache";
 import { RegisterSingleton, RegisterTransient } from "./DependencyService";
 import { ModalService } from "./ModalService";
@@ -16,9 +16,9 @@ import { MessageService } from "./MessageService";
 import { FileSystemService } from "./FileSystemService";
 import { ConversationFileSystemService } from "./ConversationFileSystemService";
 
-export function RegisterDependencies(plugin: DmsAssistantPlugin) {
+export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton(Services.MessageService, new MessageService());
-    RegisterSingleton(Services.DmsAssistantPlugin, plugin);
+    RegisterSingleton(Services.AIAgentPlugin, plugin);
     RegisterSingleton(Services.OdbCache, new OdbCache());
     RegisterSingleton(Services.ModalService, new ModalService())
     RegisterSingleton(Services.FileSystemService, new FileSystemService());
@@ -32,7 +32,7 @@ export function RegisterDependencies(plugin: DmsAssistantPlugin) {
     RegisterAiProvider(plugin);
 }
 
-export function RegisterAiProvider(plugin: DmsAssistantPlugin) {
+export function RegisterAiProvider(plugin: AIAgentPlugin) {
     if (plugin.settings.apiProvider == AIProvider.Gemini && plugin.settings.apiKey != "") {
         RegisterTransient<IActionDefinitions>(Services.IActionDefinitions, () => new GeminiActionDefinitions());
         RegisterSingleton<IAIClass>(Services.IAIClass, new Gemini(plugin.settings.apiKey));

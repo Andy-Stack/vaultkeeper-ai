@@ -1,7 +1,7 @@
 import { TAbstractFile, TFile, TFolder, Vault } from "obsidian";
 import { DynamicRecord } from "./DynamicRecord";
 import { Resolve } from "Services/DependencyService";
-import type DmsAssistantPlugin from "main";
+import type AIAgentPlugin from "main";
 import { Services } from "Services/Services";
 import { Path } from "Enums/Path";
 import { DynamicRecordProp } from "Enums/DynamicRecord";
@@ -16,7 +16,7 @@ export class OdbCache {
     private cache: Map<string, DynamicRecord> = new Map<string, DynamicRecord>();
 
     public constructor() {
-        this.vault = Resolve<DmsAssistantPlugin>(Services.DmsAssistantPlugin).app.vault;
+        this.vault = Resolve<AIAgentPlugin>(Services.AIAgentPlugin).app.vault;
     }
 
     public getSchemas(): Map<string, object> {

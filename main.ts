@@ -23,10 +23,12 @@ export default class AIAgentPlugin extends Plugin {
 	settings: AIAgentSettings;
 
 	async onload() {
-		const script = document.createElement('script');
-		script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js';
-		script.async = true;
-		document.head.appendChild(script);
+		const link = document.createElement('link');
+		link.rel = 'stylesheet';
+		link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css';
+		link.integrity = 'sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP';
+		link.crossOrigin = 'anonymous';
+		document.head.appendChild(link);
 
 		await this.loadSettings();
 

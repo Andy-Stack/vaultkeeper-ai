@@ -2,7 +2,9 @@
   import { Resolve } from '../Services/DependencyService';
   import { Services } from '../Services/Services';
   import type AIAgentPlugin from '../main';
-  import { setIcon } from 'obsidian';
+  import { setIcon, type WorkspaceLeaf } from 'obsidian';
+
+  export let leaf: WorkspaceLeaf;
 
   const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
 
@@ -13,10 +15,18 @@
     plugin.app.setting.openTabById(plugin.manifest.id);
   }
 
+  function closePlugin() {
+    leaf.detach();
+  }
+
   let settingsButton: HTMLButtonElement;
+  let closeButton: HTMLButtonElement;
 
   $: if (settingsButton) {
     setIcon(settingsButton, 'settings');
+  }
+  $: if (closeButton) {
+    setIcon(closeButton, 'circle-x');
   }
 </script>
 
@@ -24,9 +34,17 @@
   <div class="top-bar-content">
     <button
       bind:this={settingsButton}
-      class="settings-button clickable-icon"
+      id="settings-button"
+      class="top-bar-button clickable-icon"
       on:click={openSettings}
-      aria-label="Open plugin settings"
+      aria-label="AI Agent Settings"
+    ></button>
+    <button
+      bind:this={closeButton}
+      id="close-button"
+      class="top-bar-button clickable-icon"
+      on:click={closePlugin}
+      aria-label="Close AI Agent"
     ></button>
   </div>
 </main>
@@ -47,22 +65,28 @@
     grid-column: 2;
     display: grid;
     grid-template-rows: auto;
-    grid-template-columns: var(--size-4-2) auto 1fr var(--size-4-2);
+    grid-template-columns: var(--size-4-2) auto 1fr auto var(--size-4-2);
     background-color: var(--color-base-30);
     border-radius: var(--radius-m);
   }
 
-  .settings-button {
-    grid-row: 1;
-    grid-column: 2;
-    background: none;
-    border: none;
+  .top-bar-button {
     margin: var(--size-4-2) 0px var(--size-4-2) 0px;
     padding: var(--size-4-1) var(--size-4-2) var(--size-4-1) var(--size-4-2);
     color: var(--text-muted);
   }
 
-  .settings-button:hover {
+  .top-bar-button:hover {
     background-color: var(--color-base-35);
+  }
+
+  #settings-button {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  #close-button {
+    grid-row: 1;
+    grid-column: 4;
   }
 </style>

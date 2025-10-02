@@ -28,7 +28,9 @@ export class MainView extends ItemView {
     // Mount TopBar
     this.topBar = mount(TopBar, {
       target: container,
-      props: {}
+      props: {
+        leaf: this.leaf
+      }
     });
 
     // Mount ChatWindow

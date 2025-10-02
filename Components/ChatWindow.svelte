@@ -7,6 +7,7 @@
   import type { IAIClass } from "AIClasses/IAIClass";
 	import { tick } from "svelte";
   import { ConversationFileSystemService } from "Services/ConversationFileSystemService";
+  import { setIcon } from "obsidian";
 
   let ai: IAIClass = Resolve(Services.IAIClass);
   let actioner: IActioner = Resolve(Services.IActioner);
@@ -15,6 +16,7 @@
   let semaphore: Semaphore = new Semaphore(1, false);
   let textareaElement: HTMLTextAreaElement;
   let chatContainer: HTMLDivElement;
+  let submitButton: HTMLButtonElement;
 
   let userRequest = "";
   let isSubmitting = false;
@@ -133,6 +135,10 @@
       }
     });
   }
+
+  $: if (submitButton) {
+    setIcon(submitButton, 'send-horizontal');
+  }
 </script>
 
 <main class="container">
@@ -152,8 +158,12 @@
       rows="1">
     </textarea>
   
-    <button id="submit" on:click={handleSubmit} disabled={isSubmitting || userRequest.trim() === ""}>
-      {isSubmitting ? 'Sending...' : 'Submit'}
+    <button 
+      id="submit"
+      bind:this={submitButton}
+      on:click={handleSubmit}
+      disabled={isSubmitting || userRequest.trim() === ""}
+      aria-label="Send Message">
     </button>
   </div>
 </main>
@@ -211,7 +221,8 @@
     transition-duration: 0.25s;
   }
 
-  #submit:hover {
+  #submit:not(:disabled):hover {
+    cursor: pointer;
     background-color: var(--interactive-accent-hover);
   }
 </style>

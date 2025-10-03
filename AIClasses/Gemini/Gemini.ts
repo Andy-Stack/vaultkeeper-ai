@@ -6,7 +6,6 @@ import type { GeminiActionDefinitions } from "Actioner/Gemini/GeminiActionDefini
 import { create_file } from "Actioner/Actions";
 import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIClasses/IPrompt";
-import type { Part } from "@google/genai";
 import { StreamingService, type StreamChunk } from "Services/StreamingService";
 
 export class Gemini implements IAIClass {

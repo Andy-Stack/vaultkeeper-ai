@@ -42,6 +42,22 @@ export class FileSystemService {
         }
     }
 
+    public async deleteFile(filePath: string): Promise<boolean> {
+        try {
+            const file: TAbstractFile | null = this.vault.getAbstractFileByPath(filePath);
+
+            if (file && file instanceof TFile) {
+                await this.vault.delete(file);
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error("Error deleting file:", error);
+            return false;
+        }
+    }
+
     private async createDirectories(vault: Vault, filePath: string) {
         const dirPath: string = filePath.substring(0, filePath.lastIndexOf('/'));
 

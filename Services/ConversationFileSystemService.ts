@@ -47,4 +47,18 @@ export class ConversationFileSystemService {
         this.currentConversationPath = null;
     }
 
+    public async deleteCurrentConversation(): Promise<boolean> {
+        if (!this.currentConversationPath) {
+            return false;
+        }
+
+        const deleted = await this.fileSystemService.deleteFile(this.currentConversationPath);
+
+        if (deleted) {
+            this.resetCurrentConversation();
+        }
+
+        return deleted;
+    }
+
 }

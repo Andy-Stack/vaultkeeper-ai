@@ -3,17 +3,22 @@
   import { Services } from '../Services/Services';
   import type AIAgentPlugin from '../main';
   import { setIcon, type WorkspaceLeaf } from 'obsidian';
+  import { ConversationFileSystemService } from '../Services/ConversationFileSystemService';
+  import { conversationStore } from '../Stores/conversationStore';
 
   export let leaf: WorkspaceLeaf;
 
   const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+  const conversationService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
 
   function startNewConversation() {
-    
+    conversationService.resetCurrentConversation();
+    conversationStore.reset();
   }
 
-  function deleteCurrentConversation() {
-    
+  async function deleteCurrentConversation() {
+    await conversationService.deleteCurrentConversation();
+    conversationStore.reset();
   }
 
   function openConversationHistory() {

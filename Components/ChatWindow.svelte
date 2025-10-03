@@ -8,6 +8,7 @@
 	import { tick } from "svelte";
   import { ConversationFileSystemService } from "Services/ConversationFileSystemService";
   import { setIcon } from "obsidian";
+  import { conversationStore } from "../Stores/conversationStore";
 
   let ai: IAIClass = Resolve(Services.IAIClass);
   let actioner: IActioner = Resolve(Services.IActioner);
@@ -138,6 +139,11 @@
 
   $: if (submitButton) {
     setIcon(submitButton, 'send-horizontal');
+  }
+
+  $: if ($conversationStore.shouldReset) {
+    messages = [];
+    conversationStore.clearResetFlag();
   }
 </script>
 

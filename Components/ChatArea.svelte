@@ -5,10 +5,12 @@
 	import ChatAreaThought from "./ChatAreaThought.svelte";
 	import StreamingIndicator from "./StreamingIndicator.svelte";
 	import { Greeting } from "Enums/Greeting";
+	import type AIAgentPlugin from "main";
 
   export let messages: Array<{id: string, content: string, isUser: boolean, isStreaming: boolean}> = [];
   export let chatContainer: HTMLDivElement;
 
+  let plugin: AIAgentPlugin = Resolve(Services.AIAgentPlugin);
   let streamingMarkdownService: StreamingMarkdownService = Resolve(Services.StreamingMarkdownService);
 
   let messageElements = new Map<string, HTMLElement>();
@@ -70,11 +72,11 @@
   function startScrolling() {
     if (scrollInterval || userScrolledUp) return;
 
-    scrollInterval = window.setInterval(() => {
+    scrollInterval = plugin.registerInterval(window.setInterval(() => {
       if (chatContainer && !userScrolledUp) {
         chatContainer.scrollTop = chatContainer.scrollHeight;
       }
-    }, 50);
+    }, 50));
 
     setTimeout(() => {
       if (scrollInterval) {

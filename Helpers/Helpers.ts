@@ -20,3 +20,14 @@ export function loadExternalCSS(href: string): Promise<void> {
         document.head.appendChild(link);
     });
 }
+
+export function dateToString(date: Date): string {
+    return date.toLocaleString('sv-SE', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+    }).replace(/[:\s]/g, '-');
+}

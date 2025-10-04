@@ -1,13 +1,13 @@
 import type AIAgentPlugin from "main";
-import type { Vault } from "obsidian";
+import type { TAbstractFile, TFile, Vault } from "obsidian";
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
+import { SystemInstruction } from "./SystemPrompt";
+import { Path } from "Enums/Path";
 
 export interface IPrompt {
-  getDirectories(): string;
-  instructions(): string;
-  instructionsReminder(): string;
-  responseFormat(): string;
+  systemInstruction(): string;
+  userInstruction(): Promise<string>;
 }
 
 export class AIPrompt implements IPrompt {
@@ -18,33 +18,12 @@ export class AIPrompt implements IPrompt {
     this.vault = Resolve<AIAgentPlugin>(Services.AIAgentPlugin).app.vault;
   }
 
-  public getDirectories(): string {
-    let directories: string[] = this.vault.getAllFolders(true).map(folder => folder.path);
-    return "Available user directories:" + "\n" + directories.join("\n");
+  public systemInstruction(): string {
+    return SystemInstruction;
   }
 
-  public readonly instructionsArr: string[] = [
-    /*
-    "You are an AI assistant for the Obsidian note taking app.",
-    "The user has provided extra context to your responsibilities:",
-    "You are a DND expert and can provide detailed information about DND rules, character creation, and gameplay mechanics."
-    */
-  ];
-  public instructions(): string {
-    return this.instructionsArr.join("\n");
-  }
-
-  public readonly instructionsReminderArr: string[] = [
-    ""
-  ]
-  public instructionsReminder(): string {
-    return this.instructionsReminderArr.join("\n");
-  }
-
-  public readonly responseFormatArr: string[] = [
-    "",
-  ]
-  public responseFormat(): string {
-    return this.responseFormatArr.join("\n");
+  public async userInstruction(): Promise<string> {
+    const userInstruction: TFile | null = this.vault.getFileByPath(Path.UserInstruction);
+    return userInstruction ? await this.vault.read(userInstruction) : "";
   }
 }

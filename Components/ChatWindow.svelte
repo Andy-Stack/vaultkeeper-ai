@@ -9,6 +9,9 @@
   import { ConversationFileSystemService } from "Services/ConversationFileSystemService";
   import { setIcon } from "obsidian";
   import { conversationStore } from "../Stores/conversationStore";
+	import { Role } from "Enums/Role";
+  import { Conversation } from "Conversations/Conversation";
+  import { ConversationContent } from "Conversations/ConversationContent";
 
   let ai: IAIClass = Resolve(Services.IAIClass);
   let actioner: IActioner = Resolve(Services.IActioner);
@@ -21,13 +24,9 @@
 
   let userRequest = "";
   let isSubmitting = false;
+  let isStreaming = false;
 
-  let messages: Array<{
-    id: string,
-    content: string,
-    isUser: boolean,
-    isStreaming: boolean
-  }> = [];
+  let conversation = new Conversation();
 
   async function handleSubmit() {
     if (userRequest.trim() === "" || isSubmitting) {
@@ -45,48 +44,39 @@
     }
 
     // Add user message to chat
-    const userMessageId = `user-${Date.now()}`;
-    messages = [...messages, {
-      id: userMessageId,
-      content: requestToSend,
-      isUser: true,
-      isStreaming: false
-    }];
+    conversation.contents = [...conversation.contents, new ConversationContent(Role.User, requestToSend)];
 
-    await conversationService.saveConversation(messages);
+    await conversationService.saveConversation(conversation);
 
     scrollToBottom();
 
     try {
       // Create AI message placeholder
-      const aiMessageId = `ai-${Date.now()}`;
-      messages = [...messages, {
-        id: aiMessageId,
-        content: "",
-        isUser: false,
-        isStreaming: true
-      }];
+      const aiMessageIndex = conversation.contents.length;
+      conversation.contents = [...conversation.contents, new ConversationContent(Role.Assistant, "")];
+      isStreaming = true;
 
       // Stream the response
       let accumulatedContent = "";
-      
+
       for await (const chunk of ai.streamRequest(requestToSend, actioner)) {
         if (chunk.error) {
           console.error("Streaming error:", chunk.error);
           // Update message with error
-          messages = messages.map(msg => 
-            msg.id === aiMessageId 
-              ? { ...msg, content: "Error: " + chunk.error, isStreaming: false }
+          conversation.contents = conversation.contents.map((msg, messageIndex) =>
+            messageIndex === aiMessageIndex
+              ? { ...msg, content: "Error: " + chunk.error }
               : msg
           );
+          isStreaming = false;
           break;
         }
 
         if (chunk.content) {
           accumulatedContent += chunk.content;
           // Update the message with accumulated content
-          messages = messages.map(msg => 
-            msg.id === aiMessageId 
+          conversation.contents = conversation.contents.map((msg, messageIndex) =>
+            messageIndex === aiMessageIndex
               ? { ...msg, content: accumulatedContent }
               : msg
           );
@@ -94,12 +84,13 @@
 
         if (chunk.isComplete) {
           // Mark streaming as complete
-          messages = messages.map(msg =>
-            msg.id === aiMessageId
-              ? { ...msg, content: accumulatedContent, isStreaming: false }
+          isStreaming = false;
+          conversation.contents = conversation.contents.map((msg, messageIndex) =>
+            messageIndex === aiMessageIndex
+              ? { ...msg, content: accumulatedContent }
               : msg
           );
-          await conversationService.saveConversation(messages);
+          await conversationService.saveConversation(conversation);
         }
       }
     } finally {
@@ -142,14 +133,14 @@
   }
 
   $: if ($conversationStore.shouldReset) {
-    messages = [];
+    conversation = new Conversation();
     conversationStore.clearResetFlag();
   }
 </script>
 
 <main class="container">
   <div id="chat-container">
-    <ChatArea bind:messages bind:chatContainer={chatContainer}/>
+    <ChatArea messages={conversation.contents} bind:isStreaming bind:chatContainer={chatContainer}/>
   </div>
   
   <div id="input-container">

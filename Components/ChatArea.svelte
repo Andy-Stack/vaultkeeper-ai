@@ -6,8 +6,11 @@
 	import StreamingIndicator from "./StreamingIndicator.svelte";
 	import { Greeting } from "Enums/Greeting";
 	import type AIAgentPlugin from "main";
+	import { Role } from "Enums/Role";
+  import type { ConversationContent } from "Conversations/ConversationContent";
 
-  export let messages: Array<{id: string, content: string, isUser: boolean, isStreaming: boolean}> = [];
+  export let messages: ConversationContent[] = [];
+  export let isStreaming: boolean = false;
   export let chatContainer: HTMLDivElement;
 
   let plugin: AIAgentPlugin = Resolve(Services.AIAgentPlugin);
@@ -42,18 +45,21 @@
 
   // Track streaming messages and update them incrementally
   $: {
-    messages.forEach((message) => {
-      if (!message.isUser) {
-        const lastContent = lastProcessedContent.get(message.id) || '';
+    messages.forEach((message, messageIndex) => {
+      if (message.role !== Role.User) {
+        const messageId = `${message.role}-${messageIndex}`;
+        const lastContent = lastProcessedContent.get(messageId) || '';
 
         // Only update if content has changed
         if (message.content !== lastContent) {
-          if (message.isStreaming && lastContent === '') {
+          // Check if this is the last message and we're currently streaming
+          const isLastMessage = messageIndex === messages.length - 1;
+          if (isStreaming && isLastMessage && lastContent === '') {
             userScrolledUp = false;
           }
 
-          updateMessageContent(message);
-          lastProcessedContent.set(message.id, message.content);
+          updateMessageContent({ ...message, id: messageId, isCurrentlyStreaming: isStreaming && isLastMessage });
+          lastProcessedContent.set(messageId, message.content);
         }
       }
     });
@@ -86,11 +92,11 @@
     }, 500);
   }
 
-  function updateMessageContent(message: {id: string, content: string, isUser: boolean, isStreaming: boolean}) {
+  function updateMessageContent(message: {id: string, content: string, role: string, isCurrentlyStreaming: boolean}) {
     const element = messageElements.get(message.id);
     if (!element) return;
 
-    if (message.isStreaming) {
+    if (message.isCurrentlyStreaming) {
       streamingMarkdownService.streamChunk(message.id, message.content);
     } else {
       streamingMarkdownService.finalizeStream(message.id, message.content);
@@ -115,13 +121,17 @@
   }
 
   // Process static messages (user messages and initial load)
-  function getStaticHTML(message: {id: string, content: string, isUser: boolean, isStreaming: boolean}): string {
-    if (message.isUser) {
+  function getStaticHTML(message: ConversationContent, messageIndex: number): string {
+    if (message.role === Role.User) {
       return `<p>${message.content}</p>`;
     }
-    
+
+    // For assistant messages, check if this is the last message and we're streaming
+    const isLastMessage = messageIndex === messages.length - 1;
+    const isCurrentlyStreaming = isStreaming && isLastMessage;
+
     // For assistant messages that aren't streaming, use traditional parsing
-    if (!message.isStreaming) {
+    if (!isCurrentlyStreaming) {
       try {
         return streamingMarkdownService.formatText(message.content) || `<p>${message.content}</p>`;
       } catch (err) {
@@ -129,14 +139,14 @@
         return `<p>${message.content}</p>`;
       }
     }
-    
+
     return ''; // Streaming messages will be handled by the streaming service
   }
 
   // Make sure to clean up when messages are removed
   $: {
-    const currentMessageIds = new Set(messages.map(m => m.id));
-    
+    const currentMessageIds = new Set(messages.map((msg, messageIndex) => `${msg.role}-${messageIndex}`));
+
     // Remove tracking for messages that no longer exist
     for (const [id] of messageElements) {
       if (!currentMessageIds.has(id)) {
@@ -148,26 +158,30 @@
 </script>
 
 <div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll}>
-  {#each messages as message (message.id)}
-    <div class="message-container" class:user={message.isUser} class:assistant={!message.isUser}>
-      <div class="message-bubble" class:user={message.isUser} class:assistant={!message.isUser}>
-        {#if message.isUser}
-          <p class="message-text-user fade-in-fast">{message.content}</p>
-        {:else}
-          <div class="markdown-content fade-in-fast" class:streaming={message.isStreaming}>
-            <!-- Streaming message: use action for initialization -->
-            {#if message.isStreaming}
-            <div use:streamingAction={message.id} class="streaming-content"></div>
-            <StreamingIndicator/>
-            <ChatAreaThought/>
-            {:else}
-            <!-- Static message: use traditional rendering -->
-            {@html getStaticHTML(message)}
-            {/if}
-          </div>
-        {/if}
+  {#each messages as message, messageIndex (`${message.role}-${messageIndex}`)}
+    {#if message.role === Role.User}
+    <div class="message-container user">
+      <div class="message-bubble user">
+        <p class="message-text-user fade-in-fast">{message.content}</p>
       </div>
     </div>
+    {:else}
+    <div class="message-container assistant">
+      <div class="message-bubble assistant">
+        <div class="markdown-content fade-in-fast" class:streaming={isStreaming && messageIndex === messages.length - 1}>
+          <!-- Streaming message: use action for initialization -->
+          {#if isStreaming && messageIndex === messages.length - 1}
+          <div use:streamingAction={`${message.role}-${messageIndex}`} class="streaming-content"></div>
+          <StreamingIndicator/>
+          <ChatAreaThought/>
+          {:else}
+          <!-- Static message: use traditional rendering -->
+          {@html getStaticHTML(message, messageIndex)}
+          {/if}
+        </div>
+      </div>
+    </div>
+    {/if}
   {/each}
   
   {#if messages.length === 0}

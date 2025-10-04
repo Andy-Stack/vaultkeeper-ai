@@ -1,9 +1,7 @@
-import { AIProviderURL } from "Enums/ApiProvider";
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
 import type { IActioner } from "Actioner/IActioner";
 import type { GeminiActionDefinitions } from "Actioner/Gemini/GeminiActionDefinitions";
-import { create_file } from "Actioner/Actions";
 import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIClasses/IPrompt";
 import { StreamingService, type StreamChunk } from "Services/StreamingService";
@@ -31,35 +29,32 @@ export class Gemini implements IAIClass {
     const prompt = "The users prompt is: " + userInput;
 
     const requestBody = {
+      system_instruction: {
+        parts: [
+          {
+            text: this.aiPrompt.systemInstruction()
+          },
+          {
+            text: this.aiPrompt.userInstruction()
+          }
+        ]
+      },
       contents: [
         {
           role: "user",
           parts: [
             {
-              text:
-                this.aiPrompt.instructions() +
-                "\n" +
-                this.aiPrompt.responseFormat() +
-                "\n" +
-                //this.aiPrompt.getDirectories() +
-                "\n" +
-                prompt +
-                "\n" +
-                this.aiPrompt.instructionsReminder(),
+              text: ""
             },
           ],
         },
       ],
       tools: [
         {
-          functionDeclarations: [this.actionDefinitions[create_file]],
+          google_search: {},
+          //TODO: functionDeclarations: [this.actionDefinitions[create_file]],
         },
-      ],
-      // Add streaming-specific parameters
-      generationConfig: {
-        temperature: 0.9,
-        //maxOutputTokens: 2048,
-      },
+      ]
     };
 
     yield* this.streamingService.streamGeminiRequest(this.apiKey, requestBody);

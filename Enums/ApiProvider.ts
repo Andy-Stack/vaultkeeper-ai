@@ -1,4 +1,5 @@
 export enum AIProvider {
+    Claude = "Claude",
     Gemini = "Gemini",
     OpenAI = "OpenAI"
 };

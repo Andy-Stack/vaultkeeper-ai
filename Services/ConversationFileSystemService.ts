@@ -1,6 +1,9 @@
+import { Path } from "Enums/Path";
 import { Resolve } from "./DependencyService";
 import { FileSystemService } from "./FileSystemService";
 import { Services } from "./Services";
+import type { TFile } from "obsidian";
+import { Conversation } from "Conversations/Conversation";
 
 export class ConversationFileSystemService {
 
@@ -14,32 +17,30 @@ export class ConversationFileSystemService {
     public generateConversationFilename(): string {
         const now = new Date();
         const timestamp = now.toISOString().replace(/:/g, '-').replace(/\..+/, '').replace('T', '-');
-        return `conversations/chat-${timestamp}.json`;
+        return `${Path.Conversations}/conversation-${timestamp}.json`;
     }
 
-    public async saveConversation(messages: Array<{
-        id: string,
-        content: string,
-        isUser: boolean
-    }>): Promise<string> {
+    // public async loadConversation(filePath: string): Promise<{ messages: 
+    //     Array<{ role: string, content: string, timestamp: Date }>, created: Date, title: string } | null> {
+    //         const conversation: TFile | null = this.fileSystemService.readObjectFromFile(filePath) as unknown as TFile;
+    // }
+
+    public async saveConversation(conversation: Conversation): Promise<string> {
         if (!this.currentConversationPath) {
             this.currentConversationPath = this.generateConversationFilename();
         }
 
         const conversationData = {
-            messages: messages.map(msg => ({
-                id: msg.id,
-                content: msg.content,
-                isUser: msg.isUser
-            })),
-            savedAt: new Date().toISOString()
+            title: conversation.title,
+            created: conversation.created.toISOString(),
+            contents: conversation.contents.map(content => ({
+                role: content.role,
+                content: content.content,
+                timestamp: content.timestamp.toISOString()
+            }))
         };
 
         await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData);
-        return this.currentConversationPath;
-    }
-
-    public getCurrentConversationPath(): string | null {
         return this.currentConversationPath;
     }
 

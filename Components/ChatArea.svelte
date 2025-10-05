@@ -185,7 +185,7 @@
   {/each}
   
   {#if messages.length === 0}
-    <div class="empty-state">
+    <div class="conversation-empty-state">
       <div class="typing-in">{getGreetingByTime()}</div>
     </div>
   {/if}
@@ -241,9 +241,8 @@
     margin: var(--size-4-2);
   }
   
-  .empty-state {
-    justify-content: center;
-    align-items: center;
+  .conversation-empty-state {
+    margin: auto;
     font-style: italic;
     color: var(--text-muted);
     pointer-events: none;
@@ -273,7 +272,7 @@
   .typing-in {
     overflow: hidden;
     white-space: nowrap;
-    animation: reveal-center 3s ease-in-out forwards;
+    animation: reveal-center 1.5s ease-in-out forwards;
     max-width: 0;
     margin: 0 auto;
     padding: 5px;
@@ -284,21 +283,6 @@
       max-width: 0;
       opacity: 0;
       filter: blur(1px);
-    }
-    50% {
-      max-width: 50%;
-      opacity: 0.9;
-      filter: blur(0.5px)
-    }
-    70% {
-      max-width: 60%;
-      opacity: 0.95;
-      filter: blur(0px)
-    }
-    90% {
-      max-width: 80%;
-      opacity: 0.95;
-      filter: blur(0px)
     }
     100% { 
       max-width: 100%;

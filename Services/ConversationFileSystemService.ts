@@ -2,8 +2,8 @@ import { Path } from "Enums/Path";
 import { Resolve } from "./DependencyService";
 import { FileSystemService } from "./FileSystemService";
 import { Services } from "./Services";
-import type { TFile } from "obsidian";
 import { Conversation } from "Conversations/Conversation";
+import { ConversationContent } from "Conversations/ConversationContent";
 
 export class ConversationFileSystemService {
 
@@ -14,10 +14,8 @@ export class ConversationFileSystemService {
         this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
     }
 
-    public generateConversationFilename(): string {
-        const now = new Date();
-        const timestamp = now.toISOString().replace(/:/g, '-').replace(/\..+/, '').replace('T', '-');
-        return `${Path.Conversations}/conversation-${timestamp}.json`;
+    public generateConversationPath(conversation: Conversation): string {
+        return `${Path.Conversations}/${conversation.title}.json`;
     }
 
     // public async loadConversation(filePath: string): Promise<{ messages: 
@@ -27,7 +25,7 @@ export class ConversationFileSystemService {
 
     public async saveConversation(conversation: Conversation): Promise<string> {
         if (!this.currentConversationPath) {
-            this.currentConversationPath = this.generateConversationFilename();
+            this.currentConversationPath = this.generateConversationPath(conversation);
         }
 
         const conversationData = {
@@ -41,7 +39,6 @@ export class ConversationFileSystemService {
         };
 
         await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData);
-        console.log("Conversation saved to:", this.currentConversationPath);
         return this.currentConversationPath;
     }
 
@@ -61,6 +58,28 @@ export class ConversationFileSystemService {
         }
 
         return deleted;
+    }
+
+    public async getAllConversations(): Promise<Conversation[]> {
+        const files = await this.fileSystemService.listFilesInDirectory(Path.Conversations, false);
+        const conversations: Conversation[] = [];
+
+        for (const file of files) {
+            const data = await this.fileSystemService.readObjectFromFile(file.path);
+            if (Conversation.isConversationData(data)) {
+                const conversation: Conversation = new Conversation();
+                conversation.title = data.title;
+                conversation.created = new Date(data.created);
+                conversation.contents = data.contents.map(content => {
+                    const conversationContent = new ConversationContent(content.role, content.content);
+                    conversationContent.timestamp = new Date(content.timestamp);
+                    return conversationContent;
+                });
+                conversations.push(conversation);
+            }
+        }
+
+        return conversations;
     }
 
 }

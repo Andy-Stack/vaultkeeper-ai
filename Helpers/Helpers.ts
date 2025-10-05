@@ -21,13 +21,21 @@ export function loadExternalCSS(href: string): Promise<void> {
     });
 }
 
-export function dateToString(date: Date): string {
-    return date.toLocaleString('sv-SE', { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit', 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit' 
-    }).replace(/[:\s]/g, '-');
+export function dateToString(date: Date, includeTime: boolean = true): string {
+    if (includeTime) {
+        return date.toLocaleString('sv-SE', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit' 
+        }).replace(/[:\s]/g, '-');
+    } else {
+        return date.toLocaleDateString('sv-SE', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit'
+        }).replace(/[:\s]/g, '-');
+    }
 }

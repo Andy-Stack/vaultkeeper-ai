@@ -30,6 +30,32 @@
 }
 
 /* ============================== */
+/* CSS Variables for Common Components */
+/* ============================== */
+
+/* does this affect all modals? */
+.conversation-history-modal {
+  padding: 0px;
+  overflow: hidden;
+}
+.conversation-history-modal .modal-header {
+  display: none;
+}
+.conversation-history-modal .modal-close-button {
+  display: none;
+}
+
+.top-bar-button {
+  margin: var(--size-4-2) 0px var(--size-4-2) 0px;
+  padding: var(--size-4-1) var(--size-4-2) var(--size-4-1) var(--size-4-2);
+  color: var(--text-muted);
+}
+
+.top-bar-button:hover {
+  background-color: var(--color-base-35);
+}
+
+/* ============================== */
 /* CSS Variables for Theming */
 /* ============================== */
 

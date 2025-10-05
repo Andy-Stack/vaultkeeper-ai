@@ -5,6 +5,7 @@
   import { setIcon, type WorkspaceLeaf } from 'obsidian';
   import { ConversationFileSystemService } from '../Services/ConversationFileSystemService';
   import { conversationStore } from '../Stores/conversationStore';
+	import type { ConversationHistoryModal } from 'Modals/ConversationHistoryModal';
 
   export let leaf: WorkspaceLeaf;
 
@@ -22,7 +23,8 @@
   }
 
   function openConversationHistory() {
-    
+    const modal = Resolve<ConversationHistoryModal>(Services.ConversationHistoryModal);
+    modal.open();
   }
 
   function openSettings() {
@@ -119,16 +121,6 @@
     grid-template-columns: var(--size-4-2) auto auto auto auto auto 1fr auto var(--size-4-2);
     background-color: var(--color-base-30);
     border-radius: var(--radius-m);
-  }
-
-  .top-bar-button {
-    margin: var(--size-4-2) 0px var(--size-4-2) 0px;
-    padding: var(--size-4-1) var(--size-4-2) var(--size-4-1) var(--size-4-2);
-    color: var(--text-muted);
-  }
-
-  .top-bar-button:hover {
-    background-color: var(--color-base-35);
   }
 
   .top-bar-divider {

@@ -1,5 +1,5 @@
 import type AIAgentPlugin from "main";
-import type { TAbstractFile, TFile, Vault } from "obsidian";
+import type { TFile, Vault } from "obsidian";
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
 import { SystemInstruction } from "./SystemPrompt";

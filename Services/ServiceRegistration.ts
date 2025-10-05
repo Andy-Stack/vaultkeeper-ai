@@ -4,11 +4,7 @@ import type AIAgentPlugin from "main";
 import { RegisterSingleton, RegisterTransient } from "./DependencyService";
 import { Services } from "./Services";
 import { AIPrompt, type IPrompt } from "AIClasses/IPrompt";
-import { Actioner } from "Actioner/Actioner";
-import type { IActioner } from "Actioner/IActioner";
 import type { IAIClass } from "AIClasses/IAIClass";
-import { GeminiActionDefinitions } from "Actioner/Gemini/GeminiActionDefinitions";
-import type { IActionDefinitions } from "Actioner/IActionDefinitions";
 import { Gemini } from "AIClasses/Gemini/Gemini";
 import { StreamingMarkdownService } from "./StreamingMarkdownService";
 import { MessageService } from "./MessageService";
@@ -16,6 +12,7 @@ import { FileSystemService } from "./FileSystemService";
 import { ConversationFileSystemService } from "./ConversationFileSystemService";
 import { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
 import type { App } from "obsidian";
+import { AIFunctionService } from "./AIFunctionService";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton(Services.MessageService, new MessageService());
@@ -25,7 +22,7 @@ export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton(Services.ConversationFileSystemService, new ConversationFileSystemService());
 
     RegisterSingleton<IPrompt>(Services.IPrompt, new AIPrompt());
-    RegisterSingleton<IActioner>(Services.IActioner, new Actioner());
+    RegisterSingleton<AIFunctionService>(Services.AIFunctionService, new AIFunctionService());
 
     RegisterTransient<StreamingMarkdownService>(Services.StreamingMarkdownService, () => new StreamingMarkdownService());
 
@@ -34,8 +31,7 @@ export function RegisterDependencies(plugin: AIAgentPlugin) {
 }
 
 export function RegisterAiProvider(plugin: AIAgentPlugin) {
-    if (plugin.settings.apiProvider == AIProvider.Gemini && plugin.settings.apiKey != "") {
-        RegisterTransient<IActionDefinitions>(Services.IActionDefinitions, () => new GeminiActionDefinitions());
+    if (plugin.settings.apiProvider == AIProvider.Gemini) {
         RegisterSingleton<IAIClass>(Services.IAIClass, new Gemini(plugin.settings.apiKey));
     }
 }

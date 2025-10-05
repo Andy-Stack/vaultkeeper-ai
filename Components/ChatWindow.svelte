@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { IActioner } from "Actioner/IActioner";
   import { Semaphore } from "Helpers/Semaphore";
   import { Resolve } from "Services/DependencyService";
   import { Services } from "Services/Services";
@@ -14,7 +13,6 @@
   import { ConversationContent } from "Conversations/ConversationContent";
 
   let ai: IAIClass = Resolve(Services.IAIClass);
-  let actioner: IActioner = Resolve(Services.IActioner);
   let conversationService: ConversationFileSystemService = Resolve(Services.ConversationFileSystemService);
 
   let semaphore: Semaphore = new Semaphore(1, false);
@@ -59,7 +57,7 @@
       // Stream the response
       let accumulatedContent = "";
 
-      for await (const chunk of ai.streamRequest(conversation, actioner)) {
+      for await (const chunk of ai.streamRequest(conversation)) {
         if (chunk.error) {
           console.error("Streaming error:", chunk.error);
           // Update message with error

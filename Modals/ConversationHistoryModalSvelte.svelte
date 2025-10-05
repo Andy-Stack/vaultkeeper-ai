@@ -18,7 +18,12 @@
     }
 
     let selectedItems = new Set<string>();
-  
+    let searchQuery = '';
+
+    $: filteredItems = items.filter(item =>
+      item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     function toggleSelection(itemId: string) {
       if (selectedItems.has(itemId)) {
         selectedItems.delete(itemId);
@@ -47,31 +52,38 @@
     <div class="conversation-history-modal-top-bar">
       <div class="conversation-history-modal-top-bar-content">
         <button
+          bind:this={deleteButton}
+          id="delete-button"
+          class="top-bar-button clickable-icon"
+          class:hidden={selectedItems.size === 0}
+          on:click={handleDelete}
+          aria-label="Delete Selected Conversations"
+        ></button>
+        <input
+          type="text"
+          id="search-input"
+          class="top-bar-button conversation-search-input"
+          placeholder="Search conversations..."
+          disabled={items.length === 0}
+          bind:value={searchQuery}
+          aria-label="Search Conversations"
+        />
+        <button
           bind:this={closeButton}
           id="close-button"
           class="top-bar-button clickable-icon"
           on:click={onClose}
           aria-label="Close Conversation History"
         ></button>
-        {#if selectedItems.size > 0}
-        <button
-          bind:this={deleteButton}
-          in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}
-          id="delete-button"
-          class="top-bar-button clickable-icon"
-          on:click={handleDelete}
-          aria-label="Delete Selected Conversations"
-        ></button>
-        {/if}
       </div>
     </div>
     <div class="conversation-history-modal-content">
-      {#if items.length === 0}
-      <p class="history-empty-state" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
-        Conversation history is empty.
+      {#if filteredItems.length === 0}
+      <p class="history-empty-state" in:fade={{ duration: 200 }}>
+        No conversations match your search.
       </p>
       {:else}
-      {#each items as item (item.id)}
+      {#each filteredItems as item (item.id)}
       <div class="history-list-modal-content" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
         <div
           class="history-list-modal-clickable"
@@ -116,7 +128,7 @@
       grid-column: 1;
       display: grid;
       grid-template-rows: auto;
-      grid-template-columns: var(--size-4-2) auto 1fr auto var(--size-4-2);
+      grid-template-columns: var(--size-4-2) auto 1fr var(--size-4-2) auto var(--size-4-2);
       background-color: var(--color-base-30);
       border-radius: var(--radius-m);
     }
@@ -198,10 +210,50 @@
     #delete-button {
       grid-row: 1;
       grid-column: 2;
+      transition: width 300ms ease-out, opacity 300ms ease-out, padding 300ms ease-out;
+    }
+
+    #delete-button.hidden {
+      width: 0;
+      min-width: 0;
+      padding: 0;
+      opacity: 0;
+      overflow: hidden;
+      pointer-events: none;
     }
 
     #close-button {
       grid-row: 1;
-      grid-column: 4;
+      grid-column: 5;
+      margin-right: var(--size-4-2);
+    }
+
+    #search-input {
+      grid-row: 1;
+      grid-column: 3;
+    }
+
+    .conversation-search-input {
+      max-width: 200px;
+      background-color: var(--color-base-20);
+      border: 1px solid var(--color-base-35);
+      border-radius: var(--radius-s);
+      padding: var(--size-2-1) var(--size-2-3);
+      color: var(--text-normal);
+      font-size: var(--font-ui-small);
+      outline: none;
+      transition: border-color 0.3s ease-out;
+      transition: max-width 0.3s ease-out;
+    }
+
+    .conversation-search-input:focus {
+      border-color: var(--color-accent);
+      max-width: 100%;
+      transition: border-color 0.3s ease-out;
+      transition: max-width 0.3s ease-out;
+    }
+
+    .conversation-search-input::placeholder {
+      color: var(--text-muted);
     }
   </style>

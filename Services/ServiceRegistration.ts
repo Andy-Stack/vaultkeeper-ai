@@ -13,6 +13,7 @@ import { ConversationFileSystemService } from "./ConversationFileSystemService";
 import { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
 import type { App } from "obsidian";
 import { AIFunctionService } from "./AIFunctionService";
+import { StreamingService } from "./StreamingService";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton(Services.MessageService, new MessageService());
@@ -23,6 +24,7 @@ export function RegisterDependencies(plugin: AIAgentPlugin) {
 
     RegisterSingleton<IPrompt>(Services.IPrompt, new AIPrompt());
     RegisterSingleton<AIFunctionService>(Services.AIFunctionService, new AIFunctionService());
+    RegisterSingleton<StreamingService>(Services.StreamingService, new StreamingService());
 
     RegisterTransient<StreamingMarkdownService>(Services.StreamingMarkdownService, () => new StreamingMarkdownService());
 

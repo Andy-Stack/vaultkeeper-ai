@@ -12,8 +12,6 @@ export class Services {
     // interfaces
     static IAIClass = Symbol("IAIClass");
     static IPrompt = Symbol("IPrompt");
-    static IActioner = Symbol("IActioner");
-    static IActionDefinitions = Symbol("IActionDefinitions");
 
     // modals
     static ConversationHistoryModal = Symbol("ConversationHistoryModal");

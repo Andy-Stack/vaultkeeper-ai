@@ -5,6 +5,7 @@ import type { IPrompt } from "AIClasses/IPrompt";
 import { StreamingService, type StreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import { Role } from "Enums/Role";
+import { AIProviderURL } from "Enums/ApiProvider";
 
 export class Gemini implements IAIClass {
   private readonly apiKey: string;
@@ -14,7 +15,7 @@ export class Gemini implements IAIClass {
   public constructor(apiKey: string) {
     this.apiKey = apiKey;
     this.aiPrompt = Resolve(Services.IPrompt);
-    this.streamingService = new StreamingService();
+    this.streamingService = Resolve(Services.StreamingService);
   }
 
   public async* streamRequest(conversation: Conversation): AsyncGenerator<StreamChunk, void, unknown> {
@@ -48,6 +49,38 @@ export class Gemini implements IAIClass {
       ]
     };
 
-    yield* this.streamingService.streamGeminiRequest(this.apiKey, requestBody);
+    yield* this.streamingService.streamRequest(
+      AIProviderURL.Gemini.replace("API_KEY", this.apiKey),
+      requestBody,
+      this.parseStreamChunk
+    );
+  }
+
+  private parseStreamChunk(chunk: string): StreamChunk {
+    try {
+      const data = JSON.parse(chunk);
+      
+      let text = "";
+      const candidate = data.candidates?.[0];
+
+      if (candidate) {
+          if (candidate.content?.parts?.[0]?.text) {
+              text = candidate.content.parts[0].text;
+          } else if (candidate.text) {
+              text = candidate.text;
+          }
+      }
+      
+      const isComplete = !!candidate?.finishReason;
+      
+      return {
+        content: text,
+        isComplete: isComplete,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown parsing error";
+      console.error("Failed to parse stream chunk:", message, "Chunk:", chunk);
+      return { content: "", isComplete: false, error: `Failed to parse chunk: ${message}` };
+    }
   }
 }

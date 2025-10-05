@@ -1,5 +1,3 @@
-import { AIProviderURL } from "Enums/ApiProvider";
-
 export interface StreamChunk {
     content: string;
     isComplete: boolean;
@@ -7,17 +5,14 @@ export interface StreamChunk {
   }
   
   export class StreamingService {
-    /**
-     * Fetches data from Gemini API with streaming support
-     * Since Obsidian's request() doesn't support streaming, we use native fetch
-     */
-    public async* streamGeminiRequest(
-      apiKey: string,
-      requestBody: unknown
+    public async* streamRequest(
+      url: string,
+      requestBody: unknown,
+      parseStreamChunk: (chunk: string) => StreamChunk 
     ): AsyncGenerator<StreamChunk, void, unknown> {
       try {
         const response = await fetch(
-          AIProviderURL.Gemini.replace("API_KEY", apiKey),
+          url,
           {
             method: "POST",
             headers: {
@@ -51,7 +46,7 @@ export interface StreamChunk {
           for (const line of lines) {
             if (line.trim().startsWith("data:")) {
               const jsonStr = line.trim().substring(5);
-              const chunk = this.parseStreamChunk(jsonStr);
+              const chunk = parseStreamChunk(jsonStr);
               lastChunkWasComplete = chunk.isComplete;
               yield chunk;
             }
@@ -72,34 +67,6 @@ export interface StreamChunk {
           isComplete: true,
           error: error instanceof Error ? error.message : "Unknown error",
         };
-      }
-    }
-  
-    private parseStreamChunk(chunk: string): StreamChunk {
-      try {
-        const data = JSON.parse(chunk);
-        
-        let text = "";
-        const candidate = data.candidates?.[0];
-
-        if (candidate) {
-            if (candidate.content?.parts?.[0]?.text) {
-                text = candidate.content.parts[0].text;
-            } else if (candidate.text) {
-                text = candidate.text;
-            }
-        }
-        
-        const isComplete = !!candidate?.finishReason;
-        
-        return {
-          content: text,
-          isComplete: isComplete,
-        };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown parsing error";
-        console.error("Failed to parse stream chunk:", message, "Chunk:", chunk);
-        return { content: "", isComplete: false, error: `Failed to parse chunk: ${message}` };
       }
     }
   }

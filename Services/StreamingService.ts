@@ -1,7 +1,10 @@
+import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
+
 export interface StreamChunk {
     content: string;
     isComplete: boolean;
     error?: string;
+    functionCall?: AIFunctionCall;
   }
   
   export class StreamingService {

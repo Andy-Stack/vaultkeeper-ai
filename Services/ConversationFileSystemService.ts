@@ -18,11 +18,6 @@ export class ConversationFileSystemService {
         return `${Path.Conversations}/${conversation.title}.json`;
     }
 
-    // public async loadConversation(filePath: string): Promise<{ messages: 
-    //     Array<{ role: string, content: string, timestamp: Date }>, created: Date, title: string } | null> {
-    //         const conversation: TFile | null = this.fileSystemService.readObjectFromFile(filePath) as unknown as TFile;
-    // }
-
     public async saveConversation(conversation: Conversation): Promise<string> {
         if (!this.currentConversationPath) {
             this.currentConversationPath = this.generateConversationPath(conversation);
@@ -34,7 +29,9 @@ export class ConversationFileSystemService {
             contents: conversation.contents.map(content => ({
                 role: content.role,
                 content: content.content,
-                timestamp: content.timestamp.toISOString()
+                timestamp: content.timestamp.toISOString(),
+                isFunctionCall: content.isFunctionCall,
+                isFunctionCallResponse: content.isFunctionCallResponse
             }))
         };
 
@@ -79,9 +76,8 @@ export class ConversationFileSystemService {
                 conversation.title = data.title;
                 conversation.created = new Date(data.created);
                 conversation.contents = data.contents.map(content => {
-                    const conversationContent = new ConversationContent(content.role, content.content);
-                    conversationContent.timestamp = new Date(content.timestamp);
-                    return conversationContent;
+                    return new ConversationContent(
+                        content.role, content.content, new Date(content.timestamp), content.isFunctionCall);
                 });
                 conversations.push(conversation);
             }

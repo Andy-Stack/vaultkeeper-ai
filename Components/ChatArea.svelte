@@ -163,28 +163,30 @@
 
 <div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll}>
   {#each messages as message, messageIndex (`${message.role}-${messageIndex}`)}
-    {#if message.role === Role.User}
-    <div class="message-container user">
-      <div class="message-bubble user">
-        <p class="message-text-user fade-in-fast">{message.content}</p>
-      </div>
-    </div>
-    {:else}
-    <div class="message-container assistant">
-      <div class="message-bubble assistant">
-        <div class="markdown-content fade-in-fast" class:streaming={isStreaming && messageIndex === messages.length - 1}>
-          <!-- Streaming message: use action for initialization -->
-          {#if isStreaming && messageIndex === messages.length - 1}
-          <div use:streamingAction={`${message.role}-${messageIndex}`} class="streaming-content"></div>
-          <StreamingIndicator/>
-          <ChatAreaThought/>
-          {:else}
-          <!-- Static message: use traditional rendering -->
-          {@html getStaticHTML(message, messageIndex)}
-          {/if}
+    {#if !message.isFunctionCall && !message.isFunctionCallResponse}
+      {#if message.role === Role.User}
+      <div class="message-container user">
+        <div class="message-bubble user">
+          <p class="message-text-user fade-in-fast">{message.content}</p>
         </div>
       </div>
-    </div>
+      {:else}
+      <div class="message-container assistant">
+        <div class="message-bubble assistant">
+          <div class="markdown-content fade-in-fast" class:streaming={isStreaming && messageIndex === messages.length - 1}>
+            <!-- Streaming message: use action for initialization -->
+            {#if isStreaming && messageIndex === messages.length - 1}
+            <div use:streamingAction={`${message.role}-${messageIndex}`} class="streaming-content"></div>
+            <StreamingIndicator/>
+            <ChatAreaThought/>
+            {:else}
+            <!-- Static message: use traditional rendering -->
+            {@html getStaticHTML(message, messageIndex)}
+            {/if}
+          </div>
+        </div>
+      </div>
+      {/if}
     {/if}
   {/each}
   

@@ -14,6 +14,7 @@ import { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
 import type { App } from "obsidian";
 import { AIFunctionService } from "./AIFunctionService";
 import { StreamingService } from "./StreamingService";
+import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton(Services.MessageService, new MessageService());
@@ -23,6 +24,7 @@ export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton(Services.ConversationFileSystemService, new ConversationFileSystemService());
 
     RegisterSingleton<IPrompt>(Services.IPrompt, new AIPrompt());
+    RegisterSingleton<AIFunctionDefinitions>(Services.AIFunctionDefinitions, new AIFunctionDefinitions());
     RegisterSingleton<AIFunctionService>(Services.AIFunctionService, new AIFunctionService());
     RegisterSingleton<StreamingService>(Services.StreamingService, new StreamingService());
 

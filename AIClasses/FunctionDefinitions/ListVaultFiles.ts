@@ -1,7 +1,7 @@
 import { AIFunction } from "Enums/AIFunction";
-import type { FunctionDefinition } from "./AIFunctionDefinition";
+import type { IAIFunctionDefinition } from "./IAIFunctionDefinition";
 
-export const ListVaultFiles: FunctionDefinition = {
+export const ListVaultFiles: IAIFunctionDefinition = {
     name: AIFunction.ListVaultFiles,
     description: `Returns complete list of vault files with metadata (names, paths, sizes).
                   Call this whenever you need to know what files exist in the vault to answer questions,
@@ -9,6 +9,11 @@ export const ListVaultFiles: FunctionDefinition = {
                   when vault contents would inform your response.`,
     parameters: {
         type: "object",
-        properties: {}
+        properties: {
+            user_message: {
+                type: "string",
+                description: "A short message to be displayed to the user that explains the action being taken"
+            }
+        }
     }
 }

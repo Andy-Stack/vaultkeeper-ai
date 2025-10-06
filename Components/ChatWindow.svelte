@@ -11,9 +11,13 @@
 	import { Role } from "Enums/Role";
   import { Conversation } from "Conversations/Conversation";
   import { ConversationContent } from "Conversations/ConversationContent";
+  import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
+	import type { AIFunctionService } from "Services/AIFunctionService";
+	import type { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 
   let ai: IAIClass = Resolve(Services.IAIClass);
   let conversationService: ConversationFileSystemService = Resolve(Services.ConversationFileSystemService);
+  let aiFunctionService: AIFunctionService = Resolve(Services.AIFunctionService);
 
   let semaphore: Semaphore = new Semaphore(1, false);
   let textareaElement: HTMLTextAreaElement;
@@ -27,74 +31,101 @@
   let conversation = new Conversation();
 
   async function handleSubmit() {
-    if (userRequest.trim() === "" || isSubmitting) {
-      return;
-    }
-    isSubmitting = true;
-
-    const requestToSend = userRequest;
-    userRequest = "";
-    textareaElement.value = "";
-    autoResize();
-
     if (!await semaphore.wait()) {
       return;
     }
 
-    // Add user message to chat
-    conversation.contents = [...conversation.contents, new ConversationContent(Role.User, requestToSend)];
-
-    await conversationService.saveConversation(conversation);
-
-    scrollToBottom();
-
     try {
-      // Create AI message placeholder
-      const aiMessageIndex = conversation.contents.length;
-      conversation.contents = [...conversation.contents, new ConversationContent(Role.Assistant, "")];
-      isStreaming = true;
+      if (userRequest.trim() === "" || isSubmitting) {
+        return;
+      }
+      isSubmitting = true;
 
-      // Stream the response
-      let accumulatedContent = "";
+      conversation.contents = [...conversation.contents, new ConversationContent(Role.User, userRequest)];
+      await conversationService.saveConversation(conversation);
 
-      for await (const chunk of ai.streamRequest(conversation)) {
-        if (chunk.error) {
-          console.error("Streaming error:", chunk.error);
-          // Update message with error
-          conversation.contents = conversation.contents.map((msg, messageIndex) =>
-            messageIndex === aiMessageIndex
-              ? { ...msg, content: "Error: " + chunk.error }
-              : msg
-          );
-          isStreaming = false;
-          break;
-        }
+      textareaElement.value = "";
+      userRequest = "";
+      autoResize();
 
-        if (chunk.content) {
-          accumulatedContent += chunk.content;
-          // Update the message with accumulated content
-          conversation.contents = conversation.contents.map((msg, messageIndex) =>
-            messageIndex === aiMessageIndex
-              ? { ...msg, content: accumulatedContent }
-              : msg
-          );
-        }
+      scrollToBottom();
 
-        if (chunk.isComplete) {
-          // Mark streaming as complete
-          isStreaming = false;
-          conversation.contents = conversation.contents.map((msg, messageIndex) =>
-            messageIndex === aiMessageIndex
-              ? { ...msg, content: accumulatedContent }
-              : msg
-          );
+      let functionCall: AIFunctionCall | null = await streamRequestResponse();
+      while (functionCall) {
+
+        if ('user_message' in functionCall.arguments) {
+          conversation.contents = [...conversation.contents, new ConversationContent(
+            Role.Assistant, functionCall.arguments.user_message)];
           await conversationService.saveConversation(conversation);
         }
+
+        conversation.contents = [...conversation.contents, new ConversationContent(
+          Role.Assistant, functionCall.toConversationString(), new Date(), true)];
+        await conversationService.saveConversation(conversation);  
+        
+        const functionResponse: AIFunctionResponse = await aiFunctionService.performAIFunction(functionCall);
+        conversation.contents = [...conversation.contents, new ConversationContent(
+          Role.User, functionResponse.toConversationString(), new Date(), false, true)];
+        await conversationService.saveConversation(conversation);
+
+        functionCall = await streamRequestResponse();
       }
     } finally {
       semaphore.release();
       isSubmitting = false;
+      tick().then(() => {
+        textareaElement?.focus();
+      });
     }
+  }
+
+  async function streamRequestResponse(): Promise<AIFunctionCall | null> {
+    // Create AI message placeholder
+    const aiMessageIndex = conversation.contents.length;
+    conversation.contents = [...conversation.contents, new ConversationContent(Role.Assistant, "")];
+    isStreaming = true;
+
+    let accumulatedContent = "";
+    let capturedFunctionCall: AIFunctionCall | null = null;
+
+    for await (const chunk of ai.streamRequest(conversation)) {
+      if (chunk.error) {
+        console.error("Streaming error:", chunk.error);
+        conversation.contents = conversation.contents.map((msg, messageIndex) =>
+          messageIndex === aiMessageIndex
+            ? { ...msg, content: "Error: " + chunk.error }
+            : msg
+        );
+        isStreaming = false;
+        break;
+      }
+
+      if (chunk.content) {
+        accumulatedContent += chunk.content;
+        conversation.contents = conversation.contents.map((msg, messageIndex) =>
+          messageIndex === aiMessageIndex
+            ? { ...msg, content: accumulatedContent }
+            : msg
+        );
+      }
+
+      if (chunk.functionCall) {
+        capturedFunctionCall = chunk.functionCall;
+      }
+
+      if (chunk.isComplete) {
+        isStreaming = false;
+        conversation.contents = conversation.contents.map((msg, messageIndex) =>
+          messageIndex === aiMessageIndex
+            ? { ...msg, content: accumulatedContent }
+            : msg
+        );
+
+        await conversationService.saveConversation(conversation);
+      }
+    }
+
+    return capturedFunctionCall;
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -161,10 +192,10 @@
       rows="1">
     </textarea>
   
-    <button 
+    <button
       id="submit"
       bind:this={submitButton}
-      on:click={handleSubmit}
+      on:click={() => { handleSubmit() }}
       disabled={isSubmitting || userRequest.trim() === ""}
       aria-label="Send Message">
     </button>
@@ -213,6 +244,12 @@
     resize: none;
     overflow-y: auto;
     color: var(--font-interface-theme);
+    transition: border-color 0.3s ease-out;
+  }
+
+  #input:focus {
+    border-color: var(--color-accent);
+    transition: border-color 0.3s ease-out;
   }
 
   #submit {

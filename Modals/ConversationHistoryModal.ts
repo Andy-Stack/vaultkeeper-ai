@@ -33,7 +33,9 @@ export class ConversationHistoryModal extends Modal {
     override async open() {
         this.conversations = await this.conversationFileSystemService.getAllConversations();
 
-        this.items = this.conversations.map((conversation, index) => ({
+        this.items = this.conversations
+        .sort((a, b) => b.created.getTime() - a.created.getTime())
+        .map((conversation, index) => ({
             id: index.toString(),
             date: dateToString(conversation.created, false),
             title: conversation.title,

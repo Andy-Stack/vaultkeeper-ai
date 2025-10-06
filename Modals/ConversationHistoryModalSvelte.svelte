@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { setIcon } from "obsidian";
-	import { fade, slide } from "svelte/transition";
+	import { fade } from "svelte/transition";
 
     export let items: Array<{id: string, date: string, title: string, selected: boolean}>;
     export let onClose: () => void;
@@ -18,7 +18,7 @@
     }
 
     let selectedItems = new Set<string>();
-    let searchQuery = '';
+    let searchQuery = "";
 
     $: filteredItems = items.filter(item =>
       item.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -112,6 +112,7 @@
       display: grid;
       grid-template-rows: var(--size-4-3) auto var(--size-4-3) 1fr var(--size-4-3);
       grid-template-columns: var(--size-4-3) 1fr var(--size-4-3);
+      max-height: 60vh;
     }
 
     .conversation-history-modal-top-bar {
@@ -210,7 +211,8 @@
     #delete-button {
       grid-row: 1;
       grid-column: 2;
-      transition: width 300ms ease-out, opacity 300ms ease-out, padding 300ms ease-out;
+      margin-right: var(--size-4-2);
+      transition: width 300ms ease-out, opacity 300ms ease-out, padding 300ms ease-out, margin 300ms ease-out;
     }
 
     #delete-button.hidden {
@@ -218,6 +220,7 @@
       min-width: 0;
       padding: 0;
       opacity: 0;
+      margin: 0;
       overflow: hidden;
       pointer-events: none;
     }
@@ -225,7 +228,6 @@
     #close-button {
       grid-row: 1;
       grid-column: 5;
-      margin-right: var(--size-4-2);
     }
 
     #search-input {

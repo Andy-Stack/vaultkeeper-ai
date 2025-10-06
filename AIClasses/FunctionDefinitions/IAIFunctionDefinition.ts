@@ -1,4 +1,5 @@
-export interface FunctionDefinition {
+// platform agnostic function definition used to present function calls in an API call
+export interface IAIFunctionDefinition {
     name: string;
     description: string;
     parameters: {

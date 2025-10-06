@@ -11,6 +11,7 @@
 
   export let messages: ConversationContent[] = [];
   export let isStreaming: boolean = false;
+  export let isSubmitting: boolean = false;
   export let chatContainer: HTMLDivElement;
 
   let plugin: AIAgentPlugin = Resolve(Services.AIAgentPlugin);
@@ -163,42 +164,29 @@
 
 <div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll}>
   {#each messages as message, messageIndex (`${message.role}-${messageIndex}`)}
-    {#if !message.isFunctionCall && !message.isFunctionCallResponse}
-      {#if message.role === Role.User}
-      <div class="message-container user">
-        <div class="message-bubble user">
-          <p class="message-text-user fade-in-fast">{message.content}</p>
+    {#if !message.isFunctionCall && !message.isFunctionCallResponse && message.content}
+      <div class="message-container {message.role === Role.User ? 'user' : 'assistant'}">
+        <div class="message-bubble {message.role === Role.User ? 'user' : 'assistant'}">
+          {#if message.role === Role.User}
+            <p class="message-text-user fade-in-fast">{message.content}</p>
+          {:else}
+            <div class="markdown-content fade-in-fast {isStreaming && messageIndex === messages.length - 1 ? 'streaming' : ''}">
+              {#if isStreaming && messageIndex === messages.length - 1}
+                <div use:streamingAction={`${message.role}-${messageIndex}`} class="streaming-content"></div>
+              {:else}
+                {@html getStaticHTML(message, messageIndex)}
+              {/if}
+            </div>
+          {/if}
         </div>
       </div>
-      {:else}
-      {#if isStreaming && messageIndex === messages.length - 1}
-      <!-- Streaming message -->
-      {#if message.content && message.content !== ''}
-      <div class="message-container assistant">
-        <div class="message-bubble assistant">
-          <div class="markdown-content fade-in-fast streaming">
-            <div use:streamingAction={`${message.role}-${messageIndex}`} class="streaming-content"></div>
-          </div>
-        </div>
-      </div>
-      {/if}
-      <StreamingIndicator/>
-      <ChatAreaThought/>
-      {:else}
-      <!-- Static message: use traditional rendering -->
-      {#if message.content && message.content !== ''}
-      <div class="message-container assistant">
-        <div class="message-bubble assistant">
-          <div class="markdown-content fade-in-fast">
-            {@html getStaticHTML(message, messageIndex)}
-          </div>
-        </div>
-      </div>
-      {/if}
-      {/if}
-      {/if}
     {/if}
   {/each}
+
+  {#if isSubmitting}
+  <ChatAreaThought/>
+  <StreamingIndicator/>
+  {/if}
   
   {#if messages.length === 0}
     <div class="conversation-empty-state">

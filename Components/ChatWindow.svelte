@@ -183,7 +183,7 @@
 
 <main class="container">
   <div id="chat-container">
-    <ChatArea messages={conversation.contents} bind:isStreaming bind:chatContainer={chatContainer}/>
+    <ChatArea messages={conversation.contents} bind:isStreaming bind:isSubmitting bind:chatContainer={chatContainer}/>
   </div>
   
   <div id="input-container">

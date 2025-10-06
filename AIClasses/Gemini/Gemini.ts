@@ -71,11 +71,19 @@ export class Gemini implements IAIClass {
             text: this.aiPrompt.systemInstruction()
           },
           {
-            text: `IMPORTANT: When you need current information from the web (recent events, news, current prices, weather, etc.), you should:
-                   1. First call the 'request_web_search' function to indicate you need web access
-                   2. After that, you'll be given access to Google Search
-                   3. Once you have the information from the search, you can answer the user's question
-                   4. Subsequent communication will return to providing custom function calls`
+            text: `## IMPORTANT: Web Search Directive
+                   **You *must* proactively use the web search tool whenever a user's query requires current, real-time, or frequently changing information.** This includes, but is not limited to:
+                   - Current date or time.
+                   - Current weather conditions or forecasts.
+                   - Recent news, events, or happenings.
+                   - Up-to-date prices, statistics, or factual data that is dynamic.
+                   - Any information where "current," "latest," or "today's" is implied or explicitly requested.
+                   
+                   When you need current information from the web, you *must* follow these steps:
+                   1. First call the \`request_web_search\` function with a clear and concise \`reasoning\` explaining why web search is needed.
+                   2. After calling this, you will be given access to Google Search.
+                   3. Once you have obtained the necessary information from the search results, use it to formulate your complete and accurate answer.
+                   4. Subsequent interactions will revert to standard function calls or general assistance as appropriate.`
           },
           {
             text: await this.aiPrompt.userInstruction()

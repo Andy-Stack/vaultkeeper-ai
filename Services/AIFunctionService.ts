@@ -13,10 +13,12 @@ export class AIFunctionService {
     public async performAIFunction(functionCall: AIFunctionCall): Promise<AIFunctionResponse> {
         switch (functionCall.name) {
             case AIFunction.ListVaultFiles:
-                return new AIFunctionResponse(
-                    functionCall.name,
-                    await this.listVaultFiles()
-                );
+                return new AIFunctionResponse(functionCall.name, await this.listVaultFiles());
+            
+            // this is only used by gemini
+            case AIFunction.RequestWebSearch:
+                return new AIFunctionResponse(functionCall.name, {})
+
             default:
                 const error = `Unknown function request ${functionCall.name}`
                 console.error(error);

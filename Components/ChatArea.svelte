@@ -171,21 +171,31 @@
         </div>
       </div>
       {:else}
+      {#if isStreaming && messageIndex === messages.length - 1}
+      <!-- Streaming message -->
+      {#if message.content && message.content !== ''}
       <div class="message-container assistant">
         <div class="message-bubble assistant">
-          <div class="markdown-content fade-in-fast" class:streaming={isStreaming && messageIndex === messages.length - 1}>
-            <!-- Streaming message: use action for initialization -->
-            {#if isStreaming && messageIndex === messages.length - 1}
+          <div class="markdown-content fade-in-fast streaming">
             <div use:streamingAction={`${message.role}-${messageIndex}`} class="streaming-content"></div>
-            <StreamingIndicator/>
-            <ChatAreaThought/>
-            {:else}
-            <!-- Static message: use traditional rendering -->
-            {@html getStaticHTML(message, messageIndex)}
-            {/if}
           </div>
         </div>
       </div>
+      {/if}
+      <StreamingIndicator/>
+      <ChatAreaThought/>
+      {:else}
+      <!-- Static message: use traditional rendering -->
+      {#if message.content && message.content !== ''}
+      <div class="message-container assistant">
+        <div class="message-bubble assistant">
+          <div class="markdown-content fade-in-fast">
+            {@html getStaticHTML(message, messageIndex)}
+          </div>
+        </div>
+      </div>
+      {/if}
+      {/if}
       {/if}
     {/if}
   {/each}

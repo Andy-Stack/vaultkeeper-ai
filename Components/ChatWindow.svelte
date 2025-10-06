@@ -97,6 +97,7 @@
             : msg
         );
         isStreaming = false;
+        await conversationService.saveConversation(conversation);
         break;
       }
 
@@ -115,12 +116,17 @@
 
       if (chunk.isComplete) {
         isStreaming = false;
-        conversation.contents = conversation.contents.map((msg, messageIndex) =>
-          messageIndex === aiMessageIndex
-            ? { ...msg, content: accumulatedContent }
-            : msg
-        );
-
+        // Only save the message if it has content or a function call
+        if (accumulatedContent.trim() !== "" || capturedFunctionCall) {
+          conversation.contents = conversation.contents.map((msg, messageIndex) =>
+            messageIndex === aiMessageIndex
+              ? { ...msg, content: accumulatedContent }
+              : msg
+          );
+        } else {
+          // Remove the empty placeholder message
+          conversation.contents = conversation.contents.filter((_, messageIndex) => messageIndex !== aiMessageIndex);
+        }
         await conversationService.saveConversation(conversation);
       }
     }

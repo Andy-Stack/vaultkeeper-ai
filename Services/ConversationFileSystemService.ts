@@ -77,7 +77,7 @@ export class ConversationFileSystemService {
                 conversation.created = new Date(data.created);
                 conversation.contents = data.contents.map(content => {
                     return new ConversationContent(
-                        content.role, content.content, new Date(content.timestamp), content.isFunctionCall);
+                        content.role, content.content, new Date(content.timestamp), content.isFunctionCall, content.isFunctionCallResponse);
                 });
                 conversations.push(conversation);
             }

@@ -116,8 +116,11 @@
 
       if (chunk.isComplete) {
         isStreaming = false;
-        // Only save the message if it has content or a function call
-        if (accumulatedContent.trim() !== "" || capturedFunctionCall) {
+        // If there's a function call, remove the placeholder message
+        if (capturedFunctionCall) {
+          conversation.contents = conversation.contents.filter((_, messageIndex) => messageIndex !== aiMessageIndex);
+        } else if (accumulatedContent.trim() !== "") {
+          // Only save the message if it has content and no function call
           conversation.contents = conversation.contents.map((msg, messageIndex) =>
             messageIndex === aiMessageIndex
               ? { ...msg, content: accumulatedContent }

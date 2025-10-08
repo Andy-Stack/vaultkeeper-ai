@@ -1,7 +1,7 @@
 export class Services {
     static MessageService = Symbol("MessageService");
     static AIAgentPlugin = Symbol("AIAgentPlugin");
-    static OdbCache = Symbol("OdbCache");
+    static WorkSpaceService = Symbol("WorkSpaceService");
     static FileSystemService = Symbol("FileSystemService");
     static ConversationFileSystemService = Symbol("ConversationFileSystemService");
     static StreamingService = Symbol("StreamingService");

@@ -249,6 +249,7 @@
   .conversation-empty-state {
     margin: auto;
     font-style: italic;
+    font-size: var(--font-ui-medium);
     color: var(--text-muted);
     pointer-events: none;
   }

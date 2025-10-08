@@ -7,6 +7,11 @@ import remarkRehype from 'remark-rehype';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeStringify from 'rehype-stringify';
+import wikiLinkPlugin from 'remark-wiki-link';
+import type { FileSystemService } from './FileSystemService';
+import { Resolve } from './DependencyService';
+import { Services } from './Services';
+import { Selector } from 'Enums/Selector';
 
 interface StreamingState {
     element: HTMLElement;
@@ -16,6 +21,8 @@ interface StreamingState {
 }
 
 export class StreamingMarkdownService {
+    private readonly fileSystemService: FileSystemService = Resolve(Services.FileSystemService);
+
     private readonly processor: Processor<any, any, any, any, any> | null = null;
     private streamingStates = new Map<string, StreamingState>();
 
@@ -44,6 +51,12 @@ export class StreamingMarkdownService {
                 allowDangerousHtml: false,
                 allowDangerousCharacters: false,
                 closeSelfClosing: true
+            })
+            .use(wikiLinkPlugin, {
+                permalinks: this.fileSystemService.getVaultFileListForMarkDown(),
+                wikiLinkClassName: Selector.MarkDownLink,
+                pageResolver: (pageName: string) => [pageName],
+                hrefTemplate: (permalink: string) => `#/page/${encodeURIComponent(permalink)}`
             });
     }
 

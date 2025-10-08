@@ -30,6 +30,32 @@
 }
 
 /* ============================== */
+/* Settings API Key Highlighting */
+/* ============================== */
+
+.api-key-setting-ok input[type="text"],
+.api-key-setting-ok input[type="password"],
+.api-key-setting-ok textarea {
+  border-color: var(--color-green) !important;
+}
+
+.api-key-setting-error input[type="text"],
+.api-key-setting-error input[type="password"],
+.api-key-setting-error textarea {
+  border-color: var(--color-red) !important;
+}
+
+.api-key-setting-error .setting-item-control {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* ============================== */
 /* CSS Variables for Common Components */
 /* ============================== */
 

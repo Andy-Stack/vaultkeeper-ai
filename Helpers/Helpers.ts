@@ -1,4 +1,11 @@
-import { type Vault } from "obsidian";
+import type AIAgentPlugin from "main";
+
+export function openPluginSettings(plugin: AIAgentPlugin) {
+    // @ts-ignore - accessing internal API
+    plugin.app.setting.open();
+    // @ts-ignore - accessing internal API
+    plugin.app.setting.openTabById(plugin.manifest.id);
+}
 
 export function isValidJson(str: string): boolean {
     try {
@@ -7,18 +14,6 @@ export function isValidJson(str: string): boolean {
         return false;
     }
     return true;
-}
-
-export function loadExternalCSS(href: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.type = 'text/css';
-        link.href = href;
-        link.onload = () => resolve();
-        link.onerror = reject;
-        document.head.appendChild(link);
-    });
 }
 
 export function dateToString(date: Date, includeTime: boolean = true): string {

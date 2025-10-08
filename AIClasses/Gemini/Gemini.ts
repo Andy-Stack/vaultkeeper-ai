@@ -7,24 +7,23 @@ import type { Conversation } from "Conversations/Conversation";
 import { Role } from "Enums/Role";
 import { AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
-import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
+import type AIAgentPlugin from "main";
+import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 
 export class Gemini implements IAIClass {
   private readonly REQUEST_WEB_SEARCH: string = "request_web_search";
 
   private readonly apiKey: string;
-  private readonly aiPrompt: IPrompt;
-  private readonly streamingService: StreamingService;
-  private readonly aiFunctionDefinitions: AIFunctionDefinitions;
+  private readonly aiPrompt: IPrompt = Resolve(Services.IPrompt);
+  private readonly plugin: AIAgentPlugin = Resolve(Services.AIAgentPlugin);
+  private readonly streamingService: StreamingService = Resolve(Services.StreamingService);
+  private readonly aiFunctionDefinitions: AIFunctionDefinitions = Resolve(Services.AIFunctionDefinitions);
   private accumulatedFunctionName: string | null = null;
   private accumulatedFunctionArgs: Record<string, any> = {};
 
-  public constructor(apiKey: string) {
-    this.apiKey = apiKey;
-    this.aiPrompt = Resolve(Services.IPrompt);
-    this.streamingService = Resolve(Services.StreamingService);
-    this.aiFunctionDefinitions = Resolve(Services.AIFunctionDefinitions);
+  public constructor() {
+    this.apiKey = this.plugin.settings.apiKey;
   }
 
   public async* streamRequest(conversation: Conversation): AsyncGenerator<StreamChunk, void, unknown> {

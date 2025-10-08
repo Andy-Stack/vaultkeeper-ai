@@ -1,6 +1,5 @@
 import { AIProvider } from "Enums/ApiProvider";
 import type AIAgentPlugin from "main";
-//import { OdbCache } from "ODB/Core/OdbCache";
 import { RegisterSingleton, RegisterTransient } from "./DependencyService";
 import { Services } from "./Services";
 import { AIPrompt, type IPrompt } from "AIClasses/IPrompt";
@@ -15,11 +14,12 @@ import type { App } from "obsidian";
 import { AIFunctionService } from "./AIFunctionService";
 import { StreamingService } from "./StreamingService";
 import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
+import { WorkSpaceService } from "./WorkSpaceService";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
-    RegisterSingleton(Services.MessageService, new MessageService());
     RegisterSingleton(Services.AIAgentPlugin, plugin);
-    //RegisterSingleton(Services.OdbCache, new OdbCache());
+    RegisterSingleton(Services.MessageService, new MessageService());
+    RegisterSingleton(Services.WorkSpaceService, new WorkSpaceService());
     RegisterSingleton(Services.FileSystemService, new FileSystemService());
     RegisterSingleton(Services.ConversationFileSystemService, new ConversationFileSystemService());
 
@@ -36,7 +36,7 @@ export function RegisterDependencies(plugin: AIAgentPlugin) {
 
 export function RegisterAiProvider(plugin: AIAgentPlugin) {
     if (plugin.settings.apiProvider == AIProvider.Gemini) {
-        RegisterSingleton<IAIClass>(Services.IAIClass, new Gemini(plugin.settings.apiKey));
+        RegisterSingleton<IAIClass>(Services.IAIClass, new Gemini());
     }
 }
 

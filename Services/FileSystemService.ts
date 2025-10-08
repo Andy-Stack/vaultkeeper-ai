@@ -12,6 +12,13 @@ export class FileSystemService {
         this.vault = Resolve<AIAgentPlugin>(Services.AIAgentPlugin).app.vault;
     }
 
+    public getVaultFileListForMarkDown() {
+        const files: TFile[] = this.vault.getMarkdownFiles();
+        return files.map(file => {
+            return file.path.replace(/\.md$/, "");
+        });
+    }
+
     public async readFile(filePath: string): Promise<string | null> {
         const file: TAbstractFile | null = this.vault.getAbstractFileByPath(filePath);
         if (file && file instanceof TFile) {

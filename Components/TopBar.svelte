@@ -6,6 +6,7 @@
   import { ConversationFileSystemService } from '../Services/ConversationFileSystemService';
   import { conversationStore } from '../Stores/conversationStore';
 	import type { ConversationHistoryModal } from 'Modals/ConversationHistoryModal';
+	import { openPluginSettings } from 'Helpers/Helpers';
 
   export let leaf: WorkspaceLeaf;
 
@@ -28,10 +29,7 @@
   }
 
   function openSettings() {
-    // @ts-ignore - accessing internal API
-    plugin.app.setting.open();
-    // @ts-ignore - accessing internal API
-    plugin.app.setting.openTabById(plugin.manifest.id);
+    openPluginSettings(plugin);
   }
 
   function closePlugin() {

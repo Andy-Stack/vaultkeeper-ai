@@ -69,6 +69,12 @@
     });
   }
 
+  $: {
+    if (currentThought) {
+      startScrolling();
+    }
+  }
+
   function handleScroll() {
     if (!chatContainer) return;
 
@@ -84,7 +90,7 @@
 
     scrollInterval = plugin.registerInterval(window.setInterval(() => {
       if (chatContainer && !userScrolledUp) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        chatContainer.scrollBy({ top: chatContainer.innerHeight, behavior: 'smooth' });
       }
     }, 50));
 

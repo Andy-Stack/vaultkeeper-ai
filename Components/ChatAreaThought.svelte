@@ -4,7 +4,7 @@
   $: isVisible = thought !== null && thought.trim().length > 0;
 </script>
 
-{#if isVisible && thought}
+{#if isVisible}
   <div class="ai-thought-container" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
     <div class="ai-thought-bubble">
       <span>{thought}</span>

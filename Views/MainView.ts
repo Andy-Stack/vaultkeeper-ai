@@ -25,15 +25,16 @@ export class MainView extends ItemView {
     const container = this.contentEl;
     container.empty();
 
-    // Mount TopBar
+    // Mount TopBar with reference to ChatWindow's focus function
     this.topBar = mount(TopBar, {
       target: container,
       props: {
-        leaf: this.leaf
+        leaf: this.leaf,
+        onNewConversation: () => this.input?.focusInput()
       }
     });
 
-    // Mount ChatWindow
+    // Mount ChatWindow first
     this.input = mount(ChatWindow, {
       target: container,
       props: {}

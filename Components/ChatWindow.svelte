@@ -40,6 +40,12 @@
 
   let currentThought: string | null = null;
 
+  export function focusInput() {
+    tick().then(() => {
+      textareaElement?.focus();
+    });
+  }
+
   onMount(() => {
     if (chatContainer) {
       plugin.registerDomEvent(chatContainer, 'click', handleLinkClick);
@@ -76,6 +82,7 @@
   }
 
   async function handleSubmit() {
+    focusInput();
     if (!await semaphore.wait()) {
       return;
     }
@@ -121,9 +128,6 @@
       currentThought = null;
       isSubmitting = false;
       semaphore.release();
-      tick().then(() => {
-        textareaElement?.focus();
-      });
     }
   }
 

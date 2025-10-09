@@ -9,6 +9,7 @@
 	import { openPluginSettings } from 'Helpers/Helpers';
 
   export let leaf: WorkspaceLeaf;
+  export let onNewConversation: (() => void) | undefined = undefined;
 
   const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
   const conversationService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
@@ -16,15 +17,18 @@
   function startNewConversation() {
     conversationService.resetCurrentConversation();
     conversationStore.reset();
+    onNewConversation?.();
   }
 
   async function deleteCurrentConversation() {
     await conversationService.deleteCurrentConversation();
     conversationStore.reset();
+    onNewConversation?.();
   }
 
   function openConversationHistory() {
     const modal = Resolve<ConversationHistoryModal>(Services.ConversationHistoryModal);
+    modal.onModalClose = onNewConversation;
     modal.open();
   }
 

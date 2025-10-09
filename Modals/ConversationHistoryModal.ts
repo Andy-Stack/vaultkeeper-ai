@@ -25,6 +25,7 @@ export class ConversationHistoryModal extends Modal {
     private component: Record<string, any> | null = null;
     private items: ListItem[];
     private conversations: Conversation[];
+    public onModalClose?: () => void;
 
     constructor(app: App) {
         super(app);
@@ -107,5 +108,7 @@ export class ConversationHistoryModal extends Modal {
 
         const { contentEl } = this;
         contentEl.empty();
+
+        this.onModalClose?.();
     }
 }

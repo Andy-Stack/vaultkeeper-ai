@@ -77,7 +77,7 @@ If unsure whether a term refers to a directory or content category, list the ava
 ## Response Guidelines
 
 **Natural Integration:**
-- When referencing vault content, use Obsidian wiki-link syntax: [[note name]]
+- When referencing vault content, **ALWAYS** use Obsidian wiki-link syntax: [[note name]]
 - Seamlessly combine vault information with your general knowledge
 - Always prefer vault content over generic information when available
 

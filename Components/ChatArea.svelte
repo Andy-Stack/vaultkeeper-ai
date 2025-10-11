@@ -206,12 +206,13 @@
     }
   }
 
-  $: {
-    if (!isSubmitting && lastAssistantMessageElement) {
-      // Recalculate padding when streaming ends to fix race condition with streaming indicator removal
-      assistantMessageAction(lastAssistantMessageElement);
-    }
-  }
+  // $: {
+  //   if (!isSubmitting && lastAssistantMessageElement) {
+  //     if (lastAssistantMessageElement.offsetHeight < chatContainer.offsetHeight - parseFloat(getComputedStyle(chatContainer).padding) * 2)
+  //     // Recalculate padding when streaming ends to fix race condition with streaming indicator removal
+  //     assistantMessageAction(lastAssistantMessageElement);
+  //   }
+  // }
 
   $: {
     if (chatContainer && messages.length == 0) {

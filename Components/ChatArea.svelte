@@ -15,6 +15,14 @@
   export let isSubmitting: boolean = false;
   export let chatContainer: HTMLDivElement;
 
+  export function onFinishedSubmitting() {
+    if (lastAssistantMessageElement && lastAssistantMessageElement.offsetHeight < 
+      chatContainer.offsetHeight - parseFloat(getComputedStyle(chatContainer).padding) * 2) {
+      // Recalculate padding when streaming ends to fix race condition with streaming indicator removal
+      assistantMessageAction(lastAssistantMessageElement);
+    } 
+  }
+
   let thoughtElement: HTMLElement | undefined;
   let streamingElement: HTMLElement | undefined;
 
@@ -55,7 +63,7 @@
     messages.forEach((message, messageIndex) => {
       if (message.role !== Role.User) {
         const messageId = `${message.role}-${messageIndex}`;
-        const lastContent = lastProcessedContent.get(messageId) || '';
+        const lastContent = lastProcessedContent.get(messageId) || "";
 
         // Only update if content has changed
         if (message.content !== lastContent) {
@@ -103,7 +111,7 @@
   // Process static messages (user messages and initial load)
   function getStaticHTML(message: ConversationContent, messageIndex: number): string {
     if (message.role === Role.User) {
-      return `<p>${message.content}</p>`;
+      return `<div>${message.content}</div>`;
     }
 
     // For assistant messages, check if this is the last message and we're streaming
@@ -113,14 +121,14 @@
     // For assistant messages that aren't streaming, use traditional parsing
     if (!isCurrentlyStreaming) {
       try {
-        return streamingMarkdownService.formatText(message.content) || `<p>${message.content}</p>`;
+        return streamingMarkdownService.formatText(message.content) || `<div>${message.content}</div>`;
       } catch (err) {
         console.error('HTML processing failed:', err);
-        return `<p>${message.content}</p>`;
+        return `<div>${message.content}</div>`;
       }
     }
 
-    return ''; // Streaming messages will be handled by the streaming service
+    return ""; // Streaming messages will be handled by the streaming service
   }
 
   // Make sure to clean up when messages are removed
@@ -191,9 +199,6 @@
           parseFloat(getComputedStyle(chatContainer).gap) || 0);
 
         chatContainer.style.paddingBottom = `${messagePadding}px`;
-        tick().then(() => {
-          chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: "smooth" });
-        });
       });
     });
 
@@ -205,14 +210,6 @@
       }
     }
   }
-
-  // $: {
-  //   if (!isSubmitting && lastAssistantMessageElement) {
-  //     if (lastAssistantMessageElement.offsetHeight < chatContainer.offsetHeight - parseFloat(getComputedStyle(chatContainer).padding) * 2)
-  //     // Recalculate padding when streaming ends to fix race condition with streaming indicator removal
-  //     assistantMessageAction(lastAssistantMessageElement);
-  //   }
-  // }
 
   $: {
     if (chatContainer && messages.length == 0) {

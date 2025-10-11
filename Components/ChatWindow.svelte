@@ -30,6 +30,7 @@
   let textareaElement: HTMLTextAreaElement;
   let chatContainer: HTMLDivElement;
   let submitButton: HTMLButtonElement;
+  let chatArea: ChatArea;
 
   let userRequest = "";
   let hasNoApiKey = false;
@@ -130,6 +131,9 @@
       currentThought = null;
       isSubmitting = false;
       semaphore.release();
+      tick().then(() => {
+        chatArea.onFinishedSubmitting();
+      });
     }
   }
 
@@ -246,7 +250,7 @@
 
 <main class="container">
   <div id="chat-container">
-    <ChatArea messages={conversation.contents} bind:currentThought bind:isStreaming bind:isSubmitting bind:chatContainer={chatContainer}/>
+    <ChatArea messages={conversation.contents} bind:this={chatArea} bind:currentThought bind:isStreaming bind:isSubmitting bind:chatContainer/>
   </div>
   
   <div id="input-container">

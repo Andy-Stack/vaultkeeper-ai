@@ -27,6 +27,7 @@
   let messagePadding: number = 0;
   let staticMessagePadding: number = 0;
   let responsePadding: number = 0;
+  let lastAssistantMessageElement: HTMLElement | undefined;
 
   function getGreetingByTime(): string {
     const hour = new Date().getHours();
@@ -179,6 +180,8 @@
   }
 
   function assistantMessageAction(element: HTMLElement) {
+    lastAssistantMessageElement = element;
+
     const resizeObserver = new ResizeObserver(() => {
       requestAnimationFrame(() => {
         messagePadding = Math.max(0,
@@ -188,6 +191,9 @@
           parseFloat(getComputedStyle(chatContainer).gap) || 0);
 
         chatContainer.style.paddingBottom = `${messagePadding}px`;
+        tick().then(() => {
+          chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: "smooth" });
+        });
       });
     });
 
@@ -197,6 +203,13 @@
       destroy() {
         resizeObserver.disconnect();
       }
+    }
+  }
+
+  $: {
+    if (!isSubmitting && lastAssistantMessageElement) {
+      // Recalculate padding when streaming ends to fix race condition with streaming indicator removal
+      assistantMessageAction(lastAssistantMessageElement);
     }
   }
 

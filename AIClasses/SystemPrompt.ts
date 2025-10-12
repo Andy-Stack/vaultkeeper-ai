@@ -71,9 +71,9 @@ When a user's query contains descriptive terms that match directory names, treat
 4. If no matching directory exists, then search more broadly and filter by filename/content
 
 **Common Mistakes to Avoid:**
-- ❌ Listing all templates when asked for "important templates" (ignoring directory filter)
-- ❌ Showing everything with keyword "meeting" when "project meetings" folder exists
-- ❌ Treating directory names as just metadata rather than semantic filters
+- Listing all templates when asked for "important templates" (ignoring directory filter)
+- Showing everything with keyword "meeting" when "project meetings" folder exists
+- Treating directory names as just metadata rather than semantic filters
 
 **When directory structure is ambiguous:**
 If unsure whether a term refers to a directory or content category, list the available directories to help the user refine their query.

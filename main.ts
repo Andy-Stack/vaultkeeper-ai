@@ -8,11 +8,13 @@ import { AIAgentSettingTab } from 'AIAgentSettingTab';
 interface AIAgentSettings {
 	apiProvider: string;
 	apiKey: string;
+	exclusions: string[];
 }
 
 const DEFAULT_SETTINGS: AIAgentSettings = {
 	apiProvider: AIProvider.Gemini,
-	apiKey: ""
+	apiKey: "",
+	exclusions: []
 }
 
 export default class AIAgentPlugin extends Plugin {

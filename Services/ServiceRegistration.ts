@@ -16,9 +16,11 @@ import { StreamingService } from "./StreamingService";
 import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import { WorkSpaceService } from "./WorkSpaceService";
 import { ChatService } from "./ChatService";
+import { VaultService } from "./VaultService";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton(Services.AIAgentPlugin, plugin);
+    RegisterSingleton(Services.VaultService, new VaultService());
     RegisterSingleton(Services.MessageService, new MessageService());
     RegisterSingleton(Services.WorkSpaceService, new WorkSpaceService());
     RegisterSingleton(Services.FileSystemService, new FileSystemService());
@@ -40,8 +42,7 @@ export function RegisterAiProvider(plugin: AIAgentPlugin) {
     if (plugin.settings.apiProvider == AIProvider.Gemini) {
         RegisterSingleton<IAIClass>(Services.IAIClass, new Gemini());
     }
-    const chatService: ChatService = Resolve(Services.ChatService);
-    chatService.resolveAIProvider();
+    Resolve<ChatService>(Services.ChatService).resolveAIProvider();
 }
 
 function RegisterModals(app: App) {

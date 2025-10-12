@@ -8,7 +8,7 @@ import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
 
 export class AIFunctionService {
     
-    private fileSystemService: FileSystemService = Resolve(Services.FileSystemService);
+    private fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
 
     public async performAIFunction(functionCall: AIFunctionCall): Promise<AIFunctionResponse> {
         switch (functionCall.name) {

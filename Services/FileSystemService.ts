@@ -3,39 +3,41 @@ import { TAbstractFile, TFile, TFolder, type Vault } from "obsidian";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import { isValidJson } from "Helpers/Helpers";
+import { Path } from "Enums/Path";
+import type { VaultService } from "./VaultService";
 
 export class FileSystemService {
-
-    private vault: Vault;
+    
+    private readonly vaultService: VaultService;
 
     public constructor() {
-        this.vault = Resolve<AIAgentPlugin>(Services.AIAgentPlugin).app.vault;
+        this.vaultService = Resolve<VaultService>(Services.VaultService);
     }
 
     public getVaultFileListForMarkDown() {
-        const files: TFile[] = this.vault.getMarkdownFiles();
+        const files: TFile[] = this.vaultService.getMarkdownFiles();
         return files.map(file => {
             return file.path.replace(/\.md$/, "");
         });
     }
 
     public async readFile(filePath: string): Promise<string | null> {
-        const file: TAbstractFile | null = this.vault.getAbstractFileByPath(filePath);
+        const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath);
         if (file && file instanceof TFile) {
-            return await this.vault.read(file);
+            return await this.vaultService.read(file);
         }
         return null;
     }
 
     public async writeFile(filePath: string, content: string): Promise<boolean> {
         try {
-            let file: TAbstractFile | null = this.vault.getAbstractFileByPath(filePath);
+            let file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath);
             if (file == null || !(file instanceof TFile)) {
-                await this.createDirectories(this.vault, filePath);
-                await this.vault.create(filePath, content);
+                await this.createDirectories(this.vaultService, filePath);
+                await this.vaultService.create(filePath, content);
                 return true;
             }
-            this.vault.modify(file as TFile, content);
+            await this.vaultService.modify(file as TFile, content);
             return true;
         }
         catch (error) {
@@ -46,10 +48,10 @@ export class FileSystemService {
 
     public async deleteFile(filePath: string): Promise<boolean> {
         try {
-            const file: TAbstractFile | null = this.vault.getAbstractFileByPath(filePath);
+            const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath);
 
             if (file && file instanceof TFile) {
-                await this.vault.delete(file);
+                await this.vaultService.delete(file);
                 return true;
             }
 
@@ -61,7 +63,7 @@ export class FileSystemService {
     }
 
     public async listFilesInDirectory(dirPath: string, recursive: boolean = true): Promise<TFile[]> {
-        const dir: TAbstractFile | null = this.vault.getAbstractFileByPath(dirPath);
+        const dir: TAbstractFile | null = this.vaultService.getAbstractFileByPath(dirPath);
         
         if (dir == null || !(dir instanceof TFolder)) {
             return [];
@@ -81,9 +83,9 @@ export class FileSystemService {
     }
 
     public async readObjectFromFile(filePath: string): Promise<object | null> {
-        const file: TAbstractFile | null = this.vault.getAbstractFileByPath(filePath);
+        const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath);
         if (file && file instanceof TFile) {
-            const content = await this.vault.read(file);
+            const content = await this.vaultService.read(file);
             if (isValidJson(content) === true) {
                 return JSON.parse(content);
             }
@@ -93,14 +95,14 @@ export class FileSystemService {
 
     public async writeObjectToFile(filePath: string, data: object): Promise<boolean> {
         try {
-            let file: TAbstractFile | null = this.vault.getAbstractFileByPath(filePath);
+            let file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath);
 
             if (file && file instanceof TFile) {
-                await this.vault.modify(file, JSON.stringify(data, null, 4));
+                await this.vaultService.modify(file, JSON.stringify(data, null, 4));
             }
             else {
-                await this.createDirectories(this.vault, filePath);
-                await this.vault.create(filePath, JSON.stringify(data, null, 4));
+                await this.createDirectories(this.vaultService, filePath);
+                await this.vaultService.create(filePath, JSON.stringify(data, null, 4));
             }
 
             return true;
@@ -110,7 +112,7 @@ export class FileSystemService {
         }
     }
 
-    private async createDirectories(vault: Vault, filePath: string) {
+    private async createDirectories(vaultService: VaultService, filePath: string) {
         const dirPath: string = filePath.substring(0, filePath.lastIndexOf('/'));
 
         const dirs: string[] = dirPath.split('/');
@@ -119,8 +121,8 @@ export class FileSystemService {
         for (const dir of dirs) {
             if (dir) {
                 currentPath = currentPath ? `${currentPath}/${dir}` : dir;
-                if (vault.getAbstractFileByPath(currentPath) == null) {
-                    await vault.createFolder(currentPath);
+                if (vaultService.getAbstractFileByPath(currentPath) == null) {
+                    await vaultService.createFolder(currentPath);
                 }
             }
         }

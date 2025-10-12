@@ -16,10 +16,10 @@ export class Gemini implements IAIClass {
   private readonly STOP_REASON_STOP: string = "STOP";
 
   private readonly apiKey: string;
-  private readonly aiPrompt: IPrompt = Resolve(Services.IPrompt);
-  private readonly plugin: AIAgentPlugin = Resolve(Services.AIAgentPlugin);
-  private readonly streamingService: StreamingService = Resolve(Services.StreamingService);
-  private readonly aiFunctionDefinitions: AIFunctionDefinitions = Resolve(Services.AIFunctionDefinitions);
+  private readonly aiPrompt: IPrompt = Resolve<IPrompt>(Services.IPrompt);
+  private readonly plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+  private readonly streamingService: StreamingService = Resolve<StreamingService>(Services.StreamingService);
+  private readonly aiFunctionDefinitions: AIFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
   private accumulatedFunctionName: string | null = null;
   private accumulatedFunctionArgs: Record<string, any> = {};
 

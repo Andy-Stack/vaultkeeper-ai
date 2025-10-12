@@ -13,10 +13,10 @@
   import type { ChatService } from "Services/ChatService";
   import type { ConversationFileSystemService } from "Services/ConversationFileSystemService";
 
-  let plugin: AIAgentPlugin = Resolve(Services.AIAgentPlugin);
-  let chatService: ChatService = Resolve(Services.ChatService);
-  let workSpaceService: WorkSpaceService = Resolve(Services.WorkSpaceService);
-  let conversationService: ConversationFileSystemService = Resolve(Services.ConversationFileSystemService);
+  let plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+  let chatService: ChatService = Resolve<ChatService>(Services.ChatService);
+  let workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
+  let conversationService: ConversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
 
   let textareaElement: HTMLTextAreaElement;
   let chatContainer: HTMLDivElement;

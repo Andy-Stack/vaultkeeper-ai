@@ -23,13 +23,13 @@ export class ChatService {
 	private semaphore: Semaphore;
 
 	constructor() {
-		this.conversationService = Resolve(Services.ConversationFileSystemService);
-		this.aiFunctionService = Resolve(Services.AIFunctionService);
+		this.conversationService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
+		this.aiFunctionService = Resolve<AIFunctionService>(Services.AIFunctionService);
 		this.semaphore = new Semaphore(1, false);
 	}
 
 	resolveAIProvider() {
-		this.ai = Resolve(Services.IAIClass);
+		this.ai = Resolve<IAIClass>(Services.IAIClass);
 	}
 
 	async submit(conversation: Conversation, userRequest: string, callbacks: ChatServiceCallbacks): Promise<Conversation> {

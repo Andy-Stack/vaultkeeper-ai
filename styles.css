@@ -30,7 +30,7 @@
 }
 
 /* ============================== */
-/* Settings API Key Highlighting */
+/* Settings Styles */
 /* ============================== */
 
 .api-key-setting-ok input[type="text"],
@@ -53,6 +53,13 @@
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
+}
+
+.ai-exclusions-input {
+  width: 350px;
+  height: 110px;
+  font: var(--font-monospace);
+  font-size: 0.9em;
 }
 
 /* ============================== */

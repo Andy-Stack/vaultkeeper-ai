@@ -21,7 +21,7 @@ interface StreamingState {
 }
 
 export class StreamingMarkdownService {
-    private readonly fileSystemService: FileSystemService = Resolve(Services.FileSystemService);
+    private readonly fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
 
     private readonly processor: Processor<any, any, any, any, any> | null = null;
     private streamingStates = new Map<string, StreamingState>();

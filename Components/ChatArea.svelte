@@ -30,7 +30,7 @@
   let thoughtElement: HTMLElement | undefined;
   let streamingElement: HTMLElement | undefined;
 
-  let streamingMarkdownService: StreamingMarkdownService = Resolve(Services.StreamingMarkdownService);
+  let streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
 
   let messageElements: Map<string, HTMLElement> = new Map<string, HTMLElement>();
   let lastProcessedContent: Map<string, string> = new Map<string, string>();

@@ -19,8 +19,8 @@ interface ListItem {
 
 export class ConversationHistoryModal extends Modal {
 
-    private readonly conversationFileSystemService: ConversationFileSystemService = Resolve(Services.ConversationFileSystemService);
-    private readonly fileSystemService: FileSystemService = Resolve(Services.FileSystemService);
+    private readonly conversationFileSystemService: ConversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
+    private readonly fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
 
     private component: Record<string, any> | null = null;
     private items: ListItem[];

@@ -14,6 +14,7 @@ export const ListVaultFiles: IAIFunctionDefinition = {
                 type: "string",
                 description: "A short message to be displayed to the user that explains the action being taken"
             }
-        }
+        },
+        required: ["user_message"]
     }
 }

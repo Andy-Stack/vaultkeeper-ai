@@ -20,6 +20,6 @@ export const ReadFile: IAIFunctionDefinition = {
           description: "A short message explaining why you're reading this file (e.g., 'Reading your daily note to check tasks')"
         }
       },
-      required: ["file_path"]
+      required: ["file_path", "user_message"]
     }
   }

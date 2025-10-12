@@ -59,7 +59,6 @@
 /* CSS Variables for Common Components */
 /* ============================== */
 
-/* does this affect all modals? */
 .conversation-history-modal {
   padding: 0px;
   overflow: hidden;
@@ -79,6 +78,15 @@
 
 .top-bar-button:hover {
   background-color: var(--color-base-35);
+}
+
+.ai-request-cancelled {
+  color: var(--color-red);
+  border: var(--color-red);
+  border-style: solid;
+  border-width: var(--border-width);
+  border-radius: var(--radius-m);
+  padding: var(--size-2-3);
 }
 
 /* ============================== */

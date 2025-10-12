@@ -12,7 +12,8 @@ export class StreamingService {
   public async* streamRequest(
     url: string,
     requestBody: unknown,
-    parseStreamChunk: (chunk: string) => StreamChunk
+    parseStreamChunk: (chunk: string) => StreamChunk,
+    abortSignal?: AbortSignal
   ): AsyncGenerator<StreamChunk, void, unknown> {
     try {
       const response = await fetch(
@@ -23,6 +24,7 @@ export class StreamingService {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(requestBody),
+          signal: abortSignal,
         }
       );
 
@@ -65,12 +67,22 @@ export class StreamingService {
         yield { content: "", isComplete: true };
       }
     } catch (error) {
-      console.error("Stream request error:", error);
-      yield {
-        content: "",
-        isComplete: true,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
+      // Don't log abort errors as they're intentional
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log("Stream request aborted by user");
+        yield {
+          content: "",
+          isComplete: true,
+          error: '<span class="ai-request-cancelled">Request has been cancelled</span>',
+        };
+      } else {
+        console.error("Stream request error:", error);
+        yield {
+          content: "",
+          isComplete: true,
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
     }
   }
 }

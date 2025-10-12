@@ -37,6 +37,7 @@
   let isSubmitting = false;
   let isStreaming = false;
   let currentStreamingMessageId: string | null = null;
+  let abortController: AbortController | null = null;
 
   let conversation = new Conversation();
 
@@ -83,6 +84,19 @@
     return hasNoApiKey;
   }
 
+  function handleStop() {
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
+    }
+    currentThought = null;
+    isSubmitting = false;
+    semaphore.release();
+    tick().then(() => {
+      chatArea.onFinishedSubmitting();
+    });
+  }
+
   async function handleSubmit() {
     focusInput();
     if (!await semaphore.wait()) {
@@ -98,6 +112,7 @@
         return;
       }
       isSubmitting = true;
+      abortController = new AbortController();
 
       conversation.contents = [...conversation.contents, new ConversationContent(Role.User, userRequest)];
       await conversationService.saveConversation(conversation);
@@ -131,6 +146,7 @@
     } finally {
       currentThought = null;
       isSubmitting = false;
+      abortController = null;
       semaphore.release();
       tick().then(() => {
         chatArea.onFinishedSubmitting();
@@ -151,7 +167,7 @@
     let capturedFunctionCall: AIFunctionCall | null = null;
     let capturedShouldContinue = false;
 
-    for await (const chunk of ai.streamRequest(conversation)) {
+    for await (const chunk of ai.streamRequest(conversation, abortController?.signal)) {
       if (chunk.error) {
         console.error("Streaming error:", chunk.error);
         conversation.contents = conversation.contents.map((msg) =>
@@ -238,7 +254,7 @@
   }
 
   $: if (submitButton) {
-    setIcon(submitButton, 'send-horizontal');
+    setIcon(submitButton, isSubmitting ? 'square' : 'send-horizontal');
   }
 
   $: if ($conversationStore.shouldReset) {
@@ -275,9 +291,9 @@
     <button
       id="submit"
       bind:this={submitButton}
-      on:click={() => { handleSubmit() }}
-      disabled={isSubmitting || userRequest.trim() === ""}
-      aria-label="Send Message">
+      on:click={() => { isSubmitting ? handleStop() : handleSubmit() }}
+      disabled={!isSubmitting && userRequest.trim() === ""}
+      aria-label={isSubmitting ? "Cancel" : "Send Message"}>
     </button>
   </div>
 </main>

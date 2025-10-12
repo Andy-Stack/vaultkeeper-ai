@@ -184,13 +184,10 @@
       }
 
       if (chunk.isComplete) {
-        // Mark streaming as complete for this message
         isStreaming = false;
         currentStreamingMessageId = null;
 
-        // Handle message based on content and function call presence
         if (accumulatedContent.trim() !== "") {
-          console.log(`acc: ${accumulatedContent}, func: ${capturedFunctionCall}, cont: ${capturedShouldContinue}`)
           // We have content - always keep the message
           conversation.contents = conversation.contents.map((msg) =>
             msg.id === aiMessage.id
@@ -207,8 +204,6 @@
         await conversationService.saveConversation(conversation);
       }
     }
-
-    console.log(`shouldContinue: ${capturedShouldContinue}`)
 
     return { functionCall: capturedFunctionCall, shouldContinue: capturedShouldContinue };
   }

@@ -78,9 +78,7 @@
     chatService.stop();
     currentThought = null;
     isSubmitting = false;
-    tick().then(() => {
-      chatArea.onFinishedSubmitting();
-    });
+    chatArea.onFinishedSubmitting();
   }
 
   async function handleSubmit() {
@@ -113,9 +111,7 @@
       },
       onComplete: () => {
         isSubmitting = false;
-        tick().then(() => {
-          chatArea.onFinishedSubmitting();
-        });
+        chatArea.onFinishedSubmitting();
       }
     });
   }

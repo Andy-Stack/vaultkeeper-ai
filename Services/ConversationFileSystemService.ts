@@ -36,7 +36,7 @@ export class ConversationFileSystemService {
             }))
         };
 
-        await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData);
+        await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData, true);
         return this.currentConversationPath;
     }
 
@@ -57,7 +57,7 @@ export class ConversationFileSystemService {
             return false;
         }
 
-        const deleted = await this.fileSystemService.deleteFile(this.currentConversationPath);
+        const deleted = await this.fileSystemService.deleteFile(this.currentConversationPath, true);
 
         if (deleted) {
             this.resetCurrentConversation();
@@ -67,11 +67,11 @@ export class ConversationFileSystemService {
     }
 
     public async getAllConversations(): Promise<Conversation[]> {
-        const files = await this.fileSystemService.listFilesInDirectory(Path.Conversations, false);
+        const files = await this.fileSystemService.listFilesInDirectory(Path.Conversations, false, true);
         const conversations: Conversation[] = [];
 
         for (const file of files) {
-            const data = await this.fileSystemService.readObjectFromFile(file.path);
+            const data = await this.fileSystemService.readObjectFromFile(file.path, true);
             if (Conversation.isConversationData(data)) {
                 const conversation: Conversation = new Conversation();
                 conversation.title = data.title;

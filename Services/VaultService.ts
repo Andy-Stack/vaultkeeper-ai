@@ -1,4 +1,4 @@
-import type { TAbstractFile, TFile, TFolder, Vault } from "obsidian";
+import { TFile, TFolder, type TAbstractFile, type Vault } from "obsidian";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type AIAgentPlugin from "main";
@@ -8,6 +8,7 @@ import { Path } from "Enums/Path";
 export class VaultService {
 
     private readonly AGENT_ROOT = `${Path.Root}/**`;
+    private readonly USER_INSTRUCTION = Path.UserInstruction;
 
     private readonly plugin: AIAgentPlugin;
     private readonly vault: Vault;
@@ -17,62 +18,83 @@ export class VaultService {
         this.vault = this.plugin.app.vault;
     }
 
-    public getMarkdownFiles(): TFile[] {
-        return this.vault.getMarkdownFiles().filter(file => !this.isExclusion(file.path));
+    public getMarkdownFiles(allowAccessToPluginRoot: boolean = false): TFile[] {
+        return this.vault.getMarkdownFiles().filter(file => !this.isExclusion(file.path, allowAccessToPluginRoot));
     }
 
-    public getAbstractFileByPath(filePath: string): TAbstractFile | null {
-        if (this.isExclusion(filePath)) {
+    public getAbstractFileByPath(filePath: string, allowAccessToPluginRoot: boolean = false): TAbstractFile | null {
+        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
             console.log(`Plugin attempted to retrieve a file that is in the exclusions list: ${filePath}`);
             return null;
-        } 
+        }
         return this.vault.getAbstractFileByPath(filePath);
     }
 
-    public async read(file: TFile): Promise<string> {
-        if (this.isExclusion(file.path)) {
+    public async read(file: TFile, allowAccessToPluginRoot: boolean = false): Promise<string> {
+        if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
             console.log(`Plugin attempted to read a file that is in the exclusions list: ${file.path}`);
             return "";
-        } 
+        }
         return await this.vault.read(file);
     }
 
-    public async create(filePath: string, content: string): Promise<TFile> {
-        if (this.isExclusion(filePath)) {
+    public async create(filePath: string, content: string, allowAccessToPluginRoot: boolean = false): Promise<TFile> {
+        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
             throw new Error(`Plugin attempted to create a file that is in the exclusion list: ${filePath}`);
         }
         return await this.vault.create(filePath, content);
     }
 
-    public async modify(file: TFile, content: string): Promise<void> {
-        if (this.isExclusion(file.path)) {
+    public async modify(file: TFile, content: string, allowAccessToPluginRoot: boolean = false): Promise<void> {
+        if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
             console.log(`Plugin attempted to modify a file that is in the exclusions list: ${file.path}`)
             return;
-        } 
+        }
         await this.vault.modify(file, content);
     }
 
-    public async delete(file: TAbstractFile, force?: boolean): Promise<void> {
-        if (this.isExclusion(file.path)) {
+    public async delete(file: TAbstractFile, force?: boolean, allowAccessToPluginRoot: boolean = false): Promise<void> {
+        if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
             console.log(`Plugin attempted to delete a file that is in the exclusions list: ${file.path}`)
             return;
         }
         await this.vault.delete(file, force);
     }
 
-    public async createFolder(path: string): Promise<TFolder> {
-        if (this.isExclusion(path)) {
+    public async createFolder(path: string, allowAccessToPluginRoot: boolean = false): Promise<TFolder> {
+        if (this.isExclusion(path, allowAccessToPluginRoot)) {
             throw new Error(`Plugin attempted to create a folder that is in the exclusion list: ${path}`);
         }
         return await this.vault.createFolder(path);
     }
 
-    /**
-     * Checks if a file should be excluded based on configured exclusion patterns.
-     * Supports exact matches and glob patterns (**, *).
-     */
-    private isExclusion(filePath: string): boolean {
-        const exclusions = [this.AGENT_ROOT, ...this.plugin.settings.exclusions];
+    public async listFilesInDirectory(dirPath: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFile[]> {
+        const dir: TAbstractFile | null = this.getAbstractFileByPath(dirPath, true);
+
+        if (dir == null || !(dir instanceof TFolder)) {
+            return [];
+        }
+
+        let files: TFile[] = [];
+        for (let child of dir.children) {
+            if (child instanceof TFile) {
+                files.push(child);
+            } else if (child instanceof TFolder && recursive) {
+                const childFiles = await this.listFilesInDirectory(child.path, recursive, allowAccessToPluginRoot);
+                files = files.concat(childFiles);
+            }
+        }
+
+        // if an excluded file or directory is present we just filter it rather than 
+        // reporting it since this function could touch a large part of the vault
+        return files.filter(file => !this.isExclusion(file.path, allowAccessToPluginRoot));
+    }
+
+    private isExclusion(filePath: string, allowAccessToPluginRoot: boolean = false): boolean {
+        // the ai should never be able to edit the user instruction
+        const exclusions = allowAccessToPluginRoot
+            ? [this.USER_INSTRUCTION, ...this.plugin.settings.exclusions]
+            : [this.AGENT_ROOT, ...this.plugin.settings.exclusions];
 
         return exclusions.some(pattern => {
             if (filePath === pattern) {

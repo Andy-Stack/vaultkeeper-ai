@@ -21,23 +21,23 @@ export class FileSystemService {
         });
     }
 
-    public async readFile(filePath: string): Promise<string | null> {
-        const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath);
+    public async readFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<string | null> {
+        const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
         if (file && file instanceof TFile) {
-            return await this.vaultService.read(file);
+            return await this.vaultService.read(file, allowAccessToPluginRoot);
         }
         return null;
     }
 
-    public async writeFile(filePath: string, content: string): Promise<boolean> {
+    public async writeFile(filePath: string, content: string, allowAccessToPluginRoot: boolean = false): Promise<boolean> {
         try {
-            let file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath);
+            let file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
             if (file == null || !(file instanceof TFile)) {
-                await this.createDirectories(this.vaultService, filePath);
-                await this.vaultService.create(filePath, content);
+                await this.createDirectories(this.vaultService, filePath, allowAccessToPluginRoot);
+                await this.vaultService.create(filePath, content, allowAccessToPluginRoot);
                 return true;
             }
-            await this.vaultService.modify(file as TFile, content);
+            await this.vaultService.modify(file as TFile, content, allowAccessToPluginRoot);
             return true;
         }
         catch (error) {
@@ -46,12 +46,12 @@ export class FileSystemService {
         }
     }
 
-    public async deleteFile(filePath: string): Promise<boolean> {
+    public async deleteFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<boolean> {
         try {
-            const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath);
+            const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 
             if (file && file instanceof TFile) {
-                await this.vaultService.delete(file);
+                await this.vaultService.delete(file, undefined, allowAccessToPluginRoot);
                 return true;
             }
 
@@ -62,30 +62,14 @@ export class FileSystemService {
         }
     }
 
-    public async listFilesInDirectory(dirPath: string, recursive: boolean = true): Promise<TFile[]> {
-        const dir: TAbstractFile | null = this.vaultService.getAbstractFileByPath(dirPath);
-        
-        if (dir == null || !(dir instanceof TFolder)) {
-            return [];
-        }
-
-        let files: TFile[] = [];
-        for (let child of dir.children) {
-            if (child instanceof TFile) {
-                files.push(child);
-            } else if (child instanceof TFolder && recursive) {
-                const childFiles = await this.listFilesInDirectory(child.path, recursive);
-                files = files.concat(childFiles);
-            }
-        }
-
-        return files;
+    public async listFilesInDirectory(dirPath: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFile[]> {
+        return await this.vaultService.listFilesInDirectory(dirPath, recursive, allowAccessToPluginRoot);
     }
 
-    public async readObjectFromFile(filePath: string): Promise<object | null> {
-        const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath);
+    public async readObjectFromFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<object | null> {
+        const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
         if (file && file instanceof TFile) {
-            const content = await this.vaultService.read(file);
+            const content = await this.vaultService.read(file, allowAccessToPluginRoot);
             if (isValidJson(content) === true) {
                 return JSON.parse(content);
             }
@@ -93,16 +77,16 @@ export class FileSystemService {
         return null;
     }
 
-    public async writeObjectToFile(filePath: string, data: object): Promise<boolean> {
+    public async writeObjectToFile(filePath: string, data: object, allowAccessToPluginRoot: boolean = false): Promise<boolean> {
         try {
-            let file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath);
+            let file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 
             if (file && file instanceof TFile) {
-                await this.vaultService.modify(file, JSON.stringify(data, null, 4));
+                await this.vaultService.modify(file, JSON.stringify(data, null, 4), allowAccessToPluginRoot);
             }
             else {
-                await this.createDirectories(this.vaultService, filePath);
-                await this.vaultService.create(filePath, JSON.stringify(data, null, 4));
+                await this.createDirectories(this.vaultService, filePath, allowAccessToPluginRoot);
+                await this.vaultService.create(filePath, JSON.stringify(data, null, 4), allowAccessToPluginRoot);
             }
 
             return true;
@@ -112,7 +96,7 @@ export class FileSystemService {
         }
     }
 
-    private async createDirectories(vaultService: VaultService, filePath: string) {
+    private async createDirectories(vaultService: VaultService, filePath: string, allowAccessToPluginRoot: boolean = false) {
         const dirPath: string = filePath.substring(0, filePath.lastIndexOf('/'));
 
         const dirs: string[] = dirPath.split('/');
@@ -121,8 +105,8 @@ export class FileSystemService {
         for (const dir of dirs) {
             if (dir) {
                 currentPath = currentPath ? `${currentPath}/${dir}` : dir;
-                if (vaultService.getAbstractFileByPath(currentPath) == null) {
-                    await vaultService.createFolder(currentPath);
+                if (vaultService.getAbstractFileByPath(currentPath, allowAccessToPluginRoot) == null) {
+                    await vaultService.createFolder(currentPath, allowAccessToPluginRoot);
                 }
             }
         }

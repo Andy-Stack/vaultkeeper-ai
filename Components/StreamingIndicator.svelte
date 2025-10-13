@@ -1,8 +1,9 @@
 <script lang="ts">
   export let streamingElement: HTMLElement | undefined;
+  export let editModeActive: boolean = false;
 </script>
 
-<div class="container" bind:this={streamingElement}>
+<div class="container" class:edit-mode={editModeActive} bind:this={streamingElement}>
   <span class="📦"></span>
   <span class="📦"></span>
   <span class="📦"></span>
@@ -26,6 +27,11 @@
     position: relative;
     margin-left: 4px;
     padding-top: 12px;
+    --streaming-color: var(--interactive-accent);
+  }
+
+  .container.edit-mode {
+    --streaming-color: var(--color-blue);
   }
 
   .📦 {
@@ -43,9 +49,9 @@
     position: absolute;
     top: 0;
     right: 0;
-    background-color: color-mix(in srgb, var(--interactive-accent) 85%, white 15%);
+    background-color: color-mix(in srgb, var(--streaming-color) 85%, white 15%);
     border-radius: var(--box-border-radius);
-    box-shadow: 0px 0px 8px 2px color-mix(in srgb, var(--interactive-accent) 40%, transparent 80%);
+    box-shadow: 0px 0px 8px 2px color-mix(in srgb, var(--streaming-color) 40%, transparent 80%);
   }
   .📦:nth-child(1) {
     animation: slide var(--duration) ease-in-out infinite alternate;
@@ -78,25 +84,25 @@
     animation: squidge-4 var(--duration) ease-in-out infinite alternate;
   }
   .📦:nth-child(2):after {
-    background-color: color-mix(in srgb, var(--interactive-accent) 75%, white 25%);
+    background-color: color-mix(in srgb, var(--streaming-color) 75%, white 25%);
   }
   .📦:nth-child(3):after {
-    background-color: color-mix(in srgb, var(--interactive-accent) 80%, white 20%);
+    background-color: color-mix(in srgb, var(--streaming-color) 80%, white 20%);
   }
   .📦:nth-child(4):after {
-    background-color: color-mix(in srgb, var(--interactive-accent) 90%, white 10%);
+    background-color: color-mix(in srgb, var(--streaming-color) 90%, white 10%);
   }
   .📦:nth-child(5):after {
-    background-color: color-mix(in srgb, var(--interactive-accent) 95%, white 5%);
+    background-color: color-mix(in srgb, var(--streaming-color) 95%, white 5%);
   }
 
   @keyframes slide {
     0% {
-      background-color: color-mix(in srgb, var(--interactive-accent) 70%, white 30%);
+      background-color: color-mix(in srgb, var(--streaming-color) 70%, white 30%);
       transform: translatex(0vw);
     }
     100% {
-      background-color: color-mix(in srgb, var(--interactive-accent) 95%, white 5%);
+      background-color: color-mix(in srgb, var(--streaming-color) 95%, white 5%);
       transform: translatex(
         calc(var(--container-size) - (var(--box-size) * 1.25))
       );
@@ -105,10 +111,10 @@
 
   @keyframes color-change {
     0% {
-      background-color: color-mix(in srgb, var(--interactive-accent) 70%, white 30%);
+      background-color: color-mix(in srgb, var(--streaming-color) 70%, white 30%);
     }
     100% {
-      background-color: color-mix(in srgb, var(--interactive-accent) 95%, white 5%);
+      background-color: color-mix(in srgb, var(--streaming-color) 95%, white 5%);
     }
   }
 

@@ -17,6 +17,7 @@
   export let isSubmitting: boolean = false;
   export let chatContainer: HTMLDivElement;
   export let currentStreamingMessageId: string | null = null;
+  export let editModeActive: boolean = false;
 
   export function onFinishedSubmitting() {
     if (lastAssistantMessageElement && lastAssistantMessageElement.offsetHeight < 
@@ -282,7 +283,7 @@
 
   <ChatAreaThought bind:thoughtElement thought={currentThought}/>
   {#if isSubmitting}
-    <StreamingIndicator bind:streamingElement/>
+    <StreamingIndicator bind:streamingElement editModeActive={editModeActive}/>
   {/if}
   
   {#if messages.length === 0}

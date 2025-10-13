@@ -171,7 +171,8 @@
 
 <main class="container">
   <div id="chat-container">
-    <ChatArea messages={conversation.contents} bind:this={chatArea} bind:currentThought bind:isSubmitting bind:chatContainer currentStreamingMessageId={currentStreamingMessageId}/>
+    <ChatArea messages={conversation.contents} bind:this={chatArea} bind:currentThought bind:isSubmitting bind:chatContainer
+      currentStreamingMessageId={currentStreamingMessageId} editModeActive={editModeActive}/>
   </div>
   
   <div id="input-container" class:edit-mode={editModeActive}>

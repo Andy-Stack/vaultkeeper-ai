@@ -8,6 +8,7 @@ import type { ConversationFileSystemService } from 'Services/ConversationFileSys
 import type { FileSystemService } from 'Services/FileSystemService';
 import { dateToString } from 'Helpers/Helpers';
 import { conversationStore } from 'Stores/conversationStore';
+import { Selector } from 'Enums/Selector';
 
 interface ListItem {
     id: string;
@@ -50,8 +51,8 @@ export class ConversationHistoryModal extends Modal {
     onOpen() {
         const { contentEl, modalEl, containerEl } = this;
 
-        containerEl.addClass('conversation-history-modal');
-        modalEl.addClass('conversation-history-modal');
+        containerEl.addClass(Selector.ConversationHistoryModal);
+        modalEl.addClass(Selector.ConversationHistoryModal);
 
         this.component = mount(ConversationHistoryModalSvelte, {
             target: contentEl,
@@ -82,7 +83,7 @@ export class ConversationHistoryModal extends Modal {
         const currentPath = this.conversationFileSystemService.getCurrentConversationPath();
 
         for (const item of itemsToDelete) {
-            const deleted = await this.fileSystemService.deleteFile(item.filePath);
+            const deleted = await this.fileSystemService.deleteFile(item.filePath, true);
             if (deleted && currentPath === item.filePath) {
                 shouldResetChat = true;
             }

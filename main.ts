@@ -23,6 +23,8 @@ export default class AIAgentPlugin extends Plugin {
 	async onload() {
 		// KaTeX CSS is bundled with the plugin to comply with CSP
 		require('katex/dist/katex.min.css');
+		// Plugin styles
+		require('./styles.css');
 
 		await this.loadSettings();
 

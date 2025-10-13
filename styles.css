@@ -87,7 +87,7 @@
   background-color: var(--color-base-35);
 }
 
-.ai-request-cancelled {
+.api-request-aborted {
   color: var(--color-red);
   border: var(--color-red);
   border-style: solid;

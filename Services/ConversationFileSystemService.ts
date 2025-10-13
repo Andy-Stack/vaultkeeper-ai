@@ -4,6 +4,7 @@ import { FileSystemService } from "./FileSystemService";
 import { Services } from "./Services";
 import { Conversation } from "Conversations/Conversation";
 import { ConversationContent } from "Conversations/ConversationContent";
+import { Copy } from "Enums/Copy";
 
 export class ConversationFileSystemService {
 
@@ -26,14 +27,16 @@ export class ConversationFileSystemService {
         const conversationData = {
             title: conversation.title,
             created: conversation.created.toISOString(),
-            contents: conversation.contents.map(content => ({
-                id: content.id,
-                role: content.role,
-                content: content.content,
-                timestamp: content.timestamp.toISOString(),
-                isFunctionCall: content.isFunctionCall,
-                isFunctionCallResponse: content.isFunctionCallResponse
-            }))
+            contents: conversation.contents
+                .filter(content => content.content !== Copy.ApiRequestAborted)
+                .map(content => ({
+                    id: content.id,
+                    role: content.role,
+                    content: content.content,
+                    timestamp: content.timestamp.toISOString(),
+                    isFunctionCall: content.isFunctionCall,
+                    isFunctionCallResponse: content.isFunctionCallResponse
+                }))
         };
 
         await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData, true);

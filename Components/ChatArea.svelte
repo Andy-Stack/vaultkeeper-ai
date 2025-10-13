@@ -8,6 +8,9 @@
 	import { Role } from "Enums/Role";
   import type { ConversationContent } from "Conversations/ConversationContent";
 	import { tick } from "svelte";
+	import type AIAgentPlugin from "main";
+	import { Copy } from "Enums/Copy";
+	import { Selector } from "Enums/Selector";
 
   export let messages: ConversationContent[] = [];
   export let currentThought: string | null = null;
@@ -20,17 +23,26 @@
       chatContainer.offsetHeight - parseFloat(getComputedStyle(chatContainer).padding) * 2) {
       // Recalculate padding when streaming ends to fix race condition with streaming indicator removal
       assistantMessageAction(lastAssistantMessageElement);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-        chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: "smooth" });
-      });
-      });
+
+      // use an interval to complete scrolling once the dom has finished updating
+      const scrollInterval: number = plugin.registerInterval(window.setInterval(() => {
+        tick().then(() => {
+          chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: "smooth" });
+        });
+      }, 50));
+      
+      setTimeout(() => {
+        if (scrollInterval) {
+          clearInterval(scrollInterval);
+        }
+      }, 1000);
     }
   }
 
   let thoughtElement: HTMLElement | undefined;
   let streamingElement: HTMLElement | undefined;
 
+  let plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
   let streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
 
   let messageElements: Map<string, HTMLElement> = new Map<string, HTMLElement>();
@@ -123,6 +135,11 @@
 
     // For assistant messages that aren't streaming, use traditional parsing
     if (!isCurrentlyStreaming) {
+      // Check if this is a cancelled request message
+      if (message.content === Copy.ApiRequestAborted) {
+        return `<span class="${Selector.ApiRequestAborted}">Request has been cancelled</span>`;
+      }
+
       try {
         return streamingMarkdownService.formatText(message.content) || `<div>${message.content}</div>`;
       } catch (err) {

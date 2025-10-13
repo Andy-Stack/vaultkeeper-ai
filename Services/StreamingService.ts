@@ -1,4 +1,5 @@
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
+import { Copy } from "Enums/Copy";
 
 export interface StreamChunk {
   content: string;
@@ -69,14 +70,11 @@ export class StreamingService {
     } catch (error) {
       // Don't log abort errors as they're intentional
       if (error instanceof Error && error.name === 'AbortError') {
-        console.log("Stream request aborted by user");
         yield {
-          content: "",
-          isComplete: true,
-          error: '<span class="ai-request-cancelled">Request has been cancelled</span>',
+          content: Copy.ApiRequestAborted,
+          isComplete: true
         };
       } else {
-        console.error("Stream request error:", error);
         yield {
           content: "",
           isComplete: true,

@@ -1,5 +1,6 @@
 import { AIProvider } from "Enums/ApiProvider";
 import { Path } from "Enums/Path";
+import { Selector } from "Enums/Selector";
 import type AIAgentPlugin from "main";
 import { PluginSettingTab, Setting, App, setIcon, setTooltip } from "obsidian";
 
@@ -77,18 +78,18 @@ export class AIAgentSettingTab extends PluginSettingTab {
 						this.plugin.settings.exclusions = value.split("\n").map(line => line.trim()).filter(line => line.length > 0);
 						await this.plugin.saveSettings();
 					});
-				text.inputEl.classList.add("ai-exclusions-input");
+				text.inputEl.classList.add(Selector.AIExclusionsInput);
 			});
 	}
 
 	private highlightApiKey(): void {
 		if (this.apiKeySetting) {
             if (this.plugin.settings.apiKey.trim() === "") {
-                this.apiKeySetting.settingEl.removeClass("api-key-setting-ok");
-                this.apiKeySetting.settingEl.addClass("api-key-setting-error");
+                this.apiKeySetting.settingEl.removeClass(Selector.ApiKeySettingOk);
+                this.apiKeySetting.settingEl.addClass(Selector.ApiKeySettingError);
             } else {
-                this.apiKeySetting.settingEl.removeClass("api-key-setting-error");
-                this.apiKeySetting.settingEl.addClass("api-key-setting-ok");
+                this.apiKeySetting.settingEl.removeClass(Selector.ApiKeySettingError);
+                this.apiKeySetting.settingEl.addClass(Selector.ApiKeySettingOk);
             }
 		}
 	}

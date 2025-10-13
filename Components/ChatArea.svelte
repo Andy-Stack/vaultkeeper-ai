@@ -137,14 +137,14 @@
     // For assistant messages that aren't streaming, use traditional parsing
     if (!isCurrentlyStreaming) {
       // Check if this is a cancelled request message
-      if (message.content === Copy.ApiRequestAborted) {
-        return `<span class="${Selector.ApiRequestAborted}">Request has been cancelled</span>`;
+      if (message.content.includes(Selector.ApiRequestAborted)) {
+        return `<span class="${Selector.ApiRequestAborted}">${Copy.ApiRequestAborted}</span>`;
       }
 
       try {
         return streamingMarkdownService.formatText(message.content) || `<div>${message.content}</div>`;
       } catch (err) {
-        console.error('HTML processing failed:', err);
+        console.error("HTML processing failed:", err);
         return `<div>${message.content}</div>`;
       }
     }
@@ -268,7 +268,7 @@
           {#if message.role === Role.User}
             <div class="message-text-user fade-in-fast">{message.content}</div>
           {:else}
-            <div class="markdown-content fade-in-fast {currentStreamingMessageId === message.id ? 'streaming' : ''}">
+            <div class="markdown-content fade-in-fast {currentStreamingMessageId === message.id ? "streaming" : ""}">
               {#if currentStreamingMessageId === message.id}
                 <div use:streamingAction={message.id} class="streaming-content"></div>
               {:else}

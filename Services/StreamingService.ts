@@ -1,5 +1,5 @@
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
-import { Copy } from "Enums/Copy";
+import { Selector } from "Enums/Selector";
 
 export interface StreamChunk {
   content: string;
@@ -71,7 +71,7 @@ export class StreamingService {
       // Don't log abort errors as they're intentional
       if (error instanceof Error && error.name === 'AbortError') {
         yield {
-          content: Copy.ApiRequestAborted,
+          content: Selector.ApiRequestAborted,
           isComplete: true
         };
       } else {

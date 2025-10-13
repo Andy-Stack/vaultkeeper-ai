@@ -1,17 +1,17 @@
-import { unified, type Processor } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkMath from 'remark-math';
-import remarkGfm from 'remark-gfm';
-import remarkEmoji from 'remark-emoji';
-import remarkRehype from 'remark-rehype';
-import rehypeKatex from 'rehype-katex';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeStringify from 'rehype-stringify';
-import wikiLinkPlugin from 'remark-wiki-link';
-import type { FileSystemService } from './FileSystemService';
-import { Resolve } from './DependencyService';
-import { Services } from './Services';
-import { Selector } from 'Enums/Selector';
+import { unified, type Processor } from "unified";
+import remarkParse from "remark-parse";
+import remarkMath from "remark-math";
+import remarkGfm from "remark-gfm";
+import remarkEmoji from "remark-emoji";
+import remarkRehype from "remark-rehype";
+import rehypeKatex from "rehype-katex";
+import rehypeHighlight from "rehype-highlight";
+import rehypeStringify from "rehype-stringify";
+import wikiLinkPlugin from "remark-wiki-link";
+import type { FileSystemService } from "./FileSystemService";
+import { Resolve } from "./DependencyService";
+import { Services } from "./Services";
+import { Selector } from "Enums/Selector";
 
 interface StreamingState {
     element: HTMLElement;
@@ -38,13 +38,13 @@ export class StreamingMarkdownService {
             .use(rehypeKatex)
             .use(rehypeHighlight, {
                 detect: true,
-                plainText: ['txt', 'text'],
+                plainText: ["txt", "text"],
                 aliases: {
-                    javascript: ['js', 'jsx'],
-                    typescript: ['ts', 'tsx'],
-                    python: ['py'],
-                    markdown: ['md', 'mdx'],
-                    shell: ['bash', 'sh', 'zsh']
+                    javascript: ["js", "jsx"],
+                    typescript: ["ts", "tsx"],
+                    python: ["py"],
+                    markdown: ["md", "mdx"],
+                    shell: ["bash", "sh", "zsh"]
                 }
             })
             .use(rehypeStringify, {
@@ -66,18 +66,18 @@ export class StreamingMarkdownService {
             const result = this.processor!.processSync(preprocessed);
             return String(result);
         } catch (error) {
-            console.warn('Markdown processing failed:', error);
+            console.warn("Markdown processing failed:", error);
             return this.getFallbackHTML(text);
         }
     }
 
     // Simplified streaming approach
     public initializeStream(messageId: string, container: HTMLElement): void {
-        container.innerHTML = '';
+        container.innerHTML = "";
         
         this.streamingStates.set(messageId, {
             element: container,
-            buffer: '',
+            buffer: "",
             lastProcessedLength: 0,
             isComplete: false
         });
@@ -115,7 +115,7 @@ export class StreamingMarkdownService {
                 state.element.innerHTML = html;
                 state.lastProcessedLength = state.buffer.length;
             } catch (error) {
-                console.warn('Streaming render failed:', error);
+                console.warn("Streaming render failed:", error);
             }
             
             this.renderTimeouts.delete(messageId);
@@ -154,74 +154,74 @@ export class StreamingMarkdownService {
         // Simplified and safer preprocessing
         return content
             // Normalize line endings
-            .replace(/\r\n/g, '\n')
-            .replace(/\r/g, '\n')
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
             // Convert LaTeX delimiters
             .replace(/\\\[([\s\S]*?)\\\]/g, (match, math) => {
                 // Ensure math blocks are on their own lines
-                return '\n$$\n' + math.trim() + '\n$$\n';
+                return "\n$$\n" + math.trim() + "\n$$\n";
             })
-            .replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$')
+            .replace(/\\\(([\s\S]*?)\\\)/g, "$$$1$$")
             // Ensure headers have blank lines before them (but not at start)
-            .replace(/([^\n])\n(#{1,6}\s)/g, '$1\n\n$2')
+            .replace(/([^\n])\n(#{1,6}\s)/g, "$1\n\n$2")
             // Collapse excessive newlines but preserve intentional spacing
-            .replace(/\n{4,}/g, '\n\n\n')
+            .replace(/\n{4,}/g, "\n\n\n")
             // Clean up list formatting - ensure consistent spacing
-            .replace(/^(\s*)([*+-]|\d+\.)\s+/gm, '$1$2 ')
+            .replace(/^(\s*)([*+-]|\d+\.)\s+/gm, "$1$2 ")
             // Ensure task list checkboxes are properly formatted
-            .replace(/^(\s*)([*+-])\s*\[([ x])\]/gm, '$1$2 [$3]');
+            .replace(/^(\s*)([*+-])\s*\[([ x])\]/gm, "$1$2 [$3]");
     }
 
     private getFallbackHTML(text: string): string {
         // Improved fallback with basic markdown support
         const escaped = text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
         
-        const lines = escaped.split('\n');
+        const lines = escaped.split("\n");
         const html: string[] = [];
         let inList = false;
         let inCodeBlock = false;
         
         for (const line of lines) {
-            if (line.startsWith('```')) {
+            if (line.startsWith("```")) {
                 if (inCodeBlock) {
-                    html.push('</code></pre>');
+                    html.push("</code></pre>");
                     inCodeBlock = false;
                 } else {
-                    html.push('<pre><code>');
+                    html.push("<pre><code>");
                     inCodeBlock = true;
                 }
                 continue;
             }
             
             if (inCodeBlock) {
-                html.push(line + '\n');
+                html.push(line + "\n");
                 continue;
             }
             
             // Basic list support
             if (/^[*+-]\s/.test(line)) {
                 if (!inList) {
-                    html.push('<ul>');
+                    html.push("<ul>");
                     inList = true;
                 }
                 html.push(`<li>${line.substring(2)}</li>`);
-            } else if (inList && line.trim() === '') {
-                html.push('</ul>');
+            } else if (inList && line.trim() === "") {
+                html.push("</ul>");
                 inList = false;
             } else {
                 if (inList) {
-                    html.push('</ul>');
+                    html.push("</ul>");
                     inList = false;
                 }
                 
                 // Basic formatting
                 const formatted = line
-                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                    .replace(/`(.+?)`/g, '<code>$1</code>');
+                    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+                    .replace(/`(.+?)`/g, "<code>$1</code>");
                 
                 if (line.trim()) {
                     html.push(`<p>${formatted}</p>`);
@@ -229,9 +229,9 @@ export class StreamingMarkdownService {
             }
         }
         
-        if (inList) html.push('</ul>');
-        if (inCodeBlock) html.push('</code></pre>');
+        if (inList) html.push("</ul>");
+        if (inCodeBlock) html.push("</code></pre>");
         
-        return html.join('');
+        return html.join("");
     }
 }

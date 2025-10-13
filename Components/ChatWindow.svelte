@@ -167,6 +167,11 @@
     conversationStore.clearLoadFlag();
     scrollToBottom();
   }
+
+  $: if ($conversationStore.shouldDeactivateEditMode) {
+    editModeActive = false;
+    conversationStore.clearEditModeFlag();
+  }
 </script>
 
 <main class="container">

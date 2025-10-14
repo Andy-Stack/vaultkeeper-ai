@@ -4,6 +4,7 @@ import { Services } from "./Services";
 import type AIAgentPlugin from "main";
 import { Path } from "Enums/Path";
 import { escapeRegex } from "Helpers/Helpers";
+import type { SearchMatch, SearchSnippet } from "../Helpers/SearchTypes";
 
 /* This service protects the users vault through their exclusions. The plugin root is excluded by default */
 export class VaultService {
@@ -91,25 +92,159 @@ export class VaultService {
         return files.filter(file => !this.isExclusion(file.path, allowAccessToPluginRoot));
     }
 
-    public async searchVaultFiles(searchTerm: string): Promise<TFile[]> {
+    public async searchVaultFiles(searchTerm: string): Promise<SearchMatch[]> {
         let regex: RegExp;
         try {
-            regex = new RegExp(searchTerm, "i");
+            regex = new RegExp(searchTerm, "ig"); // Added 'g' flag for global matching
         } catch {
-            regex = new RegExp(escapeRegex(searchTerm), "i");
+            regex = new RegExp(escapeRegex(searchTerm), "ig");
         }
 
         const files: TFile[] = this.vault.getFiles().filter(file => !this.isExclusion(file.path));
 
-        const matches: TFile[] = [];
+        // Collect all matches from all files
+        const allMatches: SearchMatch[] = [];
+
         for (const file of files) {
             const content = await this.vault.cachedRead(file);
-            if (regex.test(content)) {
-                matches.push(file);
+            const snippets = this.extractSnippets(content, regex);
+
+            if (snippets.length > 0) {
+                allMatches.push({ file, snippets });
             }
         }
 
-        return matches;
+        // Flatten matches for random sampling
+        const flatMatches: { file: TFile; snippet: SearchSnippet }[] = [];
+        for (const match of allMatches) {
+            for (const snippet of match.snippets) {
+                flatMatches.push({ file: match.file, snippet });
+            }
+        }
+
+        // If more than 20 matches, randomly sample 20
+        let selectedMatches: { file: TFile; snippet: SearchSnippet }[];
+        if (flatMatches.length > 20) {
+            selectedMatches = this.randomSample(flatMatches, 20);
+        } else {
+            selectedMatches = flatMatches;
+        }
+
+        // Regroup by file
+        const resultMap = new Map<TFile, SearchSnippet[]>();
+        for (const match of selectedMatches) {
+            const existing = resultMap.get(match.file);
+            if (existing) {
+                existing.push(match.snippet);
+            } else {
+                resultMap.set(match.file, [match.snippet]);
+            }
+        }
+
+        // Convert map to array of SearchMatch objects
+        const results: SearchMatch[] = [];
+        for (const [file, snippets] of resultMap.entries()) {
+            results.push({ file, snippets });
+        }
+
+        return results;
+    }
+
+    /**
+     * Extracts snippets from content based on regex matches.
+     * Merges overlapping snippets to avoid duplication.
+     */
+    private extractSnippets(content: string, regex: RegExp): SearchSnippet[] {
+        const snippets: SearchSnippet[] = [];
+        const maxContextLength = 300; // Characters before and after the match
+
+        let match: RegExpExecArray | null;
+
+        // Find all matches
+        while ((match = regex.exec(content)) !== null) {
+            const matchIndex = match.index;
+            const matchLength = match[0].length;
+
+            // Calculate snippet boundaries
+            const snippetStart = Math.max(0, matchIndex - maxContextLength);
+            const snippetEnd = Math.min(content.length, matchIndex + matchLength + maxContextLength);
+
+            snippets.push({
+                text: content.substring(snippetStart, snippetEnd),
+                matchIndex,
+                matchLength
+            });
+        }
+
+        // Reset regex lastIndex
+        regex.lastIndex = 0;
+
+        // Merge overlapping snippets
+        return this.mergeOverlappingSnippets(snippets, content);
+    }
+
+    /**
+     * Merges snippets that overlap in the original content
+     */
+    private mergeOverlappingSnippets(snippets: SearchSnippet[], content: string): SearchSnippet[] {
+        if (snippets.length === 0) return snippets;
+
+        // Sort snippets by match index
+        snippets.sort((a, b) => a.matchIndex - b.matchIndex);
+
+        const merged: SearchSnippet[] = [];
+        let current = snippets[0];
+        const maxContextLength = 300;
+
+        for (let i = 1; i < snippets.length; i++) {
+            const next = snippets[i];
+
+            // Calculate the actual boundaries of current and next snippets in the original content
+            const currentStart = Math.max(0, current.matchIndex - maxContextLength);
+            const currentEnd = Math.min(content.length, current.matchIndex + current.matchLength + maxContextLength);
+            const nextStart = Math.max(0, next.matchIndex - maxContextLength);
+            const nextEnd = Math.min(content.length, next.matchIndex + next.matchLength + maxContextLength);
+
+            // Check if snippets overlap
+            if (nextStart <= currentEnd) {
+                // Merge: extend current to include next
+                const mergedStart = Math.min(currentStart, nextStart);
+                const mergedEnd = Math.max(currentEnd, nextEnd);
+
+                current = {
+                    text: content.substring(mergedStart, mergedEnd),
+                    matchIndex: current.matchIndex, // Keep the first match index
+                    matchLength: next.matchIndex + next.matchLength - current.matchIndex // Total span
+                };
+            } else {
+                // No overlap, save current and move to next
+                merged.push(current);
+                current = next;
+            }
+        }
+
+        // Don't forget the last snippet
+        merged.push(current);
+
+        return merged;
+    }
+
+    /**
+     * Randomly samples n items from an array
+     */
+    private randomSample<T>(array: T[], n: number): T[] {
+        const result: T[] = [];
+        const taken = new Set<number>();
+
+        while (result.length < n && result.length < array.length) {
+            const index = Math.floor(Math.random() * array.length);
+            if (!taken.has(index)) {
+                taken.add(index);
+                result.push(array[index]);
+            }
+        }
+
+        return result;
     }
 
     private isExclusion(filePath: string, allowAccessToPluginRoot: boolean = false): boolean {

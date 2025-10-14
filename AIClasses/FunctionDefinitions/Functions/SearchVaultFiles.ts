@@ -4,11 +4,11 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 export const SearchVaultFiles: IAIFunctionDefinition = {
   name: AIFunction.SearchVaultFiles,
   description: `Searches through all files in the user's Obsidian vault for the given search term.
-    Uses regex pattern matching to search both file names and file content.
-    Returns list of matching vault files with metadata (names, paths) and contextual snippets showing matched content with surrounding text.
-    Call this whenever you need to know what files exist in the vault to answer questions,
-    verify file presence, or to perform further agentic functions.
-    Use proactively when vault contents would inform your response.`,
+                Uses regex pattern matching to search file content.
+                Returns matching vault files with metadata (names, paths) and contextual snippets showing matched content with surrounding text to enable relevance assessment.
+                Call this whenever you need to know what files exist in the vault to answer questions,
+                verify file presence, or to perform further agentic functions.
+                Use proactively when vault contents would inform your response.`,
   parameters: {
     type: "object",
     properties: {

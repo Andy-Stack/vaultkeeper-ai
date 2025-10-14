@@ -1,10 +1,10 @@
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type { FileSystemService } from "./FileSystemService";
-import { TFile } from "obsidian";
 import { AIFunction } from "Enums/AIFunction";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
+import type { SearchMatch } from "../Helpers/SearchTypes";
 
 export class AIFunctionService {
     
@@ -33,10 +33,14 @@ export class AIFunctionService {
     }
 
     private async searchVaultFiles(searchTerm: string): Promise<object> {
-        const files: TFile[] = await this.fileSystemService.searchVaultFiles(searchTerm);
-        return files.map((file) => ({
-            name: file.basename,
-            path: file.path
+        const matches: SearchMatch[] = await this.fileSystemService.searchVaultFiles(searchTerm);
+        return matches.map((match) => ({
+            name: match.file.basename,
+            path: match.file.path,
+            snippets: match.snippets.map((snippet) => ({
+                text: snippet.text,
+                matchPosition: snippet.matchIndex
+            }))
         }));
     }
 

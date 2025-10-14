@@ -1,6 +1,7 @@
 export enum AIFunction {
     SearchVaultFiles = "search_vault_files",
-    ReadFile = "read_file",
+    ReadVaultFile = "read_vault_file",
+    WriteVaultFile = "write_vault_file",
 
     // used by gemini
     RequestWebSearch = "request_web_search"

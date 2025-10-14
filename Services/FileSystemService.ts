@@ -30,7 +30,7 @@ export class FileSystemService {
         return null;
     }
 
-    public async writeFile(filePath: string, content: string, allowAccessToPluginRoot: boolean = false): Promise<boolean> {
+    public async writeFile(filePath: string, content: string, allowAccessToPluginRoot: boolean = false): Promise<boolean | any> {
         try {
             let file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
             if (file == null || !(file instanceof TFile)) {
@@ -43,7 +43,7 @@ export class FileSystemService {
         }
         catch (error) {
             console.error("Error writing file:", error);
-            return false;
+            return error;
         }
     }
 

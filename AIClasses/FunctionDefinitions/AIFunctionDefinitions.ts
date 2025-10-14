@@ -1,17 +1,18 @@
 import type { IAIFunctionDefinition } from "./IAIFunctionDefinition";
 import { SearchVaultFiles } from "./Functions/SearchVaultFiles";
-import { ReadFile } from "./Functions/ReadFile";
+import { ReadVaultFile } from "./Functions/ReadVaultFile";
+import { WriteVaultFile } from "./Functions/WriteVaultFile";
 
 export class AIFunctionDefinitions {
     public getQueryActions(destructive: boolean): IAIFunctionDefinition[] {
-        const actions = [
+        let actions = [
             SearchVaultFiles,
-            ReadFile
+            ReadVaultFile
         ];
 
         if (destructive) {
-            actions.concat([
-                
+            actions = actions.concat([
+                WriteVaultFile
             ]);
         }
 

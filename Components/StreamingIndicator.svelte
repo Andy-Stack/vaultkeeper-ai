@@ -51,7 +51,7 @@
     right: 0;
     background-color: color-mix(in srgb, var(--streaming-color) 85%, white 15%);
     border-radius: var(--box-border-radius);
-    box-shadow: 0px 0px 8px 2px color-mix(in srgb, var(--streaming-color) 40%, transparent 80%);
+    box-shadow: 0px 0px 8px 4px color-mix(in srgb, var(--streaming-color) 40%, transparent 80%);
   }
   .📦:nth-child(1) {
     animation: slide var(--duration) ease-in-out infinite alternate;

@@ -300,11 +300,6 @@
     transition-duration: 0.5s;
   }
 
-  #submit-button:not(:disabled):hover {
-    cursor: pointer;
-    background-color: var(--interactive-accent-hover);
-  }
-
   #submit-button {
     grid-row: 2;
     grid-column: 6;
@@ -316,11 +311,16 @@
     background-color: var(--interactive-accent);
   }
 
+  #submit-button:not(:disabled):hover {
+    cursor: pointer;
+    background-color: var(--interactive-accent-hover);
+  }
+
   #submit-button.edit-mode {
     background-color: var(--interactive-accent-blue);
   }
 
-  #submit-button:not(:disabled):hover {
+  #submit-button.edit-mode:not(:disabled):hover {
     cursor: pointer;
     background-color: var(--interactive-accent-hover);
   }

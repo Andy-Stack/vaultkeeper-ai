@@ -5,7 +5,7 @@ export const WriteVaultFile: IAIFunctionDefinition = {
     name: AIFunction.WriteVaultFile,
     description: `Writes content to a file, creating it if it doesn't exist or replacing its contents if it does.
                   Use this for creating new notes or completely updating existing ones when you have the full content ready.
-                  IMPORTANT: This replaces the entire file content - always read the file first with ${AIFunction.ReadVaultFile} if you need to preserve existing content and make partial changes.
+                  IMPORTANT: This replaces the entire file content - always read the file first with ${AIFunction.ReadVaultFiles} if you need to preserve existing content and make partial changes.
                   For simple updates or additions, reading first ensures you don't lose data.`,
     parameters: {
         type: "object",

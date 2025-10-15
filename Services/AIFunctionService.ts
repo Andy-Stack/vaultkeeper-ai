@@ -17,11 +17,14 @@ export class AIFunctionService {
             case AIFunction.SearchVaultFiles:
                 return new AIFunctionResponse(functionCall.name, await this.searchVaultFiles(functionCall.arguments.search_term));
 
-            case AIFunction.ReadVaultFile:
-                return new AIFunctionResponse(functionCall.name, await this.readVaultFile(functionCall.arguments.file_path));
+            case AIFunction.ReadVaultFiles:
+                return new AIFunctionResponse(functionCall.name, await this.readVaultFiles(functionCall.arguments.file_paths));
 
             case AIFunction.WriteVaultFile:
                 return new AIFunctionResponse(functionCall.name, await this.writeVaultFile(functionCall.arguments.file_path, functionCall.arguments.content));
+
+            case AIFunction.DeleteVaultFile:
+                return new AIFunctionResponse(functionCall.name, await this.deleteVaultFile(functionCall.arguments.file_path, functionCall.arguments.confirm_deletion));
 
             // this is only used by gemini
             case AIFunction.RequestWebSearch:
@@ -58,16 +61,30 @@ export class AIFunctionService {
         }));
     }
 
-    private async readVaultFile(filePath: string): Promise<object> {
-        const content = await this.fileSystemService.readFile(filePath);
-        if (content === null) {
-            return { error: `File not found: ${filePath}` };
-        }
-        return { content };
+    private async readVaultFiles(filePaths: string[]): Promise<object> {
+        const files = await Promise.all(
+            filePaths.map(async (filePath) => {
+                const content = await this.fileSystemService.readFile(filePath);
+                if (content === null) {
+                    return { path: filePath, error: `File not found: ${filePath}` };
+                }
+                return { path: filePath, content };
+            })
+        );
+        return { files };
     }
 
     private async writeVaultFile(filePath: string, content: string): Promise<object> {
-        const result: boolean = await this.fileSystemService.writeFile(normalizePath(filePath), content);
-        return isBoolean(result) ? { success: result } : { success: false, error: result }
+        const result: any = await this.fileSystemService.writeFile(normalizePath(filePath), content);
+        return isBoolean(result) ? { success: result } : { success: false, error: result };
+    }
+
+    private async deleteVaultFile(filepath: string, confirmation: boolean): Promise<object> {
+        if (!confirmation) {
+            return { error: "Confirmation was false, no action taken" };
+        }
+
+        const result: any = await this.fileSystemService.deleteFile(filepath);
+        return isBoolean(result) ? { success: result } : { success: false, error: result };
     }
 }

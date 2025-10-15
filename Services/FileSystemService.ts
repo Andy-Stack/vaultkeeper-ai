@@ -47,7 +47,7 @@ export class FileSystemService {
         }
     }
 
-    public async deleteFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<boolean> {
+    public async deleteFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<boolean | any> {
         try {
             const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 
@@ -59,7 +59,7 @@ export class FileSystemService {
             return false;
         } catch (error) {
             console.error("Error deleting file:", error);
-            return false;
+            return error;
         }
     }
 

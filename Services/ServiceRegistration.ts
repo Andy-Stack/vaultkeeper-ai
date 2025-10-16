@@ -10,7 +10,7 @@ import { MessageService } from "./MessageService";
 import { FileSystemService } from "./FileSystemService";
 import { ConversationFileSystemService } from "./ConversationFileSystemService";
 import { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
-import type { App } from "obsidian";
+import { FileManager, type App } from "obsidian";
 import { AIFunctionService } from "./AIFunctionService";
 import { StreamingService } from "./StreamingService";
 import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
@@ -19,12 +19,14 @@ import { ChatService } from "./ChatService";
 import { VaultService } from "./VaultService";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
-    RegisterSingleton(Services.AIAgentPlugin, plugin);
-    RegisterSingleton(Services.VaultService, new VaultService());
-    RegisterSingleton(Services.MessageService, new MessageService());
-    RegisterSingleton(Services.WorkSpaceService, new WorkSpaceService());
-    RegisterSingleton(Services.FileSystemService, new FileSystemService());
-    RegisterSingleton(Services.ConversationFileSystemService, new ConversationFileSystemService());
+    RegisterSingleton<AIAgentPlugin>(Services.AIAgentPlugin, plugin);
+    RegisterSingleton<FileManager>(Services.FileManager, plugin.app.fileManager);
+
+    RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
+    RegisterSingleton<MessageService>(Services.MessageService, new MessageService());
+    RegisterSingleton<WorkSpaceService>(Services.WorkSpaceService, new WorkSpaceService());
+    RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());
+    RegisterSingleton<ConversationFileSystemService>(Services.ConversationFileSystemService, new ConversationFileSystemService());
 
     RegisterSingleton<IPrompt>(Services.IPrompt, new AIPrompt());
     RegisterSingleton<AIFunctionDefinitions>(Services.AIFunctionDefinitions, new AIFunctionDefinitions());

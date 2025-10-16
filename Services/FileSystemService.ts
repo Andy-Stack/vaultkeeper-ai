@@ -34,7 +34,6 @@ export class FileSystemService {
         try {
             let file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
             if (file == null || !(file instanceof TFile)) {
-                await this.createDirectories(this.vaultService, filePath, allowAccessToPluginRoot);
                 await this.vaultService.create(filePath, content, allowAccessToPluginRoot);
                 return true;
             }
@@ -47,20 +46,18 @@ export class FileSystemService {
         }
     }
 
-    public async deleteFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<boolean | any> {
-        try {
-            const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
+    public async deleteFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<{ success: true } | { success: false, error: string }> {
+        const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 
-            if (file && file instanceof TFile) {
-                await this.vaultService.delete(file, undefined, allowAccessToPluginRoot);
-                return true;
-            }
-
-            return false;
-        } catch (error) {
-            console.error("Error deleting file:", error);
-            return error;
+        if (!file || !(file instanceof TFile)) {
+            return { success: false, error: "File not found" };
         }
+
+        return await this.vaultService.delete(file, undefined, allowAccessToPluginRoot);
+    }
+
+    public async moveFile(sourcePath: string, destinationPath: string): Promise<{ success: true } | { success: false, error: string }> {
+        return await this.vaultService.move(sourcePath, destinationPath);
     }
 
     public async listFilesInDirectory(dirPath: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFile[]> {
@@ -86,7 +83,6 @@ export class FileSystemService {
                 await this.vaultService.modify(file, JSON.stringify(data, null, 4), allowAccessToPluginRoot);
             }
             else {
-                await this.createDirectories(this.vaultService, filePath, allowAccessToPluginRoot);
                 await this.vaultService.create(filePath, JSON.stringify(data, null, 4), allowAccessToPluginRoot);
             }
 
@@ -99,21 +95,5 @@ export class FileSystemService {
 
     public async searchVaultFiles(searchTerm: string): Promise<SearchMatch[]> {
         return await this.vaultService.searchVaultFiles(searchTerm);
-    }
-
-    private async createDirectories(vaultService: VaultService, filePath: string, allowAccessToPluginRoot: boolean = false) {
-        const dirPath: string = filePath.substring(0, filePath.lastIndexOf('/'));
-
-        const dirs: string[] = dirPath.split('/');
-
-        let currentPath = "";
-        for (const dir of dirs) {
-            if (dir) {
-                currentPath = currentPath ? `${currentPath}/${dir}` : dir;
-                if (vaultService.getAbstractFileByPath(currentPath, allowAccessToPluginRoot) == null) {
-                    await vaultService.createFolder(currentPath, allowAccessToPluginRoot);
-                }
-            }
-        }
     }
 }

@@ -2,8 +2,9 @@ export enum AIFunction {
     SearchVaultFiles = "search_vault_files",
     ReadVaultFiles = "read_vault_files",
     WriteVaultFile = "write_vault_file",
-    DeleteVaultFile = "delete_vault_file",
+    DeleteVaultFiles = "delete_vault_files",
+    MoveVaultFiles = "move_vault_files",
 
-    // used by gemini
+    // only used by gemini
     RequestWebSearch = "request_web_search"
 }

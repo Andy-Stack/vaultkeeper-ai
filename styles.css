@@ -102,6 +102,7 @@
 
 body {
   --interactive-accent-blue: color-mix(in srgb, var(--interactive-accent) 50%, var(--color-blue) 50%);
+  --interactive-accent-blue-hover: color-mix(in srgb, var(--interactive-accent-hover) 50%, var(--color-blue) 50%);
 }
 
 :root {

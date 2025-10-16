@@ -322,6 +322,6 @@
 
   #submit-button.edit-mode:not(:disabled):hover {
     cursor: pointer;
-    background-color: var(--interactive-accent-hover);
+    background-color: var(--interactive-accent-blue-hover);
   }
 </style>

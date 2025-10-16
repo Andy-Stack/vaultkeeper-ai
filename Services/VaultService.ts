@@ -1,4 +1,4 @@
-import { TFile, TFolder, type TAbstractFile, type Vault } from "obsidian";
+import { FileManager, TAbstractFile, TFile, TFolder, type Vault } from "obsidian";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type AIAgentPlugin from "main";
@@ -13,10 +13,12 @@ export class VaultService {
     private readonly USER_INSTRUCTION = Path.UserInstruction;
 
     private readonly plugin: AIAgentPlugin;
+    private readonly fileManager: FileManager;
     private readonly vault: Vault;
 
     public constructor() {
         this.plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+        this.fileManager = Resolve<FileManager>(Services.FileManager);
         this.vault = this.plugin.app.vault;
     }
 
@@ -26,7 +28,7 @@ export class VaultService {
 
     public getAbstractFileByPath(filePath: string, allowAccessToPluginRoot: boolean = false): TAbstractFile | null {
         if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
-            console.log(`Plugin attempted to retrieve a file that is in the exclusions list: ${filePath}`);
+            console.error(`Plugin attempted to retrieve a file that is in the exclusions list: ${filePath}`);
             return null;
         }
         return this.vault.getAbstractFileByPath(filePath);
@@ -34,7 +36,7 @@ export class VaultService {
 
     public async read(file: TFile, allowAccessToPluginRoot: boolean = false): Promise<string> {
         if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
-            console.log(`Plugin attempted to read a file that is in the exclusions list: ${file.path}`);
+            console.error(`Plugin attempted to read a file that is in the exclusions list: ${file.path}`);
             return "";
         }
         return await this.vault.read(file);
@@ -44,23 +46,51 @@ export class VaultService {
         if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
             throw new Error(`Plugin attempted to create a file that is in the exclusion list: ${filePath}`);
         }
+        await this.createDirectories(filePath, allowAccessToPluginRoot);
         return await this.vault.create(filePath, content);
     }
 
     public async modify(file: TFile, content: string, allowAccessToPluginRoot: boolean = false): Promise<void> {
         if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
-            console.log(`Plugin attempted to modify a file that is in the exclusions list: ${file.path}`)
+            console.error(`Plugin attempted to modify a file that is in the exclusions list: ${file.path}`)
             return;
         }
         await this.vault.process(file, () => content);
     }
 
-    public async delete(file: TAbstractFile, force?: boolean, allowAccessToPluginRoot: boolean = false): Promise<void> {
+    public async delete(file: TAbstractFile, force?: boolean, allowAccessToPluginRoot: boolean = false): Promise<{ success: true } | { success: false, error: string }> {
         if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
-            console.log(`Plugin attempted to delete a file that is in the exclusions list: ${file.path}`)
-            return;
+            console.error(`Plugin attempted to delete a file that is in the exclusions list: ${file.path}`)
+            return { success: false, error: "File is in exclusion list" };
         }
-        await this.vault.delete(file, force);
+        try {
+            await this.vault.delete(file, force);
+            return { success: true };
+        } catch (error) {
+            console.error(`Error deleting file ${file.path}:`, error);
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
+    }
+
+    public async move(sourcePath: string, destinationPath: string, allowAccessToPluginRoot: boolean = false): Promise<{ success: true } | { success: false, error: string }> {
+        if (this.isExclusion(sourcePath, allowAccessToPluginRoot)) {
+            console.error(`Plugin attempted to move a file that is in the exclusions list: ${sourcePath}`)
+            return { success: false, error: "Source file is in exclusion list" };
+        }
+
+        const file: TAbstractFile | null = this.getAbstractFileByPath(sourcePath);
+        if (file === null) {
+            return { success: false, error: "Source file not found" };
+        }
+
+        try {
+            await this.createDirectories(destinationPath, allowAccessToPluginRoot)
+            await this.fileManager.renameFile(file, destinationPath);
+            return { success: true };
+        } catch (error) {
+            console.error(`Error moving file from ${sourcePath} to ${destinationPath}:`, error);
+            return { success: false, error: error instanceof Error ? error.message : String(error) };
+        }
     }
 
     public async createFolder(path: string, allowAccessToPluginRoot: boolean = false): Promise<TFolder> {
@@ -152,6 +182,22 @@ export class VaultService {
         }
 
         return results;
+    }
+
+    private async createDirectories(filePath: string, allowAccessToPluginRoot: boolean = false) {
+        const dirPath: string = filePath.substring(0, filePath.lastIndexOf('/'));
+
+        const dirs: string[] = dirPath.split('/');
+
+        let currentPath = "";
+        for (const dir of dirs) {
+            if (dir) {
+                currentPath = currentPath ? `${currentPath}/${dir}` : dir;
+                if (this.getAbstractFileByPath(currentPath, allowAccessToPluginRoot) == null) {
+                    await this.createFolder(currentPath, allowAccessToPluginRoot);
+                }
+            }
+        }
     }
 
     private extractSnippets(content: string, regex: RegExp): SearchSnippet[] {

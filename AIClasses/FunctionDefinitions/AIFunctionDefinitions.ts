@@ -2,7 +2,8 @@ import type { IAIFunctionDefinition } from "./IAIFunctionDefinition";
 import { SearchVaultFiles } from "./Functions/SearchVaultFiles";
 import { ReadVaultFiles } from "./Functions/ReadVaultFiles";
 import { WriteVaultFile } from "./Functions/WriteVaultFile";
-import { DeleteVaultFile } from "./Functions/DeleteVaultFile";
+import { DeleteVaultFiles } from "./Functions/DeleteVaultFiles";
+import { MoveVaultFiles } from "./Functions/MoveVaultFiles";
 
 export class AIFunctionDefinitions {
     public getQueryActions(destructive: boolean): IAIFunctionDefinition[] {
@@ -14,7 +15,8 @@ export class AIFunctionDefinitions {
         if (destructive) {
             actions = actions.concat([
                 WriteVaultFile,
-                DeleteVaultFile
+                DeleteVaultFiles,
+                MoveVaultFiles
             ]);
         }
 

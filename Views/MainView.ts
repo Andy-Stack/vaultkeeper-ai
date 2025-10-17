@@ -2,10 +2,16 @@ import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { mount, unmount } from 'svelte';
 import ChatWindow from 'Components/ChatWindow.svelte';
 import TopBar from 'Components/TopBar.svelte';
+import type { StatusBarService } from 'Services/StatusBarService';
+import { Resolve } from 'Services/DependencyService';
+import { Services } from 'Services/Services';
 
 export const VIEW_TYPE_MAIN = 'main-view';
 
 export class MainView extends ItemView {
+
+  private statusBarService: StatusBarService = Resolve<StatusBarService>(Services.StatusBarService);
+
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
   }
@@ -19,6 +25,10 @@ export class MainView extends ItemView {
 
   getDisplayText() {
     return "AI Agent";
+  }
+
+  getIcon(): string {
+    return 'sparkles';
   }
 
   async onOpen() {
@@ -48,5 +58,6 @@ export class MainView extends ItemView {
     if (this.input) {
       unmount(this.input);
     }
+    this.statusBarService.removeStatusBarMessage();
   }
 }

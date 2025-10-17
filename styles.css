@@ -2,7 +2,13 @@
 /* Main View Customization */
 /* ============================== */
 
+.workspace-leaf-content[data-type="main-view"] {
+  background-color: var(--background-secondary);
+}
+
 .workspace-leaf-content[data-type="main-view"] .view-content {
+  align-self: center;
+  max-width: 1000px;
   background-color: var(--background-secondary);
   padding-top: 0;
 }

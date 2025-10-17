@@ -8,25 +8,36 @@
 	import type { ConversationHistoryModal } from 'Modals/ConversationHistoryModal';
 	import { openPluginSettings } from 'Helpers/Helpers';
 	import type { ChatService } from 'Services/ChatService';
+	import { tick } from 'svelte';
+	import { fade } from 'svelte/transition';
 
   export let leaf: WorkspaceLeaf;
   export let onNewConversation: (() => void) | undefined = undefined;
 
   const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
-  const conversationService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
+  const conversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
   const chatService: ChatService = Resolve<ChatService>(Services.ChatService);
 
+  let conversationTitle: string = ""
+
+  chatService.onNameChanged = (name: string) => {
+    conversationTitle = "";
+    tick().then(() => conversationTitle = name);
+  };
+
   function startNewConversation() {
-    conversationService.resetCurrentConversation();
+    conversationFileSystemService.resetCurrentConversation();
     conversationStore.reset();
     onNewConversation?.();
+    conversationTitle = "";
   }
 
   async function deleteCurrentConversation() {
     chatService.stop();
-    await conversationService.deleteCurrentConversation();
+    await conversationFileSystemService.deleteCurrentConversation();
     conversationStore.reset();
     onNewConversation?.();
+    conversationTitle = "";
   }
 
   function openConversationHistory() {
@@ -89,7 +100,7 @@
       on:click={() => openConversationHistory()}
       aria-label="Conversation History"
     ></button>
-    <div id="conversation-divider" class="top-bar-divider"></div>
+    <div id="conversation-divider-1" class="top-bar-divider"></div>
     <button
       bind:this={settingsButton}
       id="settings-button"
@@ -97,6 +108,10 @@
       on:click={openSettings}
       aria-label="AI Agent Settings"
     ></button>
+    {#if conversationTitle !== ""}
+      <div id="conversation-divider-2" class="top-bar-divider" out:fade></div>
+      <div id="conversation-title" class="typing-in" out:fade>{conversationTitle}</div>
+    {/if}
     <button
       bind:this={closeButton}
       id="close-button"
@@ -123,7 +138,7 @@
     grid-column: 2;
     display: grid;
     grid-template-rows: auto;
-    grid-template-columns: var(--size-4-2) auto auto auto auto auto 1fr auto var(--size-4-2);
+    grid-template-columns: var(--size-4-2) auto auto auto auto auto auto 1fr 0.1fr auto var(--size-4-2);
     background-color: var(--color-base-30);
     border-radius: var(--radius-m);
   }
@@ -150,7 +165,7 @@
     grid-column: 4;
   }
 
-  #conversation-divider {
+  #conversation-divider-1 {
     grid-row: 1;
     grid-column: 5;
   }
@@ -160,8 +175,25 @@
     grid-column: 6;
   }
 
-  #close-button {
+  #conversation-divider-2 {
+    grid-row: 1;
+    grid-column: 7;
+  }
+
+  #conversation-title {
     grid-row: 1;
     grid-column: 8;
+    display: inline-block;
+    align-self: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    color: var(--text-muted);
+  }
+
+  #close-button {
+    grid-row: 1;
+    grid-column: 10;
   }
 </style>

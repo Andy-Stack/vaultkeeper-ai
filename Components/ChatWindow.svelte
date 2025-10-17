@@ -169,6 +169,7 @@
     const { conversation: loadedConversation, filePath } = $conversationStore.conversationToLoad;
     conversation = loadedConversation;
     conversationService.setCurrentConversationPath(filePath);
+    chatService.onNameChanged?.(loadedConversation.title);
     conversationStore.clearLoadFlag();
     scrollToBottom();
   }

@@ -22,11 +22,9 @@ export class ChatService {
 	private aiFunctionService: AIFunctionService;
 	private namingService: ConversationNamingService;
 
-	private abortController: AbortController | null = null;
-	private isAborting: boolean = false;
-
 	private semaphore: Semaphore;
 	private semaphoreHeld: boolean = false;
+	private abortController: AbortController | null = null;
 
 	constructor() {
 		this.conversationService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
@@ -34,6 +32,8 @@ export class ChatService {
 		this.namingService = Resolve<ConversationNamingService>(Services.ConversationNamingService);
 		this.semaphore = new Semaphore(1, false);
 	}
+
+	public onNameChanged: ((name: string) => void) | undefined = undefined;
 
 	resolveAIProvider() {
 		this.ai = Resolve<IAIClass>(Services.IAIClass);
@@ -57,9 +57,9 @@ export class ChatService {
 			conversation.contents = [...conversation.contents, new ConversationContent(Role.User, userRequest)];
 			await this.conversationService.saveConversation(conversation);
 
-			// Request conversation name on first user message (fire-and-forget)
 			if (conversation.contents.length === 1) {
-				this.namingService.requestName(conversation, userRequest, this.abortController);
+				this.onNameChanged?.(conversation.title); // on change for initial conversation name
+				this.namingService.requestName(conversation, userRequest, this.onNameChanged, this.abortController);
 			}
 
 			// Process AI responses and function calls
@@ -88,7 +88,6 @@ export class ChatService {
 		} finally {
 			callbacks.onThoughtUpdate(null);
 			this.abortController = null;
-			this.isAborting = false;
 			if (this.semaphoreHeld) {
 				this.semaphoreHeld = false;
 				this.semaphore.release();	
@@ -98,7 +97,6 @@ export class ChatService {
 	}
 
 	stop(): void {
-		this.isAborting = true;
 		if (this.abortController) {
 			this.abortController.abort();
 			this.abortController = null;

@@ -16,7 +16,7 @@ export class ConversationNamingService {
         this.namingProvider = Resolve<IConversationNamingService>(Services.IConversationNamingService);
     }
 
-    public async requestName(conversation: Conversation, userPrompt: string, abortController: AbortController): Promise<void> {
+    public async requestName(conversation: Conversation, userPrompt: string, onNameChanged: ((name: string) => void) | undefined, abortController: AbortController): Promise<void> {
         if (!this.namingProvider) {
             return;
         }
@@ -38,6 +38,8 @@ export class ConversationNamingService {
 
             await this.conversationService.updateConversationTitle(conversationPath, validatedName);
             conversation.title = validatedName;
+            await this.conversationService.saveConversation(conversation);
+            onNameChanged?.(conversation.title);
         } catch (error) {
             if (error instanceof Error && error.name === 'AbortError') {
                 return;

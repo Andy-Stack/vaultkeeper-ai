@@ -66,6 +66,29 @@
 /* CSS Variables for Common Components */
 /* ============================== */
 
+/* Typing-in animation (used across components) */
+.typing-in {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: reveal-center var(--typing-in-duration, 1.5s) ease-in-out forwards;
+  max-width: 0;
+  margin: 0 auto;
+  padding: 5px;
+}
+
+@keyframes reveal-center {
+  0% {
+    max-width: 0;
+    opacity: 0;
+    filter: blur(1px);
+  }
+  100% {
+    max-width: 100%;
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
 .conversation-history-modal {
   padding: 0px;
   overflow: hidden;

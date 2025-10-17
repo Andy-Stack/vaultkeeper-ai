@@ -11,6 +11,7 @@
 	import type AIAgentPlugin from "main";
 	import { Copy } from "Enums/Copy";
 	import { Selector } from "Enums/Selector";
+	import { fade } from "svelte/transition";
 
   export let messages: ConversationContent[] = [];
   export let currentThought: string | null = null;
@@ -407,29 +408,6 @@
     100% {
       opacity: 1;
       transform: translateY(0);
-    }
-  }
-
-  /* Welcome text animation */
-  .typing-in {
-    overflow: hidden;
-    white-space: nowrap;
-    animation: reveal-center 1.5s ease-in-out forwards;
-    max-width: 0;
-    margin: 0 auto;
-    padding: 5px;
-  }
-
-  @keyframes reveal-center {
-    0% { 
-      max-width: 0;
-      opacity: 0;
-      filter: blur(1px);
-    }
-    100% { 
-      max-width: 100%;
-      opacity: 1;
-      filter: blur(0px);
     }
   }
 </style>

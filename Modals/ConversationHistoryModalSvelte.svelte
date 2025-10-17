@@ -181,7 +181,7 @@
     .history-list-modal-date {
       grid-row: 1;
       grid-column: 1;
-      margin: 0px var(--size-2-3) 0px var(--size-4-3)
+      margin-left: var(--size-4-3)
     }
 
     .history-list-modal-separator {

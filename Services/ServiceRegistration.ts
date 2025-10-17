@@ -21,11 +21,12 @@ import { ConversationNamingService } from "./ConversationNamingService";
 import { VaultService } from "./VaultService";
 import type { ITokenService } from "AIClasses/ITokenService";
 import { GeminiTokenService } from "AIClasses/Gemini/GeminiTokenService";
+import { StatusBarService } from "./StatusBarService";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton<AIAgentPlugin>(Services.AIAgentPlugin, plugin);
     RegisterSingleton<FileManager>(Services.FileManager, plugin.app.fileManager);
-
+    RegisterSingleton<StatusBarService>(Services.StatusBarService, new StatusBarService());
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
     RegisterSingleton<WorkSpaceService>(Services.WorkSpaceService, new WorkSpaceService());
     RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());

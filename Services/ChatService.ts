@@ -5,6 +5,9 @@ import type { IAIClass } from "AIClasses/IAIClass";
 import type { ConversationFileSystemService } from "./ConversationFileSystemService";
 import type { AIFunctionService } from "./AIFunctionService";
 import type { ConversationNamingService } from "./ConversationNamingService";
+import type { ITokenService } from "AIClasses/ITokenService";
+import type { IPrompt } from "AIClasses/IPrompt";
+import type { StatusBarService } from "./StatusBarService";
 import { Conversation } from "Conversations/Conversation";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
@@ -21,6 +24,9 @@ export class ChatService {
 	private conversationService: ConversationFileSystemService;
 	private aiFunctionService: AIFunctionService;
 	private namingService: ConversationNamingService;
+	private tokenService: ITokenService | undefined;
+	private prompt: IPrompt;
+	private statusBarService: StatusBarService;
 
 	private semaphore: Semaphore;
 	private semaphoreHeld: boolean = false;
@@ -30,16 +36,19 @@ export class ChatService {
 		this.conversationService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
 		this.aiFunctionService = Resolve<AIFunctionService>(Services.AIFunctionService);
 		this.namingService = Resolve<ConversationNamingService>(Services.ConversationNamingService);
+		this.prompt = Resolve<IPrompt>(Services.IPrompt);
+		this.statusBarService = Resolve<StatusBarService>(Services.StatusBarService);
 		this.semaphore = new Semaphore(1, false);
 	}
 
 	public onNameChanged: ((name: string) => void) | undefined = undefined;
 
-	resolveAIProvider() {
+	public resolveAIProvider() {
 		this.ai = Resolve<IAIClass>(Services.IAIClass);
+		this.tokenService = Resolve<ITokenService>(Services.ITokenService);
 	}
 
-	async submit(conversation: Conversation, allowDestructiveActions: boolean, userRequest: string, callbacks: ChatServiceCallbacks): Promise<Conversation> {
+	public async submit(conversation: Conversation, allowDestructiveActions: boolean, userRequest: string, callbacks: ChatServiceCallbacks): Promise<Conversation> {
 		if (!await this.semaphore.wait()) {
 			return conversation;
 		}
@@ -96,12 +105,41 @@ export class ChatService {
 		}
 	}
 
-	stop(): void {
+	public stop(): void {
 		if (this.abortController) {
 			this.abortController.abort();
 			this.abortController = null;
 		}
 		this.semaphore.release();
+	}
+
+	public async updateTokenDisplay(conversation: Conversation): Promise<void> {
+		if (this.tokenService === undefined) {
+			return;
+		}
+
+		const systemInstruction = this.prompt.systemInstruction();
+		const userInstruction = await this.prompt.userInstruction();
+
+		const inputMessages = conversation.contents
+			.filter(msg => msg.role === Role.User && !msg.isFunctionCallResponse)
+			.map(msg => msg.content)
+			.join("\n");
+
+		const outputMessages = conversation.contents
+			.filter(msg => msg.role === Role.Assistant && !msg.isFunctionCall)
+			.map(msg => msg.content)
+			.join("\n");
+
+		const inputText = systemInstruction + "\n" + userInstruction + "\n" + inputMessages;
+		const inputTokens = await this.tokenService.countTokens(inputText);
+		const outputTokens = await this.tokenService.countTokens(outputMessages);
+
+		this.setStatusBarTokens(inputTokens, outputTokens);
+	}
+
+	public setStatusBarTokens(inputTokens: number, outputTokens: number): void {
+		this.statusBarService.setStatusBarMessage(`Input Tokens: ${inputTokens} / Output Tokens: ${outputTokens}`);
 	}
 
 	private async streamRequestResponse(

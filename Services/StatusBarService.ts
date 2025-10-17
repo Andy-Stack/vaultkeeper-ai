@@ -1,6 +1,7 @@
 import type AIAgentPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
+import { Selector } from "Enums/Selector";
 
 export class StatusBarService {
 

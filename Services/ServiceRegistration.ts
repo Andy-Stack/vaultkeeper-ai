@@ -24,6 +24,7 @@ import { GeminiTokenService } from "AIClasses/Gemini/GeminiTokenService";
 import { StatusBarService } from "./StatusBarService";
 import { ClaudeTokenService } from "AIClasses/Claude/ClaudeTokenService";
 import { OpenAITokenService } from "AIClasses/OpenAI/OpenAITokenService";
+import { ClaudeConversationNamingService } from "AIClasses/Claude/ClaudeConversationNamingService";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton<AIAgentPlugin>(Services.AIAgentPlugin, plugin);
@@ -50,6 +51,7 @@ export function RegisterDependencies(plugin: AIAgentPlugin) {
 export function RegisterAiProvider(plugin: AIAgentPlugin) {
     if (plugin.settings.apiProvider == AIProvider.Claude) {
         RegisterSingleton<ITokenService>(Services.ITokenService, new ClaudeTokenService());
+        RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new ClaudeConversationNamingService());
     }
     else if (plugin.settings.apiProvider == AIProvider.Gemini) {
         RegisterSingleton<IAIClass>(Services.IAIClass, new Gemini());

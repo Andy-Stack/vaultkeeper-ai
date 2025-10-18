@@ -7,11 +7,11 @@ import { Role } from "Enums/Role";
 import { NamePrompt } from "AIClasses/NamePrompt";
 
 export class GeminiConversationNamingService implements IConversationNamingService {
+    
     private readonly apiKey: string;
-    private readonly plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
 
     public constructor() {
-        this.apiKey = this.plugin.settings.apiKey;
+        this.apiKey = Resolve<AIAgentPlugin>(Services.AIAgentPlugin).settings.apiKey;
     }
 
     public async generateName(userPrompt: string, abortSignal?: AbortSignal): Promise<string> {

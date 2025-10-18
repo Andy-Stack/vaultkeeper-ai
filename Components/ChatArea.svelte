@@ -11,7 +11,6 @@
 	import type AIAgentPlugin from "main";
 	import { Copy } from "Enums/Copy";
 	import { Selector } from "Enums/Selector";
-	import { fade } from "svelte/transition";
 
   export let messages: ConversationContent[] = [];
   export let currentThought: string | null = null;
@@ -21,7 +20,8 @@
   export let editModeActive: boolean = false;
 
   export function onFinishedSubmitting() {
-    if (lastAssistantMessageElement && lastAssistantMessageElement.offsetHeight < 
+    setTimeout(() => {
+      if (lastAssistantMessageElement && lastAssistantMessageElement.offsetHeight < 
       chatContainer.offsetHeight - parseFloat(getComputedStyle(chatContainer).padding) * 2) {
       // Recalculate padding when streaming ends to fix race condition with streaming indicator removal
       tick().then(() => {
@@ -43,6 +43,7 @@
         }
       }, 1000);
     }
+    }, 500);
   }
 
   let thoughtElement: HTMLElement | undefined;

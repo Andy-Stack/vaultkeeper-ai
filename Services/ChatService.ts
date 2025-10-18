@@ -70,6 +70,7 @@ export class ChatService {
 				this.onNameChanged?.(conversation.title); // on change for initial conversation name
 				this.namingService.requestName(conversation, userRequest, this.onNameChanged, this.abortController);
 			}
+			this.updateTokenDisplay(conversation);
 
 			// Process AI responses and function calls
 			let response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
@@ -89,6 +90,8 @@ export class ChatService {
 						Role.User, functionResponse.toConversationString(), new Date(), false, true)];
 					await this.conversationService.saveConversation(conversation);
 				}
+
+				this.updateTokenDisplay(conversation);
 
 				response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
 			}
@@ -212,6 +215,7 @@ export class ChatService {
 				}
 				await this.conversationService.saveConversation(conversation);
 			}
+			this.updateTokenDisplay(conversation);
 		}
 
 		return { functionCall: capturedFunctionCall, shouldContinue: capturedShouldContinue };

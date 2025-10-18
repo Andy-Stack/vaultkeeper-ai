@@ -8,7 +8,6 @@
 	import type { ConversationHistoryModal } from 'Modals/ConversationHistoryModal';
 	import { openPluginSettings } from 'Helpers/Helpers';
 	import type { ChatService } from 'Services/ChatService';
-	import { tick } from 'svelte';
 	import { fade } from 'svelte/transition';
 
   export let leaf: WorkspaceLeaf;
@@ -22,7 +21,7 @@
 
   chatService.onNameChanged = (name: string) => {
     conversationTitle = "";
-    tick().then(() => conversationTitle = name);
+    setTimeout(() => conversationTitle = name, 500);
   };
 
   function startNewConversation() {

@@ -21,7 +21,7 @@ export class OpenAIConversationNamingService implements IConversationNamingServi
             max_tokens: 50,
             messages: [
                 {
-                    role: "system",
+                    role: Role.System,
                     content: NamePrompt
                 },
                 {

@@ -12,7 +12,6 @@ export interface StreamChunk {
 
 export class StreamingService {
   public async* streamRequest(
-    aiInstance: IAIClass,
     url: string,
     requestBody: unknown,
     parseStreamChunk: (chunk: string) => StreamChunk,
@@ -34,14 +33,7 @@ export class StreamingService {
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = `API request failed: ${response.status} - ${errorText}`;
-
-        if (response.status === 429 && aiInstance.apiError429UserInfo) {
-          errorMessage += `\n\n${aiInstance.apiError429UserInfo}`;
-        }
-
-        throw new Error(errorMessage);
+        throw new Error(`API request failed: ${response.status} - ${response.statusText} ${await response.text()}`);
       }
 
       const reader = response.body?.getReader();

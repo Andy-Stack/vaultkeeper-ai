@@ -74,7 +74,6 @@ export class ChatService {
 			// Process AI responses and function calls
 			let response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
 			while (response.functionCall || response.shouldContinue) {
-
 				if (response.functionCall) {
 					if (response.functionCall.arguments.user_message) {
 						callbacks.onThoughtUpdate(response.functionCall.arguments.user_message);

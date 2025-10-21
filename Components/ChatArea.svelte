@@ -311,7 +311,7 @@
 
 <div class="chat-area" bind:this={chatContainer}>
   {#each messages as message}
-    {#if !message.isFunctionCall && !message.isFunctionCallResponse && message.content}
+    {#if !message.isFunctionCallResponse && message.content}
       <div class="message-container {message.role === Role.User ? Role.User : Role.Assistant}" use:messageContainerAction>
         <div class="message-bubble {message.role === Role.User ? Role.User : Role.Assistant}">
           {#if message.role === Role.User}

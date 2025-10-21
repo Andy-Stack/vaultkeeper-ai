@@ -14,7 +14,6 @@ import { isValidJson } from "Helpers/Helpers";
 import type { ConversationContent } from "Conversations/ConversationContent";
 
 export class Gemini implements IAIClass {
-  public readonly apiError429UserInfo = "";
 
   private readonly REQUEST_WEB_SEARCH: string = "request_web_search";
   private readonly STOP_REASON_STOP: string = "STOP";
@@ -86,7 +85,6 @@ export class Gemini implements IAIClass {
     };
 
     yield* this.streamingService.streamRequest(
-      this,
       AIProviderURL.Gemini.replace("API_KEY", this.apiKey),
       requestBody,
       this.parseStreamChunk.bind(this),

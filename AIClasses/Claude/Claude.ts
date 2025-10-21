@@ -13,7 +13,6 @@ import { isValidJson } from "Helpers/Helpers";
 import type { ConversationContent } from "Conversations/ConversationContent";
 
 export class Claude implements IAIClass {
-    public readonly apiError429UserInfo = "Claude implements rate limits based on API Tier. Your tier increases as you spend more on the API - E.g. $40 total spend moves you to tier 2 (see: https://anthropic.mintlify.app/en/api/rate-limits#spend-limits)";
 
     private readonly STOP_REASON_TOOL_USE: string = "tool_use";
 
@@ -66,7 +65,6 @@ export class Claude implements IAIClass {
         };
 
         yield* this.streamingService.streamRequest(
-            this,
             AIProviderURL.Claude,
             requestBody,
             this.parseStreamChunk.bind(this),

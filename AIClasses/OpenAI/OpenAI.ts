@@ -19,7 +19,6 @@ interface ToolCallAccumulator {
 }
 
 export class OpenAI implements IAIClass {
-    public readonly apiError429UserInfo = "OpenAI implements rate limits based on usage tier. Higher tiers provide increased rate limits. For details and tier requirements, see: https://platform.openai.com/docs/guides/rate-limits";
 
     private readonly STOP_REASON_TOOL_CALLS: string = "tool_calls";
 
@@ -143,7 +142,6 @@ export class OpenAI implements IAIClass {
         };
 
         yield* this.streamingService.streamRequest(
-            this,
             AIProviderURL.OpenAI,
             requestBody,
             this.parseStreamChunk.bind(this),

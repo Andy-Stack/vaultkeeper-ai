@@ -14,6 +14,7 @@ import { Role } from "Enums/Role";
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
 
 export interface ChatServiceCallbacks {
+	onSubmit: () => void;
 	onStreamingUpdate: (streamingMessageId: string | null) => void;
 	onThoughtUpdate: (thought: string | null) => void;
 	onComplete: () => void;
@@ -64,6 +65,8 @@ export class ChatService {
 
 			conversation.contents.push(new ConversationContent(Role.User, userRequest));
 			this.conversationService.saveConversation(conversation);
+
+			callbacks.onSubmit();
 			callbacks.onStreamingUpdate(null);
 
 			if (conversation.contents.length === 1) {
@@ -188,6 +191,8 @@ export class ChatService {
 			}
 			callbacks.onStreamingUpdate(aiMessage.timestamp.getTime().toString());
 		}
+
+		callbacks.onStreamingUpdate(null);
 
 		return { functionCall: capturedFunctionCall, shouldContinue: capturedShouldContinue };
 	}

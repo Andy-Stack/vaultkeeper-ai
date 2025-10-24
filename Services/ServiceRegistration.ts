@@ -28,11 +28,13 @@ import { ClaudeConversationNamingService } from "AIClasses/Claude/ClaudeConversa
 import { Claude } from "AIClasses/Claude/Claude";
 import { OpenAIConversationNamingService } from "AIClasses/OpenAI/OpenAIConversationNamingService";
 import { OpenAI } from "AIClasses/OpenAI/OpenAI";
+import { SanitiserService } from "./SanitiserService";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton<AIAgentPlugin>(Services.AIAgentPlugin, plugin);
     RegisterSingleton<FileManager>(Services.FileManager, plugin.app.fileManager);
     RegisterSingleton<StatusBarService>(Services.StatusBarService, new StatusBarService());
+    RegisterSingleton<SanitiserService>(Services.SanitiserService, new SanitiserService());
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
     RegisterSingleton<WorkSpaceService>(Services.WorkSpaceService, new WorkSpaceService());
     RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());

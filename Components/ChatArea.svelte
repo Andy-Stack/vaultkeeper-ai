@@ -8,7 +8,6 @@
 	import { Role } from "Enums/Role";
   import type { ConversationContent } from "Conversations/ConversationContent";
 	import { tick } from "svelte";
-	import type AIAgentPlugin from "main";
 	import { Copy } from "Enums/Copy";
 	import { Selector } from "Enums/Selector";
 
@@ -19,46 +18,65 @@
   export let currentStreamingMessageId: string | null = null;
   export let editModeActive: boolean = false;
 
-  export function onFinishedSubmitting() {
-    setTimeout(() => {
-      if (lastAssistantMessageElement && lastAssistantMessageElement.offsetHeight < 
-      chatContainer.offsetHeight - parseFloat(getComputedStyle(chatContainer).padding) * 2) {
-      // Recalculate padding when streaming ends to fix race condition with streaming indicator removal
-      tick().then(() => {
-        if (lastAssistantMessageElement) {
-          assistantMessageAction(lastAssistantMessageElement);
-        }
-      });
+  let conversationKey = 0;
 
-      // use an interval to complete scrolling once the dom has finished updating
-      const scrollInterval: number = plugin.registerInterval(window.setInterval(() => {
-        tick().then(() => {
-          chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: "smooth" });
-        });
-      }, 50));
-      
-      setTimeout(() => {
-        if (scrollInterval) {
-          clearInterval(scrollInterval);
-        }
-      }, 1000);
+  export function resetChatArea() {
+    messageElements = [];
+    lastProcessedContent.clear();
+    currentStreamFinalized = false;
+    conversationKey++; // Force complete re-render
+    if (chatAreaPaddingElement) {
+      chatAreaPaddingElement.style.padding = "0px";
     }
-    }, 500);
+    chatContainer.scroll({ top: 0, behavior: "instant" });
   }
+
+  export function scrollChatArea() {
+    tick().then(() => {
+      settled = false;
+
+      const lastMessage = messageElements.sort((a, b) => a.index - b.index).last();
+      if (!lastMessage || !chatAreaPaddingElement) {
+        if (chatAreaPaddingElement) {
+          chatAreaPaddingElement.style.padding = "0px";
+        }
+        return;
+      }
+
+      const gap = parseFloat(getComputedStyle(chatContainer).gap) || 0;
+      const paddingTop = parseFloat(getComputedStyle(chatContainer).paddingTop) || 0;
+      const paddingBottom = parseFloat(getComputedStyle(chatContainer).paddingBottom) || 0;
+
+      let usedSpace = 0;
+      for (let i = messageElements.length - 1; i >= 0; i--) {
+        const messageElement = messageElements[i];
+        usedSpace += messageElement.element.offsetHeight + gap;
+        if (messageElement.element.classList.contains(Role.User)) {
+          break;
+        }
+      }
+      const padding = chatContainer.offsetHeight - paddingTop - paddingBottom - usedSpace;
+
+      chatAreaPaddingElement.style.padding = `${Math.max(0, padding / 2)}px`;
+
+      tick().then(() => {
+        chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: "smooth" })
+        tick().then(() => settled = true);
+      });
+    });
+  }
+
+  let settled: boolean = false;
 
   let thoughtElement: HTMLElement | undefined;
   let streamingElement: HTMLElement | undefined;
+  let chatAreaPaddingElement: HTMLElement | undefined;
 
-  let plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
   let streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
 
-  let messageElements: Map<string, HTMLElement> = new Map<string, HTMLElement>();
+  let messageElements: { index: number, element: HTMLElement }[] = [];
   let lastProcessedContent: Map<string, string> = new Map<string, string>();
   let currentStreamFinalized: boolean = false;
-
-  let messagePadding: number = 0;
-  let staticMessagePadding: number = 0;
-  let lastAssistantMessageElement: HTMLElement | undefined;
 
   function getGreetingByTime(): string {
     const hour = new Date().getHours();
@@ -81,31 +99,7 @@
     }
   }
 
-  // Track streaming messages and update them incrementally
-  $: {
-    messages.forEach((message) => {
-      if (message.role !== Role.User) {
-        const messageId = message.timestamp.getTime().toString();
-        const lastContent = lastProcessedContent.get(messageId) || "";
-
-        // Only update if content has changed
-        if (message.content !== lastContent) {
-          // Check if this specific message is currently streaming
-          const isCurrentlyStreaming = currentStreamingMessageId === messageId;
-
-          updateMessageContent({ ...message, id: messageId, isCurrentlyStreaming });
-          lastProcessedContent.set(messageId, message.content);
-        }
-      }
-    });
-  }
-
   function updateMessageContent(message: {id: string, content: string, role: string, isCurrentlyStreaming: boolean}) {
-    const element = messageElements.get(message.id);
-    if (!element) {
-      return;
-    }
-
     if (message.isCurrentlyStreaming) {
       streamingMarkdownService.streamChunk(message.id, message.content);
       currentStreamFinalized = false;
@@ -113,22 +107,6 @@
       streamingMarkdownService.finalizeStream(message.id, message.content);
       currentStreamFinalized = true;
     }
-  }
-
-  function initializeMessageElement(messageId: string, element: HTMLElement) {
-    messageElements.set(messageId, element);
-    streamingMarkdownService.initializeStream(messageId, element);
-  }
-
-  // Svelte action to handle element initialization
-  function streamingAction(element: HTMLElement, messageId: string) {
-    initializeMessageElement(messageId, element);
-    
-    return {
-      destroy() {
-        messageElements.delete(messageId);
-      }
-    };
   }
 
   // Process static messages (user messages and initial load)
@@ -159,160 +137,47 @@
     return ""; // Streaming messages will be handled by the streaming service
   }
 
-  // Make sure to clean up when messages are removed
+  function streamingAction(element: HTMLElement, messageId: string) {
+    streamingMarkdownService.initializeStream(messageId, element);
+  }
+
+  function trackingAction(element: HTMLElement, index: number) {
+    messageElements.push({ index: index, element: element });
+  }
+
+  // Track streaming messages and update them incrementally
   $: {
-    const currentMessageIds = new Set(messages.map((message) => message.timestamp.getTime().toString()));
-
-    // Remove tracking for messages that no longer exist
-    for (const [id] of messageElements) {
-      if (!currentMessageIds.has(id)) {
-        messageElements.delete(id);
-        lastProcessedContent.delete(id);
-      }
-    }
-  }
-
-  /**
-   * Chat area padding logic during message streaming 
-  */
-
-  function messageContainerAction(element: HTMLElement) {
-    tick().then(() => {
-      if (element.classList.contains(Role.Assistant)) {
-        assistantMessageAction(element);
-      }
-      else {
-        userMessageAction(element);
-      }
-    });
-  }
-  
-  function userMessageAction(element: HTMLElement) {
-    requestAnimationFrame(() => {
-      const paddingTop = parseFloat(getComputedStyle(chatContainer).paddingTop) || 0;
-
-      if (element.offsetHeight > chatContainer.offsetHeight / 2) {
-        messagePadding = chatContainer.offsetHeight * 0.75;
-        staticMessagePadding = messagePadding;
-      } else {
-        staticMessagePadding = Math.max(0,
-          chatContainer.offsetHeight -
-          element.offsetHeight -
-          paddingTop);
-
-        messagePadding = Math.max(0,
-          chatContainer.offsetHeight -
-          element.offsetHeight -
-          calculateStreamingThoughtSize() -
-          paddingTop);
-      }
-      chatContainer.style.paddingBottom = messagePadding == 0 ? "" : `${messagePadding}px`;
-
-      tick().then(() => {
-        chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: "smooth" });
-      });
-    });
-  }
-
-  function assistantMessageAction(element: HTMLElement) {
-    lastAssistantMessageElement = element;
-
-    const resizeObserver = new ResizeObserver(() => {
-      requestAnimationFrame(() => {
-        const previousAssistantMessagesHeight = calculatePreviousAssistantMessagesHeight(element);
-
-        messagePadding = Math.max(0,
-          staticMessagePadding -
-          previousAssistantMessagesHeight -
-          element.offsetHeight -
-          calculateStreamingThoughtSize() -
-          parseFloat(getComputedStyle(chatContainer).gap) || 0);
-
-        chatContainer.style.paddingBottom = messagePadding == 0 ? "" : `${messagePadding}px`;
-      });
-    });
-
-    resizeObserver.observe(element);
-
-    return {
-      destroy() {
-        resizeObserver.disconnect();
-      }
-    }
-  }
-
-  function calculatePreviousAssistantMessagesHeight(currentElement: HTMLElement): number {
-    // Find the index of the current message in the messages array
-    const currentMessageIndex = messages.findIndex((message) => {
-      const messageId = message.timestamp.getTime().toString();
-      const messageElement = messageElements.get(messageId);
-      return messageElement?.parentElement === currentElement;
-    });
-
-    if (currentMessageIndex === -1) {
-      return 0;
-    }
-
-    // Walk backward from current message to find the last user message
-    let totalHeight = 0;
-    const gap = parseFloat(getComputedStyle(chatContainer).gap) || 0;
-
-    for (let i = currentMessageIndex - 1; i >= 0; i--) {
-      const message = messages[i];
-
-      // Stop when we hit a user message
-      if (message.role === Role.User) {
-        break;
-      }
-
-      // Sum up heights of all assistant messages before the current one
-      if (message.role === Role.Assistant && !message.isFunctionCall && !message.isFunctionCallResponse && message.content) {
+    messages.forEach((message) => {
+      if (message.role !== Role.User) {
         const messageId = message.timestamp.getTime().toString();
-        const messageElement = messageElements.get(messageId);
-        if (messageElement) {
-          const containerElement = messageElement.parentElement;
-          if (containerElement) {
-            totalHeight += containerElement.offsetHeight + gap;
+        const lastContent = lastProcessedContent.get(messageId) || "";
+
+        // Only update if content has changed
+        if (message.content !== lastContent) {
+          // Check if this specific message is currently streaming
+          const isCurrentlyStreaming = currentStreamingMessageId === messageId;
+
+          // Only process through streaming service if actively streaming
+          if (isCurrentlyStreaming) {
+            updateMessageContent({ ...message, id: messageId, isCurrentlyStreaming });
           }
+          lastProcessedContent.set(messageId, message.content);
         }
       }
-    }
-
-    return totalHeight;
+    });
   }
 
   $: {
-    if (chatContainer && messages.length == 0) {
-      chatContainer.style.paddingBottom = "";
+    if (messages.length === 0 && chatAreaPaddingElement) {
+      chatAreaPaddingElement.style.padding = "0px";
     }
-  }
-
-  function calculateStreamingThoughtSize() {
-    const thoughtHeight = thoughtElement?.offsetHeight || 0;
-    const streamingHeight = streamingElement?.offsetHeight || 0;
-
-    let thoughtMargins = 0;
-    if (thoughtElement) {
-      thoughtMargins = parseFloat(getComputedStyle(thoughtElement).marginTop) || 0 +
-        parseFloat(getComputedStyle(thoughtElement).marginBottom) || 0;  
-    }
-    let indicatorMargins = 0;
-    if (streamingElement) {
-      indicatorMargins = parseFloat(getComputedStyle(streamingElement).marginTop) || 0 +
-        parseFloat(getComputedStyle(streamingElement).marginBottom) || 0;
-    }
-
-    const gap = parseFloat(getComputedStyle(chatContainer).gap) || 0;
-    const gaps = thoughtElement && streamingElement ? 2 : thoughtElement || streamingElement ? 1 : 0;
-
-    return thoughtHeight + streamingHeight + thoughtMargins + indicatorMargins + (gaps * gap);
   }
 </script>
 
 <div class="chat-area" bind:this={chatContainer}>
-  {#each messages as message}
+  {#each messages as message, index}
     {#if !message.isFunctionCallResponse && message.content}
-      <div class="message-container {message.role === Role.User ? Role.User : Role.Assistant}" use:messageContainerAction>
+      <div class="message-container {message.role === Role.User ? Role.User : Role.Assistant}" use:trackingAction={index}>
         <div class="message-bubble {message.role === Role.User ? Role.User : Role.Assistant}">
           {#if message.role === Role.User}
             <div class="message-text-user fade-in-fast">{message.content}</div>
@@ -330,11 +195,15 @@
       </div>
     {/if}
   {/each}
-
-  <ChatAreaThought bind:thoughtElement thought={currentThought}/>
-  {#if isSubmitting}
-    <StreamingIndicator bind:streamingElement editModeActive={editModeActive}/>
+  
+  {#if settled}
+    <ChatAreaThought bind:thoughtElement thought={currentThought}/>
+    {#if isSubmitting}
+      <StreamingIndicator bind:streamingElement editModeActive={editModeActive}/>
+    {/if}
   {/if}
+
+  <div bind:this={chatAreaPaddingElement}></div>
   
   {#if messages.length === 0}
     <div class="conversation-empty-state">

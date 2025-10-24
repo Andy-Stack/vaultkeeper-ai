@@ -164,7 +164,14 @@ export class Gemini implements IAIClass {
           if (content.isFunctionCallResponse) {
             if (isValidJson(content.content)) {
               try {
-                parts.push(JSON.parse(content.content));
+                const parsedContent = JSON.parse(content.content);
+                if (parsedContent.functionResponse) {
+                  parts.push({
+                    functionResponse: parsedContent.functionResponse
+                  });
+                } else {
+                  parts.push({ text: content.content });
+                }
               } catch (error) {
                 console.error("Failed to parse function response:", error);
                 parts.push({ text: content.content });
@@ -181,7 +188,15 @@ export class Gemini implements IAIClass {
         if (content.isFunctionCall && content.functionCall.trim() !== "") {
           if (isValidJson(content.functionCall)) {
             try {
-              parts.push(JSON.parse(content.functionCall));
+              const parsedContent = JSON.parse(content.functionCall);
+              if (parsedContent.functionCall) {
+                parts.push({
+                  functionCall: {
+                    name: parsedContent.functionCall.name,
+                    args: parsedContent.functionCall.args
+                  }
+                });
+              }
             } catch (error) {
               console.error("Failed to parse function call:", error);
             }

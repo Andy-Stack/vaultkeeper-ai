@@ -5,6 +5,7 @@ import type AIAgentPlugin from "main";
 import { Path } from "Enums/Path";
 import { escapeRegex, randomSample } from "Helpers/Helpers";
 import type { SearchMatch, SearchSnippet } from "../Helpers/SearchTypes";
+import type { SanitiserService } from "./SanitiserService";
 
 /* This service protects the users vault through their exclusions. The plugin root is excluded by default */
 export class VaultService {
@@ -15,11 +16,13 @@ export class VaultService {
     private readonly plugin: AIAgentPlugin;
     private readonly fileManager: FileManager;
     private readonly vault: Vault;
+    private readonly sanitiserService: SanitiserService;
 
     public constructor() {
         this.plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
         this.fileManager = Resolve<FileManager>(Services.FileManager);
         this.vault = this.plugin.app.vault;
+        this.sanitiserService = Resolve<SanitiserService>(Services.SanitiserService);
     }
 
     public getMarkdownFiles(allowAccessToPluginRoot: boolean = false): TFile[] {
@@ -27,11 +30,21 @@ export class VaultService {
     }
 
     public getAbstractFileByPath(filePath: string, allowAccessToPluginRoot: boolean = false): TAbstractFile | null {
+        filePath = this.sanitiserService.sanitize(filePath);
+
         if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
             console.error(`Plugin attempted to retrieve a file that is in the exclusions list: ${filePath}`);
             return null;
         }
         return this.vault.getAbstractFileByPath(filePath);
+    }
+
+    public exists(filePath: string, allowAccessToPluginRoot: boolean = false): boolean {
+        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
+            console.error(`Plugin attempted to access a file that is in the exclusions list: ${filePath}`);
+            return false;
+        }
+        return this.vault.getAbstractFileByPath(filePath) instanceof TFile;
     }
 
     public async read(file: TFile, allowAccessToPluginRoot: boolean = false): Promise<string> {
@@ -43,6 +56,8 @@ export class VaultService {
     }
 
     public async create(filePath: string, content: string, allowAccessToPluginRoot: boolean = false): Promise<TFile> {
+        filePath = this.sanitiserService.sanitize(filePath);
+        
         if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
             throw new Error(`Plugin attempted to create a file that is in the exclusion list: ${filePath}`);
         }
@@ -73,6 +88,9 @@ export class VaultService {
     }
 
     public async move(sourcePath: string, destinationPath: string, allowAccessToPluginRoot: boolean = false): Promise<{ success: true } | { success: false, error: string }> {
+        sourcePath = this.sanitiserService.sanitize(sourcePath);
+        destinationPath = this.sanitiserService.sanitize(destinationPath);
+
         if (this.isExclusion(sourcePath, allowAccessToPluginRoot)) {
             console.error(`Plugin attempted to move a file that is in the exclusions list: ${sourcePath}`)
             return { success: false, error: "Source file is in exclusion list" };
@@ -94,6 +112,8 @@ export class VaultService {
     }
 
     public async createFolder(path: string, allowAccessToPluginRoot: boolean = false): Promise<TFolder> {
+        path = this.sanitiserService.sanitize(path);
+
         if (this.isExclusion(path, allowAccessToPluginRoot)) {
             throw new Error(`Plugin attempted to create a folder that is in the exclusion list: ${path}`);
         }
@@ -101,7 +121,7 @@ export class VaultService {
     }
 
     public async listFilesInDirectory(dirPath: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFile[]> {
-        const dir: TAbstractFile | null = this.getAbstractFileByPath(dirPath, true);
+        const dir: TAbstractFile | null = this.getAbstractFileByPath(this.sanitiserService.sanitize(dirPath), true);
 
         if (dir == null || !(dir instanceof TFolder)) {
             return [];
@@ -177,7 +197,7 @@ export class VaultService {
         for (const file of files) {
             if (file.basename.match(regex) &&
                 !results.some(result => result.file.basename === file.basename)) {
-                    results.push({ file, snippets: [] });
+                results.push({ file, snippets: [] });
             }
         }
 

@@ -13,6 +13,7 @@ export class Services {
     static AIFunctionDefinitions = Symbol("AIFunctionDefinitions");
     static AIFunctionService = Symbol("AIFunctionService");
     static ChatService = Symbol("ChatService");
+    static SanitiserService = Symbol("SanitiserService");
 
     // interfaces
     static IAIClass = Symbol("IAIClass");

@@ -40,7 +40,10 @@ export class MainView extends ItemView {
       target: container,
       props: {
         leaf: this.leaf,
-        onNewConversation: () => this.input?.focusInput()
+        onNewConversation: () => {
+          this.input?.resetChatArea();
+          this.input?.focusInput();
+        }
       }
     });
 

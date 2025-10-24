@@ -30,7 +30,7 @@
   let editModeActive = false;
   let currentStreamingMessageId: string | null = null;
 
-  let conversation = new Conversation();
+  let conversation: Conversation = new Conversation();
 
   let currentThought: string | null = null;
 
@@ -38,6 +38,10 @@
     tick().then(() => {
       textareaElement?.focus();
     });
+  }
+
+  export function resetChatArea() {
+    chatArea.resetChatArea();
   }
 
   onMount(() => {
@@ -85,7 +89,7 @@
     chatService.stop();
     currentThought = null;
     isSubmitting = false;
-    chatArea.onFinishedSubmitting();
+    chatArea.scrollChatArea();
   }
 
   async function handleSubmit() {
@@ -99,15 +103,17 @@
       return;
     }
 
-    isSubmitting = true;
     const currentRequest = userRequest;
 
     textareaElement.value = "";
     userRequest = "";
     autoResize();
-    scrollToBottom();
 
     await chatService.submit(conversation, editModeActive, currentRequest, {
+      onSubmit: () => {
+        chatArea.scrollChatArea();
+        isSubmitting = true;
+      },
       onStreamingUpdate: (streamingId) => {
         conversation = conversation;
         currentStreamingMessageId = streamingId;
@@ -117,7 +123,7 @@
       },
       onComplete: () => {
         isSubmitting = false;
-        chatArea.onFinishedSubmitting();
+        chatArea.scrollChatArea();
         chatService.updateTokenDisplay(conversation);
       }
     });
@@ -141,17 +147,6 @@
     }
   }
 
-  function scrollToBottom() {
-    tick().then(() => {
-      if (chatContainer) {
-        chatContainer.scroll({
-          top: chatContainer.scrollHeight,
-          behavior: 'smooth'
-        });
-      }
-    });
-  }
-
   $: if (submitButton) {
     setIcon(submitButton, isSubmitting ? "square" : "send-horizontal");
   }
@@ -167,13 +162,20 @@
   }
 
   $: if ($conversationStore.conversationToLoad) {
-    const { conversation: loadedConversation, filePath } = $conversationStore.conversationToLoad;
-    conversation = loadedConversation;
-    conversationService.setCurrentConversationPath(filePath);
-    chatService.onNameChanged?.(loadedConversation.title);
-    chatService.updateTokenDisplay(loadedConversation);
-    conversationStore.clearLoadFlag();
-    scrollToBottom();
+    conversation.contents = [];
+    chatArea.resetChatArea();
+    
+    tick().then(() => {
+      if ($conversationStore.conversationToLoad) {
+        const { conversation: loadedConversation, filePath } = $conversationStore.conversationToLoad;
+        conversation = loadedConversation;
+        conversationService.setCurrentConversationPath(filePath);
+        chatService.onNameChanged?.(loadedConversation.title);
+        chatService.updateTokenDisplay(loadedConversation);
+        conversationStore.clearLoadFlag();
+        chatArea.scrollChatArea();
+      }
+    });
   }
 
   $: if ($conversationStore.shouldDeactivateEditMode) {

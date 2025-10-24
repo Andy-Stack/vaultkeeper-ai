@@ -3,13 +3,17 @@ import { Services } from "./Services";
 import type { IConversationNamingService } from "AIClasses/IConversationNamingService";
 import type { ConversationFileSystemService } from "./ConversationFileSystemService";
 import type { Conversation } from "Conversations/Conversation";
+import type { VaultService } from "./VaultService";
+import { Path } from "Enums/Path";
 
 export class ConversationNamingService {
     private namingProvider: IConversationNamingService | undefined;
     private conversationService: ConversationFileSystemService;
+    private vaultService: VaultService;
 
     constructor() {
         this.conversationService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
+        this.vaultService = Resolve<VaultService>(Services.VaultService);
     }
 
     public resolveNamingProvider() {
@@ -49,7 +53,14 @@ export class ConversationNamingService {
     }
 
     private validateName(generatedName: string): string {
-        const cleanedTitle = generatedName.trim().replace(/^["']|["']$/g, "");
-        return cleanedTitle.split(/\s+/).slice(0, 6).join(" ");
+        let cleanedTitle = generatedName.trim().replace(/^["']|["']$/g, "").split(/\s+/).slice(0, 6).join(" ");
+
+        let index = 1;
+        let availableTitle = cleanedTitle;
+        while (this.vaultService.exists(`${Path.Conversations}/${availableTitle}.json`, true)) {
+            availableTitle = `${cleanedTitle}(${index})`;
+            index++;
+        }
+        return availableTitle;
     }
 }

@@ -3,6 +3,7 @@ export class Services {
     static StatusBarService = Symbol("StatusBarService");
     static FileManager = Symbol("FileManager");
     static VaultService = Symbol("VaultService");
+    static VaultCacheService = Symbol("VaultCacheService");
     static WorkSpaceService = Symbol("WorkSpaceService");
     static FileSystemService = Symbol("FileSystemService");
     static ConversationFileSystemService = Symbol("ConversationFileSystemService");

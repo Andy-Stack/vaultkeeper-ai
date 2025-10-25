@@ -24,7 +24,10 @@ const mockVault = {
 	create: vi.fn(),
 	process: vi.fn(),
 	delete: vi.fn(),
-	createFolder: vi.fn()
+	createFolder: vi.fn(),
+	getFiles: vi.fn(),
+	getAllFolders: vi.fn(),
+	on: vi.fn()
 };
 
 const mockFileManager = {
@@ -41,7 +44,8 @@ const mockPlugin = {
 		vault: mockVault,
 		fileManager: mockFileManager
 	},
-	settings: mockPluginSettings
+	settings: mockPluginSettings,
+	registerEvent: vi.fn()
 };
 
 // Helper to create mock TFile
@@ -739,6 +743,138 @@ describe('VaultService - Integration Tests', () => {
 			expect(vaultService.exists('temp/file.md')).toBe(false);
 			expect(vaultService.exists('data.secret')).toBe(false);
 			expect(vaultService.exists('public/file.md')).toBe(true);
+		});
+	});
+
+	describe('registerFileEvents', () => {
+		it('should register all file event handlers', () => {
+			const mockEventRef = { event: 'mock' };
+			mockVault.on.mockReturnValue(mockEventRef);
+
+			const handler = vi.fn();
+			vaultService.registerFileEvents(handler);
+
+			// Should register 4 events (create, modify, rename, delete)
+			expect(mockVault.on).toHaveBeenCalledTimes(4);
+			expect(mockVault.on).toHaveBeenCalledWith('create', expect.any(Function));
+			expect(mockVault.on).toHaveBeenCalledWith('modify', expect.any(Function));
+			expect(mockVault.on).toHaveBeenCalledWith('rename', expect.any(Function));
+			expect(mockVault.on).toHaveBeenCalledWith('delete', expect.any(Function));
+			expect(mockPlugin.registerEvent).toHaveBeenCalledTimes(4);
+		});
+
+		it('should call handler with correct parameters for create event', () => {
+			const handler = vi.fn();
+			let createCallback: any;
+
+			mockVault.on.mockImplementation((event: string, callback: any) => {
+				if (event === 'create') {
+					createCallback = callback;
+				}
+				return { event: 'mock' };
+			});
+
+			vaultService.registerFileEvents(handler);
+
+			const mockFile = createMockFile('test.md');
+			createCallback(mockFile);
+
+			expect(handler).toHaveBeenCalledWith('create', mockFile, { oldPath: '' });
+		});
+
+		it('should call handler with correct parameters for rename event', () => {
+			const handler = vi.fn();
+			let renameCallback: any;
+
+			mockVault.on.mockImplementation((event: string, callback: any) => {
+				if (event === 'rename') {
+					renameCallback = callback;
+				}
+				return { event: 'mock' };
+			});
+
+			vaultService.registerFileEvents(handler);
+
+			const mockFile = createMockFile('new.md');
+			renameCallback(mockFile, 'old.md');
+
+			expect(handler).toHaveBeenCalledWith('rename', mockFile, { oldPath: 'old.md' });
+		});
+	});
+
+	describe('listVaultContents', () => {
+		it('should return all files and folders when no exclusions', () => {
+			const files = [
+				createMockFile('note1.md'),
+				createMockFile('note2.md')
+			];
+			const folders = [
+				createMockFolder('folder1'),
+				createMockFolder('folder2')
+			];
+
+			mockVault.getFiles.mockReturnValue(files);
+			mockVault.getAllFolders.mockReturnValue(folders);
+
+			const result = vaultService.listVaultContents();
+
+			expect(result).toHaveLength(4);
+			expect(result).toEqual(expect.arrayContaining([...files, ...folders]));
+		});
+
+		it('should filter out excluded files and folders', () => {
+			const files = [
+				createMockFile('public/note.md'),
+				createMockFile('AI Agent/conversation.md'),
+				createMockFile('private/secret.md')
+			];
+			const folders = [
+				createMockFolder('public'),
+				createMockFolder('AI Agent'),
+				createMockFolder('private')
+			];
+
+			mockVault.getFiles.mockReturnValue(files);
+			mockVault.getAllFolders.mockReturnValue(folders);
+			mockPluginSettings.exclusions = ['private/**'];
+
+			const result = vaultService.listVaultContents(false);
+
+			// Should have: public/note.md, public folder, AI Agent folder, private folder
+			// Should exclude: AI Agent/** (files inside - default), private/** (files inside)
+			// Note: The pattern 'private/**' matches files inside but not the folder itself
+			// Similarly 'AI Agent/**' (the default) matches files inside but not the folder
+			expect(result.some((item) => item.path === 'public/note.md')).toBe(true);
+			expect(result.some((item) => item.path === 'public')).toBe(true);
+			expect(result.some((item) => item.path === 'AI Agent/conversation.md')).toBe(false);
+			expect(result.some((item) => item.path === 'private/secret.md')).toBe(false);
+		});
+
+		it('should include AI Agent directory when allowAccessToPluginRoot is true', () => {
+			const files = [
+				createMockFile('note.md'),
+				createMockFile('AI Agent/conversation.md')
+			];
+			const folders = [
+				createMockFolder('AI Agent')
+			];
+
+			mockVault.getFiles.mockReturnValue(files);
+			mockVault.getAllFolders.mockReturnValue(folders);
+
+			const result = vaultService.listVaultContents(true);
+
+			expect(result).toHaveLength(3);
+			expect(result.some((item) => item.path === 'AI Agent/conversation.md')).toBe(true);
+		});
+
+		it('should return empty array when vault is empty', () => {
+			mockVault.getFiles.mockReturnValue([]);
+			mockVault.getAllFolders.mockReturnValue([]);
+
+			const result = vaultService.listVaultContents();
+
+			expect(result).toEqual([]);
 		});
 	});
 });

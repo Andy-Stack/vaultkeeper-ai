@@ -29,6 +29,7 @@ import { Claude } from "AIClasses/Claude/Claude";
 import { OpenAIConversationNamingService } from "AIClasses/OpenAI/OpenAIConversationNamingService";
 import { OpenAI } from "AIClasses/OpenAI/OpenAI";
 import { SanitiserService } from "./SanitiserService";
+import { VaultCacheService } from "./VaultCacheService";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton<AIAgentPlugin>(Services.AIAgentPlugin, plugin);
@@ -36,6 +37,7 @@ export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton<StatusBarService>(Services.StatusBarService, new StatusBarService());
     RegisterSingleton<SanitiserService>(Services.SanitiserService, new SanitiserService());
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
+    RegisterSingleton<VaultCacheService>(Services.VaultCacheService, new VaultCacheService());
     RegisterSingleton<WorkSpaceService>(Services.WorkSpaceService, new WorkSpaceService());
     RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());
     RegisterSingleton<ConversationFileSystemService>(Services.ConversationFileSystemService, new ConversationFileSystemService());

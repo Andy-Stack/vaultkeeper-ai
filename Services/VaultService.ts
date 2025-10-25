@@ -6,6 +6,11 @@ import { Path } from "Enums/Path";
 import { escapeRegex, randomSample } from "Helpers/Helpers";
 import type { SearchMatch, SearchSnippet } from "../Helpers/SearchTypes";
 import type { SanitiserService } from "./SanitiserService";
+import { FileEvent } from "Enums/FileEvent";
+
+interface FileEventArgs {
+    oldPath: string;
+}
 
 /* This service protects the users vault through their exclusions. The plugin root is excluded by default */
 export class VaultService {
@@ -13,16 +18,23 @@ export class VaultService {
     private readonly AGENT_ROOT = `${Path.AIAgentDir}/**`;
     private readonly USER_INSTRUCTION = Path.UserInstruction;
 
+    private readonly vault: Vault;
     private readonly plugin: AIAgentPlugin;
     private readonly fileManager: FileManager;
-    private readonly vault: Vault;
     private readonly sanitiserService: SanitiserService;
 
     public constructor() {
         this.plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
-        this.fileManager = Resolve<FileManager>(Services.FileManager);
         this.vault = this.plugin.app.vault;
+        this.fileManager = Resolve<FileManager>(Services.FileManager);
         this.sanitiserService = Resolve<SanitiserService>(Services.SanitiserService);
+    }
+
+    public registerFileEvents(handleFileEvent: (event: FileEvent, file: TAbstractFile, args: FileEventArgs) => void) {
+        this.plugin.registerEvent(this.vault.on(FileEvent.Create, file => handleFileEvent(FileEvent.Create, file, { oldPath: "" })));
+        this.plugin.registerEvent(this.vault.on(FileEvent.Modify, file => handleFileEvent(FileEvent.Modify, file, { oldPath: "" })));
+        this.plugin.registerEvent(this.vault.on(FileEvent.Rename, (file, oldPath) => handleFileEvent(FileEvent.Rename, file, { oldPath: oldPath })));
+        this.plugin.registerEvent(this.vault.on(FileEvent.Delete, file => handleFileEvent(FileEvent.Delete, file, { oldPath: "" })));
     }
 
     public getMarkdownFiles(allowAccessToPluginRoot: boolean = false): TFile[] {
@@ -118,6 +130,16 @@ export class VaultService {
             throw new Error(`Plugin attempted to create a folder that is in the exclusion list: ${path}`);
         }
         return await this.vault.createFolder(path);
+    }
+
+    public listVaultContents(allowAccessToPluginRoot: boolean = false) {
+        const files = this.vault.getFiles()
+            .filter(file => !this.isExclusion(file.path, allowAccessToPluginRoot));
+
+            const folders = this.vault.getAllFolders()
+            .filter(folder => !this.isExclusion(folder.path, allowAccessToPluginRoot));
+
+        return [...files, ...folders] as TAbstractFile[];
     }
 
     public async listFilesInDirectory(dirPath: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFile[]> {

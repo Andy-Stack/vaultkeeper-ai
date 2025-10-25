@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { VaultCacheService } from '../../Services/VaultCacheService';
 import { VaultService } from '../../Services/VaultService';
-import { TFile, TFolder, TAbstractFile, MetadataCache } from 'obsidian';
+import { TFile, TFolder, MetadataCache } from 'obsidian';
 import { RegisterSingleton } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { FileEvent } from '../../Enums/FileEvent';
@@ -15,6 +15,34 @@ vi.mock('obsidian', async () => {
 			if (!metadata || !metadata.tags) return null;
 			return metadata.tags.map((t: any) => t.tag);
 		})
+	};
+});
+
+// Mock fuzzysort
+vi.mock('fuzzysort', () => {
+	const mockPrepare = vi.fn((str: string) => ({ target: str }));
+	const mockGo = vi.fn((input: string, targets: any[], options: any) => {
+		// Simple mock implementation that filters based on includes
+		const results = targets
+			.filter((t: any) => {
+				const searchIn = t.tag || t.file?.basename || t.folder?.path || '';
+				return searchIn.toLowerCase().includes(input.toLowerCase());
+			})
+			.slice(0, options.limit || 10)
+			.map((t: any) => ({
+				obj: t,
+				score: 0
+			}));
+		return results;
+	});
+
+	return {
+		default: {
+			go: mockGo,
+			prepare: mockPrepare
+		},
+		go: mockGo,
+		prepare: mockPrepare
 	};
 });
 
@@ -462,6 +490,33 @@ describe('VaultCacheService - Integration Tests', () => {
 	});
 
 	describe('edge cases', () => {
+		it('should handle folder events - create', () => {
+			const mockFolder = createMockFolder('new-folder');
+
+			expect(() => {
+				fileEventHandler(FileEvent.Create, mockFolder, { oldPath: '' });
+			}).not.toThrow();
+		});
+
+		it('should handle folder events - rename', () => {
+			const mockFolder = createMockFolder('folder');
+			fileEventHandler(FileEvent.Create, mockFolder, { oldPath: '' });
+
+			const renamedFolder = createMockFolder('renamed-folder');
+			expect(() => {
+				fileEventHandler(FileEvent.Rename, renamedFolder, { oldPath: mockFolder.path });
+			}).not.toThrow();
+		});
+
+		it('should handle folder events - delete', () => {
+			const mockFolder = createMockFolder('folder-to-delete');
+			fileEventHandler(FileEvent.Create, mockFolder, { oldPath: '' });
+
+			expect(() => {
+				fileEventHandler(FileEvent.Delete, mockFolder, { oldPath: mockFolder.path });
+			}).not.toThrow();
+		});
+
 		it('should handle files with special characters in path', () => {
 			const mockFile = createMockFile('folder/file with spaces & (special).md');
 			mockMetadataCache.getCache.mockReturnValue({
@@ -509,6 +564,222 @@ describe('VaultCacheService - Integration Tests', () => {
 			expect(() => {
 				fileEventHandler(FileEvent.Rename, mockFile, { oldPath: 'old.md' });
 			}).not.toThrow();
+		});
+	});
+
+	describe('fuzzy search - matchTag', () => {
+		beforeEach(() => {
+			// Create files with various tags
+			const file1 = createMockFile('file1.md');
+			const file2 = createMockFile('file2.md');
+			const file3 = createMockFile('file3.md');
+
+			mockMetadataCache.getCache.mockReturnValueOnce({
+				tags: [{ tag: '#project' }, { tag: '#important' }]
+			});
+			fileEventHandler(FileEvent.Create, file1, { oldPath: '' });
+
+			mockMetadataCache.getCache.mockReturnValueOnce({
+				tags: [{ tag: '#personal' }, { tag: '#todo' }]
+			});
+			fileEventHandler(FileEvent.Create, file2, { oldPath: '' });
+
+			mockMetadataCache.getCache.mockReturnValueOnce({
+				tags: [{ tag: '#work' }, { tag: '#meeting' }]
+			});
+			fileEventHandler(FileEvent.Create, file3, { oldPath: '' });
+		});
+
+		it('should find matching tags', () => {
+			const results = vaultCacheService.matchTag('project');
+			expect(results).toBeDefined();
+			expect(results.length).toBeGreaterThan(0);
+		});
+
+		it('should return empty results for non-matching input', () => {
+			const results = vaultCacheService.matchTag('nonexistent');
+			expect(results).toBeDefined();
+			expect(results.length).toBe(0);
+		});
+
+		it('should be case insensitive', () => {
+			const results = vaultCacheService.matchTag('PROJECT');
+			expect(results).toBeDefined();
+			expect(results.length).toBeGreaterThan(0);
+		});
+
+		it('should handle partial matches', () => {
+			const results = vaultCacheService.matchTag('proj');
+			expect(results).toBeDefined();
+		});
+
+		it('should limit results to configured limit', () => {
+			// Create many tags to test limit
+			for (let i = 0; i < 20; i++) {
+				const file = createMockFile(`file${i}.md`);
+				mockMetadataCache.getCache.mockReturnValueOnce({
+					tags: [{ tag: `#test${i}` }]
+				});
+				fileEventHandler(FileEvent.Create, file, { oldPath: '' });
+			}
+
+			const results = vaultCacheService.matchTag('test');
+			expect(results.length).toBeLessThanOrEqual(10);
+		});
+	});
+
+	describe('fuzzy search - matchFile', () => {
+		beforeEach(() => {
+			// Create files with various names
+			mockMetadataCache.getCache.mockReturnValue(null);
+
+			fileEventHandler(FileEvent.Create, createMockFile('project-notes.md'), { oldPath: '' });
+			fileEventHandler(FileEvent.Create, createMockFile('meeting-2024.md'), { oldPath: '' });
+			fileEventHandler(FileEvent.Create, createMockFile('todo-list.md'), { oldPath: '' });
+			fileEventHandler(FileEvent.Create, createMockFile('important-doc.md'), { oldPath: '' });
+		});
+
+		it('should find matching files by basename', () => {
+			const results = vaultCacheService.matchFile('project');
+			expect(results).toBeDefined();
+			expect(results.length).toBeGreaterThan(0);
+		});
+
+		it('should return empty results for non-matching input', () => {
+			const results = vaultCacheService.matchFile('zzznomatch');
+			expect(results).toBeDefined();
+			expect(results.length).toBe(0);
+		});
+
+		it('should be case insensitive', () => {
+			const results = vaultCacheService.matchFile('PROJECT');
+			expect(results).toBeDefined();
+			expect(results.length).toBeGreaterThan(0);
+		});
+
+		it('should handle partial matches', () => {
+			const results = vaultCacheService.matchFile('meet');
+			expect(results).toBeDefined();
+		});
+
+		it('should limit results to configured limit', () => {
+			// Create many files to test limit
+			for (let i = 0; i < 20; i++) {
+				const file = createMockFile(`document${i}.md`);
+				fileEventHandler(FileEvent.Create, file, { oldPath: '' });
+			}
+
+			const results = vaultCacheService.matchFile('document');
+			expect(results.length).toBeLessThanOrEqual(10);
+		});
+
+		it('should update results after file is added', () => {
+			const resultsBefore = vaultCacheService.matchFile('newfile');
+			expect(resultsBefore.length).toBe(0);
+
+			const newFile = createMockFile('newfile-test.md');
+			fileEventHandler(FileEvent.Create, newFile, { oldPath: '' });
+
+			const resultsAfter = vaultCacheService.matchFile('newfile');
+			expect(resultsAfter.length).toBeGreaterThan(0);
+		});
+
+		it('should update results after file is deleted', () => {
+			const file = createMockFile('todelete.md');
+			fileEventHandler(FileEvent.Create, file, { oldPath: '' });
+
+			const resultsBefore = vaultCacheService.matchFile('todelete');
+			expect(resultsBefore.length).toBeGreaterThan(0);
+
+			fileEventHandler(FileEvent.Delete, file, { oldPath: file.path });
+
+			const resultsAfter = vaultCacheService.matchFile('todelete');
+			expect(resultsAfter.length).toBe(0);
+		});
+	});
+
+	describe('fuzzy search - matchFolder', () => {
+		beforeEach(() => {
+			// Create folders with various paths
+			fileEventHandler(FileEvent.Create, createMockFolder('projects'), { oldPath: '' });
+			fileEventHandler(FileEvent.Create, createMockFolder('projects/frontend'), { oldPath: '' });
+			fileEventHandler(FileEvent.Create, createMockFolder('projects/backend'), { oldPath: '' });
+			fileEventHandler(FileEvent.Create, createMockFolder('archive'), { oldPath: '' });
+		});
+
+		it('should find matching folders', () => {
+			const results = vaultCacheService.matchFolder('projects');
+			expect(results).toBeDefined();
+			expect(results.length).toBeGreaterThan(0);
+		});
+
+		it('should return empty results for non-matching input', () => {
+			const results = vaultCacheService.matchFolder('nonexistent');
+			expect(results).toBeDefined();
+			expect(results.length).toBe(0);
+		});
+
+		it('should be case insensitive', () => {
+			const results = vaultCacheService.matchFolder('PROJECTS');
+			expect(results).toBeDefined();
+			expect(results.length).toBeGreaterThan(0);
+		});
+
+		it('should handle partial matches', () => {
+			const results = vaultCacheService.matchFolder('proj');
+			expect(results).toBeDefined();
+		});
+
+		it('should limit results to configured limit', () => {
+			// Create many folders to test limit
+			for (let i = 0; i < 20; i++) {
+				const folder = createMockFolder(`folder${i}`);
+				fileEventHandler(FileEvent.Create, folder, { oldPath: '' });
+			}
+
+			const results = vaultCacheService.matchFolder('folder');
+			expect(results.length).toBeLessThanOrEqual(10);
+		});
+
+		it('should update results after folder is added', () => {
+			const resultsBefore = vaultCacheService.matchFolder('newfolder');
+			expect(resultsBefore.length).toBe(0);
+
+			const newFolder = createMockFolder('newfolder');
+			fileEventHandler(FileEvent.Create, newFolder, { oldPath: '' });
+
+			const resultsAfter = vaultCacheService.matchFolder('newfolder');
+			expect(resultsAfter.length).toBeGreaterThan(0);
+		});
+
+		it('should update results after folder is renamed', () => {
+			const folder = createMockFolder('oldname');
+			fileEventHandler(FileEvent.Create, folder, { oldPath: '' });
+
+			const resultsBefore = vaultCacheService.matchFolder('oldname');
+			expect(resultsBefore.length).toBeGreaterThan(0);
+
+			const renamedFolder = createMockFolder('newname');
+			fileEventHandler(FileEvent.Rename, renamedFolder, { oldPath: folder.path });
+
+			const resultsOldName = vaultCacheService.matchFolder('oldname');
+			expect(resultsOldName.length).toBe(0);
+
+			const resultsNewName = vaultCacheService.matchFolder('newname');
+			expect(resultsNewName.length).toBeGreaterThan(0);
+		});
+
+		it('should update results after folder is deleted', () => {
+			const folder = createMockFolder('todelete');
+			fileEventHandler(FileEvent.Create, folder, { oldPath: '' });
+
+			const resultsBefore = vaultCacheService.matchFolder('todelete');
+			expect(resultsBefore.length).toBeGreaterThan(0);
+
+			fileEventHandler(FileEvent.Delete, folder, { oldPath: folder.path });
+
+			const resultsAfter = vaultCacheService.matchFolder('todelete');
+			expect(resultsAfter.length).toBe(0);
 		});
 	});
 });

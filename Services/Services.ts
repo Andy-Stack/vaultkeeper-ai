@@ -16,6 +16,7 @@ export class Services {
     static AIFunctionService = Symbol("AIFunctionService");
     static ChatService = Symbol("ChatService");
     static SanitiserService = Symbol("SanitiserService");
+    static InputService = Symbol("InputService");
 
     // stores
     static SearchStateStore = Symbol("SearchStateStore");

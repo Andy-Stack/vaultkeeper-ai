@@ -7,17 +7,8 @@
 	import { Services } from "Services/Services";
 	import { SearchTrigger } from "Enums/SearchTrigger";
 	import ChatSearchResults from "./ChatSearchResults.svelte";
-  import {
-		getCharacterAtPosition,
-		getCursorPosition,
-		setCursorPosition,
-		getPlainTextFromClipboard,
-		insertTextAtCursor,
-		isPrintableKey,
-		isInSearchZone,
-		stripHtml
-	} from "Helpers/InputHelpers";
 	import type { Writable } from "svelte/store";
+	import type { InputService } from "Services/InputService";
 
   export let hasNoApiKey: boolean;
   export let isSubmitting: boolean;
@@ -26,6 +17,7 @@
   export let ontoggleeditmode: () => void;
   export let onstop: () => void;
 
+  const inputService: InputService = Resolve<InputService>(Services.InputService);
   const userInputService: UserInputService = Resolve<UserInputService>(Services.UserInputService);
   const searchStateStore: SearchStateStore = Resolve<SearchStateStore>(Services.SearchStateStore);
 
@@ -87,13 +79,13 @@
     if (SearchTrigger.isSearchTrigger(e.key)) {
       e.preventDefault();
 
-      const position = getCursorPosition(textareaElement)
+      const position = inputService.getCursorPosition(textareaElement)
       const trigger = SearchTrigger.fromInput(e.key);
 
       searchStateStore.initializeSearch(trigger, position);
 
       textareaElement.textContent = textareaElement.textContent + e.key;
-      setCursorPosition(textareaElement, position + 1);
+      inputService.setCursorPosition(textareaElement, position + 1);
     }
   }
 
@@ -126,7 +118,7 @@
     }
 
     // Only append printable characters to the query
-    if (isPrintableKey(e.key, e.ctrlKey, e.metaKey)) {
+    if (inputService.isPrintableKey(e.key, e.ctrlKey, e.metaKey)) {
       searchStateStore.appendToQuery(e.key);
       userInputService.performSearch();
     }
@@ -139,12 +131,12 @@
       if (textareaElement.innerHTML !== textareaElement.textContent) {
         // HTML detected - sanitize by replacing with plain text
         const plainText = textareaElement.textContent || "";
-        const cursorPos = getCursorPosition(textareaElement);
+        const cursorPos = inputService.getCursorPosition(textareaElement);
 
         textareaElement.textContent = plainText;
 
         // Restore cursor position after sanitization
-        setCursorPosition(textareaElement, cursorPos);
+        inputService.setCursorPosition(textareaElement, cursorPos);
       }
 
       // If in search mode, synchronize the query with actual text content
@@ -171,13 +163,13 @@
   function handlePaste(e: ClipboardEvent) {
     e.preventDefault();
 
-    const plainText = getPlainTextFromClipboard(e.clipboardData);
+    const plainText = inputService.getPlainTextFromClipboard(e.clipboardData);
 
     if (!plainText) {
       return;
     }
 
-    insertTextAtCursor(plainText);
+    inputService.insertTextAtCursor(plainText);
     handleInput();
   }
 
@@ -199,9 +191,9 @@
       return;
     }
 
-    const currentPosition = getCursorPosition(textareaElement);
+    const currentPosition = inputService.getCursorPosition(textareaElement);
 
-    if (!isInSearchZone(currentPosition, $searchState.position)) {
+    if (!inputService.isInSearchZone(currentPosition, $searchState.position)) {
       searchStateStore.resetSearch();
     }
   }

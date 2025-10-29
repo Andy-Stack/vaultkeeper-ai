@@ -32,6 +32,7 @@ import { SanitiserService } from "./SanitiserService";
 import { VaultCacheService } from "./VaultCacheService";
 import { UserInputService } from "./UserInputService";
 import { SearchStateStore } from "Stores/SearchStateStore";
+import { InputService } from "./InputService";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton<AIAgentPlugin>(Services.AIAgentPlugin, plugin);
@@ -54,6 +55,7 @@ export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton<ChatService>(Services.ChatService, new ChatService());
 
     RegisterTransient<StreamingMarkdownService>(Services.StreamingMarkdownService, () => new StreamingMarkdownService());
+    RegisterTransient<InputService>(Services.InputService, () => new InputService());
 
     RegisterModals(plugin.app);
     RegisterAiProvider(plugin);

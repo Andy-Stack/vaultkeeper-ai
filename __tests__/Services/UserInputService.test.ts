@@ -132,10 +132,14 @@ describe('UserInputService', () => {
 				selectedResult: ""
 			});
 
+			mockVaultCacheService.matchTag.mockReturnValue([
+				{ obj: { tag: '#ab' }, score: 0 }
+			]);
+
 			userInputService.performSearch();
 
-			expect(mockSearchStateStore.setResults).toHaveBeenCalledWith([]);
-			expect(mockVaultCacheService.matchTag).not.toHaveBeenCalled();
+			expect(mockVaultCacheService.matchTag).toHaveBeenCalledWith("ab");
+			expect(mockSearchStateStore.setResults).toHaveBeenCalledWith(['#ab']);
 		});
 
 		it('should set empty results when query is empty', () => {
@@ -148,10 +152,12 @@ describe('UserInputService', () => {
 				selectedResult: ""
 			});
 
+			mockVaultCacheService.matchTag.mockReturnValue([]);
+
 			userInputService.performSearch();
 
+			expect(mockVaultCacheService.matchTag).toHaveBeenCalledWith("");
 			expect(mockSearchStateStore.setResults).toHaveBeenCalledWith([]);
-			expect(mockVaultCacheService.matchTag).not.toHaveBeenCalled();
 		});
 
 		it('should set empty results when trimmed query length is less than 3', () => {
@@ -164,10 +170,12 @@ describe('UserInputService', () => {
 				selectedResult: ""
 			});
 
+			mockVaultCacheService.matchTag.mockReturnValue([]);
+
 			userInputService.performSearch();
 
+			expect(mockVaultCacheService.matchTag).toHaveBeenCalledWith("  a  ");
 			expect(mockSearchStateStore.setResults).toHaveBeenCalledWith([]);
-			expect(mockVaultCacheService.matchTag).not.toHaveBeenCalled();
 		});
 
 		it('should proceed with search when query length is exactly 3', () => {
@@ -578,10 +586,12 @@ describe('UserInputService', () => {
 				selectedResult: ""
 			});
 
+			mockVaultCacheService.matchTag.mockReturnValue([]);
+
 			userInputService.performSearch();
 
+			expect(mockVaultCacheService.matchTag).toHaveBeenCalledWith("   ");
 			expect(mockSearchStateStore.setResults).toHaveBeenCalledWith([]);
-			expect(mockVaultCacheService.matchTag).not.toHaveBeenCalled();
 		});
 
 		it('should preserve query with internal spaces', () => {

@@ -29,12 +29,20 @@ export class VaultCacheService {
   private preparedFiles: { prepared: Fuzzysort.Prepared, file: TFile }[] = [];
   private preparedFolders: { prepared: Fuzzysort.Prepared, folder: TFolder }[] = [];
 
+  private initialised = false;
+
   public constructor() {
     this.plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
     this.vaultService = Resolve<VaultService>(Services.VaultService);
     this.metaDataCache = this.plugin.app.metadataCache;
-    this.setupCaches();
     this.registerFileEvents();
+
+    this.plugin.app.metadataCache.on("resolved", () => {
+      if (!this.initialised) {
+        this.setupCaches();
+        this.initialised = true;
+      }
+    });
   }
 
   public matchTag(input: string): Fuzzysort.KeyResults<{ prepared: Fuzzysort.Prepared, tag: string }> {

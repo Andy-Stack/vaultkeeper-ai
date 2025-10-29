@@ -54,7 +54,8 @@ vi.mock('fuzzysort', () => {
 
 // Create mock instances
 const mockMetadataCache = {
-	getCache: vi.fn()
+	getCache: vi.fn(),
+	on: vi.fn()
 };
 
 const mockVault = {
@@ -152,15 +153,41 @@ describe('VaultCacheService - Integration Tests', () => {
 				fileEventHandler = handler;
 			});
 
+			let resolvedHandler: any = null;
+			const mockMetadataCacheWithHandler = {
+				getCache: mockMetadataCache.getCache,
+				on: vi.fn((event: string, handler: any) => {
+					if (event === 'resolved') {
+						resolvedHandler = handler;
+					}
+				})
+			};
+
+			const mockPluginWithMetadata = {
+				app: {
+					vault: mockVault,
+					metadataCache: mockMetadataCacheWithHandler
+				},
+				settings: {
+					exclusions: []
+				},
+				registerEvent: vi.fn()
+			};
+
 			const mockVaultServiceWithContent = {
 				registerFileEvents: mockRegisterEvents,
 				listVaultContents: mockListVaultContents
 			};
 
+			RegisterSingleton(Services.AIAgentPlugin, mockPluginWithMetadata as any);
 			RegisterSingleton(Services.VaultService, mockVaultServiceWithContent as any);
 
 			// Create new instance to trigger initialization
 			new VaultCacheService();
+
+			// Trigger the resolved event
+			expect(resolvedHandler).toBeDefined();
+			resolvedHandler();
 
 			expect(mockListVaultContents).toHaveBeenCalled();
 		});

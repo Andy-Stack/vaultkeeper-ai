@@ -79,7 +79,7 @@
     if (SearchTrigger.isSearchTrigger(e.key)) {
       e.preventDefault();
 
-      const position = inputService.getCursorPosition(textareaElement)
+      const position = inputService.getCursorPosition(textareaElement);
       const trigger = SearchTrigger.fromInput(e.key);
 
       searchStateStore.initializeSearch(trigger, position);
@@ -112,7 +112,7 @@
       }
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        searchStateStore.setSelectedResultToNext()
+        searchStateStore.setSelectedResultToNext();
       }
       return;
     }
@@ -200,7 +200,7 @@
 </script>
 
 <div id="input-container" class:edit-mode={editModeActive}>
-  <div id="input-search-results-container">
+  <div id="input-search-results-container" style:padding-top={$searchState.results.length > 0 ? "var(--size-4-2)" : 0}>
     <ChatSearchResults searchState={$searchState}/>
   </div>
 
@@ -259,7 +259,7 @@
 
   #input-search-results-container {
     grid-row: 1;
-    grid-column: 2 / 8;
+    grid-column: 2 / 7;
   }
 
   #input-field {

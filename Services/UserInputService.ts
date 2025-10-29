@@ -22,9 +22,7 @@ export class UserInputService {
     public performSearch() {
         const state = get(this.searchStateStore.searchState);
 
-        if (!state.active ||
-            state.trigger == null ||
-            state.query.trim().length < 3) {
+        if (!state.active || state.trigger == null) {
             this.searchStateStore.setResults([]);
             return;
         }

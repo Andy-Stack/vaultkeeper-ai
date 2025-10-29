@@ -4,7 +4,7 @@
   import type AIAgentPlugin from '../main';
   import { setIcon, type WorkspaceLeaf } from 'obsidian';
   import { ConversationFileSystemService } from '../Services/ConversationFileSystemService';
-  import { conversationStore } from '../Stores/conversationStore';
+  import { conversationStore } from '../Stores/ConversationStore';
 	import type { ConversationHistoryModal } from 'Modals/ConversationHistoryModal';
 	import { openPluginSettings } from 'Helpers/Helpers';
 	import type { ChatService } from 'Services/ChatService';

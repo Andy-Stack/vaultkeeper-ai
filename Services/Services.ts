@@ -4,6 +4,7 @@ export class Services {
     static FileManager = Symbol("FileManager");
     static VaultService = Symbol("VaultService");
     static VaultCacheService = Symbol("VaultCacheService");
+    static UserInputService = Symbol("UserInputService");
     static WorkSpaceService = Symbol("WorkSpaceService");
     static FileSystemService = Symbol("FileSystemService");
     static ConversationFileSystemService = Symbol("ConversationFileSystemService");
@@ -15,6 +16,9 @@ export class Services {
     static AIFunctionService = Symbol("AIFunctionService");
     static ChatService = Symbol("ChatService");
     static SanitiserService = Symbol("SanitiserService");
+
+    // stores
+    static SearchStateStore = Symbol("SearchStateStore");
 
     // interfaces
     static IAIClass = Symbol("IAIClass");

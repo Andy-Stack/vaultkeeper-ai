@@ -4,7 +4,7 @@ import type { FileSystemService } from "./FileSystemService";
 import { AIFunction } from "Enums/AIFunction";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
-import type { SearchMatch } from "../Helpers/SearchTypes";
+import type { ISearchMatch } from "../Helpers/SearchTypes";
 import { normalizePath, TFile } from "obsidian";
 import { Path } from "Enums/Path";
 
@@ -45,7 +45,7 @@ export class AIFunctionService {
     }
 
     private async searchVaultFiles(searchTerm: string): Promise<object> {
-        const matches: SearchMatch[] = searchTerm.trim() === "" ? [] : await this.fileSystemService.searchVaultFiles(searchTerm);
+        const matches: ISearchMatch[] = searchTerm.trim() === "" ? [] : await this.fileSystemService.searchVaultFiles(searchTerm);
 
         if (matches.length === 0) {
             const files: TFile[] = await this.fileSystemService.listFilesInDirectory(Path.Root);

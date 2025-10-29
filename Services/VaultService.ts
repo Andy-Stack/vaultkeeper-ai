@@ -4,11 +4,11 @@ import { Services } from "./Services";
 import type AIAgentPlugin from "main";
 import { Path } from "Enums/Path";
 import { escapeRegex, randomSample } from "Helpers/Helpers";
-import type { SearchMatch, SearchSnippet } from "../Helpers/SearchTypes";
+import type { ISearchMatch, ISearchSnippet } from "../Helpers/SearchTypes";
 import type { SanitiserService } from "./SanitiserService";
 import { FileEvent } from "Enums/FileEvent";
 
-interface FileEventArgs {
+interface IFileEventArgs {
     oldPath: string;
 }
 
@@ -30,7 +30,7 @@ export class VaultService {
         this.sanitiserService = Resolve<SanitiserService>(Services.SanitiserService);
     }
 
-    public registerFileEvents(handleFileEvent: (event: FileEvent, file: TAbstractFile, args: FileEventArgs) => void) {
+    public registerFileEvents(handleFileEvent: (event: FileEvent, file: TAbstractFile, args: IFileEventArgs) => void) {
         this.plugin.registerEvent(this.vault.on(FileEvent.Create, file => handleFileEvent(FileEvent.Create, file, { oldPath: "" })));
         this.plugin.registerEvent(this.vault.on(FileEvent.Modify, file => handleFileEvent(FileEvent.Modify, file, { oldPath: "" })));
         this.plugin.registerEvent(this.vault.on(FileEvent.Rename, (file, oldPath) => handleFileEvent(FileEvent.Rename, file, { oldPath: oldPath })));
@@ -164,7 +164,7 @@ export class VaultService {
         return files.filter(file => !this.isExclusion(file.path, allowAccessToPluginRoot));
     }
 
-    public async searchVaultFiles(searchTerm: string): Promise<SearchMatch[]> {
+    public async searchVaultFiles(searchTerm: string): Promise<ISearchMatch[]> {
         let regex: RegExp;
         try {
             regex = new RegExp(searchTerm, "ig");
@@ -174,7 +174,7 @@ export class VaultService {
 
         const files: TFile[] = await this.listFilesInDirectory(Path.Root);
 
-        const allMatches: SearchMatch[] = [];
+        const allMatches: ISearchMatch[] = [];
 
         for (const file of files) {
             const content = await this.vault.cachedRead(file);
@@ -185,7 +185,7 @@ export class VaultService {
             }
         }
 
-        const flatMatches: { file: TFile; snippet: SearchSnippet }[] = [];
+        const flatMatches: { file: TFile; snippet: ISearchSnippet }[] = [];
         for (const match of allMatches) {
             for (const snippet of match.snippets) {
                 flatMatches.push({ file: match.file, snippet });
@@ -193,14 +193,14 @@ export class VaultService {
         }
 
         // If more than 20 matches, randomly sample 20
-        let selectedMatches: { file: TFile; snippet: SearchSnippet }[];
+        let selectedMatches: { file: TFile; snippet: ISearchSnippet }[];
         if (flatMatches.length > 20) {
             selectedMatches = randomSample(flatMatches, 20);
         } else {
             selectedMatches = flatMatches;
         }
 
-        const resultMap = new Map<TFile, SearchSnippet[]>();
+        const resultMap = new Map<TFile, ISearchSnippet[]>();
         for (const match of selectedMatches) {
             const existing = resultMap.get(match.file);
             if (existing) {
@@ -210,7 +210,7 @@ export class VaultService {
             }
         }
 
-        const results: SearchMatch[] = [];
+        const results: ISearchMatch[] = [];
         for (const [file, snippets] of resultMap.entries()) {
             results.push({ file, snippets });
         }
@@ -242,8 +242,8 @@ export class VaultService {
         }
     }
 
-    private extractSnippets(content: string, regex: RegExp): SearchSnippet[] {
-        const snippets: SearchSnippet[] = [];
+    private extractSnippets(content: string, regex: RegExp): ISearchSnippet[] {
+        const snippets: ISearchSnippet[] = [];
         const maxContextLength = 300;
 
         let match: RegExpExecArray | null;
@@ -267,12 +267,12 @@ export class VaultService {
         return this.mergeOverlappingSnippets(snippets, content);
     }
 
-    private mergeOverlappingSnippets(snippets: SearchSnippet[], content: string): SearchSnippet[] {
+    private mergeOverlappingSnippets(snippets: ISearchSnippet[], content: string): ISearchSnippet[] {
         if (snippets.length === 0) return snippets;
 
         snippets.sort((a, b) => a.matchIndex - b.matchIndex);
 
-        const merged: SearchSnippet[] = [];
+        const merged: ISearchSnippet[] = [];
         let current = snippets[0];
         const maxContextLength = 300;
 

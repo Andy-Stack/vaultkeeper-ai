@@ -1,14 +1,14 @@
 import { writable } from 'svelte/store';
 import type { Conversation } from 'Conversations/Conversation';
 
-interface ConversationStoreState {
+interface IConversationStoreState {
     shouldReset: boolean;
     conversationToLoad: { conversation: Conversation; filePath: string } | null;
     shouldDeactivateEditMode: boolean;
 }
 
 function createConversationStore() {
-    const { subscribe, set, update } = writable<ConversationStoreState>({
+    const { subscribe, set, update } = writable<IConversationStoreState>({
         shouldReset: false,
         conversationToLoad: null,
         shouldDeactivateEditMode: false

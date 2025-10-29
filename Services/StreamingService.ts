@@ -2,7 +2,7 @@ import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import type { IAIClass } from "AIClasses/IAIClass";
 import { Selector } from "Enums/Selector";
 
-export interface StreamChunk {
+export interface IStreamChunk {
   content: string;
   isComplete: boolean;
   error?: string;
@@ -14,10 +14,10 @@ export class StreamingService {
   public async* streamRequest(
     url: string,
     requestBody: unknown,
-    parseStreamChunk: (chunk: string) => StreamChunk,
+    parseStreamChunk: (chunk: string) => IStreamChunk,
     abortSignal?: AbortSignal,
     additionalHeaders?: Record<string, string>
-  ): AsyncGenerator<StreamChunk, void, unknown> {
+  ): AsyncGenerator<IStreamChunk, void, unknown> {
     try {
       const response = await fetch(
         url,

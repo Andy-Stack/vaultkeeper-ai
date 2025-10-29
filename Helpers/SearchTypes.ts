@@ -3,7 +3,7 @@ import { TFile } from "obsidian";
 /**
  * Represents a single snippet of matched content from a file
  */
-export interface SearchSnippet {
+export interface ISearchSnippet {
     text: string;
     matchIndex: number;
     matchLength: number;
@@ -12,7 +12,7 @@ export interface SearchSnippet {
 /**
  * Represents all matches found in a single file
  */
-export interface SearchMatch {
+export interface ISearchMatch {
     file: TFile;
-    snippets: SearchSnippet[];
+    snippets: ISearchSnippet[];
 }

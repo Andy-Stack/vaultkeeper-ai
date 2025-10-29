@@ -4,7 +4,7 @@
   import ChatArea from "./ChatArea.svelte";
   import ChatInput from "./ChatInput.svelte";
 	import { tick, onMount } from "svelte";
-  import { conversationStore } from "../Stores/conversationStore";
+  import { conversationStore } from "../Stores/ConversationStore";
   import { Conversation } from "Conversations/Conversation";
 	import type AIAgentPlugin from "main";
 	import { openPluginSettings } from "Helpers/Helpers";
@@ -87,7 +87,7 @@
     chatArea.scrollChatArea("smooth");
   }
 
-  async function handleSubmit(userRequest: string) {
+  async function handleSubmit(userRequest: string, formattedRequest: string) {
     focusInput();
 
     if (handleNoApiKey()) {
@@ -96,7 +96,7 @@
 
     const currentRequest = userRequest;
 
-    await chatService.submit(conversation, editModeActive, currentRequest, {
+    await chatService.submit(conversation, editModeActive, currentRequest, formattedRequest, {
       onSubmit: () => {
         chatArea.scrollChatArea("smooth");
         isSubmitting = true;

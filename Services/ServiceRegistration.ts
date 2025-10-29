@@ -30,6 +30,8 @@ import { OpenAIConversationNamingService } from "AIClasses/OpenAI/OpenAIConversa
 import { OpenAI } from "AIClasses/OpenAI/OpenAI";
 import { SanitiserService } from "./SanitiserService";
 import { VaultCacheService } from "./VaultCacheService";
+import { UserInputService } from "./UserInputService";
+import { SearchStateStore } from "Stores/SearchStateStore";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton<AIAgentPlugin>(Services.AIAgentPlugin, plugin);
@@ -38,6 +40,8 @@ export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton<SanitiserService>(Services.SanitiserService, new SanitiserService());
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
     RegisterSingleton<VaultCacheService>(Services.VaultCacheService, new VaultCacheService());
+    RegisterSingleton<SearchStateStore>(Services.SearchStateStore, new SearchStateStore());
+    RegisterSingleton<UserInputService>(Services.UserInputService, new UserInputService());
     RegisterSingleton<WorkSpaceService>(Services.WorkSpaceService, new WorkSpaceService());
     RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());
     RegisterSingleton<ConversationFileSystemService>(Services.ConversationFileSystemService, new ConversationFileSystemService());

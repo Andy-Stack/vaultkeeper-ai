@@ -13,7 +13,7 @@ import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import { Selector } from "Enums/Selector";
 
-interface StreamingState {
+interface IStreamingState {
     element: HTMLElement;
     buffer: string;
     lastProcessedLength: number;
@@ -24,7 +24,7 @@ export class StreamingMarkdownService {
     private readonly fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
 
     private readonly processor: Processor<any, any, any, any, any> | null = null;
-    private streamingStates: Map<string, StreamingState> = new Map<string, StreamingState>();
+    private streamingStates: Map<string, IStreamingState> = new Map<string, IStreamingState>();
 
     private cachedPermaLinks: string[];
 

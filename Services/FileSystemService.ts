@@ -5,7 +5,7 @@ import { Services } from "./Services";
 import { isValidJson } from "Helpers/Helpers";
 import { Path } from "Enums/Path";
 import type { VaultService } from "./VaultService";
-import type { SearchMatch } from "../Helpers/SearchTypes";
+import type { ISearchMatch } from "../Helpers/SearchTypes";
 
 export class FileSystemService {
     
@@ -93,7 +93,7 @@ export class FileSystemService {
         }
     }
 
-    public async searchVaultFiles(searchTerm: string): Promise<SearchMatch[]> {
+    public async searchVaultFiles(searchTerm: string): Promise<ISearchMatch[]> {
         return await this.vaultService.searchVaultFiles(searchTerm);
     }
 }

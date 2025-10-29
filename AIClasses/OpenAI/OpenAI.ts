@@ -2,7 +2,7 @@ import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
 import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIClasses/IPrompt";
-import { StreamingService, type StreamChunk } from "Services/StreamingService";
+import { StreamingService, type IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import { AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
@@ -12,7 +12,7 @@ import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunc
 import { Role } from "Enums/Role";
 import { isValidJson } from "Helpers/Helpers";
 
-interface ToolCallAccumulator {
+interface IToolCallAccumulator {
     id: string | null;
     name: string | null;
     arguments: string;
@@ -29,7 +29,7 @@ export class OpenAI implements IAIClass {
     private readonly aiFunctionDefinitions: AIFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
 
     // OpenAI can have multiple tool calls, so we track them by index
-    private accumulatedToolCalls: Map<number, ToolCallAccumulator> = new Map();
+    private accumulatedToolCalls: Map<number, IToolCallAccumulator> = new Map();
 
     public constructor() {
         this.apiKey = this.plugin.settings.apiKey;
@@ -37,7 +37,7 @@ export class OpenAI implements IAIClass {
 
     public async* streamRequest(
         conversation: Conversation, allowDestructiveActions: boolean, abortSignal?: AbortSignal
-    ): AsyncGenerator<StreamChunk, void, unknown> {
+    ): AsyncGenerator<IStreamChunk, void, unknown> {
         // Reset tool call accumulation state for new request
         this.accumulatedToolCalls.clear();
 
@@ -150,7 +150,7 @@ export class OpenAI implements IAIClass {
         );
     }
 
-    private parseStreamChunk(chunk: string): StreamChunk {
+    private parseStreamChunk(chunk: string): IStreamChunk {
         try {
             // OpenAI sends "[DONE]" as the final message, which is not valid JSON
             if (chunk.trim() === "[DONE]") {

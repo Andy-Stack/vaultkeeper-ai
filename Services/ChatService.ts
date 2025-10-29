@@ -13,7 +13,7 @@ import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
 
-export interface ChatServiceCallbacks {
+export interface IChatServiceCallbacks {
 	onSubmit: () => void;
 	onStreamingUpdate: (streamingMessageId: string | null) => void;
 	onThoughtUpdate: (thought: string | null) => void;
@@ -49,7 +49,7 @@ export class ChatService {
 		this.tokenService = Resolve<ITokenService>(Services.ITokenService);
 	}
 
-	public async submit(conversation: Conversation, allowDestructiveActions: boolean, userRequest: string, callbacks: ChatServiceCallbacks): Promise<void> {
+	public async submit(conversation: Conversation, allowDestructiveActions: boolean, userRequest: string, formattedRequest: string, callbacks: IChatServiceCallbacks): Promise<void> {
 		if (!await this.semaphore.wait()) {
 			return;
 		}
@@ -85,7 +85,7 @@ export class ChatService {
 					const functionResponse = await this.aiFunctionService.performAIFunction(response.functionCall);
 
 					conversation.contents.push(new ConversationContent(
-						Role.User, functionResponse.toConversationString(), "", new Date(), false, true, functionResponse.toolId
+						Role.User, functionResponse.toConversationString(), "", "", new Date(), false, true, functionResponse.toolId
 					));
 				}
 
@@ -141,7 +141,7 @@ export class ChatService {
 	}
 
 	private async streamRequestResponse(
-		conversation: Conversation, allowDestructiveActions: boolean, callbacks: ChatServiceCallbacks
+		conversation: Conversation, allowDestructiveActions: boolean, callbacks: IChatServiceCallbacks
 	): Promise<{ functionCall: AIFunctionCall | null, shouldContinue: boolean }> {
 		// this should never happen
 		if (!this.ai) {

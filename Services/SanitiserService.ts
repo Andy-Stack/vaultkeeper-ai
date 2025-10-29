@@ -1,4 +1,4 @@
-export interface SanitizeOptions {
+export interface ISanitizeOptions {
   replacement?: string;
   separator?: string;
 }
@@ -19,7 +19,7 @@ export class SanitiserService {
    * @param options - Optional configuration for replacement character and output separator
    * @returns Sanitized file path
    */
-  public sanitize(input: string, options: SanitizeOptions = {}): string {
+  public sanitize(input: string, options: ISanitizeOptions = {}): string {
     // Type check
     if (typeof input !== 'string') {
       throw new Error('Input must be a string');

@@ -7,11 +7,11 @@ import { Services } from 'Services/Services';
 import type { ConversationFileSystemService } from 'Services/ConversationFileSystemService';
 import type { FileSystemService } from 'Services/FileSystemService';
 import { dateToString } from 'Helpers/Helpers';
-import { conversationStore } from 'Stores/conversationStore';
+import { conversationStore } from 'Stores/ConversationStore';
 import { Selector } from 'Enums/Selector';
 import type { ChatService } from 'Services/ChatService';
 
-interface ListItem {
+interface IListItem {
     id: string;
     date: string;
     updated: Date;
@@ -27,7 +27,7 @@ export class ConversationHistoryModal extends Modal {
     private readonly chatService: ChatService = Resolve<ChatService>(Services.ChatService);
 
     private component: Record<string, any> | null = null;
-    private items: ListItem[];
+    private items: IListItem[];
     private conversations: Conversation[];
     public onModalClose?: () => void;
 

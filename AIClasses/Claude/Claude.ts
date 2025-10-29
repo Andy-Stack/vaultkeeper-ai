@@ -2,7 +2,7 @@ import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
 import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIClasses/IPrompt";
-import { StreamingService, type StreamChunk } from "Services/StreamingService";
+import { StreamingService, type IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import { AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
@@ -32,7 +32,7 @@ export class Claude implements IAIClass {
 
     public async* streamRequest(
         conversation: Conversation, allowDestructiveActions: boolean, abortSignal?: AbortSignal
-    ): AsyncGenerator<StreamChunk, void, unknown> {
+    ): AsyncGenerator<IStreamChunk, void, unknown> {
         this.accumulatedFunctionName = null;
         this.accumulatedFunctionArgs = "";
         this.accumulatedFunctionId = null;
@@ -73,7 +73,7 @@ export class Claude implements IAIClass {
         );
     }
 
-    private parseStreamChunk(chunk: string): StreamChunk {
+    private parseStreamChunk(chunk: string): IStreamChunk {
         try {
             const data = JSON.parse(chunk);
 

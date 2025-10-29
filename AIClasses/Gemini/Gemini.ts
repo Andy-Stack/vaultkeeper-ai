@@ -2,7 +2,7 @@ import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
 import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIClasses/IPrompt";
-import { StreamingService, type StreamChunk } from "Services/StreamingService";
+import { StreamingService, type IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import { Role } from "Enums/Role";
 import { AIProviderURL } from "Enums/ApiProvider";
@@ -32,7 +32,7 @@ export class Gemini implements IAIClass {
 
   public async* streamRequest(
     conversation: Conversation, allowDestructiveActions: boolean, abortSignal?: AbortSignal
-  ): AsyncGenerator<StreamChunk, void, unknown> {
+  ): AsyncGenerator<IStreamChunk, void, unknown> {
     // next request should use web search only (gemini api doesn't support custom tooling and grounding at the same time)
     const requestWebSearch = this.accumulatedFunctionName == this.REQUEST_WEB_SEARCH;
 
@@ -92,7 +92,7 @@ export class Gemini implements IAIClass {
     );
   }
 
-  private parseStreamChunk(chunk: string): StreamChunk {
+  private parseStreamChunk(chunk: string): IStreamChunk {
     try {
       const data = JSON.parse(chunk);
 

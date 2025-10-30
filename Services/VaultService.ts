@@ -228,9 +228,9 @@ export class VaultService {
     }
 
     private async createDirectories(filePath: string, allowAccessToPluginRoot: boolean = false) {
-        const dirPath: string = filePath.substring(0, filePath.lastIndexOf('/'));
+        const dirPath: string = filePath.substring(0, filePath.lastIndexOf("/"));
 
-        const dirs: string[] = dirPath.split('/');
+        const dirs: string[] = dirPath.split("/");
 
         let currentPath = "";
         for (const dir of dirs) {
@@ -318,19 +318,19 @@ export class VaultService {
 
             // First, temporarily replace wildcards to protect them from escaping
             let regexPattern = pattern
-                .replace(/\*\*/g, '::DOUBLESTAR::')    // Temporarily replace **
-                .replace(/\*/g, '::SINGLESTAR::')      // Temporarily replace *
-                .replace(/[.+?^${}()|[\]\\]/g, '\\$&') // Escape special regex chars
-                .replace(/::SINGLESTAR::/g, '[^/]*')   // * matches anything except /
-                .replace(/::DOUBLESTAR::/g, '.*');     // ** matches anything including /
+                .replace(/\*\*/g, "::DOUBLESTAR::")    // Temporarily replace **
+                .replace(/\*/g, "::SINGLESTAR::")      // Temporarily replace *
+                .replace(/[.+?^${}()|[\]\\]/g, "\\$&") // Escape special regex chars
+                .replace(/::SINGLESTAR::/g, "[^/]*")   // * matches anything except /
+                .replace(/::DOUBLESTAR::/g, ".*");     // ** matches anything including /
 
             // If pattern ends with /, match the directory and all its contents
-            if (pattern.endsWith('/')) {
-                regexPattern = regexPattern + '.*';
+            if (pattern.endsWith("/")) {
+                regexPattern = regexPattern + ".*";
             }
 
             // Add anchors for full path matching
-            const regex = new RegExp('^' + regexPattern + '$');
+            const regex = new RegExp("^" + regexPattern + "(/.*)?$");
 
             return regex.test(filePath);
         });

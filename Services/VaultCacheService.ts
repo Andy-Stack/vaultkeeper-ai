@@ -59,6 +59,10 @@ export class VaultCacheService {
 
   private registerFileEvents() {
     this.vaultService.registerFileEvents((event, file, args) => {
+      if (!this.shouldBeCached(file.path) || (args.oldPath && !this.shouldBeCached(args.oldPath))) {
+        return;
+      }
+
       if (file instanceof TFile) {
         switch (event) {
           case FileEvent.Create:
@@ -90,18 +94,12 @@ export class VaultCacheService {
       } else if (file instanceof TFolder) {
         switch (event) {
           case FileEvent.Create:
-            // Check if folder should be excluded before caching
-            if (this.vaultService.getAbstractFileByPath(file.path, false) !== null) {
-              this.folders.set(file.path, file);
-            }
+            this.folders.set(file.path, file);
             break;
 
           case FileEvent.Rename:
             this.folders.delete(args.oldPath);
-            // Check if folder should be excluded before caching
-            if (this.vaultService.getAbstractFileByPath(file.path, false) !== null) {
-              this.folders.set(file.path, file);
-            }
+            this.folders.set(file.path, file);
             break;
 
           case FileEvent.Delete:
@@ -157,5 +155,9 @@ export class VaultCacheService {
     this.folders.forEach(folder => {
       this.preparedFolders.push({ prepared: fuzzysort.prepare(folder.path), folder: folder });
     });
+  }
+
+  private shouldBeCached(path: string) {
+    return this.vaultService.getAbstractFileByPath(path, false) !== null
   }
 }

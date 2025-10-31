@@ -182,6 +182,6 @@ export class VaultCacheService {
   }
 
   private shouldBeCached(path: string) {
-    return this.vaultService.getAbstractFileByPath(path, false) !== null
+    return !this.vaultService.isExclusion(path, false);
   }
 }

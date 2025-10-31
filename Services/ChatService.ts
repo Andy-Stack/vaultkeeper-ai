@@ -63,7 +63,7 @@ export class ChatService {
 
 			this.abortController = new AbortController();
 
-			conversation.contents.push(new ConversationContent(Role.User, userRequest));
+			conversation.contents.push(new ConversationContent(Role.User, userRequest, formattedRequest));
 			this.conversationService.saveConversation(conversation);
 
 			callbacks.onSubmit();
@@ -71,7 +71,7 @@ export class ChatService {
 
 			if (conversation.contents.length === 1) {
 				this.onNameChanged?.(conversation.title); // on change for initial conversation name
-				this.namingService.requestName(conversation, userRequest, this.onNameChanged, this.abortController);
+				this.namingService.requestName(conversation, formattedRequest, this.onNameChanged, this.abortController);
 			}
 
 			// Process AI responses and function calls

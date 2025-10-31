@@ -227,6 +227,37 @@ export class VaultService {
         return results;
     }
 
+    public isExclusion(filePath: string, allowAccessToPluginRoot: boolean = false): boolean {
+        // the ai should never be able to edit the user instruction
+        const exclusions = allowAccessToPluginRoot
+            ? [this.USER_INSTRUCTION, ...this.plugin.settings.exclusions]
+            : [this.AGENT_ROOT_DIR, this.AGENT_ROOT_CONTENTS, ...this.plugin.settings.exclusions];
+
+        return exclusions.some(pattern => {
+            if (filePath === pattern) {
+                return true;
+            }
+
+            // First, temporarily replace wildcards to protect them from escaping
+            let regexPattern = pattern
+                .replace(/\*\*/g, "::DOUBLESTAR::")    // Temporarily replace **
+                .replace(/\*/g, "::SINGLESTAR::")      // Temporarily replace *
+                .replace(/[.+?^${}()|[\]\\]/g, "\\$&") // Escape special regex chars
+                .replace(/::SINGLESTAR::/g, "[^/]*")   // * matches anything except /
+                .replace(/::DOUBLESTAR::/g, ".*");     // ** matches anything including /
+
+            // If pattern ends with /, match the directory and all its contents
+            if (pattern.endsWith("/")) {
+                regexPattern = regexPattern + ".*";
+            }
+
+            // Add anchors for full path matching
+            const regex = new RegExp("^" + regexPattern + "(/.*)?$");
+
+            return regex.test(filePath);
+        });
+    }
+
     private async createDirectories(filePath: string, allowAccessToPluginRoot: boolean = false) {
         const dirPath: string = filePath.substring(0, filePath.lastIndexOf("/"));
 
@@ -303,36 +334,5 @@ export class VaultService {
         merged.push(current);
 
         return merged;
-    }
-
-    private isExclusion(filePath: string, allowAccessToPluginRoot: boolean = false): boolean {
-        // the ai should never be able to edit the user instruction
-        const exclusions = allowAccessToPluginRoot
-            ? [this.USER_INSTRUCTION, ...this.plugin.settings.exclusions]
-            : [this.AGENT_ROOT_DIR, this.AGENT_ROOT_CONTENTS, ...this.plugin.settings.exclusions];
-
-        return exclusions.some(pattern => {
-            if (filePath === pattern) {
-                return true;
-            }
-
-            // First, temporarily replace wildcards to protect them from escaping
-            let regexPattern = pattern
-                .replace(/\*\*/g, "::DOUBLESTAR::")    // Temporarily replace **
-                .replace(/\*/g, "::SINGLESTAR::")      // Temporarily replace *
-                .replace(/[.+?^${}()|[\]\\]/g, "\\$&") // Escape special regex chars
-                .replace(/::SINGLESTAR::/g, "[^/]*")   // * matches anything except /
-                .replace(/::DOUBLESTAR::/g, ".*");     // ** matches anything including /
-
-            // If pattern ends with /, match the directory and all its contents
-            if (pattern.endsWith("/")) {
-                regexPattern = regexPattern + ".*";
-            }
-
-            // Add anchors for full path matching
-            const regex = new RegExp("^" + regexPattern + "(/.*)?$");
-
-            return regex.test(filePath);
-        });
     }
 }

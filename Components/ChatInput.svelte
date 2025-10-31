@@ -51,11 +51,14 @@
       return;
     }
 
-    const currentRequest = userRequest;
+    const request = textareaElement.innerHTML;
+    const formattedRequest = SearchTrigger.triggerToText(request);
+
     textareaElement.textContent = "";
     userRequest = "";
 
-    onsubmit(currentRequest, "");
+    console.log(request);
+    onsubmit(request, formattedRequest);
   }
 
   function toggleEditMode() {
@@ -65,6 +68,25 @@
   async function handleKeydown(e: KeyboardEvent) {
     if ($searchState.active) {
       await continueSearch(e);
+      return;
+    }
+
+    if (e.key === "Backspace") {
+      const position = inputService.getCursorPosition(textareaElement);
+      
+      if (position === 0) {
+        return;
+      }
+
+      e.preventDefault();
+      
+      const node = inputService.getNodeAtCursorPosition();
+      if (node && SearchTrigger.isSearchTriggerElement(node)) {
+        (node as HTMLElement).remove();
+      } else {
+        inputService.deleteTextRange(position -1, position, textareaElement);
+        inputService.setCursorPosition(textareaElement, position - 1);
+      }
       return;
     }
 
@@ -84,12 +106,16 @@
 
       searchStateStore.initializeSearch(trigger, position);
 
-      textareaElement.textContent = textareaElement.textContent + e.key;
-      inputService.setCursorPosition(textareaElement, position + 1);
+      inputService.insertTextAtCursor(e.key, textareaElement);
     }
   }
 
   async function continueSearch(e: KeyboardEvent) {
+    if (!$searchState.trigger) {
+      searchStateStore.resetSearch();
+      return;
+    }
+
     if (e.key === "Escape") {
       searchStateStore.resetSearch();
       e.preventDefault();
@@ -97,7 +123,15 @@
     }
 
     if (e.key === "Enter") {
-      // need to choose selected search query (or do nothing if there isn't one)
+      e.preventDefault();
+      if ($searchState.selectedResult !== "" && $searchState.position != null) {
+        const node = SearchTrigger.toNode($searchState.trigger, $searchState.selectedResult);
+        
+        inputService.deleteTextRange($searchState.position, inputService.getCursorPosition(textareaElement), textareaElement);
+        inputService.insertElementAtCursor(node, textareaElement);
+        inputService.insertTextAtCursor(" ", textareaElement);
+      }
+      searchStateStore.resetSearch();
       return;
     }
 
@@ -129,14 +163,9 @@
       userRequest = textareaElement.textContent || "";
 
       if (textareaElement.innerHTML !== textareaElement.textContent) {
-        // HTML detected - sanitize by replacing with plain text
-        const plainText = textareaElement.textContent || "";
-        const cursorPos = inputService.getCursorPosition(textareaElement);
-
-        textareaElement.textContent = plainText;
-
-        // Restore cursor position after sanitization
-        inputService.setCursorPosition(textareaElement, cursorPos);
+        if (inputService.hasUnauthorizedHTML(textareaElement)) {
+          inputService.sanitizeToPlainText(textareaElement);
+        }
       }
 
       // If in search mode, synchronize the query with actual text content
@@ -153,7 +182,7 @@
           userInputService.performSearch();
         }
       }
-
+      
       if (userRequest.trim() === "") {
         textareaElement.textContent = "";
       }
@@ -177,13 +206,26 @@
     e.preventDefault();
 
     const selection = window.getSelection();
-    
+
     if (!selection) {
       return;
     }
 
     const selectedText = selection.toString();
-    e.clipboardData?.setData('text/plain', selectedText);
+    e.clipboardData?.setData("text/plain", selectedText);
+  }
+
+  function handleDrop(e: DragEvent) {
+    e.preventDefault();
+
+    const plainText = e.dataTransfer?.getData("text/plain") || "";
+
+    if (!plainText) {
+      return;
+    }
+
+    inputService.insertTextAtCursor(plainText);
+    handleInput();
   }
 
   function handleCursorPositionChange() {
@@ -209,11 +251,12 @@
     class:error={hasNoApiKey}
     class:edit-mode={editModeActive && !hasNoApiKey}
     bind:this={textareaElement}
-    contenteditable="true"
+    contenteditable="plaintext-only"
     on:keydown={handleKeydown}
     on:input={handleInput}
     on:paste={handlePaste}
     on:copy={handleCopy}
+    on:drop={handleDrop}
     on:click={handleCursorPositionChange}
     on:keyup={handleCursorPositionChange}
     data-placeholder="Type a message..."

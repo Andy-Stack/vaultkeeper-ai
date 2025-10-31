@@ -50,6 +50,14 @@
 /* CSS Variables for Common Components */
 /* ============================== */
 
+.search-trigger {
+  color: var(--interactive-accent);
+}
+
+.search-trigger:hover {
+  text-decoration: underline;
+}
+
 /* Typing-in animation (used across components) */
 .typing-in {
   overflow: hidden;

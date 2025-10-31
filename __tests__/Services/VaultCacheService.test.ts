@@ -126,6 +126,11 @@ describe('VaultCacheService - Integration Tests', () => {
 				// By default, allow all folders (return a mock folder)
 				// This maintains existing test behavior
 				return createMockFolder(path);
+			}),
+			isExclusion: vi.fn((path: string, allowAccessToPluginRoot: boolean) => {
+				// By default, return false to allow all paths (not excluded)
+				// This maintains backward compatibility with existing tests
+				return false;
 			})
 		};
 
@@ -616,6 +621,10 @@ describe('VaultCacheService - Integration Tests', () => {
 					}
 					// Return a folder for allowed paths
 					return createMockFolder(path);
+				}),
+				isExclusion: vi.fn((path: string) => {
+					// Return true for AI Agent directory paths
+					return path.startsWith('AI Agent');
 				})
 			};
 
@@ -654,6 +663,10 @@ describe('VaultCacheService - Integration Tests', () => {
 						return null;
 					}
 					return createMockFolder(path);
+				}),
+				isExclusion: vi.fn((path: string) => {
+					// Return true for user-excluded paths
+					return path.startsWith('private/');
 				})
 			};
 
@@ -685,6 +698,10 @@ describe('VaultCacheService - Integration Tests', () => {
 						return null;
 					}
 					return createMockFolder(path);
+				}),
+				isExclusion: vi.fn((path: string) => {
+					// Return true for AI Agent paths
+					return path.startsWith('AI Agent');
 				})
 			};
 
@@ -724,6 +741,10 @@ describe('VaultCacheService - Integration Tests', () => {
 						return null;
 					}
 					return createMockFolder(path);
+				}),
+				isExclusion: vi.fn((path: string) => {
+					// Return true for AI Agent paths, false for others
+					return path.startsWith('AI Agent');
 				})
 			};
 

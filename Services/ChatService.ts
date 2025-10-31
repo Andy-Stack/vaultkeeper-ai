@@ -121,7 +121,7 @@ export class ChatService {
 
 		const inputMessages = conversation.contents
 			.filter(message => message.role === Role.User && !message.isFunctionCallResponse)
-			.map(message => message.content)
+			.map(message => message.promptContent)
 			.join("\n");
 
 		const outputMessages = conversation.contents
@@ -143,8 +143,7 @@ export class ChatService {
 	private async streamRequestResponse(
 		conversation: Conversation, allowDestructiveActions: boolean, callbacks: IChatServiceCallbacks
 	): Promise<{ functionCall: AIFunctionCall | null, shouldContinue: boolean }> {
-		// this should never happen
-		if (!this.ai) {
+		if (!this.ai) { // this should never happen
 			return { functionCall: null, shouldContinue: false };;
 		}
 

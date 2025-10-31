@@ -11,6 +11,7 @@ import type AIAgentPlugin from "main";
 import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import { isValidJson } from "Helpers/Helpers";
 import type { ConversationContent } from "Conversations/ConversationContent";
+import { Role } from "Enums/Role";
 
 export class Claude implements IAIClass {
 
@@ -153,11 +154,12 @@ export class Claude implements IAIClass {
         return conversationContent.filter(content => content.content.trim() !== "" || content.functionCall.trim() !== "")
             .map(content => {
                 const contentBlocks: any[] = [];
+                const contentToExtract = content.role == Role.User ? content.promptContent : content.content;
 
-                if (content.content.trim() !== "" && !content.isFunctionCallResponse) {
+                if (contentToExtract.trim() !== "" && !content.isFunctionCallResponse) {
                     contentBlocks.push({
                         type: "text",
-                        text: content.content
+                        text: contentToExtract
                     });
                 }
 
@@ -175,7 +177,7 @@ export class Claude implements IAIClass {
                         } catch (error) {
                             console.error("Failed to parse function call:", error);
                             // Fall back to treating as text
-                            if (content.content.trim() === "") {
+                            if (contentToExtract.trim() === "") {
                                 contentBlocks.push({
                                     type: "text",
                                     text: "Error parsing function call"
@@ -185,7 +187,7 @@ export class Claude implements IAIClass {
                     } else {
                         console.error("Invalid JSON in functionCall field");
                         // Fall back to treating as text
-                        if (content.content.trim() === "") {
+                        if (contentToExtract.trim() === "") {
                             contentBlocks.push({
                                 type: "text",
                                 text: "Error parsing function call"
@@ -195,10 +197,10 @@ export class Claude implements IAIClass {
                 }
 
                 // Add function response if present
-                if (content.isFunctionCallResponse && content.content.trim() !== "") {
-                    if (isValidJson(content.content)) {
+                if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
+                    if (isValidJson(contentToExtract)) {
                         try {
-                            const parsedContent = JSON.parse(content.content);
+                            const parsedContent = JSON.parse(contentToExtract);
                             contentBlocks.push({
                                 type: "tool_result",
                                 tool_use_id: parsedContent.id,
@@ -208,14 +210,14 @@ export class Claude implements IAIClass {
                             console.error("Failed to parse function response:", error);
                             contentBlocks.push({
                                 type: "text",
-                                text: content.content
+                                text: contentToExtract
                             });
                         }
                     } else {
                         console.error("Invalid JSON in function response content");
                         contentBlocks.push({
                             type: "text",
-                            text: content.content
+                            text: contentToExtract
                         });
                     }
                 }

@@ -52,8 +52,9 @@ export class OpenAI implements IAIClass {
                 content: systemPrompt
             },
             ...conversation.contents
-                .filter(content => content.content.trim() !== "" || content.functionCall.trim() !== "")
-                .map(content => {
+            .filter(content => content.content.trim() !== "" || content.functionCall.trim() !== "")
+            .map(content => {
+                const contentToExtract = content.role == Role.User ? content.promptContent : content.content;
                 // Handle function call
                 if (content.isFunctionCall && content.functionCall.trim() !== "") {
                     if (isValidJson(content.functionCall)) {
@@ -61,7 +62,7 @@ export class OpenAI implements IAIClass {
                             const parsedContent = JSON.parse(content.functionCall);
                             return {
                                 role: content.role,
-                                content: content.content.trim() !== "" ? content.content : null,
+                                content: contentToExtract.trim() !== "" ? contentToExtract : null,
                                 tool_calls: [
                                     {
                                         id: parsedContent.functionCall.id,
@@ -78,23 +79,23 @@ export class OpenAI implements IAIClass {
                             // Fall back to regular message
                             return {
                                 role: content.role,
-                                content: content.content || "Error parsing function call"
+                                content: contentToExtract || "Error parsing function call"
                             };
                         }
                     } else {
                         console.error("Invalid JSON in functionCall field");
                         return {
                             role: content.role,
-                            content: content.content || "Error parsing function call"
+                            content: contentToExtract || "Error parsing function call"
                         };
                     }
                 }
 
                 // Handle function response
-                if (content.isFunctionCallResponse && content.content.trim() !== "") {
-                    if (isValidJson(content.content)) {
+                if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
+                    if (isValidJson(contentToExtract)) {
                         try {
-                            const parsedContent = JSON.parse(content.content);
+                            const parsedContent = JSON.parse(contentToExtract);
                             return {
                                 role: "tool",
                                 tool_call_id: parsedContent.id,
@@ -105,14 +106,14 @@ export class OpenAI implements IAIClass {
                             // Fall back to regular message
                             return {
                                 role: content.role,
-                                content: content.content
+                                content: contentToExtract
                             };
                         }
                     } else {
                         console.error("Invalid JSON in function response content");
                         return {
                             role: content.role,
-                            content: content.content
+                            content: contentToExtract
                         };
                     }
                 }
@@ -120,7 +121,7 @@ export class OpenAI implements IAIClass {
                 // Regular text message
                 return {
                     role: content.role,
-                    content: content.content
+                    content: contentToExtract
                 };
             })
         ];

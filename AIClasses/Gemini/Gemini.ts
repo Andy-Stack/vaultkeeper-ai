@@ -159,29 +159,30 @@ export class Gemini implements IAIClass {
     return conversationContent.filter(content => content.content.trim() !== "" || content.functionCall.trim() !== "")
       .map(content => {
         const parts: any[] = [];
+        const contentToExtract = content.role == Role.User ? content.promptContent : content.content;
 
-        if (content.content.trim() !== "") {
+        if (contentToExtract.trim() !== "") {
           if (content.isFunctionCallResponse) {
-            if (isValidJson(content.content)) {
+            if (isValidJson(contentToExtract)) {
               try {
-                const parsedContent = JSON.parse(content.content);
+                const parsedContent = JSON.parse(contentToExtract);
                 if (parsedContent.functionResponse) {
                   parts.push({
                     functionResponse: parsedContent.functionResponse
                   });
                 } else {
-                  parts.push({ text: content.content });
+                  parts.push({ text: contentToExtract });
                 }
               } catch (error) {
                 console.error("Failed to parse function response:", error);
-                parts.push({ text: content.content });
+                parts.push({ text: contentToExtract });
               }
             } else {
               console.error("Invalid JSON in function response content");
-              parts.push({ text: content.content });
+              parts.push({ text: contentToExtract });
             }
           } else {
-            parts.push({ text: content.content });
+            parts.push({ text: contentToExtract });
           }
         }
 

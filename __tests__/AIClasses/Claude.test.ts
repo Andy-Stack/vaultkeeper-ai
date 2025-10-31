@@ -255,7 +255,7 @@ describe('Claude', () => {
     describe('extractContents', () => {
         it('should convert simple text content to Claude message format', () => {
             const contents = [
-                new ConversationContent(Role.User, 'Hello'),
+                new ConversationContent(Role.User, 'Hello', 'Hello'),  // content, promptContent
                 new ConversationContent(Role.Assistant, 'Hi there')
             ];
 
@@ -301,14 +301,16 @@ describe('Claude', () => {
         });
 
         it('should convert function response to tool_result format', () => {
+            const responseContent = JSON.stringify({
+                id: 'call_123',
+                functionResponse: {
+                    response: ['file1.txt', 'file2.txt']
+                }
+            });
             const functionResponseContent = new ConversationContent(
                 Role.User,
-                JSON.stringify({
-                    id: 'call_123',
-                    functionResponse: {
-                        response: ['file1.txt', 'file2.txt']
-                    }
-                })
+                responseContent,
+                responseContent  // promptContent should also be set for User role
             );
             functionResponseContent.isFunctionCallResponse = true;
 
@@ -351,7 +353,8 @@ describe('Claude', () => {
 
             const invalidContent = new ConversationContent(
                 Role.User,
-                'invalid json {'
+                'invalid json {',
+                'invalid json {'  // promptContent for User role
             );
             invalidContent.isFunctionCallResponse = true;
 
@@ -369,9 +372,9 @@ describe('Claude', () => {
 
         it('should filter out empty content', () => {
             const contents = [
-                new ConversationContent(Role.User, 'Hello'),
+                new ConversationContent(Role.User, 'Hello', 'Hello'),
                 new ConversationContent(Role.Assistant, ''), // Empty
-                new ConversationContent(Role.User, 'World')
+                new ConversationContent(Role.User, 'World', 'World')
             ];
 
             const result = (claude as any).extractContents(contents);

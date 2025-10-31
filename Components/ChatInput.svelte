@@ -9,7 +9,6 @@
 	import ChatSearchResults from "./ChatSearchResults.svelte";
 	import type { Writable } from "svelte/store";
 	import type { InputService } from "Services/InputService";
-	import { textAreaNode } from "happy-dom/lib/PropertySymbol";
 
   export let hasNoApiKey: boolean;
   export let isSubmitting: boolean;
@@ -88,7 +87,7 @@
       }
     
       inputService.deleteTextRange(position - 1, position, textareaElement);
-      
+
       return;
     }
 
@@ -131,7 +130,6 @@
         
         inputService.deleteTextRange($searchState.position, inputService.getCursorPosition(textareaElement), textareaElement);
         inputService.insertElementAtCursor(node, textareaElement);
-        inputService.insertTextAtCursor(" ", textareaElement);
       }
       searchStateStore.resetSearch();
       return;

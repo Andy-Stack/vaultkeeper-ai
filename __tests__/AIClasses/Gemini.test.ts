@@ -309,7 +309,7 @@ describe('Gemini', () => {
 
         it('should format system instruction as parts array', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Test'));
+            conversation.contents.push(new ConversationContent(Role.User, 'Test', 'Test'));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
@@ -357,14 +357,16 @@ describe('Gemini', () => {
         });
 
         it('should convert function response to Gemini format', () => {
+            const responseContent = JSON.stringify({
+                functionResponse: {
+                    name: 'search_files',
+                    response: ['file1.txt', 'file2.txt']
+                }
+            });
             const functionResponseContent = new ConversationContent(
                 Role.User,
-                JSON.stringify({
-                    functionResponse: {
-                        name: 'search_files',
-                        response: ['file1.txt', 'file2.txt']
-                    }
-                })
+                responseContent,
+                responseContent  // promptContent for User role
             );
             functionResponseContent.isFunctionCallResponse = true;
 
@@ -407,7 +409,8 @@ describe('Gemini', () => {
 
             const invalidContent = new ConversationContent(
                 Role.User,
-                'invalid json {'
+                'invalid json {',
+                'invalid json {'  // promptContent for User role
             );
             invalidContent.isFunctionCallResponse = true;
 
@@ -424,9 +427,9 @@ describe('Gemini', () => {
 
         it('should filter out empty content', () => {
             const contents = [
-                new ConversationContent(Role.User, 'Hello'),
+                new ConversationContent(Role.User, 'Hello', 'Hello'),
                 new ConversationContent(Role.Assistant, ''), // Empty
-                new ConversationContent(Role.User, 'World')
+                new ConversationContent(Role.User, 'World', 'World')
             ];
 
             const result = (gemini as any).extractContents(contents);

@@ -358,14 +358,16 @@ describe('OpenAI', () => {
 
         it('should convert function response to role:tool format', async () => {
             const conversation = new Conversation();
+            const responseContent = JSON.stringify({
+                id: 'call_123',
+                functionResponse: {
+                    response: ['file1.txt', 'file2.txt']
+                }
+            });
             const functionResponseContent = new ConversationContent(
                 Role.User,
-                JSON.stringify({
-                    id: 'call_123',
-                    functionResponse: {
-                        response: ['file1.txt', 'file2.txt']
-                    }
-                })
+                responseContent,
+                responseContent  // promptContent for User role
             );
             functionResponseContent.isFunctionCallResponse = true;
             conversation.contents.push(functionResponseContent);
@@ -425,7 +427,7 @@ describe('OpenAI', () => {
             const invalidContent = new ConversationContent(
                 Role.User,
                 'invalid json {',
-                false,
+                'invalid json {',  // promptContent for User role
                 ''
             );
             invalidContent.isFunctionCallResponse = true;
@@ -451,9 +453,9 @@ describe('OpenAI', () => {
 
         it('should filter out empty content', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Hello'));
-            conversation.contents.push(new ConversationContent(Role.Assistant, '', false, ''));
-            conversation.contents.push(new ConversationContent(Role.User, 'World'));
+            conversation.contents.push(new ConversationContent(Role.User, 'Hello', 'Hello'));
+            conversation.contents.push(new ConversationContent(Role.Assistant, '', '', ''));
+            conversation.contents.push(new ConversationContent(Role.User, 'World', 'World'));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };

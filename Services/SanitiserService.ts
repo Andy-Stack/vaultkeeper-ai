@@ -1,7 +1,11 @@
+import { normalizePath } from "obsidian";
+
 export interface ISanitizeOptions {
   replacement?: string;
   separator?: string;
 }
+
+// this service handles edge cases that 'normalizePath()' misses
 
 export class SanitiserService {
   // Regular expressions for different character classes
@@ -24,6 +28,9 @@ export class SanitiserService {
     if (typeof input !== "string") {
       throw new Error("Input must be a string");
     }
+
+    // use obsidian helper first
+    input = normalizePath(input);
 
     // Normalize empty string to "/" for vault root
     if (input.trim() === "") {

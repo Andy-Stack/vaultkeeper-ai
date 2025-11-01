@@ -22,7 +22,7 @@ const DEFAULT_SETTINGS: IAIAgentSettings = {
 export default class AIAgentPlugin extends Plugin {
 	public settings: IAIAgentSettings;
 	
-	async onload() {
+	public async onload() {
 		// KaTeX CSS is bundled with the plugin to comply with CSP
 		require('katex/dist/katex.min.css');
 		// Plugin styles
@@ -52,12 +52,12 @@ export default class AIAgentPlugin extends Plugin {
 		this.addSettingTab(new AIAgentSettingTab(this.app, this));
 	}
 
-	async onunload() {
+	public async onunload() {
 		Resolve<StatusBarService>(Services.StatusBarService).removeStatusBarMessage();
 		DeregisterAllServices();
 	}
 
-	async activateView() {
+	public async activateView() {
 		const { workspace } = this.app;
 
 		let leaf: WorkspaceLeaf | null = null;
@@ -75,7 +75,7 @@ export default class AIAgentPlugin extends Plugin {
 		}
 	}
 
-	async loadSettings() {
+	public async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
 	}
 

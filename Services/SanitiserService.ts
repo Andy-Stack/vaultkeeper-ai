@@ -21,20 +21,25 @@ export class SanitiserService {
    */
   public sanitize(input: string, options: ISanitizeOptions = {}): string {
     // Type check
-    if (typeof input !== 'string') {
-      throw new Error('Input must be a string');
+    if (typeof input !== "string") {
+      throw new Error("Input must be a string");
+    }
+
+    // Normalize empty string to "/" for vault root
+    if (input.trim() === "") {
+      return "/";
     }
 
     // Default options
-    const replacement = options.replacement || '';
-    const outputSeparator = options.separator || '/';
+    const replacement = options.replacement || "";
+    const outputSeparator = options.separator || "/";
 
     // Detect if this is an absolute path
-    const isAbsolute = input.startsWith('/') || /^[a-zA-Z]:[\\\/]/.test(input);
+    const isAbsolute = input.startsWith("/") || /^[a-zA-Z]:[\\\/]/.test(input);
 
     // Detect Windows drive letter (e.g., C:)
     const driveMatch = input.match(/^([a-zA-Z]:)[\\\/]/);
-    const driveLetter = driveMatch ? driveMatch[1] : '';
+    const driveLetter = driveMatch ? driveMatch[1] : "";
 
     // Split by both forward and back slashes
     // Note: Forward slashes and backslashes are treated as path separators,
@@ -45,22 +50,22 @@ export class SanitiserService {
     // But keep track of whether we started with a slash
     segments = segments.filter((seg, index) => {
       // Keep the first segment even if empty (for absolute paths like /home/...)
-      if (index === 0 && seg === '' && isAbsolute && !driveLetter) {
+      if (index === 0 && seg === "" && isAbsolute && !driveLetter) {
         return true;
       }
-      return seg !== '';
+      return seg !== "";
     });
 
     // Sanitize each segment
     const sanitizedSegments = segments.map((segment, index) => {
-      // Don't sanitize the drive letter (first segment if it's something like "C:")
-      if (index === 0 && driveLetter && segment === driveLetter.replace(':', '')) {
+      // Don"t sanitize the drive letter (first segment if it"s something like "C:")
+      if (index === 0 && driveLetter && segment === driveLetter.replace(":", "")) {
         return driveLetter;
       }
 
       // For the first empty segment of an absolute path, keep it empty
-      if (index === 0 && segment === '' && isAbsolute) {
-        return '';
+      if (index === 0 && segment === "" && isAbsolute) {
+        return "";
       }
 
       return this.sanitizeSegment(segment, replacement);
@@ -76,7 +81,7 @@ export class SanitiserService {
 
     // Truncate the entire path if needed (paths can be up to 4096 bytes on most systems)
     // But for individual filenames, most systems have a 255-byte limit
-    // We'll apply the 255-byte limit to the filename part only
+    // We"ll apply the 255-byte limit to the filename part only
     const lastSeparatorIndex = result.lastIndexOf(outputSeparator);
     if (lastSeparatorIndex !== -1) {
       const directory = result.substring(0, lastSeparatorIndex + 1);
@@ -84,7 +89,7 @@ export class SanitiserService {
       const truncatedFilename = this.truncateToByteLength(filename, 255);
       result = directory + truncatedFilename;
     } else {
-      // If there's no separator, the whole thing is a filename
+      // If there"s no separator, the whole thing is a filename
       result = this.truncateToByteLength(result, 255);
     }
 
@@ -98,7 +103,7 @@ export class SanitiserService {
    * @returns Sanitized segment, or a fallback value if the result would be empty
    */
   private sanitizeSegment(segment: string, replacement: string): string {
-    if (!segment || segment === '') {
+    if (!segment || segment === "") {
       return segment;
     }
 
@@ -111,8 +116,8 @@ export class SanitiserService {
 
     // Handle case where sanitization results in an empty string
     // This can happen with names like "...", "CON", or strings containing only illegal characters
-    if (sanitized === '') {
-      sanitized = 'unnamed';
+    if (sanitized === "") {
+      sanitized = "unnamed";
     }
 
     return sanitized;
@@ -143,13 +148,13 @@ export class SanitiserService {
     }
 
     // Decode with fatal mode to ensure we get a valid UTF-8 string
-    // If decoding fails (which shouldn't happen with our boundary logic), fall back to safe decode
+    // If decoding fails (which shouldn"t happen with our boundary logic), fall back to safe decode
     try {
-      const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
+      const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
       return decoder.decode(encoded.slice(0, truncateAt));
     } catch {
       // Fallback: use non-fatal mode if something unexpected happens
-      const decoder = new TextDecoder('utf-8', { fatal: false, ignoreBOM: true });
+      const decoder = new TextDecoder("utf-8", { fatal: false, ignoreBOM: true });
       return decoder.decode(encoded.slice(0, truncateAt));
     }
   }

@@ -605,6 +605,129 @@ describe('VaultService - Integration Tests', () => {
 		});
 	});
 
+	describe('listFoldersInDirectory', () => {
+		it('should list all folders in directory non-recursively', async () => {
+			const folder1 = createMockFolder('parent/folder1', []);
+			const folder2 = createMockFolder('parent/folder2', []);
+			const parentFolder = createMockFolder('parent', [folder1, folder2]);
+
+			mockVault.getAbstractFileByPath.mockReturnValue(parentFolder);
+
+			const result = await vaultService.listFoldersInDirectory('parent', false);
+
+			expect(result).toHaveLength(2);
+			expect(result).toContain(folder1);
+			expect(result).toContain(folder2);
+		});
+
+		it('should list all folders recursively', async () => {
+			const subfolder1 = createMockFolder('parent/child/subfolder1', []);
+			const childFolder = createMockFolder('parent/child', [subfolder1]);
+			const folder1 = createMockFolder('parent/folder1', []);
+			const parentFolder = createMockFolder('parent', [folder1, childFolder]);
+
+			mockVault.getAbstractFileByPath.mockImplementation((path: string) => {
+				if (path === 'parent') return parentFolder;
+				if (path === 'parent/folder1') return folder1;
+				if (path === 'parent/child') return childFolder;
+				return null;
+			});
+
+			const result = await vaultService.listFoldersInDirectory('parent', true);
+
+			expect(result).toHaveLength(3);
+			expect(result).toContain(folder1);
+			expect(result).toContain(childFolder);
+			expect(result).toContain(subfolder1);
+		});
+
+		it('should filter out excluded folders from results', async () => {
+			const publicFolder = createMockFolder('parent/public', []);
+			const privateFolder = createMockFolder('parent/private', []);
+			const parentFolder = createMockFolder('parent', [publicFolder, privateFolder]);
+
+			mockVault.getAbstractFileByPath.mockReturnValue(parentFolder);
+			mockPluginSettings.exclusions = ['**/private'];
+
+			const result = await vaultService.listFoldersInDirectory('parent', false);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].path).toBe('parent/public');
+		});
+
+		it('should return empty array when directory does not exist', async () => {
+			mockVault.getAbstractFileByPath.mockReturnValue(null);
+
+			const result = await vaultService.listFoldersInDirectory('nonexistent');
+
+			expect(result).toEqual([]);
+		});
+
+		it('should return empty array when path is a file, not a directory', async () => {
+			const mockFile = createMockFile('file.md');
+			mockVault.getAbstractFileByPath.mockReturnValue(mockFile);
+
+			const result = await vaultService.listFoldersInDirectory('file.md');
+
+			expect(result).toEqual([]);
+		});
+
+		it('should respect allowAccessToPluginRoot parameter', async () => {
+			const agentFolder = createMockFolder('AI Agent', []);
+			const notesFolder = createMockFolder('notes', []);
+			const rootFolder = createMockFolder('/', [agentFolder, notesFolder]);
+
+			mockVault.getAbstractFileByPath.mockImplementation((path: string) => {
+				if (path === '/' || path === '') return rootFolder;
+				// AI Agent blocked when allowAccessToPluginRoot = false
+				if (path === 'AI Agent') return null;
+				if (path === 'notes') return notesFolder;
+				return null;
+			});
+
+			// With allowAccessToPluginRoot = false (should exclude AI Agent)
+			const result1 = await vaultService.listFoldersInDirectory('/', true, false);
+			expect(result1.some((folder) => folder.path === 'AI Agent')).toBe(false);
+			expect(result1.some((folder) => folder.path === 'notes')).toBe(true);
+
+			// With allowAccessToPluginRoot = true (should include AI Agent)
+			mockVault.getAbstractFileByPath.mockImplementation((path: string) => {
+				if (path === '/' || path === '') return rootFolder;
+				if (path === 'AI Agent') return agentFolder; // Now allowed
+				if (path === 'notes') return notesFolder;
+				return null;
+			});
+
+			const result2 = await vaultService.listFoldersInDirectory('/', true, true);
+			expect(result2.some((folder) => folder.path === 'AI Agent')).toBe(true);
+			expect(result2.some((folder) => folder.path === 'notes')).toBe(true);
+		});
+
+		it('should not recurse into excluded folders', async () => {
+			const excludedSubfolder = createMockFolder('parent/excluded/sub', []);
+			const excludedFolder = createMockFolder('parent/excluded', [excludedSubfolder]);
+			const allowedFolder = createMockFolder('parent/allowed', []);
+			const parentFolder = createMockFolder('parent', [excludedFolder, allowedFolder]);
+
+			mockVault.getAbstractFileByPath.mockImplementation((path: string) => {
+				if (path === 'parent') return parentFolder;
+				if (path === 'parent/excluded') return excludedFolder; // Should not be accessed
+				if (path === 'parent/allowed') return allowedFolder;
+				return null;
+			});
+
+			// Use pattern that matches the folder itself and its contents
+			mockPluginSettings.exclusions = ['parent/excluded/**', 'parent/excluded'];
+
+			const result = await vaultService.listFoldersInDirectory('parent', true);
+
+			// Should not include excluded folder or its subfolders
+			expect(result.some((folder) => folder.path === 'parent/excluded')).toBe(false);
+			expect(result.some((folder) => folder.path === 'parent/excluded/sub')).toBe(false);
+			expect(result.some((folder) => folder.path === 'parent/allowed')).toBe(true);
+		});
+	});
+
 	describe('searchVaultFiles', () => {
 		it('should find matches in file content', async () => {
 			const file1 = createMockFile('note1.md');
@@ -714,6 +837,121 @@ describe('VaultService - Integration Tests', () => {
 
 			expect(results.length).toBeGreaterThan(0);
 			// Should find all three variants
+		});
+
+		it('should not log errors when vault contains excluded directories', async () => {
+			// Setup: Create a vault structure with excluded "AI Agent" directory
+			const normalFile = createMockFile('notes/document.md');
+			const excludedFile = createMockFile('AI Agent/secret.md');
+			const notesFolder = createMockFolder('notes', [normalFile]);
+			const excludedFolder = createMockFolder('AI Agent', [excludedFile]);
+			const rootFolder = createMockFolder('/', [normalFile, notesFolder, excludedFolder]);
+
+			mockVault.getAbstractFileByPath.mockImplementation((path: string) => {
+				if (path === '/' || path === '') return rootFolder;
+				if (path === 'notes') return notesFolder;
+				if (path === 'notes/document.md') return normalFile;
+				// AI Agent directory should be blocked by getAbstractFileByPath
+				if (path === 'AI Agent') return null;
+				return null;
+			});
+
+			mockVault.cachedRead.mockResolvedValue('test content');
+
+			// Spy on console.error
+			const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+			// Execute search
+			const results = await vaultService.searchVaultFiles('test');
+
+			// Should not log exclusion errors during normal search operation
+			expect(consoleErrorSpy).not.toHaveBeenCalledWith(
+				expect.stringContaining('Plugin attempted to retrieve a file that is in the exclusions list')
+			);
+
+			// Should still return results from non-excluded files
+			expect(results.length).toBeGreaterThan(0);
+
+			consoleErrorSpy.mockRestore();
+		});
+
+		it('should respect allowAccessToPluginRoot parameter when true', async () => {
+			// Setup: Create vault with AI Agent directory
+			const agentFile = createMockFile('AI Agent/notes.md');
+			const normalFile = createMockFile('normal.md');
+			const agentFolder = createMockFolder('AI Agent', [agentFile]);
+			const rootFolder = createMockFolder('/', [normalFile, agentFolder]);
+
+			mockVault.getAbstractFileByPath.mockImplementation((path: string) => {
+				if (path === '/' || path === '') return rootFolder;
+				if (path === 'AI Agent') return agentFolder;
+				if (path === 'AI Agent/notes.md') return agentFile;
+				if (path === 'normal.md') return normalFile;
+				return null;
+			});
+
+			mockVault.cachedRead.mockResolvedValue('searchable content');
+
+			// Search with allowAccessToPluginRoot = true
+			const results = await vaultService.searchVaultFiles('searchable', true);
+
+			// Should include files from AI Agent directory
+			const paths = results.map(r => r.file.path);
+			expect(paths).toContain('AI Agent/notes.md');
+			expect(paths).toContain('normal.md');
+		});
+
+		it('should exclude AI Agent directory when allowAccessToPluginRoot is false', async () => {
+			// Setup: Create vault with AI Agent directory
+			const agentFile = createMockFile('AI Agent/notes.md');
+			const normalFile = createMockFile('normal.md');
+			const agentFolder = createMockFolder('AI Agent', [agentFile]);
+			const rootFolder = createMockFolder('/', [normalFile, agentFolder]);
+
+			mockVault.getAbstractFileByPath.mockImplementation((path: string) => {
+				if (path === '/' || path === '') return rootFolder;
+				// When allowAccessToPluginRoot is false, AI Agent should be blocked
+				if (path === 'AI Agent') return null;
+				if (path === 'normal.md') return normalFile;
+				return null;
+			});
+
+			mockVault.cachedRead.mockResolvedValue('searchable content');
+
+			// Search with allowAccessToPluginRoot = false (default)
+			const results = await vaultService.searchVaultFiles('searchable', false);
+
+			// Should NOT include files from AI Agent directory
+			const paths = results.map(r => r.file.path);
+			expect(paths).not.toContain('AI Agent/notes.md');
+			expect(paths).toContain('normal.md');
+		});
+
+		it('should pass allowAccessToPluginRoot to listFilesInDirectory', async () => {
+			const file = createMockFile('test.md');
+			const folder = createMockFolder('/', [file]);
+
+			mockVault.getAbstractFileByPath.mockReturnValue(folder);
+			mockVault.cachedRead.mockResolvedValue('content');
+
+			// Create a spy on listFilesInDirectory
+			const listFilesSpy = vi.spyOn(vaultService, 'listFilesInDirectory');
+
+			// Call with allowAccessToPluginRoot = true
+			await vaultService.searchVaultFiles('test', true);
+
+			// Verify listFilesInDirectory was called with the correct parameter
+			expect(listFilesSpy).toHaveBeenCalledWith(Path.Root, true, true);
+
+			listFilesSpy.mockClear();
+
+			// Call with allowAccessToPluginRoot = false
+			await vaultService.searchVaultFiles('test', false);
+
+			// Verify listFilesInDirectory was called with the correct parameter
+			expect(listFilesSpy).toHaveBeenCalledWith(Path.Root, true, false);
+
+			listFilesSpy.mockRestore();
 		});
 	});
 
@@ -866,99 +1104,104 @@ describe('VaultService - Integration Tests', () => {
 		});
 	});
 
-	describe('listVaultContents', () => {
-		it('should return all files and folders when no exclusions', () => {
-			const files = [
-				createMockFile('note1.md'),
-				createMockFile('note2.md')
-			];
-			const folders = [
-				createMockFolder('folder1'),
-				createMockFolder('folder2')
-			];
+	describe('listDirectoryContents', () => {
+		it('should return all files and folders when no exclusions', async () => {
+			const file1 = createMockFile('note1.md');
+			const file2 = createMockFile('note2.md');
+			const folder1 = createMockFolder('folder1', []);
+			const folder2 = createMockFolder('folder2', []);
+			const rootFolder = createMockFolder('/', [file1, file2, folder1, folder2]);
 
-			mockVault.getFiles.mockReturnValue(files);
-			mockVault.getAllFolders.mockReturnValue(folders);
+			mockVault.getAbstractFileByPath.mockImplementation((path: string) => {
+				if (path === '/' || path === '') return rootFolder;
+				if (path === 'folder1') return folder1;
+				if (path === 'folder2') return folder2;
+				return null;
+			});
 
-			const result = vaultService.listVaultContents();
+			const result = await vaultService.listDirectoryContents(Path.Root);
 
 			expect(result).toHaveLength(4);
-			expect(result).toEqual(expect.arrayContaining([...files, ...folders]));
+			expect(result).toEqual(expect.arrayContaining([file1, file2, folder1, folder2]));
 		});
 
-		it('should filter out excluded files and folders', () => {
-			const files = [
-				createMockFile('public/note.md'),
-				createMockFile('AI Agent/conversation.md'),
-				createMockFile('private/secret.md')
-			];
-			const folders = [
-				createMockFolder('public'),
-				createMockFolder('AI Agent'),
-				createMockFolder('private')
-			];
+		it('should filter out excluded files and folders', async () => {
+			const publicNote = createMockFile('public/note.md');
+			const agentNote = createMockFile('AI Agent/conversation.md');
+			const privateNote = createMockFile('private/secret.md');
+			const publicFolder = createMockFolder('public', [publicNote]);
+			const agentFolder = createMockFolder('AI Agent', [agentNote]);
+			const privateFolder = createMockFolder('private', [privateNote]);
+			const rootFolder = createMockFolder('/', [publicNote, agentNote, privateNote, publicFolder, agentFolder, privateFolder]);
 
-			mockVault.getFiles.mockReturnValue(files);
-			mockVault.getAllFolders.mockReturnValue(folders);
+			mockVault.getAbstractFileByPath.mockImplementation((path: string) => {
+				if (path === '/' || path === '') return rootFolder;
+				if (path === 'public') return publicFolder;
+				if (path === 'AI Agent') return null; // Excluded by default
+				if (path === 'private') return privateFolder;
+				return null;
+			});
+
 			mockPluginSettings.exclusions = ['private/**'];
 
-			const result = vaultService.listVaultContents(false);
+			const result = await vaultService.listDirectoryContents(Path.Root, true, false);
 
-			// Should have: public/note.md, public folder, AI Agent folder, private folder
-			// Should exclude: AI Agent/** (files inside - default), private/** (files inside)
-			// Note: The pattern 'private/**' matches files inside but not the folder itself
-			// Similarly 'AI Agent/**' (the default) matches files inside but not the folder
-			expect(result.some((item) => item.path === 'public/note.md')).toBe(true);
-			expect(result.some((item) => item.path === 'public')).toBe(true);
-			expect(result.some((item) => item.path === 'AI Agent/conversation.md')).toBe(false);
-			expect(result.some((item) => item.path === 'private/secret.md')).toBe(false);
+			// Should include: public/note.md and public folder
+			// Should exclude: AI Agent folder (default exclusion), private/** content
+			expect(result.some((item: any) => item.path === 'public/note.md')).toBe(true);
+			expect(result.some((item: any) => item.path === 'public')).toBe(true);
+			expect(result.some((item: any) => item.path === 'AI Agent/conversation.md')).toBe(false);
+			expect(result.some((item: any) => item.path === 'private/secret.md')).toBe(false);
+			expect(result.some((item: any) => item.path === 'private')).toBe(true); // Folder itself not excluded by 'private/**'
 		});
 
-		it('should exclude the AI Agent directory itself from folder listings', () => {
-			const files = [
-				createMockFile('public/note.md')
-			];
-			const folders = [
-				createMockFolder('public'),
-				createMockFolder('AI Agent'),
-				createMockFolder('notes')
-			];
+		it('should exclude the AI Agent directory itself from folder listings', async () => {
+			const publicNote = createMockFile('public/note.md');
+			const publicFolder = createMockFolder('public', [publicNote]);
+			const agentFolder = createMockFolder('AI Agent', []);
+			const notesFolder = createMockFolder('notes', []);
+			const rootFolder = createMockFolder('/', [publicNote, publicFolder, agentFolder, notesFolder]);
 
-			mockVault.getFiles.mockReturnValue(files);
-			mockVault.getAllFolders.mockReturnValue(folders);
+			mockVault.getAbstractFileByPath.mockImplementation((path: string) => {
+				if (path === '/' || path === '') return rootFolder;
+				if (path === 'public') return publicFolder;
+				if (path === 'AI Agent') return null; // Excluded by default
+				if (path === 'notes') return notesFolder;
+				return null;
+			});
 
-			const result = vaultService.listVaultContents(false);
+			const result = await vaultService.listDirectoryContents(Path.Root, true, false);
 
 			// AI Agent directory itself should be excluded
-			expect(result.some((item) => item.path === 'AI Agent')).toBe(false);
+			expect(result.some((item: any) => item.path === 'AI Agent')).toBe(false);
 			// Other folders should be included
-			expect(result.some((item) => item.path === 'public')).toBe(true);
-			expect(result.some((item) => item.path === 'notes')).toBe(true);
+			expect(result.some((item: any) => item.path === 'public')).toBe(true);
+			expect(result.some((item: any) => item.path === 'notes')).toBe(true);
 		});
 
-		it('should include AI Agent directory when allowAccessToPluginRoot is true', () => {
-			const files = [
-				createMockFile('note.md'),
-				createMockFile('AI Agent/conversation.md')
-			];
-			const folders = [
-				createMockFolder('AI Agent')
-			];
+		it('should include AI Agent directory when allowAccessToPluginRoot is true', async () => {
+			const note = createMockFile('note.md');
+			const agentNote = createMockFile('AI Agent/conversation.md');
+			const agentFolder = createMockFolder('AI Agent', [agentNote]);
+			const rootFolder = createMockFolder('/', [note, agentFolder]);
 
-			mockVault.getFiles.mockReturnValue(files);
-			mockVault.getAllFolders.mockReturnValue(folders);
+			mockVault.getAbstractFileByPath.mockImplementation((path: string) => {
+				if (path === '/' || path === '') return rootFolder;
+				if (path === 'AI Agent') return agentFolder; // Allowed with flag
+				return null;
+			});
 
-			const result = vaultService.listVaultContents(true);
+			const result = await vaultService.listDirectoryContents(Path.Root, true, true);
 
 			expect(result).toHaveLength(3);
-			expect(result.some((item) => item.path === 'AI Agent/conversation.md')).toBe(true);
+			expect(result.some((item: any) => item.path === 'AI Agent/conversation.md')).toBe(true);
 		});
 
-		it('should return empty array when vault is empty', () => {
-			mockVault.getFiles.mockReturnValue([]);
-			mockVault.getAllFolders.mockReturnValue([]);
+		it('should return empty array when vault is empty', async () => {
+			const emptyRoot = createMockFolder('/', []);
+			mockVault.getAbstractFileByPath.mockReturnValue(emptyRoot);
 
-			const result = vaultService.listVaultContents();
+			const result = await vaultService.listDirectoryContents(Path.Root);
 
 			expect(result).toEqual([]);
 		});

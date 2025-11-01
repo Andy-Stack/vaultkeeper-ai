@@ -5,8 +5,7 @@ import { AIFunction } from "Enums/AIFunction";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import type { ISearchMatch } from "../Helpers/SearchTypes";
-import { normalizePath, TFile } from "obsidian";
-import { Path } from "Enums/Path";
+import { normalizePath, TAbstractFile, TFile } from "obsidian";
 
 export class AIFunctionService {
 
@@ -29,6 +28,9 @@ export class AIFunctionService {
             case AIFunction.MoveVaultFiles:
                 return new AIFunctionResponse(functionCall.name, await this.moveVaultFiles(functionCall.arguments.source_paths, functionCall.arguments.destination_paths), functionCall.toolId);
 
+            case AIFunction.ListVaultFiles:
+                return new AIFunctionResponse(functionCall.name, await this.ListVaultFiles(functionCall.arguments.path, functionCall.arguments.recursive), functionCall.toolId);
+
             // this is only used by gemini
             case AIFunction.RequestWebSearch:
                 return new AIFunctionResponse(functionCall.name, {}, functionCall.toolId)
@@ -47,16 +49,7 @@ export class AIFunctionService {
     private async searchVaultFiles(searchTerm: string): Promise<object> {
         const matches: ISearchMatch[] = searchTerm.trim() === "" ? [] : await this.fileSystemService.searchVaultFiles(searchTerm);
 
-        if (matches.length === 0) {
-            const files: TFile[] = await this.fileSystemService.listFilesInDirectory(Path.Root);
-            return files.map((file) => ({
-                name: file.basename,
-                path: file.path
-            }));
-        }
-
-        return matches.map((match) => ({
-            name: match.file.basename,
+        return matches.map(match => ({
             path: match.file.path,
             snippets: match.snippets.map((snippet) => ({
                 text: snippet.text,
@@ -116,5 +109,13 @@ export class AIFunctionService {
         }));
 
         return { results };
+    }
+
+    private async ListVaultFiles(path: string, recursive: boolean): Promise<object> {
+        const files: TAbstractFile[] = await this.fileSystemService.listDirectoryContents(path, recursive);
+        return files.map(file => ({
+            type: file instanceof TFile ? "file" : "directory",
+            path: file.path
+        }));
     }
 }

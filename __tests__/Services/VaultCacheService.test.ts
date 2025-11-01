@@ -121,7 +121,7 @@ describe('VaultCacheService - Integration Tests', () => {
 			registerFileEvents: vi.fn((handler: any) => {
 				fileEventHandler = handler;
 			}),
-			listVaultContents: vi.fn(() => []),
+			listDirectoryContents: vi.fn(async () => []),
 			getAbstractFileByPath: vi.fn((path: string) => {
 				// By default, allow all folders (return a mock folder)
 				// This maintains existing test behavior
@@ -188,7 +188,7 @@ describe('VaultCacheService - Integration Tests', () => {
 
 			const mockVaultServiceWithContent = {
 				registerFileEvents: mockRegisterEvents,
-				listVaultContents: mockListVaultContents
+				listDirectoryContents: mockListVaultContents
 			};
 
 			RegisterSingleton(Services.AIAgentPlugin, mockPluginWithMetadata as any);
@@ -613,7 +613,7 @@ describe('VaultCacheService - Integration Tests', () => {
 				registerFileEvents: vi.fn((handler: any) => {
 					fileEventHandler = handler;
 				}),
-				listVaultContents: vi.fn(() => []),
+				listDirectoryContents: vi.fn(async () => []),
 				getAbstractFileByPath: vi.fn((path: string) => {
 					// Return null for excluded paths (simulating VaultService exclusion logic)
 					if (path.startsWith('AI Agent')) {
@@ -656,7 +656,7 @@ describe('VaultCacheService - Integration Tests', () => {
 				registerFileEvents: vi.fn((handler: any) => {
 					fileEventHandler = handler;
 				}),
-				listVaultContents: vi.fn(() => []),
+				listDirectoryContents: vi.fn(async () => []),
 				getAbstractFileByPath: vi.fn((path: string) => {
 					// Return null for excluded paths
 					if (path.startsWith('private/')) {
@@ -687,7 +687,7 @@ describe('VaultCacheService - Integration Tests', () => {
 				registerFileEvents: vi.fn((handler: any) => {
 					fileEventHandler = handler;
 				}),
-				listVaultContents: vi.fn(() => []),
+				listDirectoryContents: vi.fn(async () => []),
 				getAbstractFileByPath: vi.fn((path: string, allowAccessToPluginRoot: boolean) => {
 					// First call (public-folder) should succeed
 					if (path === 'public-folder') {
@@ -735,7 +735,7 @@ describe('VaultCacheService - Integration Tests', () => {
 				registerFileEvents: vi.fn((handler: any) => {
 					fileEventHandler = handler;
 				}),
-				listVaultContents: vi.fn(() => []),
+				listDirectoryContents: vi.fn(async () => []),
 				getAbstractFileByPath: vi.fn((path: string) => {
 					if (path.startsWith('AI Agent')) {
 						return null;

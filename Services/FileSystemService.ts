@@ -64,6 +64,14 @@ export class FileSystemService {
         return await this.vaultService.listFilesInDirectory(dirPath, recursive, allowAccessToPluginRoot);
     }
 
+    public async listFoldersInDirectory(dirPath: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFolder[]> {
+        return await this.vaultService.listFoldersInDirectory(dirPath, recursive, allowAccessToPluginRoot);
+    }
+
+    public async listDirectoryContents(dirPath: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TAbstractFile[]> {
+        return await this.vaultService.listDirectoryContents(dirPath, recursive, allowAccessToPluginRoot);
+    }
+
     public async readObjectFromFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<object | null> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
         if (file && file instanceof TFile) {
@@ -93,7 +101,7 @@ export class FileSystemService {
         }
     }
 
-    public async searchVaultFiles(searchTerm: string): Promise<ISearchMatch[]> {
-        return await this.vaultService.searchVaultFiles(searchTerm);
+    public async searchVaultFiles(searchTerm: string, allowAccessToPluginRoot: boolean = false): Promise<ISearchMatch[]> {
+        return await this.vaultService.searchVaultFiles(searchTerm, allowAccessToPluginRoot);
     }
 }

@@ -6,6 +6,7 @@ import { FileEvent } from "Enums/FileEvent";
 import { getAllTags, MetadataCache, TFile, TFolder } from "obsidian";
 import { FileTagMapping } from "Helpers/FileTagMapping";
 import * as fuzzysort from "fuzzysort";
+import { Path } from "Enums/Path";
 
 // Note that 'files' actually refers to both directories and files (Obsidian naming)
 
@@ -37,9 +38,9 @@ export class VaultCacheService {
     this.metaDataCache = this.plugin.app.metadataCache;
     this.registerFileEvents();
 
-    this.plugin.app.metadataCache.on("resolved", () => {
+    this.plugin.app.metadataCache.on("resolved", async () => {
       if (!this.initialised) {
-        this.setupCaches();
+        await this.setupCaches();
         this.initialised = true;
       }
     });
@@ -135,8 +136,8 @@ export class VaultCacheService {
     });
   }
 
-  private setupCaches() {
-    this.vaultService.listVaultContents().forEach(file => {
+  private async setupCaches() {
+    (await this.vaultService.listDirectoryContents(Path.Root)).forEach(file => {
       if (file instanceof TFile) {
         this.files.set(file.path, file);
         this.cacheTags(file);

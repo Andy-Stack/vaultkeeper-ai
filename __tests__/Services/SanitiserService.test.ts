@@ -30,9 +30,14 @@ describe('SanitiserService', () => {
 			expect(() => service.sanitize(undefined as any)).toThrow('Input must be a string');
 		});
 
-		it('should handle empty string', () => {
+		it('should normalize empty string to vault root', () => {
 			const result = service.sanitize('');
-			expect(result).toBe('');
+			expect(result).toBe('/');
+		});
+
+		it('should normalize whitespace-only string to vault root', () => {
+			const result = service.sanitize('   ');
+			expect(result).toBe('/');
 		});
 	});
 

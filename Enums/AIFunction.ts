@@ -4,7 +4,8 @@ export enum AIFunction {
     WriteVaultFile = "write_vault_file",
     DeleteVaultFiles = "delete_vault_files",
     MoveVaultFiles = "move_vault_files",
+    ListVaultFiles = "list_vault_files",
 
     // only used by gemini
-    RequestWebSearch = "request_web_search"
+    RequestWebSearch = "request_web_search",
 }

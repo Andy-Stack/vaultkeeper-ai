@@ -133,18 +133,17 @@ export class VaultService {
         return await this.vault.createFolder(path);
     }
 
-    public listVaultContents(allowAccessToPluginRoot: boolean = false) {
-        const files = this.vault.getFiles()
-            .filter(file => !this.isExclusion(file.path, allowAccessToPluginRoot));
+    public async listDirectoryContents(path: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TAbstractFile[]> {
+        const sanitisedPath = this.sanitiserService.sanitize(path);
 
-            const folders = this.vault.getAllFolders()
-            .filter(folder => !this.isExclusion(folder.path, allowAccessToPluginRoot));
+        const files = await this.listFilesInDirectory(sanitisedPath, recursive, allowAccessToPluginRoot);
+        const folders = await this.listFoldersInDirectory(sanitisedPath, recursive, allowAccessToPluginRoot);
 
         return [...files, ...folders] as TAbstractFile[];
     }
 
-    public async listFilesInDirectory(dirPath: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFile[]> {
-        const dir: TAbstractFile | null = this.getAbstractFileByPath(this.sanitiserService.sanitize(dirPath), allowAccessToPluginRoot);
+    public async listFilesInDirectory(path: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFile[]> {
+        const dir: TAbstractFile | null = this.getAbstractFileByPath(this.sanitiserService.sanitize(path), allowAccessToPluginRoot);
 
         if (dir == null || !(dir instanceof TFolder)) {
             return [];
@@ -153,19 +152,47 @@ export class VaultService {
         let files: TFile[] = [];
         for (let child of dir.children) {
             if (child instanceof TFile) {
-                files.push(child);
+                if (!this.isExclusion(child.path, allowAccessToPluginRoot)) {
+                    files.push(child);
+                }
             } else if (child instanceof TFolder && recursive) {
-                const childFiles = await this.listFilesInDirectory(child.path, recursive, allowAccessToPluginRoot);
-                files = files.concat(childFiles);
+                if (!this.isExclusion(child.path, allowAccessToPluginRoot)) {
+                    const childFiles = await this.listFilesInDirectory(child.path, recursive, allowAccessToPluginRoot);
+                    files = files.concat(childFiles);
+                }
             }
         }
 
-        // if an excluded file or directory is present we just filter it rather than 
-        // reporting it since this function could touch a large part of the vault
-        return files.filter(file => !this.isExclusion(file.path, allowAccessToPluginRoot));
+        return files;
     }
 
-    public async searchVaultFiles(searchTerm: string): Promise<ISearchMatch[]> {
+    public async listFoldersInDirectory(path: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFolder[]> {
+        const dir: TAbstractFile | null = this.getAbstractFileByPath(this.sanitiserService.sanitize(path), allowAccessToPluginRoot);
+
+        if (dir == null || !(dir instanceof TFolder)) {
+            return [];
+        }
+
+        let folders: TFolder[] = [];
+        for (let child of dir.children) {
+            if (!(child instanceof TFolder)) {
+                continue;
+            }
+
+            if (!this.isExclusion(child.path, allowAccessToPluginRoot)) {
+                folders.push(child);
+
+                if (recursive) {
+                    const childFolders = await this.listFoldersInDirectory(child.path, recursive, allowAccessToPluginRoot);
+                    folders = folders.concat(childFolders);
+                }
+            }
+        }
+
+        return folders;
+    }
+
+    public async searchVaultFiles(searchTerm: string, allowAccessToPluginRoot: boolean = false): Promise<ISearchMatch[]> {
         let regex: RegExp;
         try {
             regex = new RegExp(searchTerm, "ig");
@@ -173,7 +200,7 @@ export class VaultService {
             regex = new RegExp(escapeRegex(searchTerm), "ig");
         }
 
-        const files: TFile[] = await this.listFilesInDirectory(Path.Root);
+        const files: TFile[] = await this.listFilesInDirectory(Path.Root, true, allowAccessToPluginRoot);
 
         const allMatches: ISearchMatch[] = [];
 

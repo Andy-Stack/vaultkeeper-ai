@@ -5,7 +5,7 @@ import { RegisterAiProvider, RegisterDependencies } from 'Services/ServiceRegist
 import { AIAgentSettingTab } from 'AIAgentSettingTab';
 import { Services } from 'Services/Services';
 import type { StatusBarService } from 'Services/StatusBarService';
-import { Resolve } from 'Services/DependencyService';
+import { DeregisterAllServices, Resolve } from 'Services/DependencyService';
 
 interface IAIAgentSettings {
 	model: string;
@@ -54,6 +54,7 @@ export default class AIAgentPlugin extends Plugin {
 
 	async onunload() {
 		Resolve<StatusBarService>(Services.StatusBarService).removeStatusBarMessage();
+		DeregisterAllServices();
 	}
 
 	async activateView() {

@@ -3,7 +3,6 @@ import { TAbstractFile, TFile, TFolder, type Vault } from "obsidian";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import { isValidJson } from "Helpers/Helpers";
-import { Path } from "Enums/Path";
 import type { VaultService } from "./VaultService";
 import type { ISearchMatch } from "../Helpers/SearchTypes";
 

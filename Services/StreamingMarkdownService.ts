@@ -12,6 +12,7 @@ import type { FileSystemService } from "./FileSystemService";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import { Selector } from "Enums/Selector";
+import type { HTMLService } from "./HTMLService";
 
 interface IStreamingState {
     element: HTMLElement;
@@ -21,6 +22,7 @@ interface IStreamingState {
 }
 
 export class StreamingMarkdownService {
+    private readonly htmlService: HTMLService = Resolve<HTMLService>(Services.HTMLService);
     private readonly fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
 
     private readonly processor: Processor<any, any, any, any, any> | null = null;
@@ -76,8 +78,8 @@ export class StreamingMarkdownService {
     }
 
     public initializeStream(messageId: string, container: HTMLElement): void {
-        container.innerHTML = "";
-        
+        this.htmlService.clearElement(container);
+
         this.streamingStates.set(messageId, {
             element: container,
             buffer: "",
@@ -117,12 +119,12 @@ export class StreamingMarkdownService {
 
             try {
                 const html = this.formatText(state.buffer);
-                state.element.innerHTML = html;
+                this.htmlService.setHTMLContent(state.element, html);
                 state.lastProcessedLength = state.buffer.length;
             } catch (error) {
                 console.warn("Streaming render failed:", error);
             }
-            
+
             this.renderTimeouts.delete(messageId);
         };
 

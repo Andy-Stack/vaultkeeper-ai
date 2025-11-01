@@ -3,10 +3,12 @@ import { StreamingMarkdownService } from '../../Services/StreamingMarkdownServic
 import * as DependencyService from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import type { FileSystemService } from '../../Services/FileSystemService';
+import type { HTMLService } from '../../Services/HTMLService';
 
 describe('StreamingMarkdownService', () => {
 	let service: StreamingMarkdownService;
 	let mockFileSystemService: Partial<FileSystemService>;
+	let mockHTMLService: Partial<HTMLService>;
 
 	beforeEach(() => {
 		// Mock FileSystemService to avoid dependency injection issues
@@ -14,10 +16,36 @@ describe('StreamingMarkdownService', () => {
 			getVaultFileListForMarkDown: vi.fn().mockReturnValue(['file1', 'file2', 'folder/file3'])
 		};
 
-		// Mock DependencyService.Resolve to return our mock
+		// Mock HTMLService
+		mockHTMLService = {
+			clearElement: vi.fn((element: HTMLElement) => {
+				while (element.firstChild) {
+					element.removeChild(element.firstChild);
+				}
+			}),
+			setHTMLContent: vi.fn((container: HTMLElement, htmlString: string) => {
+				// Clear the container
+				while (container.firstChild) {
+					container.removeChild(container.firstChild);
+				}
+				// Parse and append HTML
+				const parser = new DOMParser();
+				const doc = parser.parseFromString(htmlString, 'text/html');
+				while (doc.body.firstChild) {
+					container.appendChild(doc.body.firstChild);
+				}
+			}),
+			parseHTMLString: vi.fn(),
+			parseHTMLToContainer: vi.fn()
+		};
+
+		// Mock DependencyService.Resolve to return our mocks
 		vi.spyOn(DependencyService, 'Resolve').mockImplementation((serviceId: symbol) => {
 			if (serviceId === Services.FileSystemService) {
 				return mockFileSystemService as FileSystemService;
+			}
+			if (serviceId === Services.HTMLService) {
+				return mockHTMLService as HTMLService;
 			}
 			throw new Error(`Unexpected service request: ${serviceId.toString()}`);
 		});

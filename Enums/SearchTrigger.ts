@@ -1,5 +1,8 @@
 import { basename, extname } from "path";
 import { setTooltip } from "obsidian";
+import type { HTMLService } from "Services/HTMLService";
+import { Resolve } from "Services/DependencyService";
+import { Services } from "Services/Services";
 
 export enum SearchTrigger {
     Tag = "#",
@@ -70,12 +73,11 @@ export namespace SearchTrigger {
     }
 
     export function triggerToText(input: string): string {
-        // Create a temporary container to parse the HTML
-        const temp = document.createElement("div");
-        temp.innerHTML = input;
-    
+        const htmlService: HTMLService = Resolve<HTMLService>(Services.HTMLService);
+
+        const temp = htmlService.parseHTMLToContainer(input);
         let result = "";
-    
+
         temp.childNodes.forEach(node => {
           if (node.nodeType === Node.TEXT_NODE) {
             result += node.textContent || "";
@@ -83,7 +85,7 @@ export namespace SearchTrigger {
             const element = node as HTMLElement;
             const trigger = element.dataset.trigger;
             const content = element.dataset.content;
-    
+
             if (trigger && content) {
               switch (trigger) {
                 case SearchTrigger.Tag:
@@ -99,7 +101,7 @@ export namespace SearchTrigger {
             }
           }
         });
-    
+
         return result;
       }
 }

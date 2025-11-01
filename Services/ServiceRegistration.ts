@@ -33,11 +33,13 @@ import { VaultCacheService } from "./VaultCacheService";
 import { UserInputService } from "./UserInputService";
 import { SearchStateStore } from "Stores/SearchStateStore";
 import { InputService } from "./InputService";
+import { HTMLService } from "./HTMLService";
 
 export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterSingleton<AIAgentPlugin>(Services.AIAgentPlugin, plugin);
     RegisterSingleton<FileManager>(Services.FileManager, plugin.app.fileManager);
     RegisterSingleton<StatusBarService>(Services.StatusBarService, new StatusBarService());
+    RegisterSingleton<HTMLService>(Services.HTMLService, new HTMLService());
     RegisterSingleton<SanitiserService>(Services.SanitiserService, new SanitiserService());
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
     RegisterSingleton<VaultCacheService>(Services.VaultCacheService, new VaultCacheService());

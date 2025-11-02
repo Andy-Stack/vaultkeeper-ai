@@ -3,6 +3,7 @@ export enum Copy {
     UserInstructions1 = "You can create custom ",
     UserInstructions2 = "instructions",
     UserInstructions3 = " that the AI will follow.",
+    NoUserInstruction = "No custom instructions",
 
     // Model display names
     ClaudeSonnet_4_5 = "Claude Sonnet 4.5",

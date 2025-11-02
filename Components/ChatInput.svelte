@@ -251,6 +251,10 @@
       searchStateStore.resetSearch();
     }
   }
+
+  function handleFocusOut() {
+    searchStateStore.resetSearch();
+  }
 </script>
 
 <div id="input-container" class:edit-mode={editModeActive}>
@@ -282,6 +286,7 @@
     on:drop={handleDrop}
     on:click={handleCursorPositionChange}
     on:keyup={handleCursorPositionChange}
+    on:focusout={handleFocusOut}
     data-placeholder="Type a message..."
     role="textbox"
     aria-multiline="true"

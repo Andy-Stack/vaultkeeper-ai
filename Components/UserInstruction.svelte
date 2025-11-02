@@ -10,44 +10,68 @@
 
     export let userInstructionActive: boolean;
 
+    const plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+    const fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
+
     let height = 0;
-    
-    let emptyResultsContentDiv: HTMLDivElement;
-    let resultsContentDiv: HTMLDivElement;
+
+    let instructionsContentDiv: HTMLDivElement;
+    let emptyInstructionsContentDiv: HTMLDivElement;
+    let instructionsElements: (HTMLDivElement | null)[] = [];
+    let resultsContainer: HTMLDivElement;
 
     let userInstructions: string[] = [];
     let selectedInstruction: number = 0;
 
     $: userInstructions, updateHeight();
 
-    const plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
-    const fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
+    $: if (selectedInstruction !== undefined && instructionsElements.length > 0) {
+        scrollSelectedIntoView();
+    }
+
+    $: if (userInstructionActive) {
+        selectedInstruction = 0;
+        loadUserInstructions();
+        setTimeout(() => {
+            if (resultsContainer && userInstructionActive) {
+                document.addEventListener("click", handleClickOutside);
+            }
+        }, 10);
+    } else {
+        userInstructions = [];
+        document.removeEventListener("click", handleClickOutside);
+    }
 
     function updateHeight() {
         tick().then(() => {
-            if (resultsContentDiv) {
-                height = resultsContentDiv.scrollHeight;
+            if (instructionsContentDiv) {
+                height = instructionsContentDiv.scrollHeight;
             }
-            else if (emptyResultsContentDiv) {
-                height = emptyResultsContentDiv.scrollHeight;
+            else if (emptyInstructionsContentDiv) {
+                height = emptyInstructionsContentDiv.scrollHeight;
             } else {
                 height = 0;
             }
         });
     }
 
-    $: if (userInstructionActive) {
-        loadUserInstructions();
-    } else {
-        userInstructions = [];
+    function handleClickOutside(event: MouseEvent) {
+        if (resultsContainer && !resultsContainer.contains(event.target as Node)) {
+            userInstructionActive = false;
+        }
     }
 
     async function loadUserInstructions() {
         const files = await fileSystemService.listFilesInDirectory(Path.UserInstructions, true, true);
         userInstructions = files.map(file => file.path).filter(path => path != Path.ExampleUserInstructions);
+
+        if (userInstructions.length > 0) {
+            userInstructions = [Copy.NoUserInstruction, ...userInstructions];
+        }
+
         tick().then(() => {
-            if (resultsContentDiv) {
-                resultsContentDiv.focus();
+            if (instructionsContentDiv) {
+                instructionsContentDiv.focus();
             }
         });
     }
@@ -55,6 +79,7 @@
     function handleInstructionSelect() {
         if (selectedInstruction < userInstructions.length) {
             plugin.settings.userInstruction = userInstructions[selectedInstruction];
+            plugin.saveSettings();
         }
         userInstructionActive = false;
     }
@@ -84,12 +109,24 @@
             return;
         }
     }
+
+    function scrollSelectedIntoView() {
+        tick().then(() => {
+            if (selectedInstruction < instructionsElements.length) {
+                instructionsElements[selectedInstruction]?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'nearest'
+                });
+            }
+        });
+    }
 </script>
 
-<div id="user-instruction-results" style:height="{height}px">
+<div id="user-instruction-results" style:height="{height}px" bind:this={resultsContainer}>
     {#if userInstructionActive}
         {#if userInstructions.length === 0}
-            <div bind:this={emptyResultsContentDiv}>
+            <div bind:this={emptyInstructionsContentDiv}>
                 <div id="user-instruction-empty" class="user-instruction-container">
                     <div class="user-instruction-title">
                         <span>
@@ -104,9 +141,10 @@
             </div>
         {/if}
         {#if userInstructions.length > 0}
+            {@const currentInstruction = plugin.settings.userInstruction}
             <div 
                 id="user-instruction-results-inner-container" 
-                bind:this={resultsContentDiv}
+                bind:this={instructionsContentDiv}
                 role="listbox"
                 tabindex="0"
                 on:keydown={handleKeydown}>
@@ -115,12 +153,16 @@
                         role="option"
                         tabindex="-1"
                         aria-selected={selectedInstruction === index}
+                        class:current-instruction={currentInstruction === userInstruction}
                         style:background-color={selectedInstruction === index ? "var(--interactive-accent)" : "transparent"}
+                        bind:this={instructionsElements[index]}
                         on:mouseenter={() => selectedInstruction = index}
                         on:click={handleInstructionSelect}
                         on:keydown={() => {}}>
                         <div class="user-instruction-title">{basename(userInstruction)}</div>
-                        <div class="user-instruction-subtitle">{userInstruction}</div>
+                        {#if userInstruction !== basename(userInstruction)}
+                            <div class="user-instruction-subtitle">{userInstruction}</div>
+                        {/if}
                     </div>
                 {/each}
             </div>
@@ -163,6 +205,10 @@
         border-width: 1px;
         padding: var(--size-2-2) var(--size-4-2);
         cursor: pointer;
+    }
+
+    .user-instruction-container.current-instruction {
+        box-shadow: inset 0px 0px 4px 1px var(--color-accent);
     }
 
     .user-instruction-title {

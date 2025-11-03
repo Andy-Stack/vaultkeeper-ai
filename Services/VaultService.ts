@@ -7,6 +7,7 @@ import { escapeRegex, randomSample } from "Helpers/Helpers";
 import type { ISearchMatch, ISearchSnippet } from "../Helpers/SearchTypes";
 import type { SanitiserService } from "./SanitiserService";
 import { FileEvent } from "Enums/FileEvent";
+import type { SettingsService } from "./SettingsService";
 
 interface IFileEventArgs {
     oldPath: string;
@@ -20,12 +21,14 @@ export class VaultService {
 
     private readonly vault: Vault;
     private readonly plugin: AIAgentPlugin;
+    private readonly settingsService: SettingsService;
     private readonly fileManager: FileManager;
     private readonly sanitiserService: SanitiserService;
 
     public constructor() {
         this.plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
         this.vault = this.plugin.app.vault;
+        this.settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.fileManager = Resolve<FileManager>(Services.FileManager);
         this.sanitiserService = Resolve<SanitiserService>(Services.SanitiserService);
     }
@@ -258,8 +261,8 @@ export class VaultService {
 
     public isExclusion(filePath: string, allowAccessToPluginRoot: boolean = false): boolean {
         const exclusions = allowAccessToPluginRoot
-            ? this.plugin.settings.exclusions
-            : [this.AGENT_ROOT_DIR, this.AGENT_ROOT_CONTENTS, ...this.plugin.settings.exclusions];
+            ? this.settingsService.settings.exclusions
+            : [this.AGENT_ROOT_DIR, this.AGENT_ROOT_CONTENTS, ...this.settingsService.settings.exclusions];
 
         return exclusions.some(pattern => {
             if (filePath === pattern) {

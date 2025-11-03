@@ -1,17 +1,18 @@
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
 import type { IConversationNamingService } from "AIClasses/IConversationNamingService";
-import type AIAgentPlugin from "main";
-import { AIProviderURL, AIProviderModel } from "Enums/ApiProvider";
+import { AIProvider, AIProviderURL, AIProviderModel } from "Enums/ApiProvider";
 import { Role } from "Enums/Role";
 import { NamePrompt } from "AIClasses/NamePrompt";
+import type { SettingsService } from "Services/SettingsService";
 
 export class GeminiConversationNamingService implements IConversationNamingService {
     
     private readonly apiKey: string;
 
     public constructor() {
-        this.apiKey = Resolve<AIAgentPlugin>(Services.AIAgentPlugin).settings.apiKey;
+        const settingsService = Resolve<SettingsService>(Services.SettingsService);
+        this.apiKey = settingsService.getApiKeyForProvider(AIProvider.Gemini);
     }
 
     public async generateName(userPrompt: string, abortSignal?: AbortSignal): Promise<string> {

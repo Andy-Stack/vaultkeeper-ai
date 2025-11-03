@@ -4,13 +4,14 @@ import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIClasses/IPrompt";
 import { StreamingService, type IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
-import { AIProviderURL } from "Enums/ApiProvider";
+import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
 import type AIAgentPlugin from "main";
 import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import { Role } from "Enums/Role";
 import { isValidJson } from "Helpers/Helpers";
+import type { SettingsService } from "Services/SettingsService";
 
 interface IToolCallAccumulator {
     id: string | null;
@@ -25,6 +26,7 @@ export class OpenAI implements IAIClass {
     private readonly apiKey: string;
     private readonly aiPrompt: IPrompt = Resolve<IPrompt>(Services.IPrompt);
     private readonly plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+    private readonly settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
     private readonly streamingService: StreamingService = Resolve<StreamingService>(Services.StreamingService);
     private readonly aiFunctionDefinitions: AIFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
 
@@ -32,7 +34,7 @@ export class OpenAI implements IAIClass {
     private accumulatedToolCalls: Map<number, IToolCallAccumulator> = new Map();
 
     public constructor() {
-        this.apiKey = this.plugin.settings.apiKey;
+        this.apiKey = this.settingsService.getApiKeyForProvider(AIProvider.OpenAI);
     }
 
     public async* streamRequest(
@@ -131,7 +133,7 @@ export class OpenAI implements IAIClass {
         );
 
         const requestBody = {
-            model: this.plugin.settings.model,
+            model: this.settingsService.settings.model,
             messages: messages,
             tools: tools,
             stream: true

@@ -2,21 +2,39 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { GeminiConversationNamingService } from '../../AIClasses/Gemini/GeminiConversationNamingService';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import { AIProviderModel } from '../../Enums/ApiProvider';
+import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { Role } from '../../Enums/Role';
+import { SettingsService } from '../../Services/SettingsService';
 
 describe('GeminiConversationNamingService', () => {
     let service: GeminiConversationNamingService;
     let mockPlugin: any;
+    let mockSettingsService: any;
     let fetchMock: any;
 
     beforeEach(() => {
-        mockPlugin = {
-            settings: {
-                apiKey: 'test-gemini-key'
-            }
-        };
+        mockPlugin = {};
         RegisterSingleton(Services.AIAgentPlugin, mockPlugin);
+
+        // Mock SettingsService
+        mockSettingsService = {
+            settings: {
+                model: AIProviderModel.GeminiFlash_2_5,
+                apiKeys: {
+                    claude: 'test-claude-key',
+                    openai: 'test-openai-key',
+                    gemini: 'test-gemini-key'
+                }
+            },
+            getApiKeyForProvider: vi.fn((provider: AIProvider) => {
+                if (provider === AIProvider.Claude) return 'test-claude-key';
+                if (provider === AIProvider.OpenAI) return 'test-openai-key';
+                if (provider === AIProvider.Gemini) return 'test-gemini-key';
+                return '';
+            }),
+            getApiKeyForCurrentModel: vi.fn(() => 'test-gemini-key')
+        };
+        RegisterSingleton(Services.SettingsService, mockSettingsService);
 
         // Mock global fetch
         fetchMock = vi.fn();

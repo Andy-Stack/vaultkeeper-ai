@@ -5,13 +5,14 @@ import type { IPrompt } from "AIClasses/IPrompt";
 import { StreamingService, type IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import { Role } from "Enums/Role";
-import { AIProviderURL } from "Enums/ApiProvider";
+import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
 import type AIAgentPlugin from "main";
 import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import { isValidJson } from "Helpers/Helpers";
 import type { ConversationContent } from "Conversations/ConversationContent";
+import type { SettingsService } from "Services/SettingsService";
 
 export class Gemini implements IAIClass {
 
@@ -21,13 +22,14 @@ export class Gemini implements IAIClass {
   private readonly apiKey: string;
   private readonly aiPrompt: IPrompt = Resolve<IPrompt>(Services.IPrompt);
   private readonly plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+  private readonly settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
   private readonly streamingService: StreamingService = Resolve<StreamingService>(Services.StreamingService);
   private readonly aiFunctionDefinitions: AIFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
   private accumulatedFunctionName: string | null = null;
   private accumulatedFunctionArgs: Record<string, any> = {};
 
   public constructor() {
-    this.apiKey = this.plugin.settings.apiKey;
+    this.apiKey = this.settingsService.getApiKeyForProvider(AIProvider.Gemini);
   }
 
   public async* streamRequest(
@@ -85,7 +87,7 @@ export class Gemini implements IAIClass {
     };
 
     yield* this.streamingService.streamRequest(
-      `${AIProviderURL.Gemini}/${this.plugin.settings.model}:streamGenerateContent?key=${this.apiKey}&alt=sse`,
+      `${AIProviderURL.Gemini}/${this.settingsService.settings.model}:streamGenerateContent?key=${this.apiKey}&alt=sse`,
       requestBody,
       this.parseStreamChunk.bind(this),
       abortSignal

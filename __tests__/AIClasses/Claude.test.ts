@@ -9,12 +9,15 @@ import { AIFunctionDefinitions } from '../../AIClasses/FunctionDefinitions/AIFun
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
+import { SettingsService } from '../../Services/SettingsService';
+import { AIProvider } from '../../Enums/ApiProvider';
 
 describe('Claude', () => {
     let claude: Claude;
     let mockStreamingService: any;
     let mockPrompt: any;
     let mockPlugin: any;
+    let mockSettingsService: any;
     let mockFunctionDefinitions: any;
 
     beforeEach(() => {
@@ -26,13 +29,28 @@ describe('Claude', () => {
         RegisterSingleton(Services.IPrompt, mockPrompt);
 
         // Mock AIAgentPlugin
-        mockPlugin = {
-            settings: {
-                apiKey: 'test-api-key',
-                model: 'claude-opus-4-20250514'
-            }
-        };
+        mockPlugin = {};
         RegisterSingleton(Services.AIAgentPlugin, mockPlugin);
+
+        // Mock SettingsService
+        mockSettingsService = {
+            settings: {
+                model: 'claude-opus-4-20250514',
+                apiKeys: {
+                    claude: 'test-claude-key',
+                    openai: 'test-openai-key',
+                    gemini: 'test-gemini-key'
+                }
+            },
+            getApiKeyForProvider: vi.fn((provider: AIProvider) => {
+                if (provider === AIProvider.Claude) return 'test-claude-key';
+                if (provider === AIProvider.OpenAI) return 'test-openai-key';
+                if (provider === AIProvider.Gemini) return 'test-gemini-key';
+                return '';
+            }),
+            getApiKeyForCurrentModel: vi.fn(() => 'test-claude-key')
+        };
+        RegisterSingleton(Services.SettingsService, mockSettingsService);
 
         // Mock StreamingService
         mockStreamingService = {
@@ -70,19 +88,21 @@ describe('Claude', () => {
             expect(claude).toBeDefined();
         });
 
-        it('should load API key from plugin settings', () => {
-            // API key is private, but we can verify it's used in streamRequest
-            expect(mockPlugin.settings.apiKey).toBe('test-api-key');
+        it('should load API key from SettingsService', () => {
+            // API key is private, but we can verify it's available via SettingsService
+            expect(mockSettingsService.getApiKeyForProvider(AIProvider.Claude)).toBe('test-claude-key');
         });
 
         it('should resolve all required services', () => {
             const prompt = Resolve<IPrompt>(Services.IPrompt);
             const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+            const settingsService = Resolve<SettingsService>(Services.SettingsService);
             const streaming = Resolve<StreamingService>(Services.StreamingService);
             const functions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
 
             expect(prompt).toBe(mockPrompt);
             expect(plugin).toBe(mockPlugin);
+            expect(settingsService).toBe(mockSettingsService);
             expect(streaming).toBe(mockStreamingService);
             expect(functions).toBe(mockFunctionDefinitions);
         });
@@ -487,7 +507,7 @@ describe('Claude', () => {
                 expect.any(Function), // parseStreamChunk
                 abortSignal,
                 expect.objectContaining({
-                    'x-api-key': 'test-api-key',
+                    'x-api-key': 'test-claude-key',
                     'anthropic-version': '2023-06-01',
                     'anthropic-dangerous-direct-browser-access': 'true'
                 })

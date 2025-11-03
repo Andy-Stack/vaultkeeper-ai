@@ -2,21 +2,39 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { ClaudeConversationNamingService } from '../../AIClasses/Claude/ClaudeConversationNamingService';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import { AIProviderModel } from '../../Enums/ApiProvider';
+import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { Role } from '../../Enums/Role';
+import { SettingsService } from '../../Services/SettingsService';
 
 describe('ClaudeConversationNamingService', () => {
     let service: ClaudeConversationNamingService;
     let mockPlugin: any;
+    let mockSettingsService: any;
     let fetchMock: any;
 
     beforeEach(() => {
-        mockPlugin = {
-            settings: {
-                apiKey: 'test-claude-key'
-            }
-        };
+        mockPlugin = {};
         RegisterSingleton(Services.AIAgentPlugin, mockPlugin);
+
+        // Mock SettingsService
+        mockSettingsService = {
+            settings: {
+                model: AIProviderModel.ClaudeSonnet_4_5,
+                apiKeys: {
+                    claude: 'test-claude-key',
+                    openai: 'test-openai-key',
+                    gemini: 'test-gemini-key'
+                }
+            },
+            getApiKeyForProvider: vi.fn((provider: AIProvider) => {
+                if (provider === AIProvider.Claude) return 'test-claude-key';
+                if (provider === AIProvider.OpenAI) return 'test-openai-key';
+                if (provider === AIProvider.Gemini) return 'test-gemini-key';
+                return '';
+            }),
+            getApiKeyForCurrentModel: vi.fn(() => 'test-claude-key')
+        };
+        RegisterSingleton(Services.SettingsService, mockSettingsService);
 
         // Mock global fetch
         fetchMock = vi.fn();

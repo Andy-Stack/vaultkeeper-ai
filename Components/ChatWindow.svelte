@@ -12,11 +12,13 @@
 	import type { WorkSpaceService } from "Services/WorkSpaceService";
   import type { ChatService } from "Services/ChatService";
   import type { ConversationFileSystemService } from "Services/ConversationFileSystemService";
+	import type { SettingsService } from "Services/SettingsService";
 
-  let plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
-  let chatService: ChatService = Resolve<ChatService>(Services.ChatService);
-  let workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
-  let conversationService: ConversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
+  const plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+  const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
+  const chatService: ChatService = Resolve<ChatService>(Services.ChatService);
+  const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
+  const conversationService: ConversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
 
   let chatContainer: HTMLDivElement;
   let chatArea: ChatArea;
@@ -68,7 +70,7 @@
   }
 
   function handleNoApiKey(): boolean {
-    hasNoApiKey = plugin.settings.apiKey.trim() == "";
+    hasNoApiKey = settingsService.getApiKeyForCurrentModel().trim() == "";
     if (hasNoApiKey) {
       openPluginSettings(plugin);
     }

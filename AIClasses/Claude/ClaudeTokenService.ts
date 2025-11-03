@@ -1,9 +1,10 @@
 import type { ITokenService } from "AIClasses/ITokenService";
 import Anthropic from '@anthropic-ai/sdk'
-import type AIAgentPlugin from "main";
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
 import { Role } from "Enums/Role";
+import { AIProvider } from "Enums/ApiProvider";
+import type { SettingsService } from "Services/SettingsService";
 
 export class ClaudeTokenService implements ITokenService {
 
@@ -11,12 +12,12 @@ export class ClaudeTokenService implements ITokenService {
     private model: string;
 
     public constructor() {
-        const plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+        const settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.ai = new Anthropic({
-            apiKey: plugin.settings.apiKey,
+            apiKey: settingsService.getApiKeyForProvider(AIProvider.Claude),
             dangerouslyAllowBrowser: true
         });
-        this.model = plugin.settings.model;
+        this.model = settingsService.settings.model;
     }
 
     public async countTokens(input: string): Promise<number> {

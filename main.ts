@@ -1,7 +1,7 @@
 import { WorkspaceLeaf, Plugin } from 'obsidian';
-import { AIProviderModel } from './Enums/ApiProvider';
+import { AIProvider, AIProviderModel } from './Enums/ApiProvider';
 import { MainView, VIEW_TYPE_MAIN } from 'Views/MainView';
-import { RegisterAiProvider, RegisterDependencies } from 'Services/ServiceRegistration';
+import { RegisterAiProvider, RegisterDependencies, RegisterPlugin } from 'Services/ServiceRegistration';
 import { AIAgentSettingTab } from 'AIAgentSettingTab';
 import { Services } from 'Services/Services';
 import type { StatusBarService } from 'Services/StatusBarService';
@@ -9,29 +9,9 @@ import { DeregisterAllServices, Resolve } from 'Services/DependencyService';
 import type { VaultService } from 'Services/VaultService';
 import { Path } from 'Enums/Path';
 import { Copy } from 'Enums/Copy';
-
-interface IAIAgentSettings {
-	firstTimeStart: boolean;
-
-	model: string;
-	apiKey: string;
-	exclusions: string[];
-
-	userInstruction: string;
-}
-
-const DEFAULT_SETTINGS: IAIAgentSettings = {
-	firstTimeStart: true,
-
-	model: AIProviderModel.ClaudeSonnet_4_5,
-	apiKey: "",
-	exclusions: [],
-
-	userInstruction: ""
-}
+import type { SettingsService } from 'Services/SettingsService';
 
 export default class AIAgentPlugin extends Plugin {
-	public settings: IAIAgentSettings;
 	
 	public async onload() {
 		// KaTeX CSS is bundled with the plugin to comply with CSP
@@ -39,9 +19,8 @@ export default class AIAgentPlugin extends Plugin {
 		// Plugin styles
 		require('./styles.css');
 
-		await this.loadSettings();
-
-		RegisterDependencies(this);
+		await RegisterPlugin(this);
+		RegisterDependencies();
 
 		this.registerView(
 			VIEW_TYPE_MAIN,
@@ -60,7 +39,7 @@ export default class AIAgentPlugin extends Plugin {
 			this.activateView();
 		});
 
-		this.addSettingTab(new AIAgentSettingTab(this.app, this));
+		this.addSettingTab(new AIAgentSettingTab());
 
 		this.app.workspace.onLayoutReady(async () => {
 			await this.setup(this);
@@ -90,22 +69,14 @@ export default class AIAgentPlugin extends Plugin {
 		}
 	}
 
-	public async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-		RegisterAiProvider(this);
-	}
-
 	// create example user instruction (on first launch only)
 	private async setup(plugin: AIAgentPlugin) {
-		if (!plugin.settings.firstTimeStart) {
+		const settingsService = Resolve<SettingsService>(Services.SettingsService);
+		if (!settingsService.settings.firstTimeStart) {
 			return;
 		}
-		plugin.settings.firstTimeStart = false;
-		await plugin.saveSettings();
+		settingsService.settings.firstTimeStart = false;
+		await settingsService.saveSettings();
 
 		const vaultService: VaultService = Resolve<VaultService>(Services.VaultService);
 

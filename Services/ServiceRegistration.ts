@@ -34,9 +34,16 @@ import { UserInputService } from "./UserInputService";
 import { SearchStateStore } from "Stores/SearchStateStore";
 import { InputService } from "./InputService";
 import { HTMLService } from "./HTMLService";
+import { SettingsService, type IAIAgentSettings } from "./SettingsService";
 
-export function RegisterDependencies(plugin: AIAgentPlugin) {
+export async function RegisterPlugin(plugin: AIAgentPlugin) {
     RegisterSingleton<AIAgentPlugin>(Services.AIAgentPlugin, plugin);
+    RegisterSingleton<SettingsService>(Services.SettingsService, new SettingsService(await plugin.loadData()));
+} 
+
+export function RegisterDependencies() {
+    const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+
     RegisterSingleton<FileManager>(Services.FileManager, plugin.app.fileManager);
     RegisterSingleton<StatusBarService>(Services.StatusBarService, new StatusBarService());
     RegisterSingleton<HTMLService>(Services.HTMLService, new HTMLService());
@@ -60,11 +67,12 @@ export function RegisterDependencies(plugin: AIAgentPlugin) {
     RegisterTransient<InputService>(Services.InputService, () => new InputService());
 
     RegisterModals(plugin.app);
-    RegisterAiProvider(plugin);
+    RegisterAiProvider();
 }
 
-export function RegisterAiProvider(plugin: AIAgentPlugin) {
-    const provider = AIProvider.fromModel(plugin.settings.model);
+export function RegisterAiProvider() {
+    const settingsService = Resolve<SettingsService>(Services.SettingsService);
+    const provider = AIProvider.fromModel(settingsService.settings.model);
 
     if (provider == AIProvider.Claude) {
         RegisterSingleton<IAIClass>(Services.IAIClass, new Claude());

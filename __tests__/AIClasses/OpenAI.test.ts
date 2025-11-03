@@ -9,12 +9,15 @@ import { AIFunctionDefinitions } from '../../AIClasses/FunctionDefinitions/AIFun
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
+import { SettingsService } from '../../Services/SettingsService';
+import { AIProvider } from '../../Enums/ApiProvider';
 
 describe('OpenAI', () => {
     let openai: OpenAI;
     let mockStreamingService: any;
     let mockPrompt: any;
     let mockPlugin: any;
+    let mockSettingsService: any;
     let mockFunctionDefinitions: any;
 
     beforeEach(() => {
@@ -26,13 +29,28 @@ describe('OpenAI', () => {
         RegisterSingleton(Services.IPrompt, mockPrompt);
 
         // Mock AIAgentPlugin
-        mockPlugin = {
-            settings: {
-                apiKey: 'test-openai-key',
-                model: 'gpt-4o'
-            }
-        };
+        mockPlugin = {};
         RegisterSingleton(Services.AIAgentPlugin, mockPlugin);
+
+        // Mock SettingsService
+        mockSettingsService = {
+            settings: {
+                model: 'gpt-4o',
+                apiKeys: {
+                    claude: 'test-claude-key',
+                    openai: 'test-openai-key',
+                    gemini: 'test-gemini-key'
+                }
+            },
+            getApiKeyForProvider: vi.fn((provider: AIProvider) => {
+                if (provider === AIProvider.Claude) return 'test-claude-key';
+                if (provider === AIProvider.OpenAI) return 'test-openai-key';
+                if (provider === AIProvider.Gemini) return 'test-gemini-key';
+                return '';
+            }),
+            getApiKeyForCurrentModel: vi.fn(() => 'test-openai-key')
+        };
+        RegisterSingleton(Services.SettingsService, mockSettingsService);
 
         // Mock StreamingService
         mockStreamingService = {
@@ -70,18 +88,20 @@ describe('OpenAI', () => {
             expect(openai).toBeDefined();
         });
 
-        it('should load API key from plugin settings', () => {
-            expect(mockPlugin.settings.apiKey).toBe('test-openai-key');
+        it('should load API key from SettingsService', () => {
+            expect(mockSettingsService.getApiKeyForProvider(AIProvider.OpenAI)).toBe('test-openai-key');
         });
 
         it('should resolve all required services', () => {
             const prompt = Resolve<IPrompt>(Services.IPrompt);
             const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+            const settingsService = Resolve<SettingsService>(Services.SettingsService);
             const streaming = Resolve<StreamingService>(Services.StreamingService);
             const functions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
 
             expect(prompt).toBe(mockPrompt);
             expect(plugin).toBe(mockPlugin);
+            expect(settingsService).toBe(mockSettingsService);
             expect(streaming).toBe(mockStreamingService);
             expect(functions).toBe(mockFunctionDefinitions);
         });

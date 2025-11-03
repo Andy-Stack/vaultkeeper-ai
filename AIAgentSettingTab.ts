@@ -1,17 +1,24 @@
-import { AIProviderModel } from "Enums/ApiProvider";
+import { AIProvider, AIProviderModel } from "Enums/ApiProvider";
 import { Copy } from "Enums/Copy";
 import { Path } from "Enums/Path";
 import { Selector } from "Enums/Selector";
 import type AIAgentPlugin from "main";
 import { PluginSettingTab, Setting, App, setIcon, setTooltip } from "obsidian";
+import { Resolve } from "Services/DependencyService";
+import type { SettingsService } from "Services/SettingsService";
+import { Services } from "Services/Services";
+import { RegisterAiProvider } from "Services/ServiceRegistration";
 
 export class AIAgentSettingTab extends PluginSettingTab {
-	plugin: AIAgentPlugin;
-	apiKeySetting: Setting | null = null;
+	private readonly settingsService: SettingsService;
 
-	constructor(app: App, plugin: AIAgentPlugin) {
-		super(app, plugin);
-		this.plugin = plugin;
+	private apiKeySetting: Setting | null = null;
+	private apiKeyInputEl: HTMLInputElement | null = null;
+
+	constructor() {
+		const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+		super(plugin.app, plugin);
+		this.settingsService = Resolve<SettingsService>(Services.SettingsService);
 	}
 
 	display(): void {
@@ -107,39 +114,43 @@ export class AIAgentSettingTab extends PluginSettingTab {
 					text: Copy.GeminiPro_2_5
 				});
 
-				dropdown.setValue(this.plugin.settings.model);
+				dropdown.setValue(this.settingsService.settings.model);
 				dropdown.onChange(async (value) => {
-					this.plugin.settings.model = value;
-					await this.plugin.saveSettings();
+					this.settingsService.settings.model = value;
+					await this.settingsService.saveSettings(() => RegisterAiProvider());
+					if (this.apiKeyInputEl) {
+						this.apiKeyInputEl.value = this.settingsService.getApiKeyForCurrentModel();
+						this.highlightApiKey();
+					}
 				});
 			});
 
 		/* API Key Setting */
-		let apiKeyInputEl: HTMLInputElement;
 		this.apiKeySetting = new Setting(containerEl)
 			.setName("API Key")
 			.setDesc("Enter your API key here.")
 			.addText(text => {
 				text.setPlaceholder("Enter your API key")
-					.setValue(this.plugin.settings.apiKey)
+					.setValue(this.settingsService.getApiKeyForCurrentModel())
 					.onChange(async (value) => {
-						this.plugin.settings.apiKey = value;
-						await this.plugin.saveSettings();
+						const provider = AIProvider.fromModel(this.settingsService.settings.model);
+						this.settingsService.setApiKeyForProvider(provider, value);
+						await this.settingsService.saveSettings();
 						this.highlightApiKey();
 					});
 				text.inputEl.type = "password";
-				apiKeyInputEl = text.inputEl;
+				this.apiKeyInputEl = text.inputEl;
 			})
 			.addExtraButton(button => {
 				button
 					.setTooltip("Show API Key")
 					.onClick(() => {
-						if (apiKeyInputEl.type === "password") {
-							apiKeyInputEl.type = "text";
+						if (this.apiKeyInputEl && this.apiKeyInputEl.type === "password") {
+							this.apiKeyInputEl.type = "text";
 							setIcon(button.extraSettingsEl, "eye-off");
 							setTooltip(button.extraSettingsEl, "Hide API Key");
-						} else {
-							apiKeyInputEl.type = "password";
+						} else if (this.apiKeyInputEl) {
+							this.apiKeyInputEl.type = "password";
 							setIcon(button.extraSettingsEl, "eye");
 							setTooltip(button.extraSettingsEl, "Show API Key");
 						}
@@ -154,10 +165,10 @@ export class AIAgentSettingTab extends PluginSettingTab {
 			.setDesc("Set which directories and files the AI should ignore. Enter one path per line - supports glob patterns like folder/**, *.md")
 			.addTextArea(text => {
 				text.setPlaceholder(`Examples:\n\n${Path.Conversations}/*.json\nPrivateNotes/**`)
-					.setValue(this.plugin.settings.exclusions.join("\n"))
+					.setValue(this.settingsService.settings.exclusions.join("\n"))
 					.onChange(async (value) => {
-						this.plugin.settings.exclusions = value.split("\n").map(line => line.trim()).filter(line => line.length > 0);
-						await this.plugin.saveSettings();
+						this.settingsService.settings.exclusions = value.split("\n").map(line => line.trim()).filter(line => line.length > 0);
+						await this.settingsService.saveSettings();
 					});
 				text.inputEl.classList.add(Selector.AIExclusionsInput);
 			});
@@ -165,7 +176,8 @@ export class AIAgentSettingTab extends PluginSettingTab {
 
 	private highlightApiKey(): void {
 		if (this.apiKeySetting) {
-			if (this.plugin.settings.apiKey.trim() === "") {
+			const currentApiKey = this.settingsService.getApiKeyForCurrentModel();
+			if (currentApiKey.trim() === "") {
 				this.apiKeySetting.settingEl.removeClass(Selector.ApiKeySettingOk);
 				this.apiKeySetting.settingEl.addClass(Selector.ApiKeySettingError);
 			} else {

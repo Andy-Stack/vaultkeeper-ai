@@ -268,6 +268,7 @@
 
   <button
     id="user-instruction-button"
+    class:instruction-active={userInstructionActive}
     bind:this={userInstructionButton}
     on:click={() => { userInstructionActive = !userInstructionActive; searchStateStore.resetSearch() }}
     aria-label="User Instruction">
@@ -344,6 +345,10 @@
     border-radius: var(--button-radius);
     align-self: end;
     transition-duration: 0.5s;
+  }
+
+  #user-instruction-button.instruction-active {
+    box-shadow: 0px 0px 4px 1px var(--color-accent);
   }
 
   #input-field {

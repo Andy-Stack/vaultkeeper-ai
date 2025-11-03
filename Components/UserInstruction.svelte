@@ -5,12 +5,14 @@
 	import { basename } from "path";
 	import { Resolve } from "Services/DependencyService";
 	import type { FileSystemService } from "Services/FileSystemService";
+	import type { SettingsService } from "Services/SettingsService";
 	import { Services } from "Services/Services";
 	import { tick } from "svelte";
 
     export let userInstructionActive: boolean;
 
     const plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+    const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
     const fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
 
     let height = 0;
@@ -78,8 +80,8 @@
 
     function handleInstructionSelect() {
         if (selectedInstruction < userInstructions.length) {
-            plugin.settings.userInstruction = userInstructions[selectedInstruction];
-            plugin.saveSettings();
+            settingsService.settings.userInstruction = userInstructions[selectedInstruction];
+            settingsService.saveSettings();
         }
         userInstructionActive = false;
     }
@@ -141,7 +143,7 @@
             </div>
         {/if}
         {#if userInstructions.length > 0}
-            {@const currentInstruction = plugin.settings.userInstruction}
+            {@const currentInstruction = settingsService.settings.userInstruction}
             <div 
                 id="user-instruction-results-inner-container" 
                 bind:this={instructionsContentDiv}
@@ -209,6 +211,7 @@
 
     .user-instruction-container.current-instruction {
         box-shadow: inset 0px 0px 4px 1px var(--color-accent);
+        border-color: var(--color-accent);
     }
 
     .user-instruction-title {

@@ -4,7 +4,7 @@ import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIClasses/IPrompt";
 import { StreamingService, type IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
-import { AIProviderURL } from "Enums/ApiProvider";
+import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
 import type AIAgentPlugin from "main";
@@ -12,6 +12,7 @@ import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunc
 import { isValidJson } from "Helpers/Helpers";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
+import type { SettingsService } from "Services/SettingsService";
 
 export class Claude implements IAIClass {
 
@@ -20,6 +21,7 @@ export class Claude implements IAIClass {
     private readonly apiKey: string;
     private readonly aiPrompt: IPrompt = Resolve<IPrompt>(Services.IPrompt);
     private readonly plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+    private readonly settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
     private readonly streamingService: StreamingService = Resolve<StreamingService>(Services.StreamingService);
     private readonly aiFunctionDefinitions: AIFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
 
@@ -28,7 +30,7 @@ export class Claude implements IAIClass {
     private accumulatedFunctionId: string | null = null;
 
     public constructor() {
-        this.apiKey = this.plugin.settings.apiKey;
+        this.apiKey = this.settingsService.getApiKeyForProvider(AIProvider.Claude);
     }
 
     public async* streamRequest(
@@ -50,7 +52,7 @@ export class Claude implements IAIClass {
         );
 
         const requestBody = {
-            model: this.plugin.settings.model,
+            model: this.settingsService.settings.model,
             max_tokens: 16384,
             system: systemPrompt,
             messages: messages,

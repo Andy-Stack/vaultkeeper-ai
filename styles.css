@@ -132,14 +132,14 @@ body {
   --checkbox-checked-bg: var(--interactive-accent);
   --footnote-border: var(--background-modifier-border);
   --alt-interactive-accent: color-mix(
-    in hsl shorter hue,
+    in hsl longer hue,
     var(--interactive-accent) 50%,
-    hsl(180, 100%, 50%) 50%
+    hsl(130, 100%, 50%) 50%
   );
   --alt-interactive-accent-hover: color-mix(
-    in hsl shorter hue,
+    in hsl longer hue,
     var(--interactive-accent-hover) 50%,
-    hsl(180 100% 50%) 50%
+    hsl(130 100% 50%) 50%
   );
 }
 

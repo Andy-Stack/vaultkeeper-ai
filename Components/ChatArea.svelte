@@ -228,6 +228,7 @@
 
   .message-container {
     display: flex;
+    text-align: left;
     margin: 0;
   }
   
@@ -270,6 +271,7 @@
   }
 
   .streaming-content {
+    justify-content: left;
     min-height: 1em; /* Ensure the element exists for binding */
   }
 

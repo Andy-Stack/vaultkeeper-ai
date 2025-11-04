@@ -2,8 +2,6 @@ import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
 import { copyFileSync, mkdirSync, existsSync, readdirSync, statSync } from "fs";
-import path, { join } from "path";
-
 import esbuildSvelte from 'esbuild-svelte';
 import { sveltePreprocess } from 'svelte-preprocess';
 

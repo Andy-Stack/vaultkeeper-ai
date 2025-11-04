@@ -159,7 +159,7 @@
                         style:background-color={selectedInstruction === index ? "var(--interactive-accent)" : "transparent"}
                         bind:this={instructionsElements[index]}
                         on:mouseenter={() => selectedInstruction = index}
-                        on:click={handleInstructionSelect}
+                        on:mousedown={handleInstructionSelect}
                         on:keydown={() => {}}>
                         <div class="user-instruction-title">{basename(userInstruction)}</div>
                         {#if userInstruction !== basename(userInstruction)}
@@ -235,5 +235,9 @@
 
     #user-instruction-link:hover {
         text-decoration: underline;
+    }
+
+    :global(.is-mobile) .user-instruction-container[aria-selected="true"] {
+        background-color: transparent !important;
     }
 </style>

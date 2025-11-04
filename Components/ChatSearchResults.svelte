@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { basename } from 'path-browserify';
-	import type { ISearchState, SearchStateStore } from 'Stores/SearchStateStore';
-    import { tick } from 'svelte';
-    import { setIcon } from 'obsidian';
-    import { SearchTrigger } from 'Enums/SearchTrigger';
-    import { Resolve } from 'Services/DependencyService';
-    import { Services } from 'Services/Services';
+	import { basename } from "path-browserify";
+	import type { ISearchState, SearchStateStore } from "Stores/SearchStateStore";
+    import { tick } from "svelte";
+    import { setIcon } from "obsidian";
+    import { SearchTrigger } from "Enums/SearchTrigger";
+    import { Resolve } from "Services/DependencyService";
+    import { Services } from "Services/Services";
 
     export let searchState: ISearchState;
     export let onResultAccept: () => void;
@@ -35,13 +35,13 @@
     function getIconName(trigger: SearchTrigger | null): string {
         switch(trigger) {
             case SearchTrigger.File:
-                return 'file-text';
+                return "file-text";
             case SearchTrigger.Folder:
-                return 'folder';
+                return "folder";
             case SearchTrigger.Tag:
-                return 'tag';
+                return "tag";
             default:
-                return 'file-text';
+                return "file-text";
         }
     }
 
@@ -58,9 +58,9 @@
             const selectedIndex = searchState.results.indexOf(searchState.selectedResult);
             if (selectedIndex !== -1 && resultElements[selectedIndex]) {
                 resultElements[selectedIndex]?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'nearest'
+                    behavior: "smooth",
+                    block: "nearest",
+                    inline: "nearest"
                 });
             }
         });
@@ -78,7 +78,7 @@
                 bind:this={resultElements[index]}
                 style:background-color={searchResult === searchState.selectedResult ? "var(--interactive-accent)" : "transparent"}
                 on:mouseenter={() => searchStateStore.setSelectedResult(index)}
-                on:click={onResultAccept}
+                on:mousedown={onResultAccept}
                 on:keydown={() => {}}>
                 <div class="input-search-result-icon" bind:this={iconElements[index]}></div>
                 <div class="input-search-result-title">{basename(searchResult)}</div>
@@ -144,5 +144,9 @@
         pointer-events: none;
         font-size: var(--font-smallest);
         color: var(--text-muted);
+    }
+
+    :global(.is-mobile) .input-search-result-container[aria-selected="true"] {
+        background-color: transparent !important;
     }
 </style>

@@ -347,6 +347,10 @@
     transition-duration: 0.5s;
   }
 
+  :global(.is-mobile) #user-instruction-button {
+    max-height: 2rem;
+  }
+
   #user-instruction-button.instruction-active {
     box-shadow: 0px 0px 4px 1px var(--color-accent);
   }
@@ -372,6 +376,10 @@
     transition: border-color 0.5s ease-out;
     word-wrap: break-word;
     white-space: pre-wrap;
+  }
+
+  :global(.is-mobile) #input-field {
+    align-content: end;
   }
 
   #input-field:focus {
@@ -416,6 +424,10 @@
     transition-duration: 0.5s;
   }
 
+  :global(.is-mobile) #edit-mode-button {
+    max-height: 2rem;
+  }
+
   #submit-button {
     grid-row: 3;
     grid-column: 8;
@@ -425,6 +437,10 @@
     align-self: end;
     transition-duration: 0.5s;
     background-color: var(--interactive-accent);
+  }
+
+  :global(.is-mobile) #submit-button {
+    max-height: 2rem;
   }
 
   #submit-button:not(:disabled):hover {

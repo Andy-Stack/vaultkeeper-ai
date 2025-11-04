@@ -142,11 +142,19 @@
     border-radius: var(--radius-m);
   }
 
+  :global(.is-mobile) .top-bar-content {
+    grid-template-columns: var(--size-4-1) auto auto auto auto auto auto 1fr 0fr auto var(--size-4-1);
+  }
+
   .top-bar-divider {
     width: var(--divider-width);
     height: auto;
     background: var(--background-modifier-border-hover);
     margin: var(--size-4-2) var(--size-4-3);
+  }
+
+  :global(.is-mobile) .top-bar-divider {
+    margin: 0;
   }
 
   #new-conversation-button {

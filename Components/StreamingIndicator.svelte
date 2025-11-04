@@ -26,6 +26,7 @@
   /* From Uiverse.io by Li-Deheng */ 
   .loader {
     display: flex;
+    margin-top: 0.75rem;
     justify-content: left;
     align-items: center;
     --color: var(--interactive-accent);

@@ -72,50 +72,46 @@
 	<div class="help-modal-body">
 		<div class="help-modal-topics">
 			<div
-				id="help-modal-topic-frame-1"
 				class="help-modal-topic-frame"
 				class:hidden={selectedTopic !== 1}
 				on:click={() => selectTopic(1)}
 				on:keydown={(e) => e.key === 'Enter' && selectTopic(1)}
 				role="button"
 				tabindex="0">
-				<div id="help-modal-topic-item-1" class="help-modal-topic-item">
+				<div class="help-modal-topic-item">
 					{topics[1].title}
 				</div>
 			</div>
 			<div
-				id="help-modal-topic-frame-2"
 				class="help-modal-topic-frame"
 				class:hidden={selectedTopic !== 2}
 				on:click={() => selectTopic(2)}
 				on:keydown={(e) => e.key === 'Enter' && selectTopic(2)}
 				role="button"
 				tabindex="0">
-				<div id="help-modal-topic-item-2" class="help-modal-topic-item">
+				<div class="help-modal-topic-item">
 					{topics[2].title}
 				</div>
 			</div>
 			<div
-				id="help-modal-topic-frame-3"
 				class="help-modal-topic-frame"
 				class:hidden={selectedTopic !== 3}
 				on:click={() => selectTopic(3)}
 				on:keydown={(e) => e.key === 'Enter' && selectTopic(3)}
 				role="button"
 				tabindex="0">
-				<div id="help-modal-topic-item-3" class="help-modal-topic-item">
+				<div class="help-modal-topic-item">
 					{topics[3].title}
 				</div>
 			</div>
 			<div
-				id="help-modal-topic-frame-4"
 				class="help-modal-topic-frame"
 				class:hidden={selectedTopic !== 4}
 				on:click={() => selectTopic(4)}
 				on:keydown={(e) => e.key === 'Enter' && selectTopic(4)}
 				role="button"
 				tabindex="0">
-				<div id="help-modal-topic-item-4" class="help-modal-topic-item">
+				<div class="help-modal-topic-item">
 					{topics[4].title}
 				</div>
 			</div>
@@ -208,19 +204,19 @@
 		background-color: transparent;
 	}
 
-	#help-modal-topic-frame-1 {
+	.help-modal-topic-frame:nth-child(1) {
 		grid-row: 1;
 	}
 
-	#help-modal-topic-frame-2 {
+	.help-modal-topic-frame:nth-child(2) {
 		grid-row: 3;
 	}
 
-	#help-modal-topic-frame-3 {
+	.help-modal-topic-frame:nth-child(3) {
 		grid-row: 5;
 	}
 
-	#help-modal-topic-frame-4 {
+	.help-modal-topic-frame:nth-child(4) {
 		grid-row: 7;
 	}
 
@@ -243,19 +239,19 @@
 		color: var(--text-normal);
 	}
 
-	#help-modal-topic-item-1 {
+	.help-modal-topic-item:nth-child(1) {
 		grid-row: 1;
 	}
 
-	#help-modal-topic-item-2 {
+	.help-modal-topic-item:nth-child(2) {
 		grid-row: 3;
 	}
 
-	#help-modal-topic-item-3 {
+	.help-modal-topic-item:nth-child(3) {
 		grid-row: 5;
 	}
 
-	#help-modal-topic-item-4 {
+	.help-modal-topic-item:nth-child(4) {
 		grid-row: 7;
 	}
 

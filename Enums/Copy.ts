@@ -1,11 +1,12 @@
 export enum Copy {
+    // General Copy
     ApiRequestAborted = "Request has been cancelled",
     UserInstructions1 = "You can create custom ",
     UserInstructions2 = "instructions",
     UserInstructions3 = " that the AI will follow.",
     NoUserInstruction = "No custom instructions",
 
-    // Model display names
+    // Model Display Names
     ClaudeSonnet_4_5 = "Claude Sonnet 4.5",
     ClaudeSonnet_4 = "Claude Sonnet 4",
     ClaudeSonnet_3_7 = "Claude Sonnet 3.7",
@@ -16,7 +17,7 @@ export enum Copy {
     GeminiFlash_2_5_Lite = "Gemini 2.5 Flash Lite",
     GeminiFlash_2_5 = "Gemini 2.5 Flash",
     GeminiPro_2_5 = "Gemini 2.5 Pro",
-    
+
     GPT_5 = "GPT-5",
     GPT_5_Mini = "GPT-5 Mini",
     GPT_5_Nano = "GPT-5 Nano",
@@ -27,6 +28,35 @@ export enum Copy {
     GPT_4_1_Mini = "GPT-4.1 Mini",
     GPT_4_1_Nano = "GPT-4.1 Nano",
 
+    // AI Provider Groups
+    ProviderClaude = "Claude",
+    ProviderOpenAI = "OpenAI",
+    ProviderGemini = "Gemini",
+
+    // Settings Copy
+    SettingModel = "Model",
+    SettingApiKey = "API Key",
+    SettingFileExclusions = "File Exclusions",
+    SettingContext = "Context",
+    SettingSearchResultsLimit = "Search Results Limit",
+    SettingSnippetSizeLimit = "Snippet Size Limit",
+
+    // Settings Descriptions
+    SettingModelDesc = "Select the AI model to use.",
+    SettingApiKeyDesc = "Enter your API key here.",
+    SettingFileExclusionsDesc = "Set which directories and files the AI should ignore. Enter one path per line - supports glob patterns like folder/**, *.md",
+    SettingSearchResultsLimitDesc = "Set the maximum number of results provided to the AI when it searches through files in your vault. Higher values use more tokens.",
+    SettingSnippetSizeLimitDesc = "Set the character limit of search previews provided to the AI when it searches through files in your vault. Higher values use more tokens.",
+
+    // Settings Placeholders
+    PlaceholderEnterApiKey = "Enter your API key",
+    PlaceholderFileExclusions = "Examples:\n\nprivate/**\n*.secret.md\njournal/personal/**\n.obsidian/workspace.json",
+
+    // Settings Tooltips
+    TooltipShowApiKey = "Show API Key",
+    TooltipHideApiKey = "Hide API Key",
+
+    // Help Modal Copy
     HelpModalAboutTitle = "About",
     HelpModalAboutContent = "",
 
@@ -39,6 +69,7 @@ export enum Copy {
     HelpModalPrivacyTitle = "Privacy",
     HelpModalPrivacyContent = "",
 
+    // Example Content
     EXAMPLE_USER_INSTRUCTION = `### TL;DR
 
 **My recommendation would be to write down in your own words what you would like the AI to specialise in and how you would like it to manage your vault. Then ask an AI to write a system prompt using the latest best practices from your description.**

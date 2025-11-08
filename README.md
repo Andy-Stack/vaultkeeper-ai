@@ -1,94 +1,321 @@
-# Obsidian Sample Plugin
+# AI Agent for Obsidian
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+> A powerful AI assistant plugin that brings Claude, Gemini, and OpenAI directly into your Obsidian vault with intelligent note management capabilities.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-purple.svg)](https://obsidian.md)
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+## Features
 
-## First time developing plugins?
+- **Multi-Provider AI Support** - Switch seamlessly between Claude (Anthropic), Gemini (Google), and OpenAI models
+- **Two Operating Modes**
+  - 🔍 **Read-Only Mode**: AI can search, read, and list your notes safely
+  - ✏️ **Agent Mode**: AI can create, edit, delete, and move notes (when you need it)
+- **Smart Reference System** - Mention tags (`#`), files (`@`), and folders (`/`) with autocomplete
+- **Custom System Instructions** - Create and switch between personalized AI behaviors
+- **Conversation Management** - Persistent chat history with automatic conversation naming
+- **Privacy Controls** - Exclude sensitive files and directories from AI access with glob patterns
+- **Token Tracking** - Real-time monitoring of API usage with configurable search limits
+- **Mobile Compatible** - Full functionality on mobile devices
+- **Streaming Responses** - See AI responses as they're generated
+- **Local & Private** - API keys stored locally, no data sent to third parties
 
-Quick starting guide for new plugin devs:
+## Installation
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+### Manual Installation
 
-## Releasing new releases
+1. Download the latest release from the [Releases page](https://github.com/yourusername/ai-agent-plugin/releases)
+2. Extract the files into your vault's `.obsidian/plugins/ai-agent-plugin/` directory
+3. Reload Obsidian
+4. Enable "AI Agent" in Settings → Community Plugins
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+### From Community Plugins
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+1. Open Obsidian Settings
+2. Navigate to Community Plugins
+3. Search for "AI Agent"
+4. Click Install, then Enable
 
-## Adding your plugin to the community plugin list
+## Quick Start
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+1. **Add API Keys**: Open plugin settings and add at least one API key:
+   - **Claude**: Get from [Anthropic Console](https://console.anthropic.com/)
+   - **Gemini**: Get from [Google AI Studio](https://aistudio.google.com/)
+   - **OpenAI**: Get from [OpenAI Platform](https://platform.openai.com/)
 
-## How to use
+2. **Select a Model**: Choose your preferred AI model from the dropdown
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+3. **Start Chatting**: Click the AI Agent icon in the left sidebar to open the chat window
 
-## Manually installing the plugin
+4. **Try the Reference System**:
+   - Type `@` to reference files
+   - Type `#` to reference tags
+   - Type `/` to reference folders
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+## Usage
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
+### Switching Between Models
 
-## Funding URL
+The plugin supports multiple AI models:
 
-You can include funding URLs where people who use your plugin can financially support it.
+**Claude (Anthropic)**
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
+- Claude Sonnet 4.5 ⚡ (Recommended)
+- Claude Opus 4.1, 4
+- Claude Haiku 4.5
 
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+**Gemini (Google)**
+
+- Gemini 2.5 Flash, Pro
+- Gemini 2.5 Flash Lite
+
+**OpenAI**
+
+- GPT-5 (Pro, Mini, Nano)
+- GPT-4o, GPT-4.1
+
+Switch models anytime in the settings without losing your conversation context.
+
+### Read-Only vs Agent Mode
+
+**Read-Only Mode (Default)** 🔍
+
+- AI can search vault content
+- AI can read file contents
+- AI can list directory structures
+- **Cannot** modify your notes
+
+Toggle to **Agent Mode** ✏️ when you need the AI to:
+
+- Create new notes
+- Edit existing content
+- Delete files
+- Move/rename files
+
+The mode toggle is clearly visible in the chat input area with visual indicators.
+
+### Reference System
+
+Quickly provide context to the AI using the reference system:
+
+**Files** - Type `@` followed by the filename:
+
+```
+@meeting-notes What action items did we discuss?
 ```
 
-If you have multiple URLs, you can also do:
+**Tags** - Type `#` to reference tagged notes:
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
+```
+#project/alpha Show me all notes about project alpha
 ```
 
-## API Documentation
+**Folders** - Type `/` to reference entire directories:
 
-See https://github.com/obsidianmd/obsidian-api
+```
+/Daily Notes Summarize this week's daily notes
+```
+
+The autocomplete dropdown appears automatically and supports:
+
+- Fuzzy search (type partial names)
+- Keyboard navigation (↑↓ arrows)
+- Visual preview with full paths
+
+### Custom System Instructions
+
+Customize the AI's behavior with system instructions:
+
+1. Create markdown files in `AI Agent/User Instructions/`
+2. Click the "User Instructions" button in the chat
+3. Select your custom instruction set
+4. The AI will follow these instructions for all interactions
+
+Example use cases:
+
+- Research assistant mode
+- Creative writing partner
+- Code documentation helper
+- Academic note-taker
+
+See `EXAMPLE_INSTRUCTIONS.md` in your vault for a template.
+
+### Conversation History
+
+- All conversations are automatically saved
+- Click the history icon to browse past conversations
+- Conversations are automatically named by AI based on content
+- Stored in `AI Agent/Conversations/` as JSON files
+
+## Configuration
+
+### Settings
+
+**API Keys**
+
+- Add keys for Claude, Gemini, or OpenAI
+- Keys stored locally in your vault
+- Never transmitted except to respective AI providers
+
+**Model Selection**
+
+- Choose from 15+ supported models
+- Switch anytime without conversation loss
+
+**Search Configuration**
+
+Fine-tune the balance between token usage and agent performance:
+
+- **Search Results Limit** (default: 15)
+  - Controls the maximum number of files returned in search operations
+  - Lower values (5-10): Conserve tokens and reduce API costs
+  - Higher values (20-30): Provide more context, potentially improving agent performance
+  - Adjust based on your vault size and typical query complexity
+
+- **Snippet Size Limit** (default: 300 characters)
+  - Sets the character limit for contextual snippets in search results
+  - Lower values (100-200): Minimize token usage for cost-conscious users
+  - Higher values (400-600): Give the AI more context to understand file relevance
+  - Balance between providing enough context and controlling costs
+
+**File Exclusions**
+
+Protect your privacy by preventing the AI from accessing sensitive files or directories:
+
+- **How it works**: Exclusions apply to all AI operations in both read-only and agent modes
+- **Use glob patterns** to specify what to exclude:
+  - `private/**` - Exclude entire directories (all files in "private" folder)
+  - `*.secret.md` - Exclude specific file patterns (any file ending in .secret.md)
+  - `journal/personal/**` - Exclude nested directories
+  - `.obsidian/workspace.json` - Exclude specific configuration files
+
+- **Common use cases**:
+  - Personal journals or diary entries
+  - Financial information
+  - Work-related confidential notes
+  - API keys or credentials stored in notes
+  - Draft content you don't want analyzed
+
+- **Privacy guarantee**: Excluded files are completely inaccessible to the AI - they won't appear in searches, can't be read, and can't be modified even in agent mode
+
+**Custom Instructions Path**
+
+- Customize where instruction files are stored
+- Default: `AI Agent/User Instructions/`
+
+## Development
+
+### Prerequisites
+
+- Node.js v16 or higher
+- npm
+- Obsidian (for testing)
+
+### Setup
+
+```bash
+# Clone into your vault's plugin directory
+cd /path/to/vault/.obsidian/plugins/
+git clone https://github.com/yourusername/ai-agent-plugin.git
+cd ai-agent-plugin
+
+# Install dependencies
+npm install
+
+# Build for development (with watch mode)
+npm run dev
+
+# Build for production
+npm run build
+```
+
+### Testing
+
+The project uses Vitest for testing:
+
+```bash
+# Run all tests
+npm test
+```
+
+## Contributing
+
+This plugin was originally created for a friend and is now being shared with the broader Obsidian community. As a solo developer with limited time, I'm currently **not accepting contributions** (pull requests are disabled).
+
+#### Why?
+
+I simply don't have the capacity to review, test, and maintain community contributions at this time. I want to be respectful of contributors' time and effort, and accepting PRs that I can't properly review wouldn't be fair to anyone.
+
+#### What if I find a bug or have a suggestion?
+
+Please feel free to open an issue! While I can't guarantee quick responses, I do want to know if something isn't working correctly or if there are ideas that would benefit the community.
+
+#### Can I fork this project?
+
+Absolutely! This project is open source under MIT, so you're welcome to fork it and make your own modifications.
+
+#### Will this change?
+
+If there's significant community interest and usage, I may revisit this decision and open up contributions in the future. For now, I'm focused on keeping the plugin stable and functional for its current users.
+
+---
+
+Thank you for understanding! 🙏
+
+## Privacy & Security
+
+- **API Keys**: Stored locally in your Obsidian vault, never transmitted to third parties
+- **No External Servers**: Direct communication with AI providers only
+- **File Exclusions**: Protect sensitive information by excluding individual files or entire directories from AI access using glob patterns - excluded files are completely inaccessible in both read-only and agent modes
+- **Local Storage**: All conversations and settings stored in your vault
+- **Open Source**: Fully auditable codebase
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+- **Issues**: Report bugs or request features on [GitHub Issues](https://github.com/yourusername/ai-agent-plugin/issues)
+
+## Acknowledgments
+
+This plugin is built on the shoulders of many excellent projects:
+
+**Platform & AI**
+- Built for [Obsidian](https://obsidian.md)
+- Powered by [Anthropic Claude](https://anthropic.com), [Google Gemini](https://deepmind.google/technologies/gemini/), and [OpenAI](https://openai.com)
+- Official SDKs: [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript), [@google/genai](https://github.com/google/generative-ai-js)
+
+**UI Framework**
+- [Svelte](https://svelte.dev) - Reactive UI components
+- [svelte-exmarkdown](https://github.com/ssssota/svelte-exmarkdown) - Markdown rendering for Svelte
+
+**Markdown Processing**
+- [unified](https://unifiedjs.com/) - Markdown processing pipeline
+- [remark](https://github.com/remarkjs/remark) - Markdown parser and compiler
+- [rehype](https://github.com/rehypejs/rehype) - HTML processor
+- [remark-gfm](https://github.com/remarkjs/remark-gfm) - GitHub Flavored Markdown support
+- [remark-wiki-link](https://github.com/landakram/remark-wiki-link) - Obsidian-style wiki links
+
+**Rich Content Rendering**
+- [KaTeX](https://katex.org/) - Mathematical notation rendering
+- [Shiki](https://shiki.style/) - Modern syntax highlighting
+- [rehype-sanitize](https://github.com/rehypejs/rehype-sanitize) - HTML sanitization for security
+
+**Utilities**
+- [fuzzysort](https://github.com/farzher/fuzzysort) - Fuzzy search for reference autocomplete
+- [gpt-tokenizer](https://github.com/niieani/gpt-tokenizer) - Token counting and usage tracking
+
+**Development**
+- [Vitest](https://vitest.dev/) - Fast unit testing framework
+- [esbuild](https://esbuild.github.io/) - Lightning-fast bundler
+- [TypeScript](https://www.typescriptlang.org/) - Type-safe development
+
+**CSS**
+- [Loader](https://uiverse.io/Li-Deheng/bright-firefox-37) - Animated streaming indicator adapted from original by Li-Deheng
+- [Gradient Border](https://codepen.io/alphardex/pen/vYEYGzp) - Animated border adapted from original by alphardex
+
+---
+
+**Note**: This plugin requires API keys from AI providers. API usage is billed by the respective providers according to their pricing. Monitor your usage through the token counter and provider dashboards.

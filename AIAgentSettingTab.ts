@@ -1,9 +1,8 @@
 import { AIProvider, AIProviderModel } from "Enums/ApiProvider";
 import { Copy } from "Enums/Copy";
-import { Path } from "Enums/Path";
 import { Selector } from "Enums/Selector";
 import type AIAgentPlugin from "main";
-import { PluginSettingTab, Setting, App, setIcon, setTooltip } from "obsidian";
+import { PluginSettingTab, Setting, setIcon, setTooltip } from "obsidian";
 import { Resolve } from "Services/DependencyService";
 import type { SettingsService } from "Services/SettingsService";
 import { Services } from "Services/Services";
@@ -28,13 +27,13 @@ export class AIAgentSettingTab extends PluginSettingTab {
 
 		/* Model Selection Setting */
 		new Setting(containerEl)
-			.setName("Model")
-			.setDesc("Select the AI model to use.")
+			.setName(Copy.SettingModel)
+			.setDesc(Copy.SettingModelDesc)
 			.addDropdown((dropdown) => {
 				const select = dropdown.selectEl;
 
 				// Claude models group
-				const claudeGroup = select.createEl("optgroup", { attr: { label: "Claude" } });
+				const claudeGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderClaude } });
 				claudeGroup.createEl("option", {
 					value: AIProviderModel.ClaudeSonnet_4_5,
 					text: Copy.ClaudeSonnet_4_5
@@ -61,7 +60,7 @@ export class AIAgentSettingTab extends PluginSettingTab {
 				});
 
 				// OpenAI models group
-				const openaiGroup = select.createEl("optgroup", { attr: { label: "OpenAI" } });
+				const openaiGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderOpenAI } });
 				openaiGroup.createEl("option", {
 					value: AIProviderModel.GPT_5,
 					text: Copy.GPT_5
@@ -100,7 +99,7 @@ export class AIAgentSettingTab extends PluginSettingTab {
 				});
 
 				// Gemini models group
-				const geminiGroup = select.createEl("optgroup", { attr: { label: "Gemini" } });
+				const geminiGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderGemini } });
 				geminiGroup.createEl("option", {
 					value: AIProviderModel.GeminiFlash_2_5_Lite,
 					text: Copy.GeminiFlash_2_5_Lite
@@ -127,10 +126,10 @@ export class AIAgentSettingTab extends PluginSettingTab {
 
 		/* API Key Setting */
 		this.apiKeySetting = new Setting(containerEl)
-			.setName("API Key")
-			.setDesc("Enter your API key here.")
+			.setName(Copy.SettingApiKey)
+			.setDesc(Copy.SettingApiKeyDesc)
 			.addText(text => {
-				text.setPlaceholder("Enter your API key")
+				text.setPlaceholder(Copy.PlaceholderEnterApiKey)
 					.setValue(this.settingsService.getApiKeyForCurrentModel())
 					.onChange(async (value) => {
 						const provider = AIProvider.fromModel(this.settingsService.settings.model);
@@ -143,16 +142,16 @@ export class AIAgentSettingTab extends PluginSettingTab {
 			})
 			.addExtraButton(button => {
 				button
-					.setTooltip("Show API Key")
+					.setTooltip(Copy.TooltipShowApiKey)
 					.onClick(() => {
 						if (this.apiKeyInputEl && this.apiKeyInputEl.type === "password") {
 							this.apiKeyInputEl.type = "text";
 							setIcon(button.extraSettingsEl, "eye-off");
-							setTooltip(button.extraSettingsEl, "Hide API Key");
+							setTooltip(button.extraSettingsEl, Copy.TooltipHideApiKey);
 						} else if (this.apiKeyInputEl) {
 							this.apiKeyInputEl.type = "password";
 							setIcon(button.extraSettingsEl, "eye");
-							setTooltip(button.extraSettingsEl, "Show API Key");
+							setTooltip(button.extraSettingsEl, Copy.TooltipShowApiKey);
 						}
 					});
 				setIcon(button.extraSettingsEl, "eye");
@@ -161,10 +160,10 @@ export class AIAgentSettingTab extends PluginSettingTab {
 
 		/* Exclusions Setting */
 		new Setting(containerEl)
-			.setName("File Exclusions")
-			.setDesc("Set which directories and files the AI should ignore. Enter one path per line - supports glob patterns like folder/**, *.md")
+			.setName(Copy.SettingFileExclusions)
+			.setDesc(Copy.SettingFileExclusionsDesc)
 			.addTextArea(text => {
-				text.setPlaceholder(`Examples:\n\n${Path.Conversations}/*.json\nPrivateNotes/**`)
+				text.setPlaceholder(Copy.PlaceholderFileExclusions)
 					.setValue(this.settingsService.settings.exclusions.join("\n"))
 					.onChange(async (value) => {
 						this.settingsService.settings.exclusions = value.split("\n").map(line => line.trim()).filter(line => line.length > 0);
@@ -176,12 +175,12 @@ export class AIAgentSettingTab extends PluginSettingTab {
 		/* Context Header */
 		new Setting(containerEl)
 			.setHeading()
-			.setName("Context");
+			.setName(Copy.SettingContext);
 
 		/* Search Results Limit Setting */
 		new Setting(containerEl)
-			.setName("Search Results Limit")
-			.setDesc("Set the maximum number of results provided to the AI when it searches through files in your vault. Higher values use more tokens.")
+			.setName(Copy.SettingSearchResultsLimit)
+			.setDesc(Copy.SettingSearchResultsLimitDesc)
 			.addSlider(slider => {
 				slider
 					.setLimits(5, 40, 1)
@@ -195,8 +194,8 @@ export class AIAgentSettingTab extends PluginSettingTab {
 
 		/* Snippet Size Limit Setting */
 		new Setting(containerEl)
-			.setName("Snippet Size Limit")
-			.setDesc("Set the character limit of search previews provided to the AI when it searches through files in your vault. Higher values use more tokens.")
+			.setName(Copy.SettingSnippetSizeLimit)
+			.setDesc(Copy.SettingSnippetSizeLimitDesc)
 			.addSlider(slider => {
 				slider
 					.setLimits(50, 1000, 10)

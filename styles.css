@@ -44,6 +44,7 @@
   height: 110px;
   font: var(--font-monospace);
   font-size: 0.9em;
+  resize: none;
 }
 
 /* ============================== */

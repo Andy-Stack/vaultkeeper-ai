@@ -27,16 +27,16 @@ export enum Copy {
     GPT_4_1_Mini = "GPT-4.1 Mini",
     GPT_4_1_Nano = "GPT-4.1 Nano",
 
-    HelpModalAboutTitle = "",
+    HelpModalAboutTitle = "About",
     HelpModalAboutContent = "",
 
-    HelpModalGuideTitle = "",
+    HelpModalGuideTitle = "Plugin Guide",
     HelpModalGuideContent = "",
 
-    HelpModalTroubleshootTitle = "",
+    HelpModalTroubleshootTitle = "Troubleshooting",
     HelpModalTroubleshootContent = "",
 
-    HelpModalPrivacyTitle = "",
+    HelpModalPrivacyTitle = "Privacy",
     HelpModalPrivacyContent = "",
 
     EXAMPLE_USER_INSTRUCTION = `### TL;DR

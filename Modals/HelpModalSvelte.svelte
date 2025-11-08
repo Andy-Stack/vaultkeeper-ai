@@ -224,12 +224,17 @@
 		grid-row: 1 / 9;
 		grid-column: 1;
 		display: grid;
+		max-width: 150px;
 		grid-template-rows: auto var(--size-4-3) auto var(--size-4-3) auto var(--size-4-3) auto 1fr;
 		grid-template-columns: auto var(--size-4-2) 1fr;
 	}
 
 	.help-modal-topic-item {
 		grid-column: 1;
+		display: inline-block;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		padding: var(--size-4-1) var(--size-4-3);
 		cursor: pointer;
 		transition: color 0.15s ease-in-out;

@@ -1,4 +1,4 @@
-import type AIAgentPlugin from "main";
+import type VaultAIPlugin from "main";
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
 import { SystemInstruction } from "./SystemPrompt";
@@ -12,12 +12,12 @@ export interface IPrompt {
 
 export class AIPrompt implements IPrompt {
 
-  private readonly plugin: AIAgentPlugin;
+  private readonly plugin: VaultAIPlugin;
   private readonly settingsService: SettingsService;
   private readonly fileSystemService: FileSystemService;
 
   public constructor() {
-    this.plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+    this.plugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
     this.settingsService = Resolve<SettingsService>(Services.SettingsService);
     this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
   }

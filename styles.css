@@ -2,11 +2,11 @@
 /* Main View Customization */
 /* ============================== */
 
-.workspace-leaf-content[data-type="ai-agent-main-view"] {
+.workspace-leaf-content[data-type="vault-ai-main-view"] {
   background-color: var(--background-secondary);
 }
 
-.workspace-leaf-content[data-type="ai-agent-main-view"] .view-content {
+.workspace-leaf-content[data-type="vault-ai-main-view"] .view-content {
   align-self: center;
   max-width: 1000px;
   background-color: var(--background-secondary);

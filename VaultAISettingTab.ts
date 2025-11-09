@@ -1,21 +1,21 @@
 import { AIProvider, AIProviderModel } from "Enums/ApiProvider";
 import { Copy } from "Enums/Copy";
 import { Selector } from "Enums/Selector";
-import type AIAgentPlugin from "main";
+import type VaultAIPlugin from "main";
 import { PluginSettingTab, Setting, setIcon, setTooltip } from "obsidian";
 import { Resolve } from "Services/DependencyService";
 import type { SettingsService } from "Services/SettingsService";
 import { Services } from "Services/Services";
 import { RegisterAiProvider } from "Services/ServiceRegistration";
 
-export class AIAgentSettingTab extends PluginSettingTab {
+export class VaultAISettingTab extends PluginSettingTab {
 	private readonly settingsService: SettingsService;
 
 	private apiKeySetting: Setting | null = null;
 	private apiKeyInputEl: HTMLInputElement | null = null;
 
 	constructor() {
-		const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+		const plugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
 		super(plugin.app, plugin);
 		this.settingsService = Resolve<SettingsService>(Services.SettingsService);
 	}

@@ -1,18 +1,18 @@
-import type AIAgentPlugin from "main";
+import type VaultAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import { Selector } from "Enums/Selector";
 
 export class StatusBarService {
 
-    private readonly plugin: AIAgentPlugin;
+    private readonly plugin: VaultAIPlugin;
     private statusBarItem: HTMLElement | null;
     private currentInputTokens: number = 0;
     private currentOutputTokens: number = 0;
     private animationFrame: number | null = null;
 
     public constructor() {
-        this.plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+        this.plugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
     }
 
     public setStatusBarMessage(message: string) {

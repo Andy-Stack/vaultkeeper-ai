@@ -1,9 +1,9 @@
-import type AIAgentPlugin from "main";
+import type VaultAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import { AIProvider, AIProviderModel } from "Enums/ApiProvider";
 
-const DEFAULT_SETTINGS: IAIAgentSettings = {
+const DEFAULT_SETTINGS: IVaultAISettings = {
     firstTimeStart: true,
     userInstruction: "",
 
@@ -19,7 +19,7 @@ const DEFAULT_SETTINGS: IAIAgentSettings = {
     snippetSizeLimit: 300
 }
 
-export interface IAIAgentSettings {
+export interface IVaultAISettings {
     firstTimeStart: boolean;
     userInstruction: string;
 
@@ -37,12 +37,12 @@ export interface IAIAgentSettings {
 
 export class SettingsService {
 
-    private readonly plugin: AIAgentPlugin;
+    private readonly plugin: VaultAIPlugin;
     
-    public readonly settings: IAIAgentSettings;
+    public readonly settings: IVaultAISettings;
 
-    public constructor(loadedSettings: Partial<IAIAgentSettings>) {
-        this.plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+    public constructor(loadedSettings: Partial<IVaultAISettings>) {
+        this.plugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
     }
 

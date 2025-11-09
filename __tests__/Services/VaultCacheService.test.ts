@@ -135,7 +135,7 @@ describe('VaultCacheService - Integration Tests', () => {
 		};
 
 		// Register dependencies
-		RegisterSingleton(Services.AIAgentPlugin, mockPlugin as any);
+		RegisterSingleton(Services.VaultAIPlugin, mockPlugin as any);
 		RegisterSingleton(Services.VaultService, mockVaultService as any);
 
 		// Create fresh instance
@@ -191,7 +191,7 @@ describe('VaultCacheService - Integration Tests', () => {
 				listDirectoryContents: mockListVaultContents
 			};
 
-			RegisterSingleton(Services.AIAgentPlugin, mockPluginWithMetadata as any);
+			RegisterSingleton(Services.VaultAIPlugin, mockPluginWithMetadata as any);
 			RegisterSingleton(Services.VaultService, mockVaultServiceWithContent as any);
 
 			// Create new instance to trigger initialization
@@ -607,7 +607,7 @@ describe('VaultCacheService - Integration Tests', () => {
 	});
 
 	describe('folder event handling - exclusions', () => {
-		it('should not cache excluded folders on create (AI Agent directory)', () => {
+		it('should not cache excluded folders on create (Vault AI directory)', () => {
 			// Mock VaultService to return null for excluded paths
 			const mockVaultServiceWithExclusions = {
 				registerFileEvents: vi.fn((handler: any) => {
@@ -616,22 +616,22 @@ describe('VaultCacheService - Integration Tests', () => {
 				listDirectoryContents: vi.fn(async () => []),
 				getAbstractFileByPath: vi.fn((path: string) => {
 					// Return null for excluded paths (simulating VaultService exclusion logic)
-					if (path.startsWith('AI Agent')) {
+					if (path.startsWith('Vault AI')) {
 						return null;
 					}
 					// Return a folder for allowed paths
 					return createMockFolder(path);
 				}),
 				isExclusion: vi.fn((path: string) => {
-					// Return true for AI Agent directory paths
-					return path.startsWith('AI Agent');
+					// Return true for Vault AI directory paths
+					return path.startsWith('Vault AI');
 				})
 			};
 
 			RegisterSingleton(Services.VaultService, mockVaultServiceWithExclusions as any);
 			vaultCacheService = new VaultCacheService();
 
-			const excludedFolder = createMockFolder('AI Agent/subfolder');
+			const excludedFolder = createMockFolder('Vault AI/subfolder');
 			fileEventHandler(FileEvent.Create, excludedFolder, { oldPath: '' });
 
 			const results = vaultCacheService.matchFolder('subfolder');
@@ -670,7 +670,7 @@ describe('VaultCacheService - Integration Tests', () => {
 				})
 			};
 
-			RegisterSingleton(Services.AIAgentPlugin, mockPluginWithExclusions as any);
+			RegisterSingleton(Services.VaultAIPlugin, mockPluginWithExclusions as any);
 			RegisterSingleton(Services.VaultService, mockVaultServiceWithExclusions as any);
 			vaultCacheService = new VaultCacheService();
 
@@ -693,15 +693,15 @@ describe('VaultCacheService - Integration Tests', () => {
 					if (path === 'public-folder') {
 						return createMockFolder(path);
 					}
-					// Second call (AI Agent/renamed) should fail
-					if (path.startsWith('AI Agent')) {
+					// Second call (Vault AI/renamed) should fail
+					if (path.startsWith('Vault AI')) {
 						return null;
 					}
 					return createMockFolder(path);
 				}),
 				isExclusion: vi.fn((path: string) => {
-					// Return true for AI Agent paths
-					return path.startsWith('AI Agent');
+					// Return true for Vault AI paths
+					return path.startsWith('Vault AI');
 				})
 			};
 
@@ -717,7 +717,7 @@ describe('VaultCacheService - Integration Tests', () => {
 			expect(results.length).toBeGreaterThan(0);
 
 			// Rename to excluded path
-			const renamedFolder = createMockFolder('AI Agent/renamed');
+			const renamedFolder = createMockFolder('Vault AI/renamed');
 			fileEventHandler(FileEvent.Rename, renamedFolder, { oldPath: folder.path });
 
 			// Should not be in cache under new name
@@ -737,14 +737,14 @@ describe('VaultCacheService - Integration Tests', () => {
 				}),
 				listDirectoryContents: vi.fn(async () => []),
 				getAbstractFileByPath: vi.fn((path: string) => {
-					if (path.startsWith('AI Agent')) {
+					if (path.startsWith('Vault AI')) {
 						return null;
 					}
 					return createMockFolder(path);
 				}),
 				isExclusion: vi.fn((path: string) => {
-					// Return true for AI Agent paths, false for others
-					return path.startsWith('AI Agent');
+					// Return true for Vault AI paths, false for others
+					return path.startsWith('Vault AI');
 				})
 			};
 

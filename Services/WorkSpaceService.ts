@@ -1,10 +1,10 @@
-import type AIAgentPlugin from "main";
+import type VaultAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type { TFile, WorkspaceLeaf } from "obsidian";
 
 export class WorkSpaceService {
-    private readonly plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+    private readonly plugin: VaultAIPlugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
 
     public async openNote(noteName: string) {
         const file: TFile | null = this.plugin.app.metadataCache.getFirstLinkpathDest(noteName, "");

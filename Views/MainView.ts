@@ -6,7 +6,7 @@ import type { StatusBarService } from 'Services/StatusBarService';
 import { Resolve } from 'Services/DependencyService';
 import { Services } from 'Services/Services';
 
-export const VIEW_TYPE_MAIN = 'ai-agent-main-view';
+export const VIEW_TYPE_MAIN = 'vault-ai-main-view';
 
 export class MainView extends ItemView {
 
@@ -24,7 +24,7 @@ export class MainView extends ItemView {
   }
 
   getDisplayText() {
-    return "AI Agent";
+    return "Vault AI";
   }
 
   getIcon(): string {

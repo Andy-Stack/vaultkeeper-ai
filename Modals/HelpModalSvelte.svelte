@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Copy } from "Enums/Copy";
 	import { Selector } from "Enums/Selector";
-	import type AIAgentPlugin from "main";
+	import type VaultAIPlugin from "main";
 	import { DropdownComponent, setIcon } from "obsidian";
 	import { Resolve } from "Services/DependencyService";
 	import { Services } from "Services/Services";
@@ -13,7 +13,7 @@
 	export let onClose: () => void;
 	export let initialTopic: number = 1;
 
-	const plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+	const plugin: VaultAIPlugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
 	const streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
 	const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
 

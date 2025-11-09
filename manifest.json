@@ -1,6 +1,6 @@
 {
-	"id": "ai_agent",
-	"name": "AI Agent",
+	"id": "vault-ai",
+	"name": "Vault AI",
 	"version": "1.0.0",
 	"minAppVersion": "1.9.14",
 	"description": "AI powered agent assistant.",

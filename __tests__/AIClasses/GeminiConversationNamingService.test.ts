@@ -14,7 +14,7 @@ describe('GeminiConversationNamingService', () => {
 
     beforeEach(() => {
         mockPlugin = {};
-        RegisterSingleton(Services.AIAgentPlugin, mockPlugin);
+        RegisterSingleton(Services.VaultAIPlugin, mockPlugin);
 
         // Mock SettingsService
         mockSettingsService = {

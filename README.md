@@ -1,4 +1,4 @@
-# AI Agent for Obsidian
+# Vault AI for Obsidian
 
 > A powerful AI assistant plugin that brings Claude, Gemini, and OpenAI directly into your Obsidian vault with intelligent note management capabilities.
 
@@ -28,16 +28,16 @@
 
 ### Manual Installation
 
-1. Download the latest release from the [Releases page](https://github.com/andy-stack/ai-agent-plugin/releases)
-2. Extract the files into your vault's `.obsidian/plugins/ai-agent-plugin/` directory
+1. Download the latest release from the [Releases page](https://github.com/andy-stack/vault-ai/releases)
+2. Extract the files into your vault's `.obsidian/plugins/vault-ai/` directory
 3. Reload Obsidian
-4. Enable "AI Agent" in Settings → Community Plugins
+4. Enable "Vault AI" in Settings → Community Plugins
 
 ### From Community Plugins
 
 1. Open Obsidian Settings
 2. Navigate to Community Plugins
-3. Search for "AI Agent"
+3. Search for "Vault AI"
 4. Click Install, then Enable
 
 ## Quick Start
@@ -49,7 +49,7 @@
 
 2. **Select a Model**: Choose your preferred AI model from the dropdown
 
-3. **Start Chatting**: Click the AI Agent icon in the left sidebar to open the chat window
+3. **Start Chatting**: Click the Vault AI icon in the left sidebar to open the chat window
 
 4. **Try the Reference System**:
    - Type `@` to reference files
@@ -130,7 +130,7 @@ The autocomplete dropdown appears automatically and supports:
 
 Customize the AI's behavior with system instructions:
 
-1. Create markdown files in `AI Agent/User Instructions/`
+1. Create markdown files in `Vault AI/User Instructions/`
 2. Click the "User Instructions" button in the chat
 3. Select your custom instruction set
 4. The AI will follow these instructions for all interactions
@@ -149,7 +149,7 @@ See `EXAMPLE_INSTRUCTIONS.md` in your vault for a template.
 - All conversations are automatically saved
 - Click the history icon to browse past conversations
 - Conversations are automatically named by AI based on content
-- Stored in `AI Agent/Conversations/` as JSON files
+- Stored in `Vault AI/Conversations/` as JSON files
 
 ## Configuration
 
@@ -205,7 +205,7 @@ Protect your privacy by preventing the AI from accessing sensitive files or dire
 **Custom Instructions Path**
 
 - Customize where instruction files are stored
-- Default: `AI Agent/User Instructions/`
+- Default: `Vault AI/User Instructions/`
 
 ## Development
 
@@ -220,8 +220,8 @@ Protect your privacy by preventing the AI from accessing sensitive files or dire
 ```bash
 # Clone into your vault's plugin directory
 cd /path/to/vault/.obsidian/plugins/
-git clone https://github.com/andy-stack/ai-agent-plugin.git
-cd ai-agent-plugin
+git clone https://github.com/andy-stack/vault-ai.git
+cd vault-ai
 
 # Install dependencies
 npm install
@@ -280,7 +280,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- **Issues**: Report bugs or request features on [GitHub Issues](https://github.com/andy-stack/ai-agent-plugin/issues)
+- **Issues**: Report bugs or request features on [GitHub Issues](https://github.com/andy-stack/vault-ai/issues)
 
 ## Acknowledgments
 

@@ -1,5 +1,5 @@
 {
-	"name": "ai_agent",
+	"name": "vault-ai",
 	"version": "1.0.0",
 	"description": "AI powered agent assistant.",
 	"main": "main.js",

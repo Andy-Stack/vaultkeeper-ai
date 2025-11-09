@@ -1,5 +1,5 @@
 import { AIProvider } from "Enums/ApiProvider";
-import type AIAgentPlugin from "main";
+import type VaultAIPlugin from "main";
 import { RegisterSingleton, RegisterTransient, Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import { AIPrompt, type IPrompt } from "AIClasses/IPrompt";
@@ -37,13 +37,13 @@ import { HTMLService } from "./HTMLService";
 import { SettingsService } from "./SettingsService";
 import { HelpModal } from "Modals/HelpModal";
 
-export async function RegisterPlugin(plugin: AIAgentPlugin) {
-    RegisterSingleton<AIAgentPlugin>(Services.AIAgentPlugin, plugin);
+export async function RegisterPlugin(plugin: VaultAIPlugin) {
+    RegisterSingleton<VaultAIPlugin>(Services.VaultAIPlugin, plugin);
     RegisterSingleton<SettingsService>(Services.SettingsService, new SettingsService(await plugin.loadData()));
 } 
 
 export function RegisterDependencies() {
-    const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+    const plugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
 
     RegisterSingleton<FileManager>(Services.FileManager, plugin.app.fileManager);
     RegisterSingleton<StatusBarService>(Services.StatusBarService, new StatusBarService());

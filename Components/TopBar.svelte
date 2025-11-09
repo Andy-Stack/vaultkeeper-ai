@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Resolve } from "../Services/DependencyService";
   import { Services } from "../Services/Services";
-  import type AIAgentPlugin from "../main";
+  import type VaultAIPlugin from "../main";
   import { setIcon, type WorkspaceLeaf } from "obsidian";
   import { ConversationFileSystemService } from "../Services/ConversationFileSystemService";
   import { conversationStore } from "../Stores/ConversationStore";
@@ -14,7 +14,7 @@
   export let leaf: WorkspaceLeaf;
   export let onNewConversation: (() => void) | undefined = undefined;
 
-  const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+  const plugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
   const conversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
   const chatService: ChatService = Resolve<ChatService>(Services.ChatService);
 
@@ -115,7 +115,7 @@
       id="settings-button"
       class="top-bar-button clickable-icon"
       on:click={openSettings}
-      aria-label="AI Agent Settings"
+      aria-label="Vault AI Settings"
     ></button>
     <button
       bind:this={helpMenuButton}
@@ -133,7 +133,7 @@
       id="close-button"
       class="top-bar-button clickable-icon"
       on:click={closePlugin}
-      aria-label="Close AI Agent"
+      aria-label="Close Vault AI"
     ></button>
   </div>
 </main>

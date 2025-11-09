@@ -43,7 +43,7 @@ describe('StatusBarService', () => {
         mockPlugin = {
             addStatusBarItem: vi.fn().mockReturnValue(mockStatusBarItem)
         };
-        RegisterSingleton(Services.AIAgentPlugin, mockPlugin);
+        RegisterSingleton(Services.VaultAIPlugin, mockPlugin);
 
         service = new StatusBarService();
     });

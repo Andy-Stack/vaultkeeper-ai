@@ -1,7 +1,7 @@
 import { FileManager, TAbstractFile, TFile, TFolder, type Vault } from "obsidian";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import type AIAgentPlugin from "main";
+import type VaultAIPlugin from "main";
 import { Path } from "Enums/Path";
 import { escapeRegex, randomSample } from "Helpers/Helpers";
 import type { ISearchMatch, ISearchSnippet } from "../Helpers/SearchTypes";
@@ -16,17 +16,17 @@ interface IFileEventArgs {
 /* This service protects the users vault through their exclusions. The plugin root is excluded by default */
 export class VaultService {
 
-    private readonly AGENT_ROOT_DIR = Path.AIAgentDir;
-    private readonly AGENT_ROOT_CONTENTS = `${Path.AIAgentDir}/**`;
+    private readonly AGENT_ROOT_DIR = Path.VaultAIDir;
+    private readonly AGENT_ROOT_CONTENTS = `${Path.VaultAIDir}/**`;
 
     private readonly vault: Vault;
-    private readonly plugin: AIAgentPlugin;
+    private readonly plugin: VaultAIPlugin;
     private readonly settingsService: SettingsService;
     private readonly fileManager: FileManager;
     private readonly sanitiserService: SanitiserService;
 
     public constructor() {
-        this.plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+        this.plugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
         this.vault = this.plugin.app.vault;
         this.settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.fileManager = Resolve<FileManager>(Services.FileManager);

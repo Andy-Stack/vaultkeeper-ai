@@ -80,21 +80,21 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			const conversation = createTestConversation('My Test Note');
 			const path = service.generateConversationPath(conversation);
 
-			expect(path).toBe('AI Agent/Conversations/My Test Note.json');
+			expect(path).toBe('Vault AI/Conversations/My Test Note.json');
 		});
 
 		it('should handle special characters in title', () => {
 			const conversation = createTestConversation('Test: Special & Characters!');
 			const path = service.generateConversationPath(conversation);
 
-			expect(path).toBe('AI Agent/Conversations/Test: Special & Characters!.json');
+			expect(path).toBe('Vault AI/Conversations/Test: Special & Characters!.json');
 		});
 
 		it('should handle empty title', () => {
 			const conversation = createTestConversation('');
 			const path = service.generateConversationPath(conversation);
 
-			expect(path).toBe('AI Agent/Conversations/.json');
+			expect(path).toBe('Vault AI/Conversations/.json');
 		});
 	});
 
@@ -104,9 +104,9 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 			const path = await service.saveConversation(conversation);
 
-			expect(path).toBe('AI Agent/Conversations/Test Save.json');
+			expect(path).toBe('Vault AI/Conversations/Test Save.json');
 			expect(mockFileSystemService.writeObjectToFile).toHaveBeenCalledWith(
-				'AI Agent/Conversations/Test Save.json',
+				'Vault AI/Conversations/Test Save.json',
 				expect.objectContaining({
 					title: 'Test Save',
 					created: '2024-01-01T10:00:00.000Z',
@@ -160,7 +160,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 			await service.saveConversation(conversation);
 
-			expect(service.getCurrentConversationPath()).toBe('AI Agent/Conversations/First Save.json');
+			expect(service.getCurrentConversationPath()).toBe('Vault AI/Conversations/First Save.json');
 		});
 
 		it('should reuse current path on subsequent saves', async () => {
@@ -177,7 +177,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 			// Path should remain the same (uses cached path)
 			expect(firstPath).toBe(secondPath);
-			expect(secondPath).toBe('AI Agent/Conversations/Original Title.json');
+			expect(secondPath).toBe('Vault AI/Conversations/Original Title.json');
 		});
 
 		it('should serialize function calls correctly', async () => {
@@ -263,26 +263,26 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			const conversation = createTestConversation('Test Path');
 			await service.saveConversation(conversation);
 
-			expect(service.getCurrentConversationPath()).toBe('AI Agent/Conversations/Test Path.json');
+			expect(service.getCurrentConversationPath()).toBe('Vault AI/Conversations/Test Path.json');
 		});
 
 		it('should return path after manual setting', () => {
-			service.setCurrentConversationPath('AI Agent/Conversations/Manual.json');
-			expect(service.getCurrentConversationPath()).toBe('AI Agent/Conversations/Manual.json');
+			service.setCurrentConversationPath('Vault AI/Conversations/Manual.json');
+			expect(service.getCurrentConversationPath()).toBe('Vault AI/Conversations/Manual.json');
 		});
 	});
 
 	describe('setCurrentConversationPath', () => {
 		it('should set the current path', () => {
-			service.setCurrentConversationPath('AI Agent/Conversations/Custom.json');
-			expect(service.getCurrentConversationPath()).toBe('AI Agent/Conversations/Custom.json');
+			service.setCurrentConversationPath('Vault AI/Conversations/Custom.json');
+			expect(service.getCurrentConversationPath()).toBe('Vault AI/Conversations/Custom.json');
 		});
 
 		it('should override previous path', () => {
-			service.setCurrentConversationPath('AI Agent/Conversations/First.json');
-			service.setCurrentConversationPath('AI Agent/Conversations/Second.json');
+			service.setCurrentConversationPath('Vault AI/Conversations/First.json');
+			service.setCurrentConversationPath('Vault AI/Conversations/Second.json');
 
-			expect(service.getCurrentConversationPath()).toBe('AI Agent/Conversations/Second.json');
+			expect(service.getCurrentConversationPath()).toBe('Vault AI/Conversations/Second.json');
 		});
 	});
 
@@ -307,7 +307,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			const conv2 = createTestConversation('Second');
 			await service.saveConversation(conv2);
 
-			expect(service.getCurrentConversationPath()).toBe('AI Agent/Conversations/Second.json');
+			expect(service.getCurrentConversationPath()).toBe('Vault AI/Conversations/Second.json');
 		});
 	});
 
@@ -322,7 +322,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 			expect(result).toBe(true);
 			expect(mockFileSystemService.deleteFile).toHaveBeenCalledWith(
-				'AI Agent/Conversations/To Delete.json',
+				'Vault AI/Conversations/To Delete.json',
 				true
 			);
 			expect(service.getCurrentConversationPath()).toBeNull();
@@ -354,8 +354,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 	describe('getAllConversations', () => {
 		it('should load all conversations from directory', async () => {
 			const mockFiles = [
-				createMockFile('AI Agent/Conversations/conv1.json'),
-				createMockFile('AI Agent/Conversations/conv2.json')
+				createMockFile('Vault AI/Conversations/conv1.json'),
+				createMockFile('Vault AI/Conversations/conv2.json')
 			];
 
 			mockFileSystemService.listFilesInDirectory.mockResolvedValue(mockFiles);
@@ -400,14 +400,14 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(conversations[0].title).toBe('Conversation 1');
 			expect(conversations[1].title).toBe('Conversation 2');
 			expect(mockFileSystemService.listFilesInDirectory).toHaveBeenCalledWith(
-				'AI Agent/Conversations',
+				'Vault AI/Conversations',
 				false,
 				true
 			);
 		});
 
 		it('should reconstruct conversation objects correctly', async () => {
-			const mockFiles = [createMockFile('AI Agent/Conversations/test.json')];
+			const mockFiles = [createMockFile('Vault AI/Conversations/test.json')];
 
 			mockFileSystemService.listFilesInDirectory.mockResolvedValue(mockFiles);
 			mockFileSystemService.readObjectFromFile.mockResolvedValue({
@@ -449,8 +449,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 		it('should skip invalid conversation files', async () => {
 			const mockFiles = [
-				createMockFile('AI Agent/Conversations/valid.json'),
-				createMockFile('AI Agent/Conversations/invalid.json')
+				createMockFile('Vault AI/Conversations/valid.json'),
+				createMockFile('Vault AI/Conversations/invalid.json')
 			];
 
 			mockFileSystemService.listFilesInDirectory.mockResolvedValue(mockFiles);
@@ -482,7 +482,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 		});
 
 		it('should reconstruct function call metadata', async () => {
-			const mockFiles = [createMockFile('AI Agent/Conversations/with-functions.json')];
+			const mockFiles = [createMockFile('Vault AI/Conversations/with-functions.json')];
 
 			mockFileSystemService.listFilesInDirectory.mockResolvedValue(mockFiles);
 			mockFileSystemService.readObjectFromFile.mockResolvedValue({
@@ -529,13 +529,13 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
 
 			await service.updateConversationTitle(
-				'AI Agent/Conversations/Old Title.json',
+				'Vault AI/Conversations/Old Title.json',
 				'New Title'
 			);
 
 			expect(mockFileSystemService.moveFile).toHaveBeenCalledWith(
-				'AI Agent/Conversations/Old Title.json',
-				'AI Agent/Conversations/New Title.json',
+				'Vault AI/Conversations/Old Title.json',
+				'Vault AI/Conversations/New Title.json',
 				true
 			);
 		});
@@ -543,21 +543,21 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 		it('should update current path if it matches old path', async () => {
 			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
 
-			service.setCurrentConversationPath('AI Agent/Conversations/Old.json');
+			service.setCurrentConversationPath('Vault AI/Conversations/Old.json');
 
-			await service.updateConversationTitle('AI Agent/Conversations/Old.json', 'New');
+			await service.updateConversationTitle('Vault AI/Conversations/Old.json', 'New');
 
-			expect(service.getCurrentConversationPath()).toBe('AI Agent/Conversations/New.json');
+			expect(service.getCurrentConversationPath()).toBe('Vault AI/Conversations/New.json');
 		});
 
 		it('should not update current path if it doesnt match', async () => {
 			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
 
-			service.setCurrentConversationPath('AI Agent/Conversations/Other.json');
+			service.setCurrentConversationPath('Vault AI/Conversations/Other.json');
 
-			await service.updateConversationTitle('AI Agent/Conversations/Old.json', 'New');
+			await service.updateConversationTitle('Vault AI/Conversations/Old.json', 'New');
 
-			expect(service.getCurrentConversationPath()).toBe('AI Agent/Conversations/Other.json');
+			expect(service.getCurrentConversationPath()).toBe('Vault AI/Conversations/Other.json');
 		});
 
 		it('should throw error when move fails', async () => {
@@ -567,7 +567,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			});
 
 			await expect(
-				service.updateConversationTitle('AI Agent/Conversations/Old.json', 'New')
+				service.updateConversationTitle('Vault AI/Conversations/Old.json', 'New')
 			).rejects.toThrow('Failed to update conversation title: Destination already exists');
 		});
 
@@ -575,13 +575,13 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
 
 			await service.updateConversationTitle(
-				'AI Agent/Conversations/Old.json',
+				'Vault AI/Conversations/Old.json',
 				'New: Title & More!'
 			);
 
 			expect(mockFileSystemService.moveFile).toHaveBeenCalledWith(
-				'AI Agent/Conversations/Old.json',
-				'AI Agent/Conversations/New: Title & More!.json',
+				'Vault AI/Conversations/Old.json',
+				'Vault AI/Conversations/New: Title & More!.json',
 				true
 			);
 		});
@@ -594,7 +594,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			await service.saveConversation(conversation);
 
 			const savedPath = service.getCurrentConversationPath();
-			expect(savedPath).toBe('AI Agent/Conversations/Original.json');
+			expect(savedPath).toBe('Vault AI/Conversations/Original.json');
 
 			// Simulate loading conversations
 			const mockFiles = [createMockFile(savedPath!)];
@@ -610,14 +610,14 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
 			await service.updateConversationTitle(savedPath!, 'Updated Title');
 
-			expect(service.getCurrentConversationPath()).toBe('AI Agent/Conversations/Updated Title.json');
+			expect(service.getCurrentConversationPath()).toBe('Vault AI/Conversations/Updated Title.json');
 		});
 
 		it('should handle save -> delete -> new save workflow', async () => {
 			// First conversation
 			const conv1 = createTestConversation('First');
 			await service.saveConversation(conv1);
-			expect(service.getCurrentConversationPath()).toBe('AI Agent/Conversations/First.json');
+			expect(service.getCurrentConversationPath()).toBe('Vault AI/Conversations/First.json');
 
 			// Delete it
 			mockFileSystemService.deleteFile.mockResolvedValue({ success: true });
@@ -627,7 +627,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			// New conversation
 			const conv2 = createTestConversation('Second');
 			await service.saveConversation(conv2);
-			expect(service.getCurrentConversationPath()).toBe('AI Agent/Conversations/Second.json');
+			expect(service.getCurrentConversationPath()).toBe('Vault AI/Conversations/Second.json');
 		});
 
 		it('should preserve all conversation data through save/load cycle', async () => {
@@ -662,7 +662,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 			// Simulate load
 			mockFileSystemService.listFilesInDirectory.mockResolvedValue([
-				createMockFile('AI Agent/Conversations/Complete Test.json')
+				createMockFile('Vault AI/Conversations/Complete Test.json')
 			]);
 			mockFileSystemService.readObjectFromFile.mockResolvedValue(savedData);
 

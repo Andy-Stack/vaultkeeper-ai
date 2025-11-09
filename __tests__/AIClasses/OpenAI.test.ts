@@ -4,7 +4,7 @@ import { RegisterSingleton, Resolve, DeregisterAllServices } from '../../Service
 import { Services } from '../../Services/Services';
 import { StreamingService } from '../../Services/StreamingService';
 import type { IPrompt } from '../../AIClasses/IPrompt';
-import type AIAgentPlugin from '../../main';
+import type VaultAIPlugin from '../../main';
 import { AIFunctionDefinitions } from '../../AIClasses/FunctionDefinitions/AIFunctionDefinitions';
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
@@ -28,9 +28,9 @@ describe('OpenAI', () => {
         };
         RegisterSingleton(Services.IPrompt, mockPrompt);
 
-        // Mock AIAgentPlugin
+        // Mock VaultAIPlugin
         mockPlugin = {};
-        RegisterSingleton(Services.AIAgentPlugin, mockPlugin);
+        RegisterSingleton(Services.VaultAIPlugin, mockPlugin);
 
         // Mock SettingsService
         mockSettingsService = {
@@ -94,7 +94,7 @@ describe('OpenAI', () => {
 
         it('should resolve all required services', () => {
             const prompt = Resolve<IPrompt>(Services.IPrompt);
-            const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+            const plugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
             const settingsService = Resolve<SettingsService>(Services.SettingsService);
             const streaming = Resolve<StreamingService>(Services.StreamingService);
             const functions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);

@@ -1,4 +1,4 @@
-import type AIAgentPlugin from "main";
+import type VaultAIPlugin from "main";
 import { Modal } from "obsidian";
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
@@ -11,7 +11,7 @@ export class HelpModal extends Modal {
     private component: Record<string, any> | null = null;
 
     public constructor() {
-        const plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+        const plugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
         super(plugin.app);
     }
 

@@ -6,7 +6,7 @@
 	import { tick, onMount } from "svelte";
   import { conversationStore } from "../Stores/ConversationStore";
   import { Conversation } from "Conversations/Conversation";
-	import type AIAgentPlugin from "main";
+	import type VaultAIPlugin from "main";
 	import { openPluginSettings } from "Helpers/Helpers";
 	import { Selector } from "Enums/Selector";
 	import type { WorkSpaceService } from "Services/WorkSpaceService";
@@ -14,7 +14,7 @@
   import type { ConversationFileSystemService } from "Services/ConversationFileSystemService";
 	import type { SettingsService } from "Services/SettingsService";
 
-  const plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+  const plugin: VaultAIPlugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
   const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
   const chatService: ChatService = Resolve<ChatService>(Services.ChatService);
   const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);

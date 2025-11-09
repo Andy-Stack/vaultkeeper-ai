@@ -1,4 +1,4 @@
-import type AIAgentPlugin from "main";
+import type VaultAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type { VaultService } from "./VaultService";
@@ -17,7 +17,7 @@ export class VaultCacheService {
     key: "prepared"
   };
 
-  private readonly plugin: AIAgentPlugin;
+  private readonly plugin: VaultAIPlugin;
   private readonly vaultService: VaultService;
   private readonly metaDataCache: MetadataCache;
 
@@ -33,7 +33,7 @@ export class VaultCacheService {
   private initialised = false;
 
   public constructor() {
-    this.plugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
+    this.plugin = Resolve<VaultAIPlugin>(Services.VaultAIPlugin);
     this.vaultService = Resolve<VaultService>(Services.VaultService);
     this.metaDataCache = this.plugin.app.metadataCache;
     this.registerFileEvents();

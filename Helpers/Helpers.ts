@@ -1,6 +1,6 @@
-import type AIAgentPlugin from "main";
+import type VaultAIPlugin from "main";
 
-export function openPluginSettings(plugin: AIAgentPlugin) {
+export function openPluginSettings(plugin: VaultAIPlugin) {
     // @ts-ignore - accessing internal API
     plugin.app.setting.open();
     // @ts-ignore - accessing internal API

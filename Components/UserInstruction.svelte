@@ -2,6 +2,7 @@
 	import { Copy } from "Enums/Copy";
 	import { Path } from "Enums/Path";
 	import type AIAgentPlugin from "main";
+	import { HelpModal } from "Modals/HelpModal";
 	import { basename } from "path-browserify";
 	import { Resolve } from "Services/DependencyService";
 	import type { FileSystemService } from "Services/FileSystemService";
@@ -123,6 +124,11 @@
             }
         });
     }
+
+    function openHelpModal() {
+        const modal = Resolve<HelpModal>(Services.HelpModal);
+        modal.open(2);
+    }
 </script>
 
 <div id="user-instruction-results" style:height="{height}px" bind:this={resultsContainer}>
@@ -133,7 +139,11 @@
                     <div class="user-instruction-title">
                         <span>
                             {Copy.UserInstructions1}
-                            <span id="user-instruction-link">
+                            <span id="user-instruction-link" 
+                                role="link"
+                                tabindex="-1"
+                                on:click={openHelpModal}
+                                on:keydown={openHelpModal}>
                                 {Copy.UserInstructions2}
                             </span>
                             {Copy.UserInstructions3}

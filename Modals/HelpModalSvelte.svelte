@@ -1,20 +1,25 @@
 <script lang="ts">
 	import { Copy } from "Enums/Copy";
+	import { Selector } from "Enums/Selector";
 	import type AIAgentPlugin from "main";
 	import { DropdownComponent, setIcon } from "obsidian";
 	import { Resolve } from "Services/DependencyService";
 	import { Services } from "Services/Services";
 	import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
+	import type { WorkSpaceService } from "Services/WorkSpaceService";
 	import { fade } from "svelte/transition";
 	import { onMount } from "svelte";
 
 	export let onClose: () => void;
+	export let initialTopic: number = 1;
 
 	const plugin: AIAgentPlugin = Resolve<AIAgentPlugin>(Services.AIAgentPlugin);
 	const streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
+	const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
 
 	let closeButton: HTMLButtonElement;
 	let dropdownContainer: HTMLDivElement;
+	let contentContainer: HTMLDivElement;
 
 	const topics: Record<number, { title: string; content: string }> = {
 		1: {
@@ -35,7 +40,7 @@
 		}
 	};
 
-	let selectedTopic: number = 1;
+	let selectedTopic: number = initialTopic;
 	let title: string = topics[selectedTopic].title;
 	let content: string = streamingMarkdownService.formatText(topics[selectedTopic].content);
 
@@ -51,6 +56,29 @@
 
 	$: if (closeButton) {
 		setIcon(closeButton, 'circle-x');
+	}
+
+	async function handleLinkClick(evt: MouseEvent) {
+		const target = evt.target as HTMLElement;
+
+		// Check for both internal wikilinks and regular markdown links
+		const link = target.closest('a') as HTMLAnchorElement | null;
+		if (!link) {
+			return;
+		}
+
+		const href = link.getAttribute('href');
+		if (!href || !href.startsWith('#/page/')) {
+			return;
+		}
+
+		evt.preventDefault();
+		evt.stopPropagation();
+
+		const encodedPath = href.replace('#/page/', '');
+		const notePath = decodeURIComponent(encodedPath);
+		await workSpaceService.openNote(notePath);
+		onClose();
 	}
 
 	onMount(() => {
@@ -69,6 +97,10 @@
 			dropdown.onChange((value) => {
 				selectTopic(Number(value));
 			});
+		}
+
+		if (contentContainer) {
+			plugin.registerDomEvent(contentContainer, 'click', handleLinkClick);
 		}
 	});
 </script>
@@ -144,39 +176,33 @@
 				Plugin version: {plugin.manifest.version}
 			</div>
 		</div>
-		<div class="help-modal-content">
+		<div class="help-modal-content" bind:this={contentContainer}>
 			{#if content !== ""}
 				<div transition:fade={{ duration: 100 }}>
 					{@html content}
 					{#if selectedTopic === 1}
-						<hr style="margin: 2em 0; border-width: 1px">
-						<h4>Links</h4>
-						<ul style="list-style: none; padding-left: 0;">
-							<li style="margin-bottom: 0.5em;">
-								<a
-									href="https://github.com/yourusername/ai-agent-plugin"
-									style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5em;">
-									<svg 
-										width="1em"
-										height="1em"
-										viewBox="0 0 98 96"
-										xmlns="http://www.w3.org/2000/svg"
-										aria-label="GitHub"
-										style="display: inline-block; vertical-align: middle;">
-										<path fill-rule="evenodd" clip-rule="evenodd" d={Copy.GitHubIconPath} fill="currentColor"/>
-									</svg>
-									<span>View on GitHub</span>
-								</a>
-							</li>
-							<li style="margin-bottom: 0.5em;">
-								<a href="https://buymeacoffee.com/yourusername" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5em;">
-									<span>☕</span>
-									<span>Buy me a coffee</span>
-								</a>
-							</li>
-						</ul>
-						<hr style="margin: 2em 0; border-width: 1px">
-						<p style="font-style: italic; text-align: center;">Created with ❤️ for the Obsidian community</p>
+						<a
+							href="https://github.com/Andy-Stack/ai-agent-plugin"
+							style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5em; margin: 0 0 1em 0;">
+							<svg 
+								width="1em"
+								height="1em"
+								viewBox="0 0 98 96"
+								xmlns="http://www.w3.org/2000/svg"
+								aria-label="GitHub"
+								style="display: inline-block; vertical-align: middle;">
+								<path fill-rule="evenodd" clip-rule="evenodd" d={Copy.GitHubIconPath} fill="currentColor"/>
+							</svg>
+							<span>View on GitHub</span>
+						</a>
+						<br>
+						<span style="display: inline-block; margin-bottom: 1em;">If you enjoy using the plugin or find it useful and want to contribute, you can buy me a Coffee using the link below:</span>
+						<br>
+						<a href="a" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5em;">
+							<span>☕</span>
+							<span>Buy me a coffee</span>
+						</a>
+						<p style="margin-top: 2em; font-style: italic;">Thanks for using the AI Agent plugin!</p>
 					{/if}
 				</div>
 			{/if}
@@ -337,7 +363,7 @@
 		height: 100%;
 		border-radius: var(--radius-m);
 		background-color: var(--alt-background-primary);
-		padding: 0 var(--size-4-2) var(--size-4-2) var(--size-4-6);
+		padding: 0 var(--size-4-2) var(--size-4-2) var(--size-4-3);
 		overflow-y: auto;
 	}
 

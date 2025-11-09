@@ -24,9 +24,15 @@ export class HelpModal extends Modal {
         this.component = mount(HelpModalSvelte, {
             target: contentEl,
             props: {
-                onClose: () => this.close()
+                onClose: () => this.close(),
+                initialTopic: (this as any).initialTopic
             }
         });
+    }
+
+    public open(initialTopic?: number): void {
+        (this as any).initialTopic = initialTopic;
+        super.open();
     }
 
     onClose() {

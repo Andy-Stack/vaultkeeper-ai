@@ -310,7 +310,7 @@ describe('Gemini', () => {
     describe('Message Format Conversion', () => {
         it('should convert roles to User/Model', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Hello'));
+            conversation.contents.push(new ConversationContent(Role.User, 'Hello', 'Hello'));
             conversation.contents.push(new ConversationContent(Role.Assistant, 'Hi there'));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
@@ -416,9 +416,8 @@ describe('Gemini', () => {
 
             const result = (gemini as any).extractContents([invalidContent]);
 
-            // Should result in empty parts (no text, no function call)
-            expect(result).toHaveLength(1);
-            expect(result[0].parts).toEqual([{ text: '' }]);
+            // Should be filtered out since it has no valid parts (no text, invalid function call)
+            expect(result).toHaveLength(0);
             expect(consoleSpy).toHaveBeenCalled();
 
             consoleSpy.mockRestore();

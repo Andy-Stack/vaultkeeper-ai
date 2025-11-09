@@ -90,6 +90,7 @@ export class ChatService {
 					));
 				}
 
+				this.ensureCorrectConversationStructure(conversation);
 				response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
 			}
 		} finally {
@@ -141,6 +142,26 @@ export class ChatService {
 		this.statusBarService.animateTokens(inputTokens, outputTokens);
 	}
 
+	private ensureCorrectConversationStructure(conversation: Conversation) {
+		// Check if the last message is from the assistant to prevent assistant-to-assistant structure
+		// This can happen when the assistant's last message had no function call and the user sends a new request
+		if (conversation.contents.length > 0) {
+			const lastMessage = conversation.contents[conversation.contents.length - 1];
+			if (lastMessage.role === Role.Assistant) {
+				// Insert a hidden "Continue" message to maintain proper conversation structure
+				conversation.contents.push(new ConversationContent(
+					Role.User,
+					"Continue",
+					"Continue",
+					"",
+					new Date(),
+					false,
+					true  // isFunctionCallResponse = true (hides from UI)
+				));
+			}
+		}
+	}
+
 	private async streamRequestResponse(
 		conversation: Conversation, allowDestructiveActions: boolean, callbacks: IChatServiceCallbacks
 	): Promise<{ functionCall: AIFunctionCall | null, shouldContinue: boolean }> {
@@ -175,18 +196,21 @@ export class ChatService {
 			if (chunk.content) {
 				accumulatedContent += chunk.content;
 				conversation.setMostRecentContent(accumulatedContent);
-				callbacks.onThoughtUpdate(null);
+				if (accumulatedContent.trim() !== "") {
+					callbacks.onThoughtUpdate(null);
+				}
 			}
 
 			if (chunk.isComplete) {
-				// No content and no function call - remove empty message
-				if (accumulatedContent.trim() == "" && !capturedFunctionCall) {
-					conversation.contents.pop();
-				}
+				const sanitizedContent = this.sanitizeFunctionCallContent(accumulatedContent, capturedFunctionCall);
 
-				conversation.setMostRecentContent(accumulatedContent);
-				if (capturedFunctionCall) {
-					conversation.setMostRecentFunctionCall(capturedFunctionCall?.toConversationString());
+				if (sanitizedContent.trim() === "" && !capturedFunctionCall) {
+					conversation.contents.pop();
+				} else {
+					conversation.setMostRecentContent(sanitizedContent);
+					if (capturedFunctionCall) {
+						conversation.setMostRecentFunctionCall(capturedFunctionCall?.toConversationString());
+					}
 				}
 			}
 			callbacks.onStreamingUpdate(aiMessage.timestamp.getTime().toString());
@@ -195,5 +219,64 @@ export class ChatService {
 		callbacks.onStreamingUpdate(null);
 
 		return { functionCall: capturedFunctionCall, shouldContinue: capturedShouldContinue };
+	}
+
+	// handle the rare event where a function call is also included in content (gemini sometimes does this)
+	private sanitizeFunctionCallContent(content: string, functionCall: AIFunctionCall | null): string {
+		// Early returns for simple cases
+		if (!functionCall || !content.trim()) {
+			return content;
+		}
+	
+		// If content has no JSON-like characters, return as-is
+		if (!content.includes('{') || !content.includes('}')) {
+			return content;
+		}
+	
+		const functionCallString = functionCall.toConversationString();
+		let sanitized = content;
+	
+		// Step 1: Remove markdown code blocks that might contain the function call
+		// Pattern matches ```json\n...\n``` or ```\n...\n```
+		sanitized = sanitized.replace(/```(?:json)?\s*\n?([\s\S]*?)\n?```/g, (match, codeContent) => {
+			// If the code block contains our function call, remove it entirely
+			if (codeContent.trim() === functionCallString.trim()) {
+				return '';
+			}
+			// Otherwise keep the code block
+			return match;
+		});
+	
+		// Step 2: Remove exact JSON match (handles compact JSON)
+		sanitized = sanitized.replace(functionCallString, '').trim();
+	
+		// Step 3: Handle pretty-printed variations by normalizing both strings
+		try {
+			const functionCallObj = JSON.parse(functionCallString);
+			const normalizedTarget = JSON.stringify(functionCallObj);
+			
+			// Find and remove any JSON that matches when normalized
+			// This regex finds JSON objects/arrays in the text
+			const jsonPattern = /\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\}|\[(?:[^\[\]]|(?:\[(?:[^\[\]]|(?:\[[^\[\]]*\]))*\]))*\]/g;
+			
+			sanitized = sanitized.replace(jsonPattern, (match) => {
+				try {
+					const parsedMatch = JSON.parse(match);
+					const normalizedMatch = JSON.stringify(parsedMatch);
+					// Remove if it matches our function call when normalized
+					return normalizedMatch === normalizedTarget ? '' : match;
+				} catch {
+					// If it's not valid JSON, keep it
+					return match;
+				}
+			});
+		} catch {
+			// If function call string isn't valid JSON, we've done what we can
+		}
+	
+		// Step 4: Clean up multiple consecutive whitespace/newlines left by removals
+		sanitized = sanitized.replace(/\n{3,}/g, '\n\n').trim();
+	
+		return sanitized;
 	}
 }

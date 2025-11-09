@@ -126,6 +126,7 @@ export class OpenAI implements IAIClass {
                     content: contentToExtract
                 };
             })
+            .filter(message => message.content !== "" || message.tool_calls || message.tool_call_id)
         ];
 
         const tools = this.mapFunctionDefinitions(

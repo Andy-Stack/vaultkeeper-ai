@@ -175,13 +175,17 @@
 
 <div class="chat-area" bind:this={chatContainer}>
   {#each messages as message, index}
-    {#if !message.isFunctionCallResponse && message.content}
-      <div class="message-container {message.role === Role.User ? Role.User : Role.Assistant}" use:trackingAction={index}>
-        <div class="message-bubble {message.role === Role.User ? Role.User : Role.Assistant}">
-          {#if message.role === Role.User}
+    {#if !message.isFunctionCallResponse && message.content.trim() !== ""}
+      {#if message.role === Role.User}
+        <div class="message-container {Role.User}" use:trackingAction={index}>
+          <div class="message-bubble {Role.User}">
             <div class="message-text-user fade-in-fast" contenteditable="false" bind:innerHTML={message.content}></div>
-          {:else}
-            {@const messageId = message.timestamp.getTime().toString()}
+          </div>
+        </div>
+      {:else}
+        {@const messageId = message.timestamp.getTime().toString()}
+        <div class="message-container {Role.Assistant}" use:trackingAction={index}>
+          <div class="message-bubble {Role.Assistant}">
             <div class="markdown-content fade-in-fast {currentStreamingMessageId === messageId ? "streaming" : ""}">
               {#if currentStreamingMessageId === messageId}
                 <div use:streamingAction={messageId} class="streaming-content"></div>
@@ -189,9 +193,9 @@
                 {@html getStaticHTML(message)}
               {/if}
             </div>
-          {/if}
+          </div>
         </div>
-      </div>
+      {/if}
     {/if}
   {/each}
   

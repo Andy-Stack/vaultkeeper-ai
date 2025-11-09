@@ -148,6 +148,36 @@
 			{#if content !== ""}
 				<div transition:fade={{ duration: 100 }}>
 					{@html content}
+					{#if selectedTopic === 1}
+						<hr style="margin: 2em 0; border-width: 1px">
+						<h4>Links</h4>
+						<ul style="list-style: none; padding-left: 0;">
+							<li style="margin-bottom: 0.5em;">
+								<a
+									href="https://github.com/yourusername/ai-agent-plugin"
+									style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5em;">
+									<svg 
+										width="1em"
+										height="1em"
+										viewBox="0 0 98 96"
+										xmlns="http://www.w3.org/2000/svg"
+										aria-label="GitHub"
+										style="display: inline-block; vertical-align: middle;">
+										<path fill-rule="evenodd" clip-rule="evenodd" d={Copy.GitHubIconPath} fill="currentColor"/>
+									</svg>
+									<span>View on GitHub</span>
+								</a>
+							</li>
+							<li style="margin-bottom: 0.5em;">
+								<a href="https://buymeacoffee.com/yourusername" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5em;">
+									<span>☕</span>
+									<span>Buy me a coffee</span>
+								</a>
+							</li>
+						</ul>
+						<hr style="margin: 2em 0; border-width: 1px">
+						<p style="font-style: italic; text-align: center;">Created with ❤️ for the Obsidian community</p>
+					{/if}
 				</div>
 			{/if}
 		</div>

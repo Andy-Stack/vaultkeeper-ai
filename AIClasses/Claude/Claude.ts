@@ -228,7 +228,8 @@ export class Claude implements IAIClass {
                     role: content.role,
                     content: contentBlocks
                 };
-            });
+            })
+            .filter(message => message.content.length > 0);
     }
 
     private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): object[] {

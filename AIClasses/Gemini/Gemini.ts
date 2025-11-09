@@ -210,9 +210,10 @@ export class Gemini implements IAIClass {
 
         return {
           role: content.role === Role.User ? Role.User : Role.Model,
-          parts: parts.length > 0 ? parts : [{ text: "" }]
+          parts: parts
         };
-      });
+      })
+      .filter(message => message.parts.length > 0);
   }
 
   private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): object[] {

@@ -118,14 +118,14 @@
 			id="close-button"
 			class="top-bar-button clickable-icon"
 			on:click={onClose}
-			aria-label="Close Conversation History"
+			aria-label={Copy.HelpModalCloseAriaLabel}
 			></button>
 		</div>
 	</div>
 	<div class="help-modal-body">
 		<div class="help-modal-dropdown" bind:this={dropdownContainer}></div>
 		<div id="help-modal-version-string-mobile">
-			Plugin version: {plugin.manifest.version}
+			{Copy.PluginVersionPrefix}{plugin.manifest.version}
 		</div>
 		<div class="help-modal-topics">
 			<div
@@ -173,7 +173,7 @@
 				</div>
 			</div>
 			<div id="help-modal-version-string">
-				Plugin version: {plugin.manifest.version}
+				{Copy.PluginVersionPrefix}{plugin.manifest.version}
 			</div>
 		</div>
 		<div class="help-modal-content" bind:this={contentContainer}>
@@ -182,27 +182,27 @@
 					{@html content}
 					{#if selectedTopic === 1}
 						<a
-							href="https://github.com/Andy-Stack/ai-agent-plugin"
+							href={plugin.manifest.authorUrl}
 							style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5em; margin: 0 0 1em 0;">
-							<svg 
+							<svg
 								width="1em"
 								height="1em"
 								viewBox="0 0 98 96"
 								xmlns="http://www.w3.org/2000/svg"
-								aria-label="GitHub"
+								aria-label={Copy.GitHubIconAriaLabel}
 								style="display: inline-block; vertical-align: middle;">
 								<path fill-rule="evenodd" clip-rule="evenodd" d={Copy.GitHubIconPath} fill="currentColor"/>
 							</svg>
-							<span>View on GitHub</span>
+							<span>{Copy.GitHubLinkText}</span>
 						</a>
 						<br>
-						<span style="display: inline-block; margin-bottom: 1em;">If you enjoy using the plugin or find it useful and want to contribute, you can buy me a Coffee using the link below:</span>
+						<span style="display: inline-block; margin-bottom: 1em;">{Copy.CoffeeLinkIntroText}</span>
 						<br>
-						<a href="a" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5em;">
-							<span>☕</span>
-							<span>Buy me a coffee</span>
+						<a href={(plugin.manifest as any).fundingUrl} style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5em;">
+							<span>{Copy.CoffeeIcon}</span>
+							<span>{Copy.CoffeeLinkText}</span>
 						</a>
-						<p style="margin-top: 2em; font-style: italic;">Thanks for using the AI Agent plugin!</p>
+						<p style="margin-top: 2em; font-style: italic;">{Copy.ThankYouMessage}</p>
 					{/if}
 				</div>
 			{/if}

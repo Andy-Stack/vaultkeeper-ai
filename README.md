@@ -5,6 +5,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-purple.svg)](https://obsidian.md)
 
+<p align="center">
+	<img width="1853" height="896" alt="ai_agent" src="https://github.com/user-attachments/assets/ffdda606-c776-4db9-b11a-061524da63e5" />
+</p>
+
 ## Features
 
 - **Multi-Provider AI Support** - Switch seamlessly between Claude (Anthropic), Gemini (Google), and OpenAI models

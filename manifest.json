@@ -3,7 +3,7 @@
 	"name": "Vaultkeeper AI",
 	"version": "1.0.0",
 	"minAppVersion": "1.9.14",
-	"description": "Multi-AI assistant for Obsidian. Read, search, create, and edit notes with multiple AI providers.",
+	"description": "Multi-AI assistant. Read, search, create, and edit notes with multiple AI providers.",
 	"author": "Andy-Stack",
 	"authorUrl": "https://github.com/Andy-Stack",
 	"fundingUrl": "https://buymeacoffee.com/andy.stack",

@@ -1,5 +1,7 @@
+import { Role } from "Enums/Role";
+
 export class ConversationContent {
-    role: string;
+    role: Role;
     content: string;
     promptContent: string;
     functionCall: string;
@@ -8,7 +10,7 @@ export class ConversationContent {
     isFunctionCallResponse: boolean;
     toolId?: string;
 
-    constructor(role: string, content: string = "", promptContent: string = "", functionCall: string = "", timestamp: Date = new Date(), isFunctionCall = false, isFunctionCallResponse = false, toolId?: string) {
+    constructor(role: Role, content: string = "", promptContent: string = "", functionCall: string = "", timestamp: Date = new Date(), isFunctionCall = false, isFunctionCallResponse = false, toolId?: string) {
         this.role = role;
         this.content = content;
         this.promptContent = promptContent;

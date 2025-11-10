@@ -13,6 +13,8 @@ import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunc
 import { isValidJson } from "Helpers/Helpers";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { SettingsService } from "Services/SettingsService";
+import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionTypes";
+import type { GeminiStreamResponse, GeminiFunctionDeclaration, GeminiContentPart } from "./GeminiInterfaces";
 
 export class Gemini implements IAIClass {
 
@@ -26,7 +28,7 @@ export class Gemini implements IAIClass {
   private readonly streamingService: StreamingService = Resolve<StreamingService>(Services.StreamingService);
   private readonly aiFunctionDefinitions: AIFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
   private accumulatedFunctionName: string | null = null;
-  private accumulatedFunctionArgs: Record<string, any> = {};
+  private accumulatedFunctionArgs: Record<string, unknown> = {};
 
   public constructor() {
     this.apiKey = this.settingsService.getApiKeyForProvider(AIProvider.Gemini);
@@ -89,14 +91,14 @@ export class Gemini implements IAIClass {
     yield* this.streamingService.streamRequest(
       `${AIProviderURL.Gemini}/${this.settingsService.settings.model}:streamGenerateContent?key=${this.apiKey}&alt=sse`,
       requestBody,
-      this.parseStreamChunk.bind(this),
+      (chunk: string) => this.parseStreamChunk(chunk),
       abortSignal
     );
   }
 
   private parseStreamChunk(chunk: string): IStreamChunk {
     try {
-      const data = JSON.parse(chunk);
+      const data = JSON.parse(chunk) as GeminiStreamResponse;
 
       let text = "";
       let functionCall: AIFunctionCall | undefined = undefined;
@@ -140,7 +142,7 @@ export class Gemini implements IAIClass {
       if (isComplete && this.accumulatedFunctionName) {
         functionCall = new AIFunctionCall(
           this.accumulatedFunctionName,
-          this.accumulatedFunctionArgs
+          this.accumulatedFunctionArgs as Record<string, object>
         );
       }
 
@@ -157,17 +159,17 @@ export class Gemini implements IAIClass {
     }
   }
 
-  private extractContents(conversationContent: ConversationContent[]): { role: Role, parts: any[] }[] {
+  private extractContents(conversationContent: ConversationContent[]): { role: Role, parts: GeminiContentPart[] }[] {
     return conversationContent.filter(content => content.content.trim() !== "" || content.functionCall.trim() !== "")
       .map(content => {
-        const parts: any[] = [];
-        const contentToExtract = content.role == Role.User ? content.promptContent : content.content;
+        const parts: GeminiContentPart[] = [];
+        const contentToExtract = content.role === Role.User ? content.promptContent : content.content;
 
         if (contentToExtract.trim() !== "") {
           if (content.isFunctionCallResponse) {
             if (isValidJson(contentToExtract)) {
               try {
-                const parsedContent = JSON.parse(contentToExtract);
+                const parsedContent = JSON.parse(contentToExtract) as StoredFunctionResponse;
                 if (parsedContent.functionResponse) {
                   parts.push({
                     functionResponse: parsedContent.functionResponse
@@ -191,7 +193,7 @@ export class Gemini implements IAIClass {
         if (content.isFunctionCall && content.functionCall.trim() !== "") {
           if (isValidJson(content.functionCall)) {
             try {
-              const parsedContent = JSON.parse(content.functionCall);
+              const parsedContent = JSON.parse(content.functionCall) as StoredFunctionCall;
               if (parsedContent.functionCall) {
                 parts.push({
                   functionCall: {
@@ -216,7 +218,7 @@ export class Gemini implements IAIClass {
       .filter(message => message.parts.length > 0);
   }
 
-  private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): object[] {
+  private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): GeminiFunctionDeclaration[] {
     return aiFunctionDefinitions.map((functionDefinition) => ({
       name: functionDefinition.name,
       description: functionDefinition.description,

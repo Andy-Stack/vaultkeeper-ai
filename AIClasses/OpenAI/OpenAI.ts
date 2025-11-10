@@ -12,6 +12,8 @@ import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunc
 import { Role } from "Enums/Role";
 import { isValidJson } from "Helpers/Helpers";
 import type { SettingsService } from "Services/SettingsService";
+import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionTypes";
+import type { OpenAIStreamResponse, OpenAITool } from "./OpenAIInterfaces";
 
 interface IToolCallAccumulator {
     id: string | null;
@@ -56,12 +58,12 @@ export class OpenAI implements IAIClass {
             ...conversation.contents
             .filter(content => content.content.trim() !== "" || content.functionCall.trim() !== "")
             .map(content => {
-                const contentToExtract = content.role == Role.User ? content.promptContent : content.content;
+                const contentToExtract = content.role === Role.User ? content.promptContent : content.content;
                 // Handle function call
                 if (content.isFunctionCall && content.functionCall.trim() !== "") {
                     if (isValidJson(content.functionCall)) {
                         try {
-                            const parsedContent = JSON.parse(content.functionCall);
+                            const parsedContent = JSON.parse(content.functionCall) as StoredFunctionCall;
                             return {
                                 role: content.role,
                                 content: contentToExtract.trim() !== "" ? contentToExtract : null,
@@ -97,7 +99,7 @@ export class OpenAI implements IAIClass {
                 if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
                     if (isValidJson(contentToExtract)) {
                         try {
-                            const parsedContent = JSON.parse(contentToExtract);
+                            const parsedContent = JSON.parse(contentToExtract) as StoredFunctionResponse;
                             return {
                                 role: "tool",
                                 tool_call_id: parsedContent.id,
@@ -148,7 +150,7 @@ export class OpenAI implements IAIClass {
         yield* this.streamingService.streamRequest(
             AIProviderURL.OpenAI,
             requestBody,
-            this.parseStreamChunk.bind(this),
+            (chunk: string) => this.parseStreamChunk(chunk),
             abortSignal,
             headers
         );
@@ -161,7 +163,7 @@ export class OpenAI implements IAIClass {
                 return { content: "", isComplete: true };
             }
 
-            const data = JSON.parse(chunk);
+            const data = JSON.parse(chunk) as OpenAIStreamResponse;
 
             let text = "";
             let functionCall: AIFunctionCall | undefined = undefined;
@@ -221,10 +223,10 @@ export class OpenAI implements IAIClass {
                     const firstToolCall = this.accumulatedToolCalls.get(0);
                     if (firstToolCall && firstToolCall.name && firstToolCall.arguments) {
                         try {
-                            const args = JSON.parse(firstToolCall.arguments);
+                            const args = JSON.parse(firstToolCall.arguments) as Record<string, unknown>;
                             functionCall = new AIFunctionCall(
                                 firstToolCall.name,
-                                args,
+                                args as Record<string, object>,
                                 firstToolCall.id || undefined
                             );
                         } catch (error) {
@@ -247,7 +249,7 @@ export class OpenAI implements IAIClass {
         }
     }
 
-    private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): object[] {
+    private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): OpenAITool[] {
         return aiFunctionDefinitions.map((functionDefinition) => ({
             type: "function",
             function: {

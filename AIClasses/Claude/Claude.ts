@@ -13,6 +13,8 @@ import { isValidJson } from "Helpers/Helpers";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import type { SettingsService } from "Services/SettingsService";
+import type { RawMessageStreamEvent, ContentBlockParam, Tool } from '@anthropic-ai/sdk/resources/messages';
+import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionTypes";
 
 export class Claude implements IAIClass {
 
@@ -70,7 +72,7 @@ export class Claude implements IAIClass {
         yield* this.streamingService.streamRequest(
             AIProviderURL.Claude,
             requestBody,
-            this.parseStreamChunk.bind(this),
+            (chunk: string) => this.parseStreamChunk(chunk),
             abortSignal,
             headers
         );
@@ -78,41 +80,44 @@ export class Claude implements IAIClass {
 
     private parseStreamChunk(chunk: string): IStreamChunk {
         try {
-            const data = JSON.parse(chunk);
+            const data = JSON.parse(chunk) as RawMessageStreamEvent;
 
             let text = "";
             let functionCall: AIFunctionCall | undefined = undefined;
             let isComplete = false;
             let shouldContinue = false;
 
-            const eventType = data.type;
-
             // Handle content_block_start - detect tool_use blocks
-            if (eventType === "content_block_start" && data.content_block) {
-                if (data.content_block.type === "tool_use") {
-                    this.accumulatedFunctionName = data.content_block.name || null;
+            if (data.type === "content_block_start") {
+                const startEvent = data;
+                if (startEvent.content_block.type === "tool_use") {
+                    const toolBlock = startEvent.content_block;
+                    this.accumulatedFunctionName = toolBlock.name || null;
                     this.accumulatedFunctionArgs = "";
-                    this.accumulatedFunctionId = data.content_block.id || null;
+                    this.accumulatedFunctionId = toolBlock.id || null;
                 }
             }
 
             // Handle content_block_delta - accumulate text or tool arguments
-            if (eventType === "content_block_delta" && data.delta) {
-                if (data.delta.type === "text_delta") {
-                    text = data.delta.text || "";
-                } else if (data.delta.type === "input_json_delta") {
-                    this.accumulatedFunctionArgs += data.delta.partial_json || "";
+            if (data.type === "content_block_delta") {
+                const deltaEvent = data;
+                if (deltaEvent.delta.type === "text_delta") {
+                    const textDelta = deltaEvent.delta;
+                    text = textDelta.text || "";
+                } else if (deltaEvent.delta.type === "input_json_delta") {
+                    const inputDelta = deltaEvent.delta;
+                    this.accumulatedFunctionArgs += inputDelta.partial_json || "";
                 }
             }
 
             // Handle content_block_stop - finalize tool calls
-            if (eventType === "content_block_stop") {
+            if (data.type === "content_block_stop") {
                 if (this.accumulatedFunctionName && this.accumulatedFunctionArgs) {
                     try {
-                        const args = JSON.parse(this.accumulatedFunctionArgs);
+                        const args = JSON.parse(this.accumulatedFunctionArgs) as Record<string, unknown>;
                         functionCall = new AIFunctionCall(
                             this.accumulatedFunctionName,
-                            args,
+                            args as Record<string, object>,
                             this.accumulatedFunctionId || undefined
                         );
                     } catch (error) {
@@ -126,8 +131,9 @@ export class Claude implements IAIClass {
             }
 
             // Handle message_delta - check for completion
-            if (eventType === "message_delta" && data.delta) {
-                const stopReason = data.delta.stop_reason;
+            if (data.type === "message_delta") {
+                const deltaEvent = data;
+                const stopReason = deltaEvent.delta.stop_reason;
                 if (stopReason) {
                     isComplete = true;
                     shouldContinue = stopReason === this.STOP_REASON_TOOL_USE;
@@ -135,7 +141,7 @@ export class Claude implements IAIClass {
             }
 
             // Handle message_stop - mark as complete
-            if (eventType === "message_stop") {
+            if (data.type === "message_stop") {
                 isComplete = true;
             }
 
@@ -155,8 +161,8 @@ export class Claude implements IAIClass {
     private extractContents(conversationContent: ConversationContent[]) {
         return conversationContent.filter(content => content.content.trim() !== "" || content.functionCall.trim() !== "")
             .map(content => {
-                const contentBlocks: any[] = [];
-                const contentToExtract = content.role == Role.User ? content.promptContent : content.content;
+                const contentBlocks: ContentBlockParam[] = [];
+                const contentToExtract = content.role === Role.User ? content.promptContent : content.content;
 
                 if (contentToExtract.trim() !== "" && !content.isFunctionCallResponse) {
                     contentBlocks.push({
@@ -169,7 +175,7 @@ export class Claude implements IAIClass {
                 if (content.isFunctionCall && content.functionCall.trim() !== "") {
                     if (isValidJson(content.functionCall)) {
                         try {
-                            const parsedContent = JSON.parse(content.functionCall);
+                            const parsedContent = JSON.parse(content.functionCall) as StoredFunctionCall;
                             contentBlocks.push({
                                 type: "tool_use",
                                 id: parsedContent.functionCall.id,
@@ -202,7 +208,7 @@ export class Claude implements IAIClass {
                 if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
                     if (isValidJson(contentToExtract)) {
                         try {
-                            const parsedContent = JSON.parse(contentToExtract);
+                            const parsedContent = JSON.parse(contentToExtract) as StoredFunctionResponse;
                             contentBlocks.push({
                                 type: "tool_result",
                                 tool_use_id: parsedContent.id,
@@ -232,11 +238,15 @@ export class Claude implements IAIClass {
             .filter(message => message.content.length > 0);
     }
 
-    private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): object[] {
+    private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): Tool[] {
         return aiFunctionDefinitions.map((functionDefinition) => ({
             name: functionDefinition.name,
             description: functionDefinition.description,
-            input_schema: functionDefinition.parameters
+            input_schema: {
+                type: "object" as const,
+                properties: functionDefinition.parameters.properties,
+                required: functionDefinition.parameters.required
+            }
         }));
     }
 }

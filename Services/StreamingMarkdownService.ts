@@ -8,6 +8,8 @@ import rehypeKatex from "rehype-katex";
 import rehypeHighlight from "rehype-highlight";
 import rehypeStringify from "rehype-stringify";
 import wikiLinkPlugin from "remark-wiki-link";
+import type { Root as MdastRoot } from "mdast";
+import type { Root as HastRoot } from "hast";
 import type { FileSystemService } from "./FileSystemService";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
@@ -25,8 +27,7 @@ export class StreamingMarkdownService {
     private readonly htmlService: HTMLService = Resolve<HTMLService>(Services.HTMLService);
     private readonly fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- trying to explicitly define unified types gets very complex so allow use of any
-    private readonly processor: Processor<any, any, any, any, any> | null = null;
+    private readonly processor: Processor<MdastRoot, MdastRoot, HastRoot, HastRoot, string>;
     private streamingStates: Map<string, IStreamingState> = new Map<string, IStreamingState>();
 
     private cachedPermaLinks: string[];
@@ -39,8 +40,14 @@ export class StreamingMarkdownService {
             .use(remarkGfm)
             .use(remarkEmoji)
             .use(remarkMath)
-            .use(remarkRehype, { 
-                allowDangerousHtml: false 
+            .use(wikiLinkPlugin, {
+                permalinks: this.cachedPermaLinks,
+                wikiLinkClassName: Selector.MarkDownLink,
+                pageResolver: (pageName: string) => [pageName],
+                hrefTemplate: (permalink: string) => `#/page/${encodeURIComponent(permalink)}`
+            })
+            .use(remarkRehype, {
+                allowDangerousHtml: false
             })
             .use(rehypeKatex)
             .use(rehypeHighlight, {
@@ -58,19 +65,13 @@ export class StreamingMarkdownService {
                 allowDangerousHtml: false,
                 allowDangerousCharacters: false,
                 closeSelfClosing: true
-            })
-            .use(wikiLinkPlugin, {
-                permalinks: this.cachedPermaLinks,
-                wikiLinkClassName: Selector.MarkDownLink,
-                pageResolver: (pageName: string) => [pageName],
-                hrefTemplate: (permalink: string) => `#/page/${encodeURIComponent(permalink)}`
             });
     }
 
     public formatText(text: string): string {
         try {
             const preprocessed = this.preprocessContent(text);
-            const result = this.processor!.processSync(preprocessed);
+            const result = this.processor.processSync(preprocessed);
             return String(result);
         } catch (error) {
             console.warn("Markdown processing failed:", error);

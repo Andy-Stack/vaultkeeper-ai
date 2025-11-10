@@ -36,7 +36,7 @@ export class FileSystemService {
                 await this.vaultService.create(filePath, content, allowAccessToPluginRoot);
                 return true;
             }
-            await this.vaultService.modify(file as TFile, content, allowAccessToPluginRoot);
+            await this.vaultService.modify(file, content, allowAccessToPluginRoot);
             return true;
         }
         catch (error) {

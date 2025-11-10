@@ -47,7 +47,7 @@ export class AIFunctionService {
     }
 
     private async searchVaultFiles(searchTerms: string[]): Promise<object> {
-        let results: { searchTerm: string, results: object[] }[] = [];
+        const results: { searchTerm: string, results: object[] }[] = [];
 
         for (const searchTerm of searchTerms) {
             const matches: ISearchMatch[] = searchTerm.trim() === "" ? [] : await this.fileSystemService.searchVaultFiles(searchTerm);

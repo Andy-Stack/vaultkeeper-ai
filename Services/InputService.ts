@@ -143,8 +143,8 @@ export class InputService {
             return null; // Selection is not collapsed, not at a single cursor position
         }
 
-        let node = range.startContainer;
-        let offset = range.startOffset;
+        const node = range.startContainer;
+        const offset = range.startOffset;
 
         // If we're in a text node
         if (node.nodeType === Node.TEXT_NODE) {

@@ -55,7 +55,7 @@ export class ConversationNamingService {
     }
 
     private async validateName(generatedName: string): Promise<string> {
-        let cleanedTitle = generatedName.trim().replace(/^["']|["']$/g, "").split(/\s+/).slice(0, 6).join(" ");
+        const cleanedTitle = generatedName.trim().replace(/^["']|["']$/g, "").split(/\s+/).slice(0, 6).join(" ");
 
         let index = 1;
         let availableTitle = cleanedTitle;

@@ -155,7 +155,7 @@ export class VaultService {
         }
 
         let files: TFile[] = [];
-        for (let child of dir.children) {
+        for (const child of dir.children) {
             if (child instanceof TFile) {
                 if (!this.isExclusion(child.path, allowAccessToPluginRoot)) {
                     files.push(child);
@@ -179,7 +179,7 @@ export class VaultService {
         }
 
         let folders: TFolder[] = [];
-        for (let child of dir.children) {
+        for (const child of dir.children) {
             if (!(child instanceof TFolder)) {
                 continue;
             }

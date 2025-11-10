@@ -2,46 +2,73 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import obsidianmd from "eslint-plugin-obsidianmd";
-import sdl from "@microsoft/eslint-plugin-sdl";
-import importPlugin from "eslint-plugin-import";
 
 export default [
   // Ignore patterns
   {
-    ignores: ["node_modules/**", "main.js"]
+    ignores: ["node_modules/**", "main.js", "__tests__/**", "*.test.ts", "esbuild.config.mjs", "version-bump.mjs", "vitest.config.ts"]
   },
 
   // Base ESLint recommended rules
   js.configs.recommended,
 
-  // TypeScript configuration for .ts files
+  // TypeScript recommended rules (type-checked rules disabled for non-TS files)
+  ...tseslint.configs.recommendedTypeChecked.map(config => ({
+    ...config,
+    files: ["**/*.ts"],
+  })),
+
+  // Project-specific configuration
   {
     files: ["**/*.ts"],
     plugins: {
-      "@typescript-eslint": tseslint.plugin,
-      "obsidianmd": obsidianmd,
-      "@microsoft/sdl": sdl,
-      "import": importPlugin,
+      obsidianmd: obsidianmd,
     },
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
         project: true,
         sourceType: "module"
+      },
+      globals: {
+        console: "readonly",
+        AsyncGenerator: "readonly",
+        require: "readonly",
+        process: "readonly",
+        createEl: "readonly",
+        join: "readonly",
+        __dirname: "readonly",
+        document: "readonly",
+        window: "readonly",
+        performance: "readonly",
+        requestAnimationFrame: "readonly",
+        cancelAnimationFrame: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        NodeJS: "readonly",
+        Fuzzysort: "readonly",
       }
     },
     rules: {
-      // Base rules
-      "no-unused-vars": "off",
+      // Obsidian plugin recommended rules
+      ...obsidianmd.configs.recommended,
+
+      // Override TypeScript recommended to match Obsidian's style
+      "@typescript-eslint/ban-ts-comment": "off",
+      "@typescript-eslint/no-empty-function": "off",
       "no-prototype-builtins": "off",
-      "no-self-compare": "warn",
-      "no-eval": "error",
-      "no-implied-eval": "error",
-      "prefer-const": "off",
-      "no-implicit-globals": "error",
+
+      // Enable additional TypeScript rules for PR issues
+      "@typescript-eslint/require-await": "error",
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-namespace": "error",
+      "@typescript-eslint/no-require-imports": "error",
+      "@typescript-eslint/switch-exhaustiveness-check": "error",
+
+      // Console usage (allow warn, error, debug only)
       "no-console": ["error", { allow: ["warn", "error", "debug"] }],
 
-      // Restricted globals (with fetch removed for streaming)
+      // Restricted globals
       "no-restricted-globals": [
         "error",
         {
@@ -51,6 +78,10 @@ export default [
         {
           name: "localStorage",
           message: "Prefer `App#saveLocalStorage` / `App#loadLocalStorage` functions to write / read localStorage data that's unique to a vault."
+        },
+        {
+          name: "fetch",
+          message: "Use the built-in `requestUrl` function instead of `fetch` for network requests."
         }
       ],
 
@@ -79,59 +110,33 @@ export default [
         },
       ],
 
-      "no-alert": "error",
-      "no-undef": "error",
+      // Allow namespace merging with enums (TypeScript pattern)
+      "no-redeclare": "off",
+      "@typescript-eslint/no-redeclare": "off",
+    }
+  },
 
-      // TypeScript rules
-      "@typescript-eslint/ban-ts-comment": "off",
-      "@typescript-eslint/no-deprecated": "error",
-      "@typescript-eslint/no-unused-vars": ["warn", { args: "none" }],
-      "@typescript-eslint/require-await": "off",
-      "@typescript-eslint/no-explicit-any": ["error", { fixToUnknown: true }],
-      "@typescript-eslint/no-empty-function": "off",
-
-      // Security rules
-      "@microsoft/sdl/no-document-write": "error",
-      "@microsoft/sdl/no-inner-html": "error",
-
-      // Import rules
-      "import/no-nodejs-modules": "error",
-      "import/no-extraneous-dependencies": "error",
-
-      // Obsidian plugin rules - Commands
-      "obsidianmd/commands/no-command-in-command-id": "error",
-      "obsidianmd/commands/no-command-in-command-name": "error",
-      "obsidianmd/commands/no-default-hotkeys": "error",
-      "obsidianmd/commands/no-plugin-id-in-command-id": "error",
-      "obsidianmd/commands/no-plugin-name-in-command-name": "error",
-
-      // Obsidian plugin rules - Settings Tab
-      "obsidianmd/settings-tab/no-manual-html-headings": "error",
-      "obsidianmd/settings-tab/no-problematic-settings-headings": "error",
-
-      // Obsidian plugin rules - Vault
-      "obsidianmd/vault/iterate": "error",
-
-      // Obsidian plugin rules - General
-      "obsidianmd/detach-leaves": "error",
-      "obsidianmd/hardcoded-config-path": "error",
-      "obsidianmd/no-forbidden-elements": "error",
-      "obsidianmd/no-plugin-as-component": "error",
-      "obsidianmd/no-sample-code": "error",
-      "obsidianmd/no-tfile-tfolder-cast": "error",
-      "obsidianmd/no-view-references-in-plugin": "error",
-      "obsidianmd/no-static-styles-assignment": "error",
-      "obsidianmd/object-assign": "error",
-      "obsidianmd/platform": "error",
-      "obsidianmd/prefer-file-manager-trash-file": "warn",
-      "obsidianmd/prefer-abstract-input-suggest": "error",
-      "obsidianmd/regex-lookbehind": "error",
-      "obsidianmd/sample-names": "error",
-      "obsidianmd/validate-manifest": "error",
-      "obsidianmd/validate-license": "error",
-
-      // Obsidian plugin rules - UI
-      "obsidianmd/ui/sentence-case": ["error", { enforceCamelCaseLower: true }],
+  // Allow fetch() in streaming services (requires AbortController support)
+  {
+    files: [
+      "**/StreamingService.ts",
+      "**/ClaudeConversationNamingService.ts",
+      "**/GeminiConversationNamingService.ts",
+      "**/OpenAIConversationNamingService.ts"
+    ],
+    rules: {
+      "no-restricted-globals": [
+        "error",
+        {
+          name: "app",
+          message: "Avoid using the global app object. Instead use the reference provided by your plugin instance.",
+        },
+        {
+          name: "localStorage",
+          message: "Prefer `App#saveLocalStorage` / `App#loadLocalStorage` functions to write / read localStorage data that's unique to a vault."
+        }
+        // fetch is allowed in these files for streaming with AbortController
+      ]
     }
   }
 ];

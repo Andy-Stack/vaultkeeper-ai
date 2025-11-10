@@ -128,7 +128,9 @@ describe('Gemini', () => {
         it('should parse text from candidate.text field', () => {
             const chunk = JSON.stringify({
                 candidates: [{
-                    text: 'Direct text'
+                    content: {
+                        parts: [{ text: 'Direct text' }]
+                    }
                 }]
             });
 
@@ -394,6 +396,7 @@ describe('Gemini', () => {
 
             expect(result).toHaveLength(1);
             expect(result[0].parts).toHaveLength(1);
+            // Gemini API requires both 'name' and 'response' fields
             expect(result[0].parts[0]).toEqual({
                 functionResponse: {
                     name: 'search_files',

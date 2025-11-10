@@ -14,12 +14,12 @@ import { isValidJson } from "Helpers/Helpers";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { SettingsService } from "Services/SettingsService";
 import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionTypes";
-import type { GeminiStreamResponse, GeminiFunctionDeclaration, GeminiContentPart } from "./GeminiInterfaces";
+import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
+import { FinishReason } from "@google/genai";
 
 export class Gemini implements IAIClass {
 
   private readonly REQUEST_WEB_SEARCH: string = "request_web_search";
-  private readonly STOP_REASON_STOP: string = "STOP";
 
   private readonly apiKey: string;
   private readonly aiPrompt: IPrompt = Resolve<IPrompt>(Services.IPrompt);
@@ -98,7 +98,7 @@ export class Gemini implements IAIClass {
 
   private parseStreamChunk(chunk: string): IStreamChunk {
     try {
-      const data = JSON.parse(chunk) as GeminiStreamResponse;
+      const data = JSON.parse(chunk) as { candidates?: Candidate[] };
 
       let text = "";
       let functionCall: AIFunctionCall | undefined = undefined;
@@ -108,8 +108,6 @@ export class Gemini implements IAIClass {
         // Check for text content
         if (candidate.content?.parts?.[0]?.text) {
           text = candidate.content.parts[0].text;
-        } else if (candidate.text) {
-          text = candidate.text;
         }
 
         // Check for function call and accumulate
@@ -136,7 +134,7 @@ export class Gemini implements IAIClass {
       const isComplete = !!candidate?.finishReason;
       const finishReason = candidate?.finishReason;
 
-      const shouldContinue = isComplete && finishReason !== this.STOP_REASON_STOP;
+      const shouldContinue = isComplete && finishReason !== FinishReason.STOP;
 
       // If streaming is complete and we have accumulated a function call, return it
       if (isComplete && this.accumulatedFunctionName) {
@@ -159,10 +157,10 @@ export class Gemini implements IAIClass {
     }
   }
 
-  private extractContents(conversationContent: ConversationContent[]): { role: Role, parts: GeminiContentPart[] }[] {
+  private extractContents(conversationContent: ConversationContent[]): { role: Role, parts: Part[] }[] {
     return conversationContent.filter(content => content.content.trim() !== "" || content.functionCall.trim() !== "")
       .map(content => {
-        const parts: GeminiContentPart[] = [];
+        const parts: Part[] = [];
         const contentToExtract = content.role === Role.User ? content.promptContent : content.content;
 
         if (contentToExtract.trim() !== "") {
@@ -172,7 +170,10 @@ export class Gemini implements IAIClass {
                 const parsedContent = JSON.parse(contentToExtract) as StoredFunctionResponse;
                 if (parsedContent.functionResponse) {
                   parts.push({
-                    functionResponse: parsedContent.functionResponse
+                    functionResponse: {
+                      name: parsedContent.functionResponse.name,
+                      response: parsedContent.functionResponse.response as Record<string, unknown>
+                    }
                   });
                 } else {
                   parts.push({ text: contentToExtract });
@@ -218,11 +219,11 @@ export class Gemini implements IAIClass {
       .filter(message => message.parts.length > 0);
   }
 
-  private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): GeminiFunctionDeclaration[] {
+  private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): FunctionDeclaration[] {
     return aiFunctionDefinitions.map((functionDefinition) => ({
       name: functionDefinition.name,
       description: functionDefinition.description,
-      parameters: functionDefinition.parameters
+      parameters: functionDefinition.parameters as FunctionDeclaration['parameters']
     }));
   }
 }

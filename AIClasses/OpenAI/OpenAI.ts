@@ -13,7 +13,7 @@ import { Role } from "Enums/Role";
 import { isValidJson } from "Helpers/Helpers";
 import type { SettingsService } from "Services/SettingsService";
 import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionTypes";
-import type { OpenAIStreamResponse, OpenAITool } from "./OpenAIInterfaces";
+import type { ChatCompletionChunk, ChatCompletionTool } from "openai/resources/chat/completions";
 
 interface IToolCallAccumulator {
     id: string | null;
@@ -163,7 +163,7 @@ export class OpenAI implements IAIClass {
                 return { content: "", isComplete: true };
             }
 
-            const data = JSON.parse(chunk) as OpenAIStreamResponse;
+            const data = JSON.parse(chunk) as ChatCompletionChunk;
 
             let text = "";
             let functionCall: AIFunctionCall | undefined = undefined;
@@ -249,7 +249,7 @@ export class OpenAI implements IAIClass {
         }
     }
 
-    private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): OpenAITool[] {
+    private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): ChatCompletionTool[] {
         return aiFunctionDefinitions.map((functionDefinition) => ({
             type: "function",
             function: {

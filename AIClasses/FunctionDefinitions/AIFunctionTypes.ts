@@ -29,10 +29,12 @@ export interface StoredFunctionCall {
 /**
  * Stored function response format used across all AI providers
  * This is the format saved to conversation history when a function returns
+ * Note: The actual stored data includes a 'name' field (see AIFunctionResponse.toConversationString)
  */
 export interface StoredFunctionResponse {
 	id: string;
 	functionResponse: {
+		name: string;
 		response: unknown;
 	};
 }

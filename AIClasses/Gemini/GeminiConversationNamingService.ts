@@ -4,6 +4,7 @@ import type { IConversationNamingService } from "AIClasses/IConversationNamingSe
 import { AIProvider, AIProviderURL, AIProviderModel } from "Enums/ApiProvider";
 import { Role } from "Enums/Role";
 import { NamePrompt } from "AIClasses/NamePrompt";
+import type { GenerateContentResponse } from "@google/genai";
 import type { SettingsService } from "Services/SettingsService";
 
 export class GeminiConversationNamingService implements IConversationNamingService {
@@ -40,7 +41,7 @@ export class GeminiConversationNamingService implements IConversationNamingServi
             throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${await response.text()}`);
         }
 
-        const data = await response.json();
+        const data = await response.json() as GenerateContentResponse;
         const generatedName = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!generatedName) {

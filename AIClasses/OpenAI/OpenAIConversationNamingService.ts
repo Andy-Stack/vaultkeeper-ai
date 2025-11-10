@@ -5,6 +5,7 @@ import { AIProvider, AIProviderURL, AIProviderModel } from "Enums/ApiProvider";
 import { Role } from "Enums/Role";
 import { NamePrompt } from "AIClasses/NamePrompt";
 import type { SettingsService } from "Services/SettingsService";
+import type { ChatCompletion } from "openai/resources/chat/completions";
 
 export class OpenAIConversationNamingService implements IConversationNamingService {
     
@@ -46,7 +47,7 @@ export class OpenAIConversationNamingService implements IConversationNamingServi
             throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${await response.text()}`);
         }
 
-        const data = await response.json();
+        const data = await response.json() as ChatCompletion;
         const generatedName = data.choices?.[0]?.message?.content;
 
         if (!generatedName) {

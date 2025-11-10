@@ -54,7 +54,7 @@ describe('ClaudeConversationNamingService', () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    content: [{ text: 'Test Conversation' }]
+                    content: [{ type: 'text', text: 'Test Conversation' }]
                 })
             });
 
@@ -87,7 +87,7 @@ describe('ClaudeConversationNamingService', () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    content: [{ text: 'Generated Name' }]
+                    content: [{ type: 'text', text: 'Generated Name' }]
                 })
             });
 
@@ -126,7 +126,7 @@ describe('ClaudeConversationNamingService', () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    content: [{ text: 'Name' }]
+                    content: [{ type: 'text', text: 'Name' }]
                 })
             });
 

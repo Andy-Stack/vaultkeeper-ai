@@ -97,7 +97,7 @@ export class VaultService {
             return { success: false, error: "File is in exclusion list" };
         }
         try {
-            await this.vault.trash(file, true);
+            await this.fileManager.trashFile(file);
             return { success: true };
         } catch (error) {
             console.error(`Error deleting file ${file.path}:`, error);

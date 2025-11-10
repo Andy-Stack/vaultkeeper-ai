@@ -37,9 +37,11 @@ const mockVault = {
 };
 
 const mockFileManager = {
-	renameFile: vi.fn()
+	renameFile: vi.fn(),
+	trashFile: vi.fn()
 } as unknown as FileManager & {
 	renameFile: ReturnType<typeof vi.fn>;
+	trashFile: ReturnType<typeof vi.fn>;
 };
 
 // Create a mutable settings object that tests can modify
@@ -400,12 +402,12 @@ describe('VaultService - Integration Tests', () => {
 	describe('delete', () => {
 		it('should delete file successfully when not excluded', async () => {
 			const mockFile = createMockFile('note.md');
-			mockVault.trash.mockResolvedValue(undefined);
+			mockFileManager.trashFile.mockResolvedValue(undefined);
 
 			const result = await vaultService.delete(mockFile);
 
 			expect(result).toEqual({ success: true });
-			expect(mockVault.trash).toHaveBeenCalledWith(mockFile, true);
+			expect(mockFileManager.trashFile).toHaveBeenCalledWith(mockFile);
 		});
 
 		it('should not delete file and return error when excluded', async () => {
@@ -414,22 +416,22 @@ describe('VaultService - Integration Tests', () => {
 			const result = await vaultService.delete(mockFile, false);
 
 			expect(result).toEqual({ success: false, error: 'File is in exclusion list' });
-			expect(mockVault.trash).not.toHaveBeenCalled();
+			expect(mockFileManager.trashFile).not.toHaveBeenCalled();
 			expect(consoleErrorSpy).toHaveBeenCalled();
 		});
 
-		it('should pass force parameter to vault.delete', async () => {
+		it('should call fileManager.trashFile to delete file', async () => {
 			const mockFile = createMockFile('note.md');
-			mockVault.trash.mockResolvedValue(undefined);
+			mockFileManager.trashFile.mockResolvedValue(undefined);
 
 			await vaultService.delete(mockFile, true);
 
-			expect(mockVault.trash).toHaveBeenCalledWith(mockFile, true);
+			expect(mockFileManager.trashFile).toHaveBeenCalledWith(mockFile);
 		});
 
 		it('should return error when deletion fails', async () => {
 			const mockFile = createMockFile('note.md');
-			mockVault.trash.mockRejectedValue(new Error('Deletion failed'));
+			mockFileManager.trashFile.mockRejectedValue(new Error('Deletion failed'));
 
 			const result = await vaultService.delete(mockFile);
 
@@ -439,7 +441,7 @@ describe('VaultService - Integration Tests', () => {
 
 		it('should handle non-Error objects in catch block', async () => {
 			const mockFile = createMockFile('note.md');
-			mockVault.trash.mockRejectedValue('string error');
+			mockFileManager.trashFile.mockRejectedValue('string error');
 
 			const result = await vaultService.delete(mockFile);
 

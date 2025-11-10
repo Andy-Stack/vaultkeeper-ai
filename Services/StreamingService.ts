@@ -1,5 +1,4 @@
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
-import type { IAIClass } from "AIClasses/IAIClass";
 import { Selector } from "Enums/Selector";
 
 export interface IStreamChunk {

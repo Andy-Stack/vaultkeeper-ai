@@ -10,14 +10,12 @@ import { Path } from "Enums/Path";
 import { Copy } from "Enums/Copy";
 import type { SettingsService } from "Services/SettingsService";
 
+import "katex/dist/katex.min.css";
+import "./styles.css";
+
 export default class VaultkeeperAIPlugin extends Plugin {
 	
 	public async onload() {
-		// KaTeX CSS is bundled with the plugin to comply with CSP
-		require("katex/dist/katex.min.css");
-		// Plugin styles
-		require("./styles.css");
-
 		await RegisterPlugin(this);
 		RegisterDependencies();
 

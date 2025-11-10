@@ -130,6 +130,9 @@ export class VaultCacheService {
               this.folders.delete(args.oldPath);
             }
             break;
+
+          case FileEvent.Modify:
+            break; // ignore modifications for folders
         }
         this.fuzzySortPrepareFolders();
       }

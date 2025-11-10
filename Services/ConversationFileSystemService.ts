@@ -31,7 +31,7 @@ export class ConversationFileSystemService {
             created: conversation.created.toISOString(),
             updated: conversation.updated.toISOString(),
             contents: conversation.contents
-                .filter(content => content.content !== Copy.ApiRequestAborted)
+                .filter(content => content.content !== Copy.ApiRequestAborted.toString())
                 .map(content => ({
                     role: content.role,
                     content: content.content,

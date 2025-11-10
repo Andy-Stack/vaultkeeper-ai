@@ -9,11 +9,11 @@ export interface ISanitizeOptions {
 
 export class SanitiserService {
   // Regular expressions for different character classes
-  private readonly illegalRe = /[\?<>\\:\*\|"]/g;
-  private readonly controlRe = /[\x00-\x1f\x80-\x9f]/g;
+  private readonly illegalRe = /[?<>\\:*|"]/g;
+  private readonly controlRe = /[\u0000-\u001f\u0080-\u009f]/g;
   private readonly reservedRe = /^\.+$/;
   private readonly windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
-  private readonly windowsTrailingRe = /[\. ]+$/;
+  private readonly windowsTrailingRe = /[. ]+$/;
 
   constructor() { }
 
@@ -42,16 +42,16 @@ export class SanitiserService {
     const outputSeparator = options.separator || "/";
 
     // Detect if this is an absolute path
-    const isAbsolute = input.startsWith("/") || /^[a-zA-Z]:[\\\/]/.test(input);
+    const isAbsolute = input.startsWith("/") || /^[a-zA-Z]:[\\/]/.test(input);
 
     // Detect Windows drive letter (e.g., C:)
-    const driveMatch = input.match(/^([a-zA-Z]:)[\\\/]/);
+    const driveMatch = input.match(/^([a-zA-Z]:)[\\/]/);
     const driveLetter = driveMatch ? driveMatch[1] : "";
 
     // Split by both forward and back slashes
     // Note: Forward slashes and backslashes are treated as path separators,
     // not as illegal characters within segments. This is intentional for cross-platform compatibility.
-    let segments = input.split(/[\\\/]+/);
+    let segments = input.split(/[\\/]+/);
 
     // Remove empty segments (from leading/trailing slashes or multiple consecutive slashes)
     // But keep track of whether we started with a slash

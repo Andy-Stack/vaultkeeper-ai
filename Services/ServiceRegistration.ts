@@ -11,7 +11,7 @@ import { StreamingMarkdownService } from "./StreamingMarkdownService";
 import { FileSystemService } from "./FileSystemService";
 import { ConversationFileSystemService } from "./ConversationFileSystemService";
 import { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
-import { FileManager, type App } from "obsidian";
+import { FileManager } from "obsidian";
 import { AIFunctionService } from "./AIFunctionService";
 import { StreamingService } from "./StreamingService";
 import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
@@ -34,12 +34,12 @@ import { UserInputService } from "./UserInputService";
 import { SearchStateStore } from "Stores/SearchStateStore";
 import { InputService } from "./InputService";
 import { HTMLService } from "./HTMLService";
-import { SettingsService } from "./SettingsService";
+import { SettingsService, type IVaultkeeperAISettings } from "./SettingsService";
 import { HelpModal } from "Modals/HelpModal";
 
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
     RegisterSingleton<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin, plugin);
-    RegisterSingleton<SettingsService>(Services.SettingsService, new SettingsService(await plugin.loadData()));
+    RegisterSingleton<SettingsService>(Services.SettingsService, new SettingsService(await plugin.loadData() as Partial<IVaultkeeperAISettings>));
 } 
 
 export function RegisterDependencies() {

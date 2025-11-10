@@ -289,7 +289,7 @@ This plugin is built on the shoulders of many excellent projects:
 **Platform & AI**
 - Built for [Obsidian](https://obsidian.md)
 - Powered by [Anthropic Claude](https://anthropic.com), [Google Gemini](https://deepmind.google/technologies/gemini/), and [OpenAI](https://openai.com)
-- Official SDKs: [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript), [@google/genai](https://github.com/google/generative-ai-js)
+- Official SDKs: [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript), [@google/genai](https://github.com/google/generative-ai-js), [openai](https://github.com/openai/openai-node)
 
 **UI Framework**
 - [Svelte](https://svelte.dev) - Reactive UI components
@@ -310,6 +310,7 @@ This plugin is built on the shoulders of many excellent projects:
 **Utilities**
 - [fuzzysort](https://github.com/farzher/fuzzysort) - Fuzzy search for reference autocomplete
 - [gpt-tokenizer](https://github.com/niieani/gpt-tokenizer) - Token counting and usage tracking
+- [Zod](https://github.com/colinhacks/zod) - TypeScript-first schema validation
 
 **Development**
 - [Vitest](https://vitest.dev/) - Fast unit testing framework

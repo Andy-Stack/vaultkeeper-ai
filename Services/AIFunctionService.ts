@@ -6,6 +6,14 @@ import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResp
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import type { ISearchMatch } from "../Helpers/SearchTypes";
 import { normalizePath, TAbstractFile, TFile } from "obsidian";
+import { 
+    SearchVaultFilesArgsSchema,
+    ReadVaultFilesArgsSchema,
+    WriteVaultFileArgsSchema,
+    DeleteVaultFilesArgsSchema,
+    MoveVaultFilesArgsSchema,
+    ListVaultFilesArgsSchema
+} from "AIClasses/Schemas/AIFunctionSchemas";
 
 export class AIFunctionService {
 
@@ -13,23 +21,77 @@ export class AIFunctionService {
 
     public async performAIFunction(functionCall: AIFunctionCall): Promise<AIFunctionResponse> {
         switch (functionCall.name) {
-            case AIFunction.SearchVaultFiles:
-                return new AIFunctionResponse(functionCall.name, await this.searchVaultFiles(functionCall.arguments.search_terms), functionCall.toolId);
+            case AIFunction.SearchVaultFiles: {
+                const parseResult = SearchVaultFilesArgsSchema.safeParse(functionCall.arguments);
+                if (!parseResult.success) {
+                    return new AIFunctionResponse(
+                        functionCall.name,
+                        { error: `Invalid arguments for SearchVaultFiles: ${parseResult.error.message}` },
+                        functionCall.toolId
+                    );
+                }
+                return new AIFunctionResponse(functionCall.name, await this.searchVaultFiles(parseResult.data.search_terms), functionCall.toolId);
+            }
 
-            case AIFunction.ReadVaultFiles:
-                return new AIFunctionResponse(functionCall.name, await this.readVaultFiles(functionCall.arguments.file_paths), functionCall.toolId);
+            case AIFunction.ReadVaultFiles: {
+                const parseResult = ReadVaultFilesArgsSchema.safeParse(functionCall.arguments);
+                if (!parseResult.success) {
+                    return new AIFunctionResponse(
+                        functionCall.name,
+                        { error: `Invalid arguments for ReadVaultFiles: ${parseResult.error.message}` },
+                        functionCall.toolId
+                    );
+                }
+                return new AIFunctionResponse(functionCall.name, await this.readVaultFiles(parseResult.data.file_paths), functionCall.toolId);
+            }
 
-            case AIFunction.WriteVaultFile:
-                return new AIFunctionResponse(functionCall.name, await this.writeVaultFile(functionCall.arguments.file_path, functionCall.arguments.content), functionCall.toolId);
+            case AIFunction.WriteVaultFile: {
+                const parseResult = WriteVaultFileArgsSchema.safeParse(functionCall.arguments);
+                if (!parseResult.success) {
+                    return new AIFunctionResponse(
+                        functionCall.name,
+                        { error: `Invalid arguments for WriteVaultFile: ${parseResult.error.message}` },
+                        functionCall.toolId
+                    );
+                }
+                return new AIFunctionResponse(functionCall.name, await this.writeVaultFile(parseResult.data.file_path, parseResult.data.content), functionCall.toolId);
+            }
 
-            case AIFunction.DeleteVaultFiles:
-                return new AIFunctionResponse(functionCall.name, await this.deleteVaultFiles(functionCall.arguments.file_paths, functionCall.arguments.confirm_deletion), functionCall.toolId);
+            case AIFunction.DeleteVaultFiles: {
+                const parseResult = DeleteVaultFilesArgsSchema.safeParse(functionCall.arguments);
+                if (!parseResult.success) {
+                    return new AIFunctionResponse(
+                        functionCall.name,
+                        { error: `Invalid arguments for DeleteVaultFiles: ${parseResult.error.message}` },
+                        functionCall.toolId
+                    );
+                }
+                return new AIFunctionResponse(functionCall.name, await this.deleteVaultFiles(parseResult.data.file_paths, parseResult.data.confirm_deletion), functionCall.toolId);
+            }
 
-            case AIFunction.MoveVaultFiles:
-                return new AIFunctionResponse(functionCall.name, await this.moveVaultFiles(functionCall.arguments.source_paths, functionCall.arguments.destination_paths), functionCall.toolId);
+            case AIFunction.MoveVaultFiles: {
+                const parseResult = MoveVaultFilesArgsSchema.safeParse(functionCall.arguments);
+                if (!parseResult.success) {
+                    return new AIFunctionResponse(
+                        functionCall.name,
+                        { error: `Invalid arguments for MoveVaultFiles: ${parseResult.error.message}` },
+                        functionCall.toolId
+                    );
+                }
+                return new AIFunctionResponse(functionCall.name, await this.moveVaultFiles(parseResult.data.source_paths, parseResult.data.destination_paths), functionCall.toolId);
+            }
 
-            case AIFunction.ListVaultFiles:
-                return new AIFunctionResponse(functionCall.name, await this.ListVaultFiles(functionCall.arguments.path, functionCall.arguments.recursive), functionCall.toolId);
+            case AIFunction.ListVaultFiles: {
+                const parseResult = ListVaultFilesArgsSchema.safeParse(functionCall.arguments);
+                if (!parseResult.success) {
+                    return new AIFunctionResponse(
+                        functionCall.name,
+                        { error: `Invalid arguments for ListVaultFiles: ${parseResult.error.message}` },
+                        functionCall.toolId
+                    );
+                }
+                return new AIFunctionResponse(functionCall.name, await this.ListVaultFiles(parseResult.data.path, parseResult.data.recursive), functionCall.toolId);
+            }
 
             // this is only used by gemini
             case AIFunction.RequestWebSearch:

@@ -8,7 +8,8 @@ import { Selector } from 'Enums/Selector';
 
 export class HelpModal extends Modal {
 
-    private component: Record<string, any> | null = null;
+    private component: ReturnType<typeof mount> | null = null;
+    private initialTopic?: number;
 
     public constructor() {
         const plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
@@ -25,19 +26,19 @@ export class HelpModal extends Modal {
             target: contentEl,
             props: {
                 onClose: () => this.close(),
-                initialTopic: (this as any).initialTopic
+                initialTopic: this.initialTopic
             }
         });
     }
 
     public open(initialTopic?: number): void {
-        (this as any).initialTopic = initialTopic;
+        this.initialTopic = initialTopic;
         super.open();
     }
 
     onClose() {
         if (this.component) {
-            unmount(this.component);
+            void unmount(this.component);
             this.component = null;
         }
 

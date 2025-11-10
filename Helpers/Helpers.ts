@@ -2,15 +2,17 @@ import type VaultkeeperAIPlugin from "main";
 
 export function openPluginSettings(plugin: VaultkeeperAIPlugin) {
     // @ts-ignore - accessing internal API
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     plugin.app.setting.open();
     // @ts-ignore - accessing internal API
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     plugin.app.setting.openTabById(plugin.manifest.id);
 }
 
 export function isValidJson(str: string): boolean {
     try {
         JSON.parse(str);
-    } catch (e) {
+    } catch {
         return false;
     }
     return true;

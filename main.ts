@@ -25,15 +25,15 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		);
 
 		this.addCommand({
-			id: "vaultkeeper-ai",
-			name: "Vaultkeeper AI",
-			callback: () => {
-				this.activateView();
+			id: "open",
+			name: "Open",
+			callback: async () => {
+				await this.activateView();
 			}
 		});
 
-		this.addRibbonIcon("sparkles", "Vaultkeeper AI", (_: MouseEvent) => {
-			this.activateView();
+		this.addRibbonIcon("sparkles", "Vaultkeeper AI", async () => {
+			await this.activateView();
 		});
 
 		this.addSettingTab(new VaultkeeperAISettingTab());
@@ -43,7 +43,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		});
 	}
 
-	public async onunload() {
+	public onunload() {
 		Resolve<StatusBarService>(Services.StatusBarService).removeStatusBarMessage();
 		DeregisterAllServices();
 	}
@@ -62,7 +62,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		}
 
 		if (leaf != null) {
-			workspace.revealLeaf(leaf);
+			await workspace.revealLeaf(leaf);
 		}
 	}
 

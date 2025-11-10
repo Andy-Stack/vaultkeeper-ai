@@ -8,6 +8,11 @@ import { Services } from 'Services/Services';
 
 export const VIEW_TYPE_MAIN = 'vaultkeeper-ai-main-view';
 
+interface ChatWindowComponent {
+  focusInput: () => void;
+  resetChatArea: () => void;
+}
+
 export class MainView extends ItemView {
 
   private statusBarService: StatusBarService = Resolve<StatusBarService>(Services.StatusBarService);
@@ -17,7 +22,7 @@ export class MainView extends ItemView {
   }
 
   topBar: ReturnType<typeof TopBar> | undefined;
-  input: ReturnType<typeof ChatWindow> | undefined;
+  input: ChatWindowComponent | undefined;
 
   getViewType() {
     return VIEW_TYPE_MAIN;
@@ -31,6 +36,8 @@ export class MainView extends ItemView {
     return 'sparkles';
   }
 
+  // ItemView requires onOpen to return Promise<void>, but mount operations are synchronous
+  // eslint-disable-next-line @typescript-eslint/require-await
   async onOpen() {
     const container = this.contentEl;
     container.empty();
@@ -51,15 +58,15 @@ export class MainView extends ItemView {
     this.input = mount(ChatWindow, {
       target: container,
       props: {}
-    });
+    }) as ChatWindowComponent;
   }
 
   async onClose() {
     if (this.topBar) {
-      unmount(this.topBar);
+      await unmount(this.topBar);
     }
     if (this.input) {
-      unmount(this.input);
+      await unmount(this.input);
     }
     this.statusBarService.removeStatusBarMessage();
   }

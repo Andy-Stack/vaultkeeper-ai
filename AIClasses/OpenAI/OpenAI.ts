@@ -12,7 +12,7 @@ import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunc
 import { Role } from "Enums/Role";
 import { isValidJson } from "Helpers/Helpers";
 import type { SettingsService } from "Services/SettingsService";
-import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionTypes";
+import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
 import type { ChatCompletionChunk, ChatCompletionTool } from "openai/resources/chat/completions";
 
 interface IToolCallAccumulator {

@@ -27,7 +27,7 @@ export class ConversationHistoryModal extends Modal {
     private readonly fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
     private readonly chatService: ChatService = Resolve<ChatService>(Services.ChatService);
 
-    private component: Record<string, any> | null = null;
+    private component: ReturnType<typeof mount> | null = null;
     private items: IListItem[];
     private conversations: Conversation[];
     public onModalClose?: () => void;
@@ -37,27 +37,31 @@ export class ConversationHistoryModal extends Modal {
         super(plugin.app);
     }
 
-    override async open() {
+    private async loadConversations() {
         this.conversations = await this.conversationFileSystemService.getAllConversations();
 
         this.items = this.conversations
-        .sort((a, b) => b.updated.getTime() - a.updated.getTime())
-        .map((conversation) => {
-            const filePath = this.conversationFileSystemService.generateConversationPath(conversation);
-            return {
-                id: filePath,
-                date: dateToString(conversation.created, false),
-                updated: conversation.updated,
-                title: conversation.title,
-                selected: false,
-                filePath: filePath
-            };
-        });
+            .sort((a, b) => b.updated.getTime() - a.updated.getTime())
+            .map((conversation) => {
+                const filePath = this.conversationFileSystemService.generateConversationPath(conversation);
+                return {
+                    id: filePath,
+                    date: dateToString(conversation.created, false),
+                    updated: conversation.updated,
+                    title: conversation.title,
+                    selected: false,
+                    filePath: filePath
+                };
+            });
 
-        super.open();
+        // Update the component with loaded items if it's already mounted
+        if (this.component) {
+            this.component.items = this.items;
+        }
     }
 
     onOpen() {
+        void this.loadConversations();
         const { contentEl, modalEl, containerEl } = this;
 
         containerEl.addClass(Selector.ConversationHistoryModal);
@@ -115,7 +119,7 @@ export class ConversationHistoryModal extends Modal {
 
     onClose() {
         if (this.component) {
-            unmount(this.component);
+            void unmount(this.component);
             this.component = null;
         }
 

@@ -1,4 +1,4 @@
-import type { JSONSchemaProperty } from "./AIFunctionTypes";
+import type { JSONSchemaProperty } from "../Schemas/AIFunctionTypes";
 
 // platform agnostic function definition used to present function calls in an API call
 export interface IAIFunctionDefinition {

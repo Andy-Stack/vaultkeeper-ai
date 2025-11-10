@@ -10,6 +10,7 @@ export interface ISanitizeOptions {
 export class SanitiserService {
   // Regular expressions for different character classes
   private readonly illegalRe = /[?<>\\:*|"]/g;
+  // eslint-disable-next-line no-control-regex -- Intentionally matching control characters for sanitization
   private readonly controlRe = /[\u0000-\u001f\u0080-\u009f]/g;
   private readonly reservedRe = /^\.+$/;
   private readonly windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;

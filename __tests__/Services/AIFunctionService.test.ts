@@ -80,7 +80,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			const result = await service.performAIFunction({
 				name: AIFunction.SearchVaultFiles,
-				arguments: { search_terms: ['test'] },
+				arguments: { search_terms: ['test'], user_message: 'test search' },
 				toolId: 'tool_1'
 			} as any);
 
@@ -106,7 +106,7 @@ describe('AIFunctionService - Integration Tests', () => {
 		it('should return empty array when search term is empty', async () => {
 			const result = await service.performAIFunction({
 				name: AIFunction.SearchVaultFiles,
-				arguments: { search_terms: [''] },
+				arguments: { search_terms: [''], user_message: 'test search' },
 				toolId: 'tool_2'
 			} as any);
 
@@ -117,7 +117,7 @@ describe('AIFunctionService - Integration Tests', () => {
 		it('should return empty array when search term is whitespace', async () => {
 			const result = await service.performAIFunction({
 				name: AIFunction.SearchVaultFiles,
-				arguments: { search_terms: ['   '] },
+				arguments: { search_terms: ['   '], user_message: 'test search' },
 				toolId: 'tool_3'
 			} as any);
 
@@ -130,7 +130,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			const result = await service.performAIFunction({
 				name: AIFunction.SearchVaultFiles,
-				arguments: { search_terms: ['nonexistent'] },
+				arguments: { search_terms: ['nonexistent'], user_message: 'test search' },
 				toolId: 'tool_4'
 			} as any);
 
@@ -150,7 +150,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			const result = await service.performAIFunction({
 				name: AIFunction.SearchVaultFiles,
-				arguments: { search_terms: ['single'] },
+				arguments: { search_terms: ['single'], user_message: 'test search' },
 				toolId: 'tool_5'
 			} as any);
 
@@ -170,7 +170,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			const result = await service.performAIFunction({
 				name: AIFunction.ReadVaultFiles,
-				arguments: { file_paths: ['file1.md', 'file2.md', 'file3.md'] },
+				arguments: { file_paths: ['file1.md', 'file2.md', 'file3.md'], user_message: 'test search' },
 				toolId: 'tool_6'
 			} as any);
 
@@ -191,7 +191,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			const result = await service.performAIFunction({
 				name: AIFunction.ReadVaultFiles,
-				arguments: { file_paths: ['exists.md', 'missing1.md', 'missing2.md'] },
+				arguments: { file_paths: ['exists.md', 'missing1.md', 'missing2.md'], user_message: 'test search' },
 				toolId: 'tool_7'
 			} as any);
 
@@ -212,7 +212,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			const result = await service.performAIFunction({
 				name: AIFunction.ReadVaultFiles,
-				arguments: { file_paths: ['a.md', 'missing.md', 'b.md'] },
+				arguments: { file_paths: ['a.md', 'missing.md', 'b.md'], user_message: 'test search' },
 				toolId: 'tool_8'
 			} as any);
 
@@ -225,7 +225,7 @@ describe('AIFunctionService - Integration Tests', () => {
 		it('should handle empty file list', async () => {
 			const result = await service.performAIFunction({
 				name: AIFunction.ReadVaultFiles,
-				arguments: { file_paths: [] },
+				arguments: { file_paths: [], user_message: 'test search' },
 				toolId: 'tool_9'
 			} as any);
 
@@ -237,7 +237,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			const result = await service.performAIFunction({
 				name: AIFunction.ReadVaultFiles,
-				arguments: { file_paths: ['single.md'] },
+				arguments: { file_paths: ['single.md'], user_message: 'test search' },
 				toolId: 'tool_10'
 			} as any);
 
@@ -254,7 +254,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.WriteVaultFile,
 				arguments: {
 					file_path: 'notes/new-note.md',
-					content: '# New Note\n\nContent here'
+					content: '# New Note\n\nContent here',
+					user_message: 'test search'
 				},
 				toolId: 'tool_11'
 			} as any);
@@ -274,7 +275,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.WriteVaultFile,
 				arguments: {
 					file_path: 'protected.md',
-					content: 'Content'
+					content: 'Content',
+					user_message: 'test search'
 				},
 				toolId: 'tool_12'
 			} as any);
@@ -290,7 +292,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.WriteVaultFile,
 				arguments: {
 					file_path: 'folder\\subfolder\\file.md',
-					content: 'Content'
+					content: 'Content',
+					user_message: 'test search'
 				},
 				toolId: 'tool_13'
 			} as any);
@@ -309,7 +312,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.WriteVaultFile,
 				arguments: {
 					file_path: 'empty.md',
-					content: ''
+					content: '',
+					user_message: 'test search'
 				},
 				toolId: 'tool_14'
 			} as any);
@@ -330,7 +334,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.DeleteVaultFiles,
 				arguments: {
 					file_paths: ['file1.md', 'file2.md', 'file3.md'],
-					confirm_deletion: true
+					confirm_deletion: true,
+					user_message: 'test search'
 				},
 				toolId: 'tool_15'
 			} as any);
@@ -349,7 +354,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.DeleteVaultFiles,
 				arguments: {
 					file_paths: ['file1.md', 'file2.md'],
-					confirm_deletion: false
+					confirm_deletion: false,
+					user_message: 'test search'
 				},
 				toolId: 'tool_16'
 			} as any);
@@ -370,7 +376,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.DeleteVaultFiles,
 				arguments: {
 					file_paths: ['a.md', 'missing.md', 'c.md'],
-					confirm_deletion: true
+					confirm_deletion: true,
+					user_message: 'test search'
 				},
 				toolId: 'tool_17'
 			} as any);
@@ -391,7 +398,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.DeleteVaultFiles,
 				arguments: {
 					file_paths: ['file1.md', 'file2.md'],
-					confirm_deletion: true
+					confirm_deletion: true,
+					user_message: 'test search'
 				},
 				toolId: 'tool_18'
 			} as any);
@@ -406,7 +414,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.DeleteVaultFiles,
 				arguments: {
 					file_paths: [],
-					confirm_deletion: true
+					confirm_deletion: true,
+					user_message: 'test search'
 				},
 				toolId: 'tool_19'
 			} as any);
@@ -426,7 +435,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.MoveVaultFiles,
 				arguments: {
 					source_paths: ['a.md', 'b.md', 'c.md'],
-					destination_paths: ['dest/a.md', 'dest/b.md', 'dest/c.md']
+					destination_paths: ['dest/a.md', 'dest/b.md', 'dest/c.md'],
+					user_message: 'test search'
 				},
 				toolId: 'tool_20'
 			} as any);
@@ -445,7 +455,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.MoveVaultFiles,
 				arguments: {
 					source_paths: ['a.md', 'b.md'],
-					destination_paths: ['dest/a.md']
+					destination_paths: ['dest/a.md'],
+					user_message: 'test search'
 				},
 				toolId: 'tool_21'
 			} as any);
@@ -466,7 +477,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.MoveVaultFiles,
 				arguments: {
 					source_paths: ['a.md', 'b.md', 'c.md'],
-					destination_paths: ['new/a.md', 'existing.md', 'new/c.md']
+					destination_paths: ['new/a.md', 'existing.md', 'new/c.md'],
+					user_message: 'test search'
 				},
 				toolId: 'tool_22'
 			} as any);
@@ -485,7 +497,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.MoveVaultFiles,
 				arguments: {
 					source_paths: ['old/file.md'],
-					destination_paths: ['new/file.md']
+					destination_paths: ['new/file.md'],
+					user_message: 'test search'
 				},
 				toolId: 'tool_23'
 			} as any);
@@ -498,7 +511,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.MoveVaultFiles,
 				arguments: {
 					source_paths: [],
-					destination_paths: []
+					destination_paths: [],
+					user_message: 'test search'
 				},
 				toolId: 'tool_24'
 			} as any);
@@ -575,7 +589,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			const searchResult = await service.performAIFunction({
 				name: AIFunction.SearchVaultFiles,
-				arguments: { search_terms: ['test'] },
+				arguments: { search_terms: ['test'], user_message: 'test search' },
 				toolId: 'search_1'
 			} as any);
 
@@ -586,7 +600,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			const readResult = await service.performAIFunction({
 				name: AIFunction.ReadVaultFiles,
-				arguments: { file_paths: [foundPath] },
+				arguments: { file_paths: [foundPath], user_message: 'test search' },
 				toolId: 'read_1'
 			} as any);
 
@@ -602,7 +616,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.WriteVaultFile,
 				arguments: {
 					file_path: 'temp.md',
-					content: 'Temporary content'
+					content: 'Temporary content',
+					user_message: 'test search'
 				},
 				toolId: 'write_1'
 			} as any);
@@ -616,7 +631,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				name: AIFunction.MoveVaultFiles,
 				arguments: {
 					source_paths: ['temp.md'],
-					destination_paths: ['archive/temp.md']
+					destination_paths: ['archive/temp.md'],
+					user_message: 'test search'
 				},
 				toolId: 'move_1'
 			} as any);

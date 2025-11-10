@@ -13,7 +13,7 @@ import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunc
 import { isValidJson } from "Helpers/Helpers";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { SettingsService } from "Services/SettingsService";
-import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionTypes";
+import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
 import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
 import { FinishReason } from "@google/genai";
 

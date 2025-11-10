@@ -64,22 +64,23 @@ export class ChatService {
 			this.abortController = new AbortController();
 
 			conversation.contents.push(new ConversationContent(Role.User, userRequest, formattedRequest));
-			this.conversationService.saveConversation(conversation);
+			await this.conversationService.saveConversation(conversation);
 
 			callbacks.onSubmit();
 			callbacks.onStreamingUpdate(null);
 
 			if (conversation.contents.length === 1) {
 				this.onNameChanged?.(conversation.title); // on change for initial conversation name
-				this.namingService.requestName(conversation, formattedRequest, this.onNameChanged, this.abortController);
+				await this.namingService.requestName(conversation, formattedRequest, this.onNameChanged, this.abortController);
 			}
 
 			// Process AI responses and function calls
 			let response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
 			while (response.functionCall || response.shouldContinue) {
 				if (response.functionCall) {
-					if (response.functionCall.arguments.user_message) {
-						callbacks.onThoughtUpdate(response.functionCall.arguments.user_message);
+					const userMessage = response.functionCall.arguments.user_message;
+					if (userMessage && typeof userMessage === "string") {
+						callbacks.onThoughtUpdate(userMessage);
 					}
 
 					const functionResponse = await this.aiFunctionService.performAIFunction(response.functionCall);
@@ -94,7 +95,7 @@ export class ChatService {
 				response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
 			}
 		} finally {
-			this.conversationService.saveConversation(conversation);
+			await this.conversationService.saveConversation(conversation);
 			this.abortController = null;
 			if (this.semaphoreHeld) {
 				this.semaphoreHeld = false;
@@ -238,7 +239,7 @@ export class ChatService {
 	
 		// Step 1: Remove markdown code blocks that might contain the function call
 		// Pattern matches ```json\n...\n``` or ```\n...\n```
-		sanitized = sanitized.replace(/```(?:json)?\s*\n?([\s\S]*?)\n?```/g, (match, codeContent) => {
+		sanitized = sanitized.replace(/```(?:json)?\s*\n?([\s\S]*?)\n?```/g, (match: string, codeContent: string) => {
 			// If the code block contains our function call, remove it entirely
 			if (codeContent.trim() === functionCallString.trim()) {
 				return '';
@@ -252,16 +253,16 @@ export class ChatService {
 	
 		// Step 3: Handle pretty-printed variations by normalizing both strings
 		try {
-			const functionCallObj = JSON.parse(functionCallString);
+			const functionCallObj: unknown = JSON.parse(functionCallString);
 			const normalizedTarget = JSON.stringify(functionCallObj);
 			
 			// Find and remove any JSON that matches when normalized
 			// This regex finds JSON objects/arrays in the text
-			const jsonPattern = /\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\}|\[(?:[^\[\]]|(?:\[(?:[^\[\]]|(?:\[[^\[\]]*\]))*\]))*\]/g;
+			const jsonPattern = /\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\}|\[(?:[^[\]]|(?:\[(?:[^[\]]|(?:\[[^[\]]*\]))*\]))*\]/g;
 			
 			sanitized = sanitized.replace(jsonPattern, (match) => {
 				try {
-					const parsedMatch = JSON.parse(match);
+					const parsedMatch: unknown = JSON.parse(match);
 					const normalizedMatch = JSON.stringify(parsedMatch);
 					// Remove if it matches our function call when normalized
 					return normalizedMatch === normalizedTarget ? '' : match;

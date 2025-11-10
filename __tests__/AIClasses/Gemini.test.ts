@@ -62,7 +62,7 @@ describe('Gemini', () => {
         mockFunctionDefinitions = {
             getQueryActions: vi.fn().mockReturnValue([
                 {
-                    name: 'test_function',
+                    name: 'search_vault_filestion',
                     description: 'Test function',
                     parameters: {
                         type: 'object',
@@ -145,7 +145,7 @@ describe('Gemini', () => {
                     content: {
                         parts: [{
                             functionCall: {
-                                name: 'search_files',
+                                name: 'search_vault_files',
                                 args: {
                                     query: 'test'
                                 }
@@ -157,7 +157,7 @@ describe('Gemini', () => {
 
             (gemini as any).parseStreamChunk(chunk);
 
-            expect((gemini as any).accumulatedFunctionName).toBe('search_files');
+            expect((gemini as any).accumulatedFunctionName).toBe('search_vault_files');
             expect((gemini as any).accumulatedFunctionArgs).toEqual({ query: 'test' });
         });
 
@@ -168,7 +168,7 @@ describe('Gemini', () => {
                     content: {
                         parts: [{
                             functionCall: {
-                                name: 'test_func',
+                                name: 'search_vault_files',
                                 args: {
                                     param1: 'value1'
                                 }
@@ -201,7 +201,7 @@ describe('Gemini', () => {
 
         it('should finalize function call on completion', () => {
             // Setup accumulated state
-            (gemini as any).accumulatedFunctionName = 'search_files';
+            (gemini as any).accumulatedFunctionName = 'search_vault_files';
             (gemini as any).accumulatedFunctionArgs = { query: 'test' };
 
             const chunk = JSON.stringify({
@@ -215,7 +215,7 @@ describe('Gemini', () => {
             expect(result.isComplete).toBe(true);
             expect(result.shouldContinue).toBe(true);
             expect(result.functionCall).toBeDefined();
-            expect(result.functionCall?.name).toBe('search_files');
+            expect(result.functionCall?.name).toBe('search_vault_files');
             expect(result.functionCall?.arguments).toEqual({ query: 'test' });
         });
 
@@ -357,7 +357,7 @@ describe('Gemini', () => {
                 '',
                 JSON.stringify({
                     functionCall: {
-                        name: 'search_files',
+                        name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
@@ -372,7 +372,7 @@ describe('Gemini', () => {
             expect(result[0].parts).toHaveLength(1);
             expect(result[0].parts[0]).toEqual({
                 functionCall: {
-                    name: 'search_files',
+                    name: 'search_vault_files',
                     args: { query: 'test' }
                 }
             });
@@ -381,7 +381,7 @@ describe('Gemini', () => {
         it('should convert function response to Gemini format', () => {
             const responseContent = JSON.stringify({
                 functionResponse: {
-                    name: 'search_files',
+                    name: 'search_vault_files',
                     response: ['file1.txt', 'file2.txt']
                 }
             });
@@ -399,7 +399,7 @@ describe('Gemini', () => {
             // Gemini API requires both 'name' and 'response' fields
             expect(result[0].parts[0]).toEqual({
                 functionResponse: {
-                    name: 'search_files',
+                    name: 'search_vault_files',
                     response: ['file1.txt', 'file2.txt']
                 }
             });
@@ -466,7 +466,7 @@ describe('Gemini', () => {
         it('should map function definitions to Gemini format', () => {
             const definitions = [
                 {
-                    name: 'search_files',
+                    name: 'search_vault_files',
                     description: 'Search for files',
                     parameters: {
                         type: 'object',
@@ -481,7 +481,7 @@ describe('Gemini', () => {
 
             expect(result).toHaveLength(1);
             expect(result[0]).toEqual({
-                name: 'search_files',
+                name: 'search_vault_files',
                 description: 'Search for files',
                 parameters: definitions[0].parameters
             });

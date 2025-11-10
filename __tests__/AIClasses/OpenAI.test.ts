@@ -62,7 +62,7 @@ describe('OpenAI', () => {
         mockFunctionDefinitions = {
             getQueryActions: vi.fn().mockReturnValue([
                 {
-                    name: 'test_function',
+                    name: 'search_vault_filestion',
                     description: 'Test function',
                     parameters: {
                         type: 'object',
@@ -139,7 +139,7 @@ describe('OpenAI', () => {
                             index: 0,
                             id: 'call_123',
                             function: {
-                                name: 'search_files',
+                                name: 'search_vault_files',
                                 arguments: '{"qu'
                             }
                         }]
@@ -178,7 +178,7 @@ describe('OpenAI', () => {
             expect(result.isComplete).toBe(true);
             expect(result.shouldContinue).toBe(true);
             expect(result.functionCall).toBeDefined();
-            expect(result.functionCall?.name).toBe('search_files');
+            expect(result.functionCall?.name).toBe('search_vault_files');
             expect(result.functionCall?.arguments).toEqual({ query: 'test' });
             expect(result.functionCall?.toolId).toBe('call_123');
         });
@@ -193,7 +193,7 @@ describe('OpenAI', () => {
                                 index: 0,
                                 id: 'call_1',
                                 function: {
-                                    name: 'first_func',
+                                    name: 'search_vault_files',
                                     arguments: '{"a":1}'
                                 }
                             },
@@ -201,7 +201,7 @@ describe('OpenAI', () => {
                                 index: 1,
                                 id: 'call_2',
                                 function: {
-                                    name: 'second_func',
+                                    name: 'read_vault_files',
                                     arguments: '{"b":2}'
                                 }
                             }
@@ -224,7 +224,7 @@ describe('OpenAI', () => {
 
             // Should only return the first tool call (index 0)
             expect(result.functionCall).toBeDefined();
-            expect(result.functionCall?.name).toBe('first_func');
+            expect(result.functionCall?.name).toBe('search_vault_files');
             expect((openai as any).accumulatedToolCalls.size).toBe(2);
         });
 
@@ -262,7 +262,7 @@ describe('OpenAI', () => {
             // Setup invalid arguments
             (openai as any).accumulatedToolCalls.set(0, {
                 id: 'call_123',
-                name: 'test_func',
+                name: 'search_vault_files',
                 arguments: 'invalid json {'
             });
 
@@ -344,7 +344,7 @@ describe('OpenAI', () => {
                 JSON.stringify({
                     functionCall: {
                         id: 'call_123',
-                        name: 'search_files',
+                        name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
@@ -370,7 +370,7 @@ describe('OpenAI', () => {
                 id: 'call_123',
                 type: 'function',
                 function: {
-                    name: 'search_files',
+                    name: 'search_vault_files',
                     arguments: '{"query":"test"}'
                 }
             });
@@ -496,7 +496,7 @@ describe('OpenAI', () => {
         it('should map function definitions to OpenAI tool format', () => {
             const definitions = [
                 {
-                    name: 'search_files',
+                    name: 'search_vault_files',
                     description: 'Search for files',
                     parameters: {
                         type: 'object',
@@ -524,7 +524,7 @@ describe('OpenAI', () => {
             expect(result[0]).toEqual({
                 type: 'function',
                 function: {
-                    name: 'search_files',
+                    name: 'search_vault_files',
                     description: 'Search for files',
                     parameters: definitions[0].parameters
                 }

@@ -7,6 +7,7 @@ import type { Conversation } from "Conversations/Conversation";
 import { Role } from "Enums/Role";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
+import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
 import type VaultkeeperAIPlugin from "main";
 import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
@@ -139,7 +140,7 @@ export class Gemini implements IAIClass {
       // If streaming is complete and we have accumulated a function call, return it
       if (isComplete && this.accumulatedFunctionName) {
         functionCall = new AIFunctionCall(
-          this.accumulatedFunctionName,
+          aiFunctionFromString(this.accumulatedFunctionName),
           this.accumulatedFunctionArgs as Record<string, object>
         );
       }

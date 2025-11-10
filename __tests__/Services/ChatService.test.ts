@@ -6,6 +6,7 @@ import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { AIFunctionCall } from '../../AIClasses/AIFunctionCall';
+import { AIFunction, fromString } from '../../Enums/AIFunction';
 
 /**
  * INTEGRATION TESTS - Simplified
@@ -390,7 +391,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should return content unchanged when content is empty', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('test_function', { arg1: 'value1' });
+			const functionCall = new AIFunctionCall(AIFunction.SearchVaultFiles, { arg1: 'value1' });
 
 			const result = sanitize('', functionCall);
 
@@ -399,7 +400,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should return content unchanged when content is only whitespace', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('test_function', { arg1: 'value1' });
+			const functionCall = new AIFunctionCall(AIFunction.SearchVaultFiles, { arg1: 'value1' });
 
 			const result = sanitize('   \n\t  ', functionCall);
 
@@ -408,7 +409,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should remove exact function call JSON from content', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('write_file', {
+			const functionCall = new AIFunctionCall(AIFunction.WriteVaultFile, {
 				file_path: 'test.md',
 				content: 'Hello world'
 			});
@@ -422,7 +423,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should remove pretty-printed function call JSON (2 spaces)', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('search_files', {
+			const functionCall = new AIFunctionCall(AIFunction.SearchVaultFiles, {
 				query: 'test query',
 				limit: 10
 			});
@@ -437,7 +438,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should remove pretty-printed function call JSON (4 spaces)', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('read_file', {
+			const functionCall = new AIFunctionCall(AIFunction.ReadVaultFiles, {
 				file_path: 'example.ts'
 			});
 
@@ -464,7 +465,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should only remove function call JSON, preserving other content', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('delete_file', {
+			const functionCall = new AIFunctionCall(AIFunction.DeleteVaultFiles, {
 				file_path: 'old.txt'
 			});
 			const functionCallString = functionCall.toConversationString();
@@ -477,7 +478,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should handle function calls with special characters in arguments', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('write_file', {
+			const functionCall = new AIFunctionCall(AIFunction.WriteVaultFile, {
 				file_path: 'path/to/file.ts',
 				content: 'const regex = /test.*pattern/g;\nfunction() { return "value"; }'
 			});
@@ -491,7 +492,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should handle function calls with nested objects', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('complex_function', {
+			const functionCall = new AIFunctionCall(AIFunction.SearchVaultFiles, {
 				config: {
 					nested: {
 						deeply: {
@@ -511,7 +512,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should handle function calls with toolId', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('test_function', { arg: 'value' }, 'tool-123');
+			const functionCall = new AIFunctionCall(AIFunction.SearchVaultFiles, { arg: 'value' }, 'tool-123');
 			const functionCallString = functionCall.toConversationString();
 			const content = functionCallString;
 
@@ -522,7 +523,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should not remove similar but different JSON structures', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('write_file', {
+			const functionCall = new AIFunctionCall(AIFunction.WriteVaultFile, {
 				file_path: 'test.md'
 			});
 
@@ -543,12 +544,12 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should handle multiple whitespace variations in pretty-printed JSON', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('test', { key: 'value' });
+			const functionCall = new AIFunctionCall(AIFunction.SearchVaultFiles, { key: 'value' });
 
 			// Content with irregular whitespace
 			const content = `{
   "functionCall":    {
-    "name":  "test",
+    "name":  "search_vault_files",
     "args": {
       "key":   "value"
     }
@@ -562,7 +563,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should preserve natural language content when function call exists', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('write_vault_file', {
+			const functionCall = new AIFunctionCall(AIFunction.WriteVaultFile, {
 				content: 'Character sheet content',
 				file_name: 'Walker.md'
 			});
@@ -576,7 +577,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should preserve content that does not start with {', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('search_vault_files', {
+			const functionCall = new AIFunctionCall(AIFunction.SearchVaultFiles, {
 				search_terms: ['Walker']
 			});
 			const content = 'Searching for details about Walker in Campaign 2 folder.';
@@ -589,7 +590,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should preserve content that does not end with }', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('test', { key: 'value' });
+			const functionCall = new AIFunctionCall(AIFunction.SearchVaultFiles, { key: 'value' });
 			const content = '{ "incomplete": "json"';
 
 			const result = sanitize(content, functionCall);
@@ -600,7 +601,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should preserve content with mixed text and JSON-like structures', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('test', { key: 'value' });
+			const functionCall = new AIFunctionCall(AIFunction.SearchVaultFiles, { key: 'value' });
 			const content = 'Here is some info: { "data": "example" } and more text';
 
 			const result = sanitize(content, functionCall);
@@ -611,7 +612,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should only sanitize when content is EXACTLY matching JSON structure', () => {
 			const sanitize = getSanitizeMethod(service);
-			const functionCall = new AIFunctionCall('write_file', {
+			const functionCall = new AIFunctionCall(AIFunction.WriteVaultFile, {
 				file_path: 'test.md',
 				content: 'Hello'
 			});
@@ -625,6 +626,24 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			expect(sanitize(exactMatch, functionCall)).toBe('');
 			expect(sanitize(withPrefix, functionCall)).toBe('Creating file:');
 			expect(sanitize(withSuffix, functionCall)).toBe('- done');
+		});
+	});
+
+	describe('fromString', () => {
+		it('should convert valid function name strings to AIFunction enum', () => {
+			expect(fromString('search_vault_files')).toBe(AIFunction.SearchVaultFiles);
+			expect(fromString('read_vault_files')).toBe(AIFunction.ReadVaultFiles);
+			expect(fromString('write_vault_file')).toBe(AIFunction.WriteVaultFile);
+			expect(fromString('delete_vault_files')).toBe(AIFunction.DeleteVaultFiles);
+			expect(fromString('move_vault_files')).toBe(AIFunction.MoveVaultFiles);
+			expect(fromString('list_vault_files')).toBe(AIFunction.ListVaultFiles);
+			expect(fromString('request_web_search')).toBe(AIFunction.RequestWebSearch);
+		});
+
+		it('should throw an error for unknown function names', () => {
+			expect(() => fromString('unknown_function')).toThrow('Unknown function name: unknown_function');
+			expect(() => fromString('test_function')).toThrow('Unknown function name: test_function');
+			expect(() => fromString('')).toThrow('Unknown function name: ');
 		});
 	});
 });

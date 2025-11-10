@@ -6,6 +6,7 @@ import { StreamingService, type IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
+import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
 import type VaultkeeperAIPlugin from "main";
 import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
@@ -225,7 +226,7 @@ export class OpenAI implements IAIClass {
                         try {
                             const args = JSON.parse(firstToolCall.arguments) as Record<string, unknown>;
                             functionCall = new AIFunctionCall(
-                                firstToolCall.name,
+                                aiFunctionFromString(firstToolCall.name),
                                 args as Record<string, object>,
                                 firstToolCall.id || undefined
                             );

@@ -62,7 +62,7 @@ describe('Claude', () => {
         mockFunctionDefinitions = {
             getQueryActions: vi.fn().mockReturnValue([
                 {
-                    name: 'test_function',
+                    name: 'search_vault_filestion',
                     description: 'Test function',
                     parameters: {
                         type: 'object',
@@ -130,7 +130,7 @@ describe('Claude', () => {
                 type: 'content_block_start',
                 content_block: {
                     type: 'tool_use',
-                    name: 'search_files',
+                    name: 'search_vault_files',
                     id: 'tool_123'
                 }
             });
@@ -148,7 +148,7 @@ describe('Claude', () => {
                 type: 'content_block_start',
                 content_block: {
                     type: 'tool_use',
-                    name: 'search_files',
+                    name: 'search_vault_files',
                     id: 'tool_123'
                 }
             }));
@@ -176,14 +176,14 @@ describe('Claude', () => {
             }));
 
             expect(result.functionCall).toBeDefined();
-            expect(result.functionCall?.name).toBe('search_files');
+            expect(result.functionCall?.name).toBe('search_vault_files');
             expect(result.functionCall?.arguments).toEqual({ query: 'test' });
             expect(result.functionCall?.toolId).toBe('tool_123');
         });
 
         it('should handle content_block_stop and finalize function call', () => {
             // Setup
-            (claude as any).accumulatedFunctionName = 'test_func';
+            (claude as any).accumulatedFunctionName = 'search_vault_files';
             (claude as any).accumulatedFunctionArgs = '{"param":"value"}';
             (claude as any).accumulatedFunctionId = 'func_456';
 
@@ -194,7 +194,7 @@ describe('Claude', () => {
             const result = (claude as any).parseStreamChunk(chunk);
 
             expect(result.functionCall).toBeDefined();
-            expect(result.functionCall?.name).toBe('test_func');
+            expect(result.functionCall?.name).toBe('search_vault_files');
             expect(result.functionCall?.arguments).toEqual({ param: 'value' });
             expect(result.functionCall?.toolId).toBe('func_456');
 
@@ -240,7 +240,7 @@ describe('Claude', () => {
 
         it('should handle invalid JSON in function arguments gracefully', () => {
             // Setup
-            (claude as any).accumulatedFunctionName = 'test_func';
+            (claude as any).accumulatedFunctionName = 'search_vault_files';
             (claude as any).accumulatedFunctionArgs = 'invalid json {';
             (claude as any).accumulatedFunctionId = 'func_789';
 
@@ -300,7 +300,7 @@ describe('Claude', () => {
                 JSON.stringify({
                     functionCall: {
                         id: 'call_123',
-                        name: 'search_files',
+                        name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
@@ -315,7 +315,7 @@ describe('Claude', () => {
             expect(result[0].content[0]).toEqual({
                 type: 'tool_use',
                 id: 'call_123',
-                name: 'search_files',
+                name: 'search_vault_files',
                 input: { query: 'test' }
             });
         });
@@ -412,7 +412,7 @@ describe('Claude', () => {
                 JSON.stringify({
                     functionCall: {
                         id: 'call_456',
-                        name: 'search_files',
+                        name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
@@ -433,7 +433,7 @@ describe('Claude', () => {
         it('should map function definitions to Claude tool format', () => {
             const definitions = [
                 {
-                    name: 'search_files',
+                    name: 'search_vault_files',
                     description: 'Search for files',
                     parameters: {
                         type: 'object',
@@ -459,7 +459,7 @@ describe('Claude', () => {
 
             expect(result).toHaveLength(2);
             expect(result[0]).toEqual({
-                name: 'search_files',
+                name: 'search_vault_files',
                 description: 'Search for files',
                 input_schema: definitions[0].parameters
             });

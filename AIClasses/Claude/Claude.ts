@@ -6,6 +6,7 @@ import { StreamingService, type IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
+import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
 import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import { isValidJson } from "Helpers/Helpers";
@@ -114,7 +115,7 @@ export class Claude implements IAIClass {
                     try {
                         const args = JSON.parse(this.accumulatedFunctionArgs) as Record<string, unknown>;
                         functionCall = new AIFunctionCall(
-                            this.accumulatedFunctionName,
+                            aiFunctionFromString(this.accumulatedFunctionName),
                             args as Record<string, object>,
                             this.accumulatedFunctionId || undefined
                         );

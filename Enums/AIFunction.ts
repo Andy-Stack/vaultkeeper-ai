@@ -9,3 +9,11 @@ export enum AIFunction {
     // only used by gemini
     RequestWebSearch = "request_web_search",
 }
+
+export function fromString(functionName: string): AIFunction {
+    const enumValue = Object.values(AIFunction).find((value: string) => value === functionName);
+    if (enumValue) {
+        return enumValue as AIFunction;
+    }
+    throw new Error(`Unknown function name: ${functionName}`);
+}

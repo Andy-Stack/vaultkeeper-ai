@@ -45,7 +45,7 @@ export enum Copy {
     SettingModelDesc = "Select the AI model to use.",
     SettingApiKeyDesc = "Enter your API key here.",
     SettingFileExclusionsDesc = "Set which directories and files the AI should ignore. Enter one path per line - supports glob patterns like folder/**, *.md",
-    SettingSearchResultsLimitDesc = "Set the maximum number of results provided to the AI when it searches through files in your vault. Higher values use more tokens.",
+    SettingSearchResultsLimitDesc = "Set the maximum number of results provided to the AI when it searches through files in your vault. Higher values use more tokens and increase search time.",
     SettingSnippetSizeLimitDesc = "Set the character limit of search previews provided to the AI when it searches through files in your vault. Higher values use more tokens.",
 
     // Settings Placeholders

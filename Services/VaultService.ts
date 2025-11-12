@@ -3,7 +3,7 @@ import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type VaultkeeperAIPlugin from "main";
 import { Path } from "Enums/Path";
-import { randomSample } from "Helpers/Helpers";
+import { randomSample, shuffleArray } from "Helpers/Helpers";
 import { StringTools } from "Helpers/StringTools";
 import type { ISearchMatch, ISearchSnippet } from "../Helpers/SearchTypes";
 import type { SanitiserService } from "./SanitiserService";
@@ -199,70 +199,73 @@ export class VaultService {
     }
 
     public async searchVaultFiles(searchTerm: string, allowAccessToPluginRoot: boolean = false): Promise<ISearchMatch[]> {
-        const allMatches: ISearchMatch[] = [];
-
         if (searchTerm.trim() === "") {
-            return allMatches;
+            return [];
         }
-        
+
         // Always ensure 'g' flag is present for extractSnippets to work correctly
         // (regex.exec in a loop requires 'g' flag to advance, otherwise infinite loop)
         const regex = StringTools.asRegex(searchTerm, ["i", "g"]);
 
         if (regex === null) {
-            return allMatches;
+            return [];
         }
 
         const files: TFile[] = await this.listFilesInDirectory(Path.Root, true, allowAccessToPluginRoot);
 
-        for (const file of files) {
-            const content = await this.vault.cachedRead(file);
-            const snippets = this.extractSnippets(content, regex);
+        // Randomize file order to ensure varied results across multiple searches
+        const shuffledFiles = shuffleArray(files);
 
-            if (snippets.length > 0) {
-                allMatches.push({ file, snippets });
+        // Process files in parallel batches with early termination
+        const BATCH_SIZE = 100;
+        const MAX_MATCHES = this.settingsService.settings.searchResultsLimit * 3;
+        const allMatches: ISearchMatch[] = [];
+
+        for (let i = 0; i < shuffledFiles.length; i += BATCH_SIZE) {
+            // Early termination: stop if we have enough matches
+            if (allMatches.length >= MAX_MATCHES) {
+                break;
+            }
+
+            const batch = shuffledFiles.slice(i, i + BATCH_SIZE);
+            const batchPromises = batch.map(async (file) => {
+                try {
+                    const content = await this.vault.cachedRead(file);
+                    const snippets = this.extractSnippets(content, regex);
+
+                    // Check filename match
+                    const hasFilenameMatch = file.basename.match(regex) !== null;
+
+                    // Return match if content has snippets OR filename matches
+                    if (snippets.length > 0 || hasFilenameMatch) {
+                        return { file, snippets };
+                    }
+
+                    return null;
+                } catch (error) {
+                    console.error(`Error processing file ${file.path}:`, error);
+                    return null;
+                }
+            });
+
+            const batchResults = await Promise.all(batchPromises);
+
+            for (const result of batchResults) {
+                if (result !== null) {
+                    allMatches.push(result);
+                }
             }
         }
 
-        const flatMatches: { file: TFile; snippet: ISearchSnippet }[] = [];
-        for (const match of allMatches) {
-            for (const snippet of match.snippets) {
-                flatMatches.push({ file: match.file, snippet });
-            }
-        }
-
-        // randomly sample matches if more than N matches are found
-        let selectedMatches: { file: TFile; snippet: ISearchSnippet }[];
-        if (flatMatches.length > this.settingsService.settings.searchResultsLimit) {
-            selectedMatches = randomSample(flatMatches, this.settingsService.settings.searchResultsLimit);
+        // Sample files if we have more than the limit
+        let selectedMatches: ISearchMatch[];
+        if (allMatches.length > this.settingsService.settings.searchResultsLimit) {
+            selectedMatches = randomSample(allMatches, this.settingsService.settings.searchResultsLimit);
         } else {
-            selectedMatches = flatMatches;
+            selectedMatches = allMatches;
         }
 
-        const resultMap = new Map<TFile, ISearchSnippet[]>();
-        for (const match of selectedMatches) {
-            const existing = resultMap.get(match.file);
-            if (existing) {
-                existing.push(match.snippet);
-            } else {
-                resultMap.set(match.file, [match.snippet]);
-            }
-        }
-
-        const results: ISearchMatch[] = [];
-        for (const [file, snippets] of resultMap.entries()) {
-            results.push({ file, snippets });
-        }
-
-        // add filename matches
-        for (const file of files) {
-            if (file.basename.match(regex) &&
-                !results.some(result => result.file.basename === file.basename)) {
-                results.push({ file, snippets: [] });
-            }
-        }
-
-        return results;
+        return selectedMatches;
     }
 
     public isExclusion(filePath: string, allowAccessToPluginRoot: boolean = false): boolean {
@@ -312,63 +315,77 @@ export class VaultService {
     }
 
     private extractSnippets(content: string, regex: RegExp): ISearchSnippet[] {
-        const snippets: ISearchSnippet[] = [];
-        const snippetSize = this.settingsService.settings.snippetSizeLimit / 2;
+        const matchPositions: { matchIndex: number; matchLength: number }[] = [];
 
         let match: RegExpExecArray | null;
 
+        // First pass: collect all match positions without extracting text
         while ((match = regex.exec(content)) !== null) {
-            const matchIndex = match.index;
-            const matchLength = match[0].length;
-
-            const snippetStart = Math.max(0, matchIndex - snippetSize);
-            const snippetEnd = Math.min(content.length, matchIndex + matchLength + snippetSize);
-
-            snippets.push({
-                text: content.substring(snippetStart, snippetEnd),
-                matchIndex,
-                matchLength
+            matchPositions.push({
+                matchIndex: match.index,
+                matchLength: match[0].length
             });
         }
 
         regex.lastIndex = 0;
 
-        return this.mergeOverlappingSnippets(snippets, content);
+        if (matchPositions.length === 0) {
+            return [];
+        }
+
+        // Second pass: merge overlapping positions and extract text only once per snippet
+        return this.mergeOverlappingSnippets(matchPositions, content);
     }
 
-    private mergeOverlappingSnippets(snippets: ISearchSnippet[], content: string): ISearchSnippet[] {
-        if (snippets.length === 0) return snippets;
+    private mergeOverlappingSnippets(
+        matchPositions: { matchIndex: number; matchLength: number }[],
+        content: string
+    ): ISearchSnippet[] {
+        if (matchPositions.length === 0) return [];
 
-        snippets.sort((a, b) => a.matchIndex - b.matchIndex);
+        // Sort by match position
+        matchPositions.sort((a, b) => a.matchIndex - b.matchIndex);
 
-        const merged: ISearchSnippet[] = [];
-        let current = snippets[0];
         const snippetSize = this.settingsService.settings.snippetSizeLimit / 2;
+        const merged: ISearchSnippet[] = [];
+        let current = matchPositions[0];
 
-        for (let i = 1; i < snippets.length; i++) {
-            const next = snippets[i];
+        for (let i = 1; i < matchPositions.length; i++) {
+            const next = matchPositions[i];
 
-            const currentStart = Math.max(0, current.matchIndex - snippetSize);
             const currentEnd = Math.min(content.length, current.matchIndex + current.matchLength + snippetSize);
             const nextStart = Math.max(0, next.matchIndex - snippetSize);
-            const nextEnd = Math.min(content.length, next.matchIndex + next.matchLength + snippetSize);
 
             if (nextStart <= currentEnd) {
-                const mergedStart = Math.min(currentStart, nextStart);
-                const mergedEnd = Math.max(currentEnd, nextEnd);
-
+                // Merge overlapping matches
                 current = {
-                    text: content.substring(mergedStart, mergedEnd),
                     matchIndex: current.matchIndex,
                     matchLength: next.matchIndex + next.matchLength - current.matchIndex
                 };
             } else {
-                merged.push(current);
+                // Extract text only for finalized (non-overlapping) snippet
+                const snippetStart = Math.max(0, current.matchIndex - snippetSize);
+                const snippetEnd = Math.min(content.length, current.matchIndex + current.matchLength + snippetSize);
+
+                merged.push({
+                    text: content.substring(snippetStart, snippetEnd),
+                    matchIndex: current.matchIndex,
+                    matchLength: current.matchLength
+                });
+
                 current = next;
             }
         }
 
-        merged.push(current);
+        // Extract text for the last snippet
+        const snippetStart = Math.max(0, current.matchIndex - snippetSize);
+        const snippetEnd = Math.min(content.length, current.matchIndex + current.matchLength + snippetSize);
+
+        merged.push({
+            text: content.substring(snippetStart, snippetEnd),
+            matchIndex: current.matchIndex,
+            matchLength: current.matchLength
+        });
 
         return merged;
     }

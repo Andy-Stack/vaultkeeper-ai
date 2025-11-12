@@ -104,6 +104,9 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 
 		it('should return empty array when search term is empty', async () => {
+			// Mock returns empty array for empty search term
+			mockFileSystemService.searchVaultFiles.mockResolvedValue([]);
+
 			const result = await service.performAIFunction({
 				name: AIFunction.SearchVaultFiles,
 				arguments: { search_terms: [''], user_message: 'test search' },
@@ -115,6 +118,9 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 
 		it('should return empty array when search term is whitespace', async () => {
+			// Mock returns empty array for whitespace search term
+			mockFileSystemService.searchVaultFiles.mockResolvedValue([]);
+
 			const result = await service.performAIFunction({
 				name: AIFunction.SearchVaultFiles,
 				arguments: { search_terms: ['   '], user_message: 'test search' },

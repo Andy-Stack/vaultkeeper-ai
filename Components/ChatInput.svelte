@@ -106,23 +106,23 @@
     }
 
     if (e.key === "Enter") {
-      if (e.shiftKey) {
+      if (e.shiftKey || Platform.isMobile) {
         return;
       }
       e.preventDefault();
       handleSubmit();
     }
+  }
 
-    if (isSearchTrigger(e.key)) {
-      e.preventDefault();
-
+  // Detect search triggers on character insertion
+  function handleBeforeInput(e: InputEvent) {
+    // This works reliably on both desktop and mobile (including virtual keyboards)
+    if (e.inputType === "insertText" && e.data && isSearchTrigger(e.data)) {
       const position = inputService.getCursorPosition(textareaElement);
-      const trigger = fromInput(e.key);
-
+      const trigger = fromInput(e.data);
       searchStateStore.initializeSearch(trigger, position);
-
-      inputService.insertTextAtCursor(e.key, textareaElement);
     }
+    // Let the character insert, handleInput() will synchronize the search query
   }
 
   async function continueSearch(e: KeyboardEvent) {
@@ -287,6 +287,7 @@
     bind:this={textareaElement}
     contenteditable="plaintext-only"
     on:keydown={handleKeydown}
+    on:beforeinput={handleBeforeInput}
     on:input={handleInput}
     on:paste={handlePaste}
     on:copy={handleCopy}

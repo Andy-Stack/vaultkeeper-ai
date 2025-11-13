@@ -62,7 +62,7 @@ export enum Copy {
 
 This plugin was originally created for a friend who found it useful, so I have decided to release it to the Obsidian community.
 
-If you find any issues, please feel free to raise them on GitHub:`,
+If you find any issues or have a feature request, please feel free to raise them on GitHub:`,
 
     HelpModalGuideTitle = "Plugin Guide",
     HelpModalGuideContent = `#### How to Use Vaultkeeper AI
@@ -142,7 +142,20 @@ This error means you've made too many API requests in a given time period. This 
 ###### Gemini
 - **Wait time:** A few minutes (per-minute limits) or until midnight Pacific Time (daily quotas)
 - **Long-term solution:** Enable billing to move from free tier to paid tier for significantly higher limits. Paid tier limits increase automatically with cumulative Google Cloud spending
-- [Gemini API Rate Limits Documentation](https://ai.google.dev/gemini-api/docs/rate-limits)`,
+- [Gemini API Rate Limits Documentation](https://ai.google.dev/gemini-api/docs/rate-limits)
+
+##### Error Code 503: Service Unavailable
+
+This error indicates a temporary issue with the AI provider's servers.
+
+**What it means:**
+- The provider's service is temporarily unavailable or overloaded
+- This occurs more frequently with Gemini than other providers
+
+**How to resolve:**
+- Wait a few minutes and try again
+- There is no action you can take to prevent this error - it's on the provider's side
+- If the issue persists, check the provider's status page for any ongoing incidents`,
 
     HelpModalPrivacyTitle = "Privacy",
     HelpModalPrivacyContent = `#### Privacy & Security

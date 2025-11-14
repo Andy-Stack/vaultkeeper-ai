@@ -27,7 +27,7 @@
 		"@types/path-browserify": "^1.0.3",
 		"@typescript-eslint/eslint-plugin": "8.46.4",
 		"@typescript-eslint/parser": "8.46.4",
-		"@vitest/ui": "^4.0.8",
+		"@vitest/ui": "^4.0.9",
 		"builtin-modules": "5.0.0",
 		"esbuild": "^0.27.0",
 		"esbuild-svelte": "^0.9.3",
@@ -41,7 +41,7 @@
 		"svelte-preprocess": "^6.0.3",
 		"tslib": "2.8.1",
 		"typescript": "^5.9.3",
-		"vitest": "^4.0.8"
+		"vitest": "^4.0.9"
 	},
 	"dependencies": {
 		"@anthropic-ai/sdk": "^0.68.0",

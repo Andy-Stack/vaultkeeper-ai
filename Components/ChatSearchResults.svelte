@@ -19,6 +19,10 @@
 
     $: searchState.results, updateHeight();
 
+    $: if (searchState.results.length === 0) {
+        searchState.selectedResult = "";
+    }
+
     $: if (searchState.selectedResult && resultElements.length > 0) {
         scrollSelectedIntoView();
     }

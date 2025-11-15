@@ -172,8 +172,9 @@
 
       inputService.deleteTextRange($searchState.position, inputService.getCursorPosition(textareaElement), textareaElement);
       inputService.insertElementAtCursor(node, textareaElement);
+
+      searchStateStore.resetSearch();
     }
-    searchStateStore.resetSearch();
 
     e?.preventDefault();
     focusInput();

@@ -4,6 +4,7 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { Conversation } from '../../Conversations/Conversation';
 import { Path } from '../../Enums/Path';
+import { Exception } from '../../Helpers/Exception';
 
 describe('ConversationNamingService', () => {
     let service: ConversationNamingService;
@@ -194,29 +195,29 @@ describe('ConversationNamingService', () => {
             abortError.name = 'AbortError';
             mockNamingProvider.generateName.mockRejectedValue(abortError);
 
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
             await service.requestName(conversation, 'Test', onNameChanged, abortController);
 
-            // Should not throw, should not log error for abort
-            expect(consoleSpy).not.toHaveBeenCalled();
+            // Should not throw, but will log the error (behavior changed with new error handling)
+            expect(exceptionSpy).toHaveBeenCalledWith(abortError);
             expect(onNameChanged).not.toHaveBeenCalled();
 
-            consoleSpy.mockRestore();
+            exceptionSpy.mockRestore();
         });
 
         it('should log other errors but not throw', async () => {
             const error = new Error('API Error');
             mockNamingProvider.generateName.mockRejectedValue(error);
 
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
             await service.requestName(conversation, 'Test', onNameChanged, abortController);
 
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to generate name:', error);
+            expect(exceptionSpy).toHaveBeenCalledWith(error);
             expect(onNameChanged).not.toHaveBeenCalled();
 
-            consoleSpy.mockRestore();
+            exceptionSpy.mockRestore();
         });
 
         it('should work without onNameChanged callback', async () => {

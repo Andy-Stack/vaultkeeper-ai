@@ -6,6 +6,7 @@ import { Role } from "Enums/Role";
 import { NamePrompt } from "AIClasses/NamePrompt";
 import type { SettingsService } from "Services/SettingsService";
 import type OpenAI from "openai";
+import { Exception } from "Helpers/Exception";
 
 export class OpenAIConversationNamingService implements IConversationNamingService {
     
@@ -42,7 +43,7 @@ export class OpenAIConversationNamingService implements IConversationNamingServi
         });
 
         if (!response.ok) {
-            throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${await response.text()}`);
+            Exception.throw(`OpenAI API error: ${response.status} ${response.statusText} - ${await response.text()}`);
         }
 
         const data = await response.json() as OpenAI.Responses.Response;
@@ -61,7 +62,7 @@ export class OpenAIConversationNamingService implements IConversationNamingServi
             : undefined;
 
         if (!generatedName) {
-            throw new Error("Failed to generate conversation name");
+            Exception.throw("Failed to generate conversation name");
         }
 
         return generatedName;

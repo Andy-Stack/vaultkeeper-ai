@@ -3,6 +3,7 @@ import { setTooltip } from "obsidian";
 import type { HTMLService } from "Services/HTMLService";
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
+import { Exception } from "Helpers/Exception";
 
 export enum SearchTrigger {
     Tag = "#",
@@ -35,7 +36,7 @@ export function fromInput(input: string): SearchTrigger {
         case "/":
             return SearchTrigger.Folder;
         default:
-            throw new Error(`Unknown search trigger: ${input}`);
+            Exception.throw(`Unknown search trigger: ${input}`);
     }
 }
 

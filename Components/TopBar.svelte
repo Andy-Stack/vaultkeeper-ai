@@ -2,7 +2,7 @@
   import { Resolve } from "../Services/DependencyService";
   import { Services } from "../Services/Services";
   import type VaultkeeperAIPlugin from "../main";
-  import { setIcon, type WorkspaceLeaf } from "obsidian";
+  import { Notice, setIcon, type WorkspaceLeaf } from "obsidian";
   import { ConversationFileSystemService } from "../Services/ConversationFileSystemService";
   import { conversationStore } from "../Stores/ConversationStore";
 	import type { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
@@ -34,7 +34,12 @@
 
   async function deleteCurrentConversation() {
     chatService.stop();
-    await conversationFileSystemService.deleteCurrentConversation();
+    const result = await conversationFileSystemService.deleteCurrentConversation();
+
+    if (result instanceof Error) {
+      new Notice(`Failed to delete conversation data for '${conversationFileSystemService.getCurrentConversationPath()}'`);
+    }
+
     conversationStore.reset();
     onNewConversation?.();
     conversationTitle = "";

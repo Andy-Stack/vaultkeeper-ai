@@ -20,7 +20,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		this.settingsService = Resolve<SettingsService>(Services.SettingsService);
 	}
 
-	display(): void {
+	display() {
 		const { containerEl } = this;
 
 		containerEl.empty();
@@ -204,7 +204,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 			});
 	}
 
-	private highlightApiKey(): void {
+	private highlightApiKey() {
 		if (this.apiKeySetting) {
 			const currentApiKey = this.settingsService.getApiKeyForCurrentModel();
 			if (currentApiKey.trim() === "") {

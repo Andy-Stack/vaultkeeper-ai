@@ -1,3 +1,5 @@
+import { Exception } from "Helpers/Exception";
+
 export enum AIProvider {
     Claude = "Claude",
     Gemini = "Gemini",
@@ -12,7 +14,7 @@ export function fromModel(model: string): AIProvider {
     } else if (model.startsWith("gpt-")) {
         return AIProvider.OpenAI;
     } else {
-        throw new Error("Invalid Model Selection!");
+        Exception.throw("Invalid Model Selection!");
     }
 }
 

@@ -1,4 +1,4 @@
-import { Modal } from 'obsidian';
+import { Modal, Notice } from 'obsidian';
 import ConversationHistoryModalSvelte from './ConversationHistoryModalSvelte.svelte';
 import type { Conversation } from 'Conversations/Conversation';
 import { mount, unmount } from 'svelte';
@@ -94,14 +94,21 @@ export class ConversationHistoryModal extends Modal {
         let shouldResetChat = false;
         const currentPath = this.conversationFileSystemService.getCurrentConversationPath();
 
+        const deletedIds: string[] = [];
         for (const item of itemsToDelete) {
-            const deleted = await this.fileSystemService.deleteFile(item.filePath, true);
-            if (deleted && currentPath === item.filePath) {
+            const result = await this.fileSystemService.deleteFile(item.filePath, true);
+            if (result instanceof Error) {
+                new Notice(`Failed to delete conversation '${item.title}'`);
+                continue;
+            }
+            deletedIds.push(item.id);
+
+            if (currentPath === item.filePath) {
                 shouldResetChat = true;
             }
         }
 
-        this.items = this.items.filter(item => !itemIds.includes(item.id));
+        this.items = this.items.filter(item => !deletedIds.includes(item.id));
 
         if (this.component) {
             this.component.items = this.items;

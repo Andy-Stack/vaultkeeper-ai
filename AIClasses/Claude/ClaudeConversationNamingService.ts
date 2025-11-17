@@ -6,6 +6,7 @@ import { Role } from "Enums/Role";
 import { NamePrompt } from "AIClasses/NamePrompt";
 import type { SettingsService } from "Services/SettingsService";
 import type Anthropic from '@anthropic-ai/sdk';
+import { Exception } from "Helpers/Exception";
 
 export class ClaudeConversationNamingService implements IConversationNamingService {
     
@@ -41,14 +42,14 @@ export class ClaudeConversationNamingService implements IConversationNamingServi
         });
 
         if (!response.ok) {
-            throw new Error(`Claude API error: ${response.status} ${response.statusText} - ${await response.text()}`);
+            Exception.throw(`Claude API error: ${response.status} ${response.statusText} - ${await response.text()}`);
         }
 
         const data = await response.json() as Anthropic.Messages.Message;
         const firstContent = data.content?.[0];
 
         if (!firstContent || firstContent.type !== 'text') {
-            throw new Error("Failed to generate conversation name");
+            Exception.throw("Failed to generate conversation name");
         }
 
         return firstContent.text;

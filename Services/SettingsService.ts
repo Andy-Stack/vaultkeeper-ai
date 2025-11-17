@@ -69,7 +69,7 @@ export class SettingsService {
         }
     }
 
-    public setApiKeyForProvider(provider: AIProvider, key: string): void {
+    public setApiKeyForProvider(provider: AIProvider, key: string) {
         switch (provider) {
             case AIProvider.Claude:
                 this.settings.apiKeys.claude = key;

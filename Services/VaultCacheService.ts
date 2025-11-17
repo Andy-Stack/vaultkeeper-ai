@@ -7,10 +7,14 @@ import { getAllTags, MetadataCache, TFile, TFolder } from "obsidian";
 import { FileTagMapping } from "Helpers/FileTagMapping";
 import * as fuzzysort from "fuzzysort";
 import { Path } from "Enums/Path";
+import { WikiLinks } from "Helpers/WikiLinks";
 
 // Note that 'files' actually refers to both directories and files (Obsidian naming)
 
 export class VaultCacheService {
+
+  public wikiLinks: WikiLinks = new WikiLinks();
+
   private readonly fuzzysortOptions = {
     limit: 10,
     all: false,
@@ -71,6 +75,7 @@ export class VaultCacheService {
         switch (event) {
           case FileEvent.Create:
             if (shouldCacheNewPath) {
+              this.wikiLinks.addWikiLink(file);
               this.files.set(file.path, file);
               this.cacheTags(file);
             }
@@ -87,11 +92,13 @@ export class VaultCacheService {
 
           case FileEvent.Rename:
             if (shouldCacheOldPath) {
+              this.wikiLinks.removeWikiLink(args.oldPath);
               this.files.delete(args.oldPath);
               const orphanedTags = this.mapping.deleteFromMapping(args.oldPath);
               orphanedTags.forEach(tag => this.tags.delete(tag));
             }
             if (shouldCacheNewPath) {
+              this.wikiLinks.addWikiLink(file);
               this.mapping.renameKey(args.oldPath, file.path);
               this.files.set(file.path, file);
               this.cacheTags(file);
@@ -100,6 +107,7 @@ export class VaultCacheService {
 
           case FileEvent.Delete:
             if (shouldCacheOldPath) {
+              this.wikiLinks.removeWikiLink(file);
               this.files.delete(args.oldPath);
               const orphanedTags = this.mapping.deleteFromMapping(args.oldPath);
               orphanedTags.forEach(tag => this.tags.delete(tag));
@@ -142,6 +150,7 @@ export class VaultCacheService {
   private async setupCaches() {
     (await this.vaultService.listDirectoryContents(Path.Root)).forEach(file => {
       if (file instanceof TFile) {
+        this.wikiLinks.addWikiLink(file);
         this.files.set(file.path, file);
         this.cacheTags(file);
       } else if (file instanceof TFolder) {

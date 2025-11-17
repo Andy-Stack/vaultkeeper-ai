@@ -1,10 +1,10 @@
 export class HTMLService {
 
-    public clearElement(element: HTMLElement): void {
+    public clearElement(element: HTMLElement) {
         element.empty();
     }
 
-    public setHTMLContent(container: HTMLElement, htmlString: string): void {
+    public setHTMLContent(container: HTMLElement, htmlString: string) {
         this.clearElement(container);
         const fragment = this.parseHTMLString(htmlString);
         container.appendChild(fragment);

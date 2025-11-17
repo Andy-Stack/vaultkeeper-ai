@@ -1,3 +1,5 @@
+import { Exception } from "Helpers/Exception";
+
 export enum AIFunction {
     SearchVaultFiles = "search_vault_files",
     ReadVaultFiles = "read_vault_files",
@@ -15,5 +17,5 @@ export function fromString(functionName: string): AIFunction {
     if (enumValue) {
         return enumValue as AIFunction;
     }
-    throw new Error(`Unknown function name: ${functionName}`);
+    Exception.throw(`Unknown function name: ${functionName}`);
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StreamingService, IStreamChunk } from '../../Services/StreamingService';
 import { Selector } from '../../Enums/Selector';
+import { Exception } from '../../Helpers/Exception';
 
 /**
  * UNIT TESTS
@@ -19,11 +20,17 @@ describe('StreamingService', () => {
 		originalFetch = global.fetch;
 		mockFetch = vi.fn();
 		global.fetch = mockFetch;
+		// Mock Exception methods to avoid console output during tests
+		vi.spyOn(Exception, 'log').mockImplementation(() => {});
+		vi.spyOn(Exception, 'throw').mockImplementation((error: unknown) => {
+			throw Exception.new(error);
+		});
 	});
 
 	afterEach(() => {
 		global.fetch = originalFetch;
 		vi.clearAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	// Helper to create a mock ReadableStream

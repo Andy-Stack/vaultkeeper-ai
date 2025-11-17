@@ -12,6 +12,7 @@ import { Conversation } from "Conversations/Conversation";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
+import { Notice } from "obsidian";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
@@ -49,7 +50,7 @@ export class ChatService {
 		this.tokenService = Resolve<ITokenService>(Services.ITokenService);
 	}
 
-	public async submit(conversation: Conversation, allowDestructiveActions: boolean, userRequest: string, formattedRequest: string, callbacks: IChatServiceCallbacks): Promise<void> {
+	public async submit(conversation: Conversation, allowDestructiveActions: boolean, userRequest: string, formattedRequest: string, callbacks: IChatServiceCallbacks) {
 		if (!await this.semaphore.wait()) {
 			return;
 		}
@@ -64,7 +65,7 @@ export class ChatService {
 			this.abortController = new AbortController();
 
 			conversation.contents.push(new ConversationContent(Role.User, userRequest, formattedRequest));
-			await this.conversationService.saveConversation(conversation);
+			await this.saveConversation(conversation);
 
 			callbacks.onSubmit();
 			callbacks.onStreamingUpdate(null);
@@ -95,7 +96,7 @@ export class ChatService {
 				response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
 			}
 		} finally {
-			await this.conversationService.saveConversation(conversation);
+			await this.saveConversation(conversation);
 			this.abortController = null;
 			if (this.semaphoreHeld) {
 				this.semaphoreHeld = false;
@@ -106,7 +107,7 @@ export class ChatService {
 		}
 	}
 
-	public stop(): void {
+	public stop() {
 		if (this.abortController) {
 			this.abortController.abort();
 			this.abortController = null;
@@ -114,7 +115,7 @@ export class ChatService {
 		this.semaphore.release();
 	}
 
-	public async updateTokenDisplay(conversation: Conversation): Promise<void> {
+	public async updateTokenDisplay(conversation: Conversation) {
 		if (this.tokenService === undefined) {
 			return;
 		}
@@ -139,8 +140,15 @@ export class ChatService {
 		this.setStatusBarTokens(inputTokens, outputTokens);
 	}
 
-	public setStatusBarTokens(inputTokens: number, outputTokens: number): void {
+	public setStatusBarTokens(inputTokens: number, outputTokens: number) {
 		this.statusBarService.animateTokens(inputTokens, outputTokens);
+	}
+
+	private async saveConversation(conversation: Conversation) {
+		const result = await this.conversationService.saveConversation(conversation);
+		if (result instanceof Error) {
+			new Notice(`Failed to save conversation data for '${conversation.title}'`);
+		}
 	}
 
 	private ensureCorrectConversationStructure(conversation: Conversation) {

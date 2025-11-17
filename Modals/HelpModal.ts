@@ -31,7 +31,7 @@ export class HelpModal extends Modal {
         });
     }
 
-    public open(initialTopic?: number): void {
+    public open(initialTopic?: number) {
         this.initialTopic = initialTopic;
         super.open();
     }

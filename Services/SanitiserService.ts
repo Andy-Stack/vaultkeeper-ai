@@ -25,11 +25,6 @@ export class SanitiserService {
    * @returns Sanitized file path
    */
   public sanitize(input: string, options: ISanitizeOptions = {}): string {
-    // Type check
-    if (typeof input !== "string") {
-      throw new Error("Input must be a string");
-    }
-
     // use obsidian helper first
     input = normalizePath(input);
 

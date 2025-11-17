@@ -9,7 +9,7 @@ export class InputService {
         return clipboardData.getData("text/plain") || "";
     }
 
-    public sanitizeToPlainText(element: HTMLElement): void {
+    public sanitizeToPlainText(element: HTMLElement) {
         const plainText = element.textContent || "";
         const cursorPos = this.getCursorPosition(element);
 
@@ -250,7 +250,7 @@ export class InputService {
         return null;
     }
 
-    public insertTextAtCursor(text: string, element?: HTMLElement): void {
+    public insertTextAtCursor(text: string, element?: HTMLElement) {
         if (element && !element.isContentEditable) {
             console.warn("Element must be contenteditable");
             return;
@@ -273,7 +273,7 @@ export class InputService {
         selection.addRange(range);
     }
 
-    public insertElementAtCursor(node: Node, element?: HTMLElement): void {
+    public insertElementAtCursor(node: Node, element?: HTMLElement) {
         if (element && !element.isContentEditable) {
             console.warn("Element must be contenteditable");
             return;
@@ -297,7 +297,7 @@ export class InputService {
         selection.addRange(range);
     }
     
-    public deleteTextRange(startPos: number, endPos: number, element: HTMLElement): void {
+    public deleteTextRange(startPos: number, endPos: number, element: HTMLElement) {
         if (!element.isContentEditable) {
             console.warn("Element must be contenteditable");
             return;
@@ -354,7 +354,7 @@ export class InputService {
      * Ensures the cursor is not positioned inside a contentEditable="false" element.
      * If it is, repositions the cursor to a valid location.
      */
-    private ensureCursorNotInNonEditableElement(element: HTMLElement): void {
+    private ensureCursorNotInNonEditableElement(element: HTMLElement) {
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) {
             return;
@@ -380,7 +380,7 @@ export class InputService {
     /**
      * Positions the cursor immediately after the given element.
      */
-    private positionCursorAfterElement(targetElement: HTMLElement, container: HTMLElement): void {
+    private positionCursorAfterElement(targetElement: HTMLElement, container: HTMLElement) {
         const selection = window.getSelection();
         if (!selection) {
             return;

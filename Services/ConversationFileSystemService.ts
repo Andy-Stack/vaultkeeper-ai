@@ -5,6 +5,7 @@ import { Services } from "./Services";
 import { Conversation } from "Conversations/Conversation";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Copy } from "Enums/Copy";
+import { Exception } from "Helpers/Exception";
 
 export class ConversationFileSystemService {
 
@@ -19,7 +20,7 @@ export class ConversationFileSystemService {
         return `${Path.Conversations}/${conversation.title}.json`;
     }
 
-    public async saveConversation(conversation: Conversation): Promise<string> {
+    public async saveConversation(conversation: Conversation): Promise<string | Error> {
         if (!this.currentConversationPath) {
             this.currentConversationPath = this.generateConversationPath(conversation);
         }
@@ -44,11 +45,16 @@ export class ConversationFileSystemService {
                 }))
         };
 
-        await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData, true);
+        const result = await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData, true);
+
+        if (result instanceof Error) {
+            return result;
+        }
+
         return this.currentConversationPath;
     }
 
-    public resetCurrentConversation(): void {
+    public resetCurrentConversation() {
         this.currentConversationPath = null;
     }
 
@@ -56,22 +62,22 @@ export class ConversationFileSystemService {
         return this.currentConversationPath;
     }
 
-    public setCurrentConversationPath(filePath: string): void {
+    public setCurrentConversationPath(filePath: string) {
         this.currentConversationPath = filePath;
     }
 
-    public async deleteCurrentConversation(): Promise<boolean> {
+    public async deleteCurrentConversation(): Promise<void | Error> {
         if (!this.currentConversationPath) {
-            return false;
+            return;
         }
 
-        const deleted = await this.fileSystemService.deleteFile(this.currentConversationPath, true);
+        const result = await this.fileSystemService.deleteFile(this.currentConversationPath, true);
 
-        if (deleted.success) {
-            this.resetCurrentConversation();
+        if (result instanceof Error) {
+            return result;
         }
 
-        return deleted.success;
+        this.resetCurrentConversation();
     }
 
     public async getAllConversations(): Promise<Conversation[]> {
@@ -79,15 +85,27 @@ export class ConversationFileSystemService {
         const conversations: Conversation[] = [];
 
         for (const file of files) {
-            const data = await this.fileSystemService.readObjectFromFile(file.path, true);
-            if (Conversation.isConversationData(data)) {
+            const result = await this.fileSystemService.readObjectFromFile(file.path, true);
+            if (result instanceof Error) {
+                Exception.log(`Failed to load conversation: ${file.path}`);
+                continue;
+            }
+            if (Conversation.isConversationData(result)) {
                 const conversation: Conversation = new Conversation();
-                conversation.title = data.title;
-                conversation.created = new Date(data.created);
-                conversation.updated = new Date(data.updated);
-                conversation.contents = data.contents.map(content => {
+                conversation.title = result.title;
+                conversation.created = new Date(result.created);
+                conversation.updated = new Date(result.updated);
+                conversation.contents = result.contents.map(content => {
                     return new ConversationContent(
-                        content.role, content.content, content.promptContent, content.functionCall, new Date(content.timestamp), content.isFunctionCall, content.isFunctionCallResponse, content.toolId);
+                        content.role,
+                        content.content,
+                        content.promptContent,
+                        content.functionCall,
+                        new Date(content.timestamp),
+                        content.isFunctionCall,
+                        content.isFunctionCallResponse,
+                        content.toolId
+                    );
                 });
                 conversations.push(conversation);
             }
@@ -96,13 +114,13 @@ export class ConversationFileSystemService {
         return conversations;
     }
 
-    public async updateConversationTitle(oldPath: string, newTitle: string): Promise<void> {
+    public async updateConversationTitle(oldPath: string, newTitle: string): Promise<void | Error> {
         const newPath = `${Path.Conversations}/${newTitle}.json`;
 
         const result = await this.fileSystemService.moveFile(oldPath, newPath, true);
 
-        if (!result.success) {
-            throw new Error(`Failed to update conversation title: ${result.error}`);
+        if (result instanceof Error) {
+            return result;
         }
 
         if (this.currentConversationPath === oldPath) {

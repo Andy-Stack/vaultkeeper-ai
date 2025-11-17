@@ -4,6 +4,7 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { AIFunction } from '../../Enums/AIFunction';
 import { TFile } from 'obsidian';
+import { Exception } from '../../Helpers/Exception';
 
 /**
  * INTEGRATION TESTS - AIFunctionService
@@ -37,6 +38,9 @@ describe('AIFunctionService - Integration Tests', () => {
 
 		// Register the mock
 		RegisterSingleton(Services.FileSystemService, mockFileSystemService);
+
+		// Mock Exception.log
+		vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
 		// Create service - it will resolve the mock FileSystemService
 		service = new AIFunctionService();
@@ -182,18 +186,21 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			expect(result.response).toEqual({
 				results: [
-					{ path: 'file1.md', success: true, content: 'Content of file 1' },
-					{ path: 'file2.md', success: true, content: 'Content of file 2' },
-					{ path: 'file3.md', success: true, content: 'Content of file 3' }
+					{ path: 'file1.md', contents: 'Content of file 1' },
+					{ path: 'file2.md', contents: 'Content of file 2' },
+					{ path: 'file3.md', contents: 'Content of file 3' }
 				]
 			});
 		});
 
 		it('should handle missing files with error messages', async () => {
+			const error1 = new Error('File not found');
+			const error2 = new Error('File not found');
+
 			mockFileSystemService.readFile
 				.mockResolvedValueOnce('Existing content')
-				.mockResolvedValueOnce(null)
-				.mockResolvedValueOnce(null);
+				.mockResolvedValueOnce(error1)
+				.mockResolvedValueOnce(error2);
 
 			const result = await service.performAIFunction({
 				name: AIFunction.ReadVaultFiles,
@@ -203,9 +210,9 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			expect(result.response).toEqual({
 				results: [
-					{ path: 'exists.md', success: true, content: 'Existing content' },
-					{ path: 'missing1.md', success: false, error: 'File not found: missing1.md' },
-					{ path: 'missing2.md', success: false, error: 'File not found: missing2.md' }
+					{ path: 'exists.md', contents: 'Existing content' },
+					{ path: 'missing1.md', error: error1 },
+					{ path: 'missing2.md', error: error2 }
 				]
 			});
 		});
@@ -213,7 +220,7 @@ describe('AIFunctionService - Integration Tests', () => {
 		it('should handle mixed success and failure', async () => {
 			mockFileSystemService.readFile
 				.mockResolvedValueOnce('Content A')
-				.mockResolvedValueOnce(null)
+				.mockResolvedValueOnce(new Error('File not found'))
 				.mockResolvedValueOnce('Content B');
 
 			const result = await service.performAIFunction({
@@ -223,9 +230,9 @@ describe('AIFunctionService - Integration Tests', () => {
 			} as any);
 
 			const results = result.response.results;
-			expect(results[0].success).toBe(true);
-			expect(results[1].success).toBe(false);
-			expect(results[2].success).toBe(true);
+			expect(results[0].contents).toBe('Content A');
+			expect(results[1].error).toBeInstanceOf(Error);
+			expect(results[2].contents).toBe('Content B');
 		});
 
 		it('should handle empty file list', async () => {
@@ -248,7 +255,7 @@ describe('AIFunctionService - Integration Tests', () => {
 			} as any);
 
 			expect(result.response.results).toHaveLength(1);
-			expect(result.response.results[0].content).toBe('Single file content');
+			expect(result.response.results[0].contents).toBe('Single file content');
 		});
 	});
 
@@ -373,10 +380,12 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 
 		it('should handle mixed success and failure', async () => {
+			const error = new Error('File not found');
+
 			mockFileSystemService.deleteFile
-				.mockResolvedValueOnce({ success: true })
-				.mockResolvedValueOnce({ success: false, error: 'File not found' })
-				.mockResolvedValueOnce({ success: true });
+				.mockResolvedValueOnce(undefined) // void = success
+				.mockResolvedValueOnce(error)
+				.mockResolvedValueOnce(undefined); // void = success
 
 			const result = await service.performAIFunction({
 				name: AIFunction.DeleteVaultFiles,
@@ -390,15 +399,15 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			expect(result.response.results).toEqual([
 				{ path: 'a.md', success: true },
-				{ path: 'missing.md', success: false, error: 'File not found' },
+				{ path: 'missing.md', success: false, error: error },
 				{ path: 'c.md', success: true }
 			]);
 		});
 
 		it('should handle all failures', async () => {
 			mockFileSystemService.deleteFile
-				.mockResolvedValueOnce({ success: false, error: 'Error 1' })
-				.mockResolvedValueOnce({ success: false, error: 'Error 2' });
+				.mockResolvedValueOnce(new Error('Error 1'))
+				.mockResolvedValueOnce(new Error('Error 2'));
 
 			const result = await service.performAIFunction({
 				name: AIFunction.DeleteVaultFiles,
@@ -474,10 +483,12 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 
 		it('should handle mixed success and failure', async () => {
+			const error = new Error('Destination exists');
+
 			mockFileSystemService.moveFile
-				.mockResolvedValueOnce({ success: true })
-				.mockResolvedValueOnce({ success: false, error: 'Destination exists' })
-				.mockResolvedValueOnce({ success: true });
+				.mockResolvedValueOnce(undefined) // void = success
+				.mockResolvedValueOnce(error)
+				.mockResolvedValueOnce(undefined); // void = success
 
 			const result = await service.performAIFunction({
 				name: AIFunction.MoveVaultFiles,
@@ -491,13 +502,13 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			expect(result.response.results).toEqual([
 				{ path: 'new/a.md', success: true },
-				{ path: 'existing.md', success: false, error: 'Destination exists' },
+				{ path: 'existing.md', success: false, error: error },
 				{ path: 'new/c.md', success: true }
 			]);
 		});
 
 		it('should call moveFile with correct parameters', async () => {
-			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
+			mockFileSystemService.moveFile.mockResolvedValue(undefined); // void = success
 
 			await service.performAIFunction({
 				name: AIFunction.MoveVaultFiles,
@@ -610,8 +621,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'read_1'
 			} as any);
 
-			expect(readResult.response.results[0].success).toBe(true);
-			expect(readResult.response.results[0].content).toBe('File content here');
+			expect(readResult.response.results[0].contents).toBe('File content here');
+			expect(readResult.response.results[0].error).toBeUndefined();
 		});
 
 		it('should handle write -> move workflow', async () => {

@@ -9,6 +9,7 @@ import type { ISearchMatch, ISearchSnippet } from "../Helpers/SearchTypes";
 import type { SanitiserService } from "./SanitiserService";
 import { FileEvent } from "Enums/FileEvent";
 import type { SettingsService } from "./SettingsService";
+import { Exception } from "Helpers/Exception";
 
 interface IFileEventArgs {
     oldPath: string;
@@ -47,9 +48,8 @@ export class VaultService {
 
     public getAbstractFileByPath(filePath: string, allowAccessToPluginRoot: boolean = false): TAbstractFile | null {
         filePath = this.sanitiserService.sanitize(filePath);
-
         if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
-            console.error(`Plugin attempted to retrieve a file that is in the exclusions list: ${filePath}`);
+            Exception.log(`Plugin attempted to retrieve a file that is in the exclusions list: ${filePath}`);
             return null;
         }
         return this.vault.getAbstractFileByPath(filePath);
@@ -57,9 +57,8 @@ export class VaultService {
 
     public async exists(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<boolean> {
         filePath = this.sanitiserService.sanitize(filePath);
-
         if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
-            console.error(`Plugin attempted to access a file that is in the exclusions list: ${filePath}`);
+            Exception.log(`Plugin attempted to access a file that is in the exclusions list: ${filePath}`);
             return false;
         }
 
@@ -67,89 +66,98 @@ export class VaultService {
     }
 
     public async read(file: TFile, allowAccessToPluginRoot: boolean = false): Promise<string> {
-        if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
-            console.error(`Plugin attempted to read a file that is in the exclusions list: ${file.path}`);
+        const filePath = this.sanitiserService.sanitize(file.path);
+        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
+            Exception.log(`Plugin attempted to read a file that is in the exclusions list: ${filePath}`);
             return "";
         }
         return await this.vault.read(file);
     }
 
-    public async create(filePath: string, content: string, allowAccessToPluginRoot: boolean = false): Promise<TFile> {
+    public async create(filePath: string, content: string, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
         filePath = this.sanitiserService.sanitize(filePath);
-        
         if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
-            throw new Error(`Plugin attempted to create a file that is in the exclusion list: ${filePath}`);
+            Exception.log(`Plugin attempted to create a file that is in the exclusion list: ${filePath}`);
+            return Exception.new(`Failed to create file, permission denied: ${filePath}`);
         }
-        await this.createDirectories(filePath, allowAccessToPluginRoot);
-        return await this.vault.create(filePath, content);
+        try {
+            await this.createDirectories(filePath, allowAccessToPluginRoot);
+            return await this.vault.create(filePath, content);
+        } catch (error) {
+            Exception.log(error);
+            return Exception.new(error);
+        }
     }
 
-    public async modify(file: TFile, content: string, allowAccessToPluginRoot: boolean = false): Promise<void> {
+    public async modify(file: TFile, content: string, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
+        const filePath = this.sanitiserService.sanitize(file.path);
         if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
-            console.error(`Plugin attempted to modify a file that is in the exclusions list: ${file.path}`)
-            return;
+            Exception.log(`Plugin attempted to modify a file that is in the exclusion list: ${filePath}`);
+            return Exception.new(`File does not exist: ${filePath}`);
         }
-        await this.vault.process(file, () => content);
+        try {
+            await this.vault.process(file, () => content);
+            return file;
+        } catch (error) {
+            Exception.log(error);
+            return Exception.new(error);
+        }
     }
 
-    public async delete(file: TAbstractFile, allowAccessToPluginRoot: boolean = false): Promise<{ success: true } | { success: false, error: string }> {
+    public async delete(file: TAbstractFile, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
+        const filePath = this.sanitiserService.sanitize(file.path);
         if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
-            console.error(`Plugin attempted to delete a file that is in the exclusions list: ${file.path}`)
-            return { success: false, error: "File is in exclusion list" };
+            Exception.log(`Plugin attempted to delete a file that is in the exclusions list: ${filePath}`)
+            return Exception.new(`File does not exist: ${filePath}`);
         }
         try {
             await this.fileManager.trashFile(file);
-            return { success: true };
         } catch (error) {
-            console.error(`Error deleting file ${file.path}:`, error);
-            return { success: false, error: error instanceof Error ? error.message : String(error) };
+            Exception.log(error);
+            return Exception.new(error);
         }
     }
 
-    public async move(sourcePath: string, destinationPath: string, allowAccessToPluginRoot: boolean = false): Promise<{ success: true } | { success: false, error: string }> {
+    public async move(sourcePath: string, destinationPath: string, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
         sourcePath = this.sanitiserService.sanitize(sourcePath);
         destinationPath = this.sanitiserService.sanitize(destinationPath);
-
-        if (this.isExclusion(sourcePath, allowAccessToPluginRoot)) {
-            console.error(`Plugin attempted to move a file that is in the exclusions list: ${sourcePath}`)
-            return { success: false, error: "Source file is in exclusion list" };
-        }
-
-        const file: TAbstractFile | null = this.getAbstractFileByPath(sourcePath, allowAccessToPluginRoot);
+        const file = this.getAbstractFileByPath(sourcePath, allowAccessToPluginRoot);
+        
         if (file === null) {
-            return { success: false, error: "Source file not found" };
+            return Exception.new(`File does not exist: ${sourcePath}`);
         }
 
         try {
             await this.createDirectories(destinationPath, allowAccessToPluginRoot)
             await this.fileManager.renameFile(file, destinationPath);
-            return { success: true };
         } catch (error) {
-            console.error(`Error moving file from ${sourcePath} to ${destinationPath}:`, error);
-            return { success: false, error: error instanceof Error ? error.message : String(error) };
+            Exception.log(error);
+            return Exception.new(error);
         }
     }
 
-    public async createFolder(path: string, allowAccessToPluginRoot: boolean = false): Promise<TFolder> {
+    public async createFolder(path: string, allowAccessToPluginRoot: boolean = false): Promise<TFolder | Error> {
         path = this.sanitiserService.sanitize(path);
-
         if (this.isExclusion(path, allowAccessToPluginRoot)) {
-            throw new Error(`Plugin attempted to create a folder that is in the exclusion list: ${path}`);
+            Exception.log(`Plugin attempted to create a folder that is in the exclusion list: ${path}`);
+            return Exception.new(`Failed to create folder, permission denied: ${path}`);
         }
         return await this.vault.createFolder(path);
     }
 
     public async listDirectoryContents(path: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TAbstractFile[]> {
-        const sanitisedPath = this.sanitiserService.sanitize(path);
+        path = this.sanitiserService.sanitize(path);
 
-        const files = await this.listFilesInDirectory(sanitisedPath, recursive, allowAccessToPluginRoot);
-        const folders = await this.listFoldersInDirectory(sanitisedPath, recursive, allowAccessToPluginRoot);
+        const files = await this.listFilesInDirectory(path, recursive, allowAccessToPluginRoot);
+        const folders = await this.listFoldersInDirectory(path, recursive, allowAccessToPluginRoot);
 
         return [...files, ...folders] as TAbstractFile[];
     }
 
     public async listFilesInDirectory(path: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFile[]> {
-        const dir: TAbstractFile | null = this.getAbstractFileByPath(this.sanitiserService.sanitize(path), allowAccessToPluginRoot);
+        path = this.sanitiserService.sanitize(path);
+
+        const dir: TAbstractFile | null = this.getAbstractFileByPath(path, allowAccessToPluginRoot);
 
         if (dir == null || !(dir instanceof TFolder)) {
             return [];
@@ -173,7 +181,9 @@ export class VaultService {
     }
 
     public async listFoldersInDirectory(path: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFolder[]> {
-        const dir: TAbstractFile | null = this.getAbstractFileByPath(this.sanitiserService.sanitize(path), allowAccessToPluginRoot);
+        path = this.sanitiserService.sanitize(path);
+
+        const dir: TAbstractFile | null = this.getAbstractFileByPath(path, allowAccessToPluginRoot);
 
         if (dir == null || !(dir instanceof TFolder)) {
             return [];
@@ -298,19 +308,28 @@ export class VaultService {
         });
     }
 
-    private async createDirectories(filePath: string, allowAccessToPluginRoot: boolean = false) {
+    private async createDirectories(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
         const dirPath: string = filePath.substring(0, filePath.lastIndexOf("/"));
 
         const dirs: string[] = dirPath.split("/");
 
         let currentPath = "";
+        const failures: string[] = [];
         for (const dir of dirs) {
             if (dir) {
                 currentPath = currentPath ? `${currentPath}/${dir}` : dir;
-                if (!(await this.exists(currentPath, allowAccessToPluginRoot))) {
-                    await this.createFolder(currentPath, allowAccessToPluginRoot);
+                try {
+                    if (!(await this.exists(currentPath, allowAccessToPluginRoot))) {
+                        await this.createFolder(currentPath, allowAccessToPluginRoot);
+                    }
+                } catch (error) {
+                    failures.push(currentPath);
+                    Exception.log(error);
                 }
             }
+        }
+        if (failures.length > 0) {
+            return Exception.new(`Failed to create the following directories: ${String(failures)}`);
         }
     }
 

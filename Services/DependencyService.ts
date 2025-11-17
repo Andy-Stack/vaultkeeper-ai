@@ -1,17 +1,19 @@
+import { Exception } from "Helpers/Exception";
+
 const services = new Map<symbol, unknown>();
 
-export function RegisterSingleton<T>(type: symbol, instance: T): void {
+export function RegisterSingleton<T>(type: symbol, instance: T) {
     services.set(type, instance);
 }
 
-export function RegisterTransient<T>(type: symbol, factory: () => T): void {
+export function RegisterTransient<T>(type: symbol, factory: () => T) {
     services.set(type, factory);
 }
 
 export function Resolve<T>(type: symbol): T {
     const service = services.get(type);
     if (!service) {
-        throw new Error(`Service not found for type: ${type.description}`);
+        Exception.throw(`Service not found for type: ${type.description}`);
     }
 
     if (typeof service === 'function') {
@@ -23,6 +25,6 @@ export function Resolve<T>(type: symbol): T {
     return service as T;
 }
 
-export function DeregisterAllServices(): void {
+export function DeregisterAllServices() {
     services.clear();
 }

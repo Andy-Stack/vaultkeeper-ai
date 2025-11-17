@@ -161,7 +161,7 @@ export class Claude implements IAIClass {
         }
     }
 
-    private extractContents(conversationContent: ConversationContent[]) {
+    private extractContents(conversationContent: ConversationContent[]): { role: Role; content: ContentBlockParam[]; }[] {
         return conversationContent.filter(content => content.content.trim() !== "" || content.functionCall.trim() !== "")
             .map(content => {
                 const contentBlocks: ContentBlockParam[] = [];

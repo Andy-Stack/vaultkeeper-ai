@@ -1,5 +1,6 @@
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { Selector } from "Enums/Selector";
+import { Exception } from "Helpers/Exception";
 
 export interface IStreamChunk {
   content: string;
@@ -32,12 +33,12 @@ export class StreamingService {
       );
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} - ${response.statusText} ${await response.text()}`);
+        Exception.throw(`API request failed: ${response.status} - ${response.statusText} ${await response.text()}`);
       }
 
       const reader = response.body?.getReader();
       if (!reader) {
-        throw new Error("Response body is not readable");
+        Exception.throw("Response body is not readable");
       }
 
       const decoder = new TextDecoder();
@@ -54,9 +55,18 @@ export class StreamingService {
         for (const line of lines) {
           if (line.trim().startsWith("data:")) {
             const jsonStr = line.trim().substring(5);
-            const chunk = parseStreamChunk(jsonStr);
-            lastChunkWasComplete = chunk.isComplete;
-            yield chunk;
+            try {
+              const chunk = parseStreamChunk(jsonStr);
+              lastChunkWasComplete = chunk.isComplete;
+              yield chunk;
+            } catch (error) {
+                Exception.log(error);
+                yield {
+                    content: "",
+                    isComplete: true,
+                    error: Exception.messageFrom(error)
+                };
+            }
           }
         }
 

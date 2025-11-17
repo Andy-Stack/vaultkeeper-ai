@@ -6,6 +6,7 @@ import { Role } from "Enums/Role";
 import { NamePrompt } from "AIClasses/NamePrompt";
 import type { GenerateContentResponse } from "@google/genai";
 import type { SettingsService } from "Services/SettingsService";
+import { Exception } from "Helpers/Exception";
 
 export class GeminiConversationNamingService implements IConversationNamingService {
     
@@ -38,14 +39,14 @@ export class GeminiConversationNamingService implements IConversationNamingServi
         });
 
         if (!response.ok) {
-            throw new Error(`Gemini API error: ${response.status} ${response.statusText} - ${await response.text()}`);
+            Exception.throw(`Gemini API error: ${response.status} ${response.statusText} - ${await response.text()}`);
         }
 
         const data = await response.json() as GenerateContentResponse;
         const generatedName = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!generatedName) {
-            throw new Error("Failed to generate conversation name");
+            Exception.throw("Failed to generate conversation name");
         }
 
         return generatedName;

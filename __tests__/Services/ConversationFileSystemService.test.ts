@@ -7,6 +7,7 @@ import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { Copy } from '../../Enums/Copy';
 import { TFile } from 'obsidian';
+import { Exception } from '../../Helpers/Exception';
 
 /**
  * INTEGRATION TESTS - ConversationFileSystemService
@@ -38,6 +39,9 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 		// Register the mock
 		RegisterSingleton(Services.FileSystemService, mockFileSystemService);
+
+		// Mock Exception.log
+		vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
 		// Create service
 		service = new ConversationFileSystemService();
@@ -316,11 +320,11 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			const conversation = createTestConversation('To Delete');
 			await service.saveConversation(conversation);
 
-			mockFileSystemService.deleteFile.mockResolvedValue({ success: true });
+			mockFileSystemService.deleteFile.mockResolvedValue(undefined); // void = success
 
 			const result = await service.deleteCurrentConversation();
 
-			expect(result).toBe(true);
+			expect(result).toBeUndefined(); // void = success
 			expect(mockFileSystemService.deleteFile).toHaveBeenCalledWith(
 				'Vaultkeeper AI/Conversations/To Delete.json',
 				true
@@ -328,10 +332,10 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(service.getCurrentConversationPath()).toBeNull();
 		});
 
-		it('should return false when no current conversation', async () => {
+		it('should return undefined when no current conversation', async () => {
 			const result = await service.deleteCurrentConversation();
 
-			expect(result).toBe(false);
+			expect(result).toBeUndefined(); // void = nothing to delete
 			expect(mockFileSystemService.deleteFile).not.toHaveBeenCalled();
 		});
 
@@ -339,14 +343,14 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			const conversation = createTestConversation('Delete Fail');
 			await service.saveConversation(conversation);
 
-			mockFileSystemService.deleteFile.mockResolvedValue({
-				success: false,
-				error: 'Permission denied'
-			});
+			mockFileSystemService.deleteFile.mockResolvedValue(
+				new Error('Permission denied')
+			);
 
 			const result = await service.deleteCurrentConversation();
 
-			expect(result).toBe(false);
+			expect(result).toBeInstanceOf(Error); // Error = failure
+			expect((result as Error).message).toBe('Permission denied');
 			expect(service.getCurrentConversationPath()).not.toBeNull();
 		});
 	});
@@ -526,7 +530,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 	describe('updateConversationTitle', () => {
 		it('should move file to new path with new title', async () => {
-			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
+			mockFileSystemService.moveFile.mockResolvedValue(undefined); // void = success
 
 			await service.updateConversationTitle(
 				'Vaultkeeper AI/Conversations/Old Title.json',
@@ -541,7 +545,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 		});
 
 		it('should update current path if it matches old path', async () => {
-			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
+			mockFileSystemService.moveFile.mockResolvedValue(undefined); // void = success
 
 			service.setCurrentConversationPath('Vaultkeeper AI/Conversations/Old.json');
 
@@ -551,7 +555,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 		});
 
 		it('should not update current path if it doesnt match', async () => {
-			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
+			mockFileSystemService.moveFile.mockResolvedValue(undefined); // void = success
 
 			service.setCurrentConversationPath('Vaultkeeper AI/Conversations/Other.json');
 
@@ -560,19 +564,22 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(service.getCurrentConversationPath()).toBe('Vaultkeeper AI/Conversations/Other.json');
 		});
 
-		it('should throw error when move fails', async () => {
-			mockFileSystemService.moveFile.mockResolvedValue({
-				success: false,
-				error: 'Destination already exists'
-			});
+		it('should return error when move fails', async () => {
+			mockFileSystemService.moveFile.mockResolvedValue(
+				new Error('Destination already exists')
+			);
 
-			await expect(
-				service.updateConversationTitle('Vaultkeeper AI/Conversations/Old.json', 'New')
-			).rejects.toThrow('Failed to update conversation title: Destination already exists');
+			const result = await service.updateConversationTitle(
+				'Vaultkeeper AI/Conversations/Old.json',
+				'New'
+			);
+
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toBe('Destination already exists');
 		});
 
 		it('should handle special characters in new title', async () => {
-			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
+			mockFileSystemService.moveFile.mockResolvedValue(undefined); // void = success
 
 			await service.updateConversationTitle(
 				'Vaultkeeper AI/Conversations/Old.json',
@@ -607,7 +614,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(loaded[0].title).toBe('Original');
 
 			// Update title
-			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
+			mockFileSystemService.moveFile.mockResolvedValue(undefined); // void = success
 			await service.updateConversationTitle(savedPath!, 'Updated Title');
 
 			expect(service.getCurrentConversationPath()).toBe('Vaultkeeper AI/Conversations/Updated Title.json');
@@ -620,7 +627,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(service.getCurrentConversationPath()).toBe('Vaultkeeper AI/Conversations/First.json');
 
 			// Delete it
-			mockFileSystemService.deleteFile.mockResolvedValue({ success: true });
+			mockFileSystemService.deleteFile.mockResolvedValue(undefined); // void = success
 			await service.deleteCurrentConversation();
 			expect(service.getCurrentConversationPath()).toBeNull();
 

@@ -10,11 +10,11 @@ import rehypeStringify from "rehype-stringify";
 import wikiLinkPlugin from "remark-wiki-link";
 import type { Root as MdastRoot } from "mdast";
 import type { Root as HastRoot } from "hast";
-import type { FileSystemService } from "./FileSystemService";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import { Selector } from "Enums/Selector";
 import type { HTMLService } from "./HTMLService";
+import type { VaultCacheService } from "./VaultCacheService";
 
 interface IStreamingState {
     element: HTMLElement;
@@ -25,23 +25,19 @@ interface IStreamingState {
 
 export class StreamingMarkdownService {
     private readonly htmlService: HTMLService = Resolve<HTMLService>(Services.HTMLService);
-    private readonly fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
+    private readonly vaultCacheService: VaultCacheService = Resolve<VaultCacheService>(Services.VaultCacheService);
 
     private readonly processor: Processor<MdastRoot, MdastRoot, HastRoot, HastRoot, string>;
     private streamingStates: Map<string, IStreamingState> = new Map<string, IStreamingState>();
 
-    private cachedPermaLinks: string[];
-
     constructor() {
-        this.cachedPermaLinks = this.fileSystemService.getVaultFileListForMarkDown();
-
         this.processor = unified()
         .use(remarkParse)
             .use(remarkGfm)
             .use(remarkEmoji)
             .use(remarkMath)
             .use(wikiLinkPlugin, {
-                permalinks: this.cachedPermaLinks,
+                permalinks: this.vaultCacheService.wikiLinks.links,
                 wikiLinkClassName: Selector.MarkDownLink,
                 pageResolver: (pageName: string) => [pageName],
                 hrefTemplate: (permalink: string) => `#/page/${encodeURIComponent(permalink)}`
@@ -79,7 +75,7 @@ export class StreamingMarkdownService {
         }
     }
 
-    public initializeStream(messageId: string, container: HTMLElement): void {
+    public initializeStream(messageId: string, container: HTMLElement) {
         this.htmlService.clearElement(container);
 
         this.streamingStates.set(messageId, {
@@ -90,10 +86,7 @@ export class StreamingMarkdownService {
         });
     }
 
-    public streamChunk(messageId: string, fullText: string): void {
-        // ensure perma links are up to date during each chunk
-        this.fileSystemService.getVaultFileListForMarkDown()
-
+    public streamChunk(messageId: string, fullText: string) {
         const state = this.streamingStates.get(messageId);
         if (!state || state.isComplete) {
             return;
@@ -107,7 +100,7 @@ export class StreamingMarkdownService {
 
     private renderTimeouts = new Map<string, NodeJS.Timeout>();
     
-    private debouncedRender(messageId: string, immediate: boolean = false): void {
+    private debouncedRender(messageId: string, immediate: boolean = false) {
         const existingTimeout = this.renderTimeouts.get(messageId);
         if (existingTimeout) {
             clearTimeout(existingTimeout);
@@ -138,7 +131,7 @@ export class StreamingMarkdownService {
         }
     }
 
-    public finalizeStream(messageId: string, fullText: string): void {
+    public finalizeStream(messageId: string, fullText: string) {
         const state = this.streamingStates.get(messageId);
         if (!state) {
             return;

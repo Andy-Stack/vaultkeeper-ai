@@ -15,6 +15,7 @@ import type { SettingsService } from "Services/SettingsService";
 import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
 import { StringTools } from "Helpers/StringTools";
 import type { ResponseEvent, ResponseOutputTextDelta, ResponseFunctionCallArgumentsDone, ResponseDone, OpenAIFunctionTool } from "./OpenAITypes";
+import { Exception } from "Helpers/Exception";
 
 export class OpenAI implements IAIClass {
 
@@ -126,7 +127,7 @@ export class OpenAI implements IAIClass {
                             // When we receive a function call, we should continue the conversation
                             shouldContinue = true;
                         } catch (error) {
-                            console.error("Failed to parse function call arguments:", error);
+                            Exception.log(error);
                         }
                     }
                     break;
@@ -157,8 +158,7 @@ export class OpenAI implements IAIClass {
                     break;
 
                 default:
-                    // Unknown event type - log but don't error
-                    console.debug("Unknown event type:", event.type);
+                    Exception.log(`Unknown event type: ${event.type}`);
                     break;
             }
 
@@ -169,9 +169,8 @@ export class OpenAI implements IAIClass {
                 shouldContinue: shouldContinue,
             };
         } catch (error) {
-            const message = error instanceof Error ? error.message : "Unknown parsing error";
-            console.error("Failed to parse stream chunk:", message, "Chunk:", chunk);
-            return { content: "", isComplete: false, error: `Failed to parse chunk: ${message}` };
+            Exception.log(error);
+            return { content: "", isComplete: false, error: Exception.messageFrom(error) };
         }
     }
 
@@ -200,18 +199,17 @@ export class OpenAI implements IAIClass {
                                 ]
                             };
                         } catch (error) {
-                            console.error("Failed to parse function call:", error);
-                            // Fall back to regular message
-                            return {
+                            Exception.log(error);
+                            return { // Fall back to regular message
                                 role: content.role,
-                                content: contentToExtract || "Error parsing function call"
+                                content: contentToExtract.trim() !== "" ? contentToExtract : "Error parsing function call"
                             };
                         }
                     } else {
-                        console.error("Invalid JSON in functionCall field");
+                        Exception.log("Invalid JSON in functionCall field");
                         return {
                             role: content.role,
-                            content: contentToExtract || "Error parsing function call"
+                            content: contentToExtract.trim() !== "" ? contentToExtract : "Error parsing function call"
                         };
                     }
                 }
@@ -227,15 +225,14 @@ export class OpenAI implements IAIClass {
                                 content: JSON.stringify(parsedContent.functionResponse.response)
                             };
                         } catch (error) {
-                            console.error("Failed to parse function response:", error);
-                            // Fall back to regular message
-                            return {
+                            Exception.log(error);
+                            return { // Fall back to regular message
                                 role: content.role,
                                 content: contentToExtract
                             };
                         }
                     } else {
-                        console.error("Invalid JSON in function response content");
+                        Exception.log("Invalid JSON in function response content");
                         return {
                             role: content.role,
                             content: contentToExtract

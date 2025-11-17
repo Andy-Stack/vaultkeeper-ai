@@ -2,19 +2,22 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { StreamingMarkdownService } from '../../Services/StreamingMarkdownService';
 import * as DependencyService from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import type { FileSystemService } from '../../Services/FileSystemService';
 import type { HTMLService } from '../../Services/HTMLService';
+import type { VaultCacheService } from '../../Services/VaultCacheService';
+import { Exception } from '../../Helpers/Exception';
 
 describe('StreamingMarkdownService', () => {
 	let service: StreamingMarkdownService;
-	let mockFileSystemService: Partial<FileSystemService>;
 	let mockHTMLService: Partial<HTMLService>;
+	let mockVaultCacheService: Partial<VaultCacheService>;
 
 	beforeEach(() => {
-		// Mock FileSystemService to avoid dependency injection issues
-		mockFileSystemService = {
-			getVaultFileListForMarkDown: vi.fn().mockReturnValue(['file1', 'file2', 'folder/file3'])
-		};
+		// Mock VaultCacheService to provide wikiLinks
+		mockVaultCacheService = {
+			wikiLinks: {
+				links: ['file1', 'file2', 'folder/file3']
+			}
+		} as any;
 
 		// Mock HTMLService
 		mockHTMLService = {
@@ -41,14 +44,17 @@ describe('StreamingMarkdownService', () => {
 
 		// Mock DependencyService.Resolve to return our mocks
 		vi.spyOn(DependencyService, 'Resolve').mockImplementation((serviceId: symbol) => {
-			if (serviceId === Services.FileSystemService) {
-				return mockFileSystemService as FileSystemService;
+			if (serviceId === Services.VaultCacheService) {
+				return mockVaultCacheService as VaultCacheService;
 			}
 			if (serviceId === Services.HTMLService) {
 				return mockHTMLService as HTMLService;
 			}
 			throw new Error(`Unexpected service request: ${serviceId.toString()}`);
 		});
+
+		// Mock Exception.log
+		vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
 		service = new StreamingMarkdownService();
 	});
@@ -444,15 +450,6 @@ describe('StreamingMarkdownService', () => {
 			// Buffer should not update
 			expect(state.buffer).toBe('');
 		});
-
-		it('should refresh vault file list on each chunk', () => {
-			const container = document.createElement('div');
-			service.initializeStream('msg-1', container);
-
-			service.streamChunk('msg-1', 'test');
-
-			expect(mockFileSystemService.getVaultFileListForMarkDown).toHaveBeenCalled();
-		});
 	});
 
 	describe('streaming - finalizeStream', () => {
@@ -554,12 +551,13 @@ describe('StreamingMarkdownService', () => {
 			expect((testService as any).processor).not.toBeNull();
 		});
 
-		it('should cache permalink list from file system', () => {
+		it('should use VaultCacheService wikiLinks for permalink resolution', () => {
 			const testService = new StreamingMarkdownService();
 
-			expect(mockFileSystemService.getVaultFileListForMarkDown).toHaveBeenCalled();
-			expect((testService as any).cachedPermaLinks).toBeDefined();
-			expect((testService as any).cachedPermaLinks).toEqual(['file1', 'file2', 'folder/file3']);
+			// Verify the service was initialized with VaultCacheService
+			expect((testService as any).vaultCacheService).toBeDefined();
+			expect((testService as any).vaultCacheService.wikiLinks).toBeDefined();
+			expect((testService as any).vaultCacheService.wikiLinks.links).toEqual(['file1', 'file2', 'folder/file3']);
 		});
 
 		it('should initialize empty streaming states', () => {

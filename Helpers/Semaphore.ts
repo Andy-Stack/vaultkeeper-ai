@@ -26,7 +26,7 @@ export class Semaphore {
         });
     }
 
-    release(): void {
+    release() {
         if (this.queue.length > 0) {
             const resolve = this.queue.shift();
             if (resolve) {

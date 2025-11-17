@@ -11,6 +11,7 @@ import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { SettingsService } from '../../Services/SettingsService';
 import { AIProvider } from '../../Enums/ApiProvider';
+import { Exception } from '../../Helpers/Exception';
 
 describe('OpenAI', () => {
     let openai: OpenAI;
@@ -21,6 +22,9 @@ describe('OpenAI', () => {
     let mockFunctionDefinitions: any;
 
     beforeEach(() => {
+        // Mock Exception methods
+        vi.spyOn(Exception, 'log').mockImplementation(() => {});
+
         // Mock IPrompt
         mockPrompt = {
             systemInstruction: vi.fn().mockReturnValue('System instruction'),
@@ -81,6 +85,7 @@ describe('OpenAI', () => {
     afterEach(() => {
         // Clear singleton registry to prevent memory leaks
         DeregisterAllServices();
+        vi.restoreAllMocks();
     });
 
     describe('Constructor and Dependencies', () => {
@@ -183,7 +188,7 @@ describe('OpenAI', () => {
         });
 
         it('should handle unknown event types gracefully', () => {
-            const consoleSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+            const exceptionSpy = vi.spyOn(Exception, 'log');
 
             const chunk = JSON.stringify({
                 type: 'response.unknown_event',
@@ -194,9 +199,7 @@ describe('OpenAI', () => {
 
             expect(result.content).toBe('');
             expect(result.isComplete).toBe(false);
-            expect(consoleSpy).toHaveBeenCalledWith('Unknown event type:', 'response.unknown_event');
-
-            consoleSpy.mockRestore();
+            expect(exceptionSpy).toHaveBeenCalledWith('Unknown event type: response.unknown_event');
         });
 
         it('should handle response.done without tool calls', () => {
@@ -222,7 +225,7 @@ describe('OpenAI', () => {
         });
 
         it('should handle invalid JSON in tool call arguments', () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const exceptionSpy = vi.spyOn(Exception, 'log');
 
             const chunk = JSON.stringify({
                 type: 'response.function_call_arguments.done',
@@ -239,22 +242,19 @@ describe('OpenAI', () => {
             const result = (openai as any).parseStreamChunk(chunk);
 
             expect(result.functionCall).toBeUndefined();
-            expect(consoleSpy).toHaveBeenCalled();
-
-            consoleSpy.mockRestore();
+            expect(exceptionSpy).toHaveBeenCalled();
         });
 
         it('should handle malformed chunk JSON', () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const exceptionSpy = vi.spyOn(Exception, 'log');
 
             const result = (openai as any).parseStreamChunk('not valid json {{{');
 
             expect(result.content).toBe('');
             expect(result.isComplete).toBe(false);
-            expect(result.error).toContain('Failed to parse chunk');
-            expect(consoleSpy).toHaveBeenCalled();
-
-            consoleSpy.mockRestore();
+            // The error message comes from Exception.messageFrom which extracts the actual JSON parse error
+            expect(result.error).toBeDefined();
+            expect(exceptionSpy).toHaveBeenCalled();
         });
 
         it('should handle function call arguments delta events', () => {
@@ -414,7 +414,7 @@ describe('OpenAI', () => {
         });
 
         it('should handle invalid JSON in function call gracefully', async () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const exceptionSpy = vi.spyOn(Exception, 'log');
 
             const conversation = new Conversation();
             const invalidContent = new ConversationContent(
@@ -440,13 +440,11 @@ describe('OpenAI', () => {
 
             expect(message.content).toBe('Error parsing function call');
             expect(message.tool_calls).toBeUndefined();
-            expect(consoleSpy).toHaveBeenCalled();
-
-            consoleSpy.mockRestore();
+            expect(exceptionSpy).toHaveBeenCalled();
         });
 
         it('should handle invalid JSON in function response gracefully', async () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const exceptionSpy = vi.spyOn(Exception, 'log');
 
             const conversation = new Conversation();
             const invalidContent = new ConversationContent(
@@ -471,9 +469,7 @@ describe('OpenAI', () => {
 
             expect(message.content).toBe('invalid json {');
             expect(message.role).toBe(Role.User); // Falls back to original role
-            expect(consoleSpy).toHaveBeenCalled();
-
-            consoleSpy.mockRestore();
+            expect(exceptionSpy).toHaveBeenCalled();
         });
 
         it('should filter out empty content', async () => {

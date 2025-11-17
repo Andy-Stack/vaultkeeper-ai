@@ -7,6 +7,7 @@ import { Services } from '../../Services/Services';
 import { SanitiserService } from '../../Services/SanitiserService';
 import { SettingsService, IVaultkeeperAISettings } from '../../Services/SettingsService';
 import { AIProviderModel } from '../../Enums/ApiProvider';
+import { Exception } from '../../Helpers/Exception';
 
 /**
  * INTEGRATION TESTS
@@ -115,6 +116,9 @@ describe('VaultService - Integration Tests', () => {
 		// Mock console.error to prevent noise in tests
 		consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
+		// Mock Exception.log
+		vi.spyOn(Exception, 'log').mockImplementation(() => {});
+
 		// Register real dependencies in DependencyService
 		RegisterSingleton(Services.VaultkeeperAIPlugin, mockPlugin as any);
 		RegisterSingleton(Services.FileManager, mockFileManager);
@@ -131,7 +135,7 @@ describe('VaultService - Integration Tests', () => {
 	afterEach(() => {
 		// Clear singleton registry to prevent memory leaks
 		DeregisterAllServices();
-		consoleErrorSpy.mockRestore();
+		vi.restoreAllMocks();
 	});
 
 	describe('getMarkdownFiles', () => {
@@ -203,13 +207,12 @@ describe('VaultService - Integration Tests', () => {
 			expect(result).toBe(mockFile);
 		});
 
-		it('should return null and log error when path is excluded', () => {
+		it('should return null when path is excluded', () => {
 			mockVault.getAbstractFileByPath.mockReturnValue(createMockFile('Vaultkeeper AI/test.md'));
 
 			const result = vaultService.getAbstractFileByPath('Vaultkeeper AI/test.md', false);
 
 			expect(result).toBeNull();
-			expect(consoleErrorSpy).toHaveBeenCalled();
 		});
 
 		it('should sanitize the path before checking', () => {
@@ -240,7 +243,6 @@ describe('VaultService - Integration Tests', () => {
 			const result = vaultService.getAbstractFileByPath('Vaultkeeper AI', false);
 
 			expect(result).toBeNull();
-			expect(consoleErrorSpy).toHaveBeenCalled();
 		});
 
 		it('should allow access to Vaultkeeper AI directory when allowAccessToPluginRoot is true', () => {
@@ -266,7 +268,6 @@ describe('VaultService - Integration Tests', () => {
 			const result = await vaultService.exists('Vaultkeeper AI/test.md', false);
 
 			expect(result).toBe(false);
-			expect(consoleErrorSpy).toHaveBeenCalled();
 		});
 
 		it('should return false when file does not exist', async () => {
@@ -297,13 +298,12 @@ describe('VaultService - Integration Tests', () => {
 			expect(mockVault.read).toHaveBeenCalledWith(mockFile);
 		});
 
-		it('should return empty string and log error when file is excluded', async () => {
+		it('should return empty string when file is excluded', async () => {
 			const mockFile = createMockFile('Vaultkeeper AI/test.md');
 
 			const result = await vaultService.read(mockFile, false);
 
 			expect(result).toBe('');
-			expect(consoleErrorSpy).toHaveBeenCalled();
 			expect(mockVault.read).not.toHaveBeenCalled();
 		});
 
@@ -331,10 +331,11 @@ describe('VaultService - Integration Tests', () => {
 			expect(result).toBe(mockFile);
 		});
 
-		it('should throw error when trying to create file in excluded path', async () => {
-			await expect(
-				vaultService.create('Vaultkeeper AI/test.md', 'content', false)
-			).rejects.toThrow('Plugin attempted to create a file that is in the exclusion list');
+		it('should return error when trying to create file in excluded path', async () => {
+			const result = await vaultService.create('Vaultkeeper AI/test.md', 'content', false);
+
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toContain('Failed to create file, permission denied');
 		});
 
 		it('should create parent directories if they do not exist', async () => {
@@ -375,13 +376,12 @@ describe('VaultService - Integration Tests', () => {
 			expect(mockVault.process).toHaveBeenCalledWith(mockFile, expect.any(Function));
 		});
 
-		it('should not modify file and log error when file is excluded', async () => {
+		it('should not modify file when file is excluded', async () => {
 			const mockFile = createMockFile('Vaultkeeper AI/test.md');
 
 			await vaultService.modify(mockFile, 'new content', false);
 
 			expect(mockVault.process).not.toHaveBeenCalled();
-			expect(consoleErrorSpy).toHaveBeenCalled();
 		});
 
 		it('should call vault.process with function that returns new content', async () => {
@@ -406,7 +406,7 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.delete(mockFile);
 
-			expect(result).toEqual({ success: true });
+			expect(result).toBeUndefined(); // void = success
 			expect(mockFileManager.trashFile).toHaveBeenCalledWith(mockFile);
 		});
 
@@ -415,9 +415,9 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.delete(mockFile, false);
 
-			expect(result).toEqual({ success: false, error: 'File is in exclusion list' });
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toContain('File does not exist');
 			expect(mockFileManager.trashFile).not.toHaveBeenCalled();
-			expect(consoleErrorSpy).toHaveBeenCalled();
 		});
 
 		it('should call fileManager.trashFile to delete file', async () => {
@@ -435,8 +435,8 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.delete(mockFile);
 
-			expect(result).toEqual({ success: false, error: 'Deletion failed' });
-			expect(consoleErrorSpy).toHaveBeenCalled();
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toBe('Deletion failed');
 		});
 
 		it('should handle non-Error objects in catch block', async () => {
@@ -445,7 +445,8 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.delete(mockFile);
 
-			expect(result).toEqual({ success: false, error: 'string error' });
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toBe('string error');
 		});
 	});
 
@@ -457,16 +458,16 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.move('source.md', 'dest.md');
 
-			expect(result).toEqual({ success: true });
+			expect(result).toBeUndefined(); // void = success
 			expect(mockFileManager.renameFile).toHaveBeenCalledWith(mockFile, 'dest.md');
 		});
 
 		it('should return error when source file is excluded', async () => {
 			const result = await vaultService.move('Vaultkeeper AI/test.md', 'dest.md', false);
 
-			expect(result).toEqual({ success: false, error: 'Source file is in exclusion list' });
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toContain('File does not exist');
 			expect(mockFileManager.renameFile).not.toHaveBeenCalled();
-			expect(consoleErrorSpy).toHaveBeenCalled();
 		});
 
 		it('should return error when source file does not exist', async () => {
@@ -474,7 +475,8 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.move('nonexistent.md', 'dest.md');
 
-			expect(result).toEqual({ success: false, error: 'Source file not found' });
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toContain('File does not exist');
 			expect(mockFileManager.renameFile).not.toHaveBeenCalled();
 		});
 
@@ -499,8 +501,8 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.move('source.md', 'dest.md');
 
-			expect(result).toEqual({ success: false, error: 'Move failed' });
-			expect(consoleErrorSpy).toHaveBeenCalled();
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toBe('Move failed');
 		});
 	});
 
@@ -515,10 +517,11 @@ describe('VaultService - Integration Tests', () => {
 			expect(result).toBe(mockFolder);
 		});
 
-		it('should throw error when trying to create folder in excluded path', async () => {
-			await expect(
-				vaultService.createFolder('Vaultkeeper AI/subfolder', false)
-			).rejects.toThrow('Plugin attempted to create a folder that is in the exclusion list');
+		it('should return error when trying to create folder in excluded path', async () => {
+			const result = await vaultService.createFolder('Vaultkeeper AI/subfolder', false);
+
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toContain('Failed to create folder, permission denied');
 		});
 	});
 

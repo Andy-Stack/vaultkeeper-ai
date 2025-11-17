@@ -132,33 +132,35 @@ export class AIFunctionService {
     private async readVaultFiles(filePaths: string[]): Promise<object> {
         const results = await Promise.all(
             filePaths.map(async (filePath) => {
-                const content = await this.fileSystemService.readFile(filePath);
-                if (content === null) {
-                    return { path: filePath, success: false as const, error: `File not found: ${filePath}` };
+                const result = await this.fileSystemService.readFile(filePath);
+                if (result instanceof Error) {
+                    return { path: filePath, error: result }
                 }
-                return { path: filePath, success: true as const, content };
+                return { path: filePath, contents: result }
             })
         );
         return { results };
     }
 
     private async writeVaultFile(filePath: string, content: string): Promise<object> {
-        const result: Error | undefined = await this.fileSystemService.writeFile(normalizePath(filePath), content);
-        return result === undefined ? { success: true } : { success: false, error: result };
+        const result = await this.fileSystemService.writeFile(normalizePath(filePath), content);
+        if (result instanceof Error) {
+            return { success: false, error: result };
+        }
+        return { success: true };
     }
 
-    private async deleteVaultFiles(filepaths: string[], confirmation: boolean): Promise<object> {
+    private async deleteVaultFiles(filePaths: string[], confirmation: boolean): Promise<object> {
         if (!confirmation) {
             return { error: "Confirmation was false, no action taken" };
         }
 
-        const results = await Promise.all(filepaths.map(async filePath => {
+        const results = await Promise.all(filePaths.map(async filePath => {
             const result = await this.fileSystemService.deleteFile(filePath);
-            if (result.success) {
-                return { path: filePath, success: true as const };
-            } else {
-                return { path: filePath, success: false as const, error: result.error };
+            if (result instanceof Error) {
+                return { path: filePath, success: false, error: result }
             }
+            return { path: filePath, success: true };
         }));
 
         return { results };
@@ -172,11 +174,10 @@ export class AIFunctionService {
         const results = await Promise.all(sourcePaths.map(async (sourcePath, index) => {
             const destinationPath = destinationPaths[index];
             const result = await this.fileSystemService.moveFile(sourcePath, destinationPath);
-            if (result.success) {
-                return { path: destinationPath, success: true as const };
-            } else {
-                return { path: destinationPath, success: false as const, error: result.error };
+            if (result instanceof Error) {
+                return { path: destinationPath, success: false, error: result }
             }
+            return { path: destinationPath, success: true };
         }));
 
         return { results };

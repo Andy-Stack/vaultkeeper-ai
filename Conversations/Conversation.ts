@@ -1,5 +1,6 @@
 import { StringTools } from "Helpers/StringTools";
 import { ConversationContent } from "./ConversationContent";
+import { ApiErrorType } from "Types/ApiError";
 
 export class Conversation {
 
@@ -36,6 +37,15 @@ export class Conversation {
         const conversationContent: ConversationContent | undefined = this.contents[this.contents.length - 1];
         if (conversationContent) {
             conversationContent.content = content;
+            conversationContent.errorType = undefined;
+        }
+    }
+
+    public setMostRecentError(content: string, errorType: ApiErrorType) {
+        const conversationContent: ConversationContent | undefined = this.contents[this.contents.length - 1];
+        if (conversationContent) {
+            conversationContent.content = content;
+            conversationContent.errorType = errorType;
         }
     }
 

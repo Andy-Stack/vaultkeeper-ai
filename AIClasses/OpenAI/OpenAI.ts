@@ -16,6 +16,7 @@ import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schem
 import { StringTools } from "Helpers/StringTools";
 import type { ResponseEvent, ResponseOutputTextDelta, ResponseFunctionCallArgumentsDone, ResponseDone, OpenAIFunctionTool } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
+import { ApiErrorType } from "Types/ApiError";
 
 export class OpenAI implements IAIClass {
 
@@ -170,7 +171,12 @@ export class OpenAI implements IAIClass {
             };
         } catch (error) {
             Exception.log(error);
-            return { content: "", isComplete: false, error: Exception.messageFrom(error) };
+            return {
+                content: "",
+                isComplete: true,
+                error: `Failed to parse chunk: ${Exception.messageFrom(error)}`,
+                errorType: ApiErrorType.UNKNOWN
+            };
         }
     }
 
@@ -206,7 +212,7 @@ export class OpenAI implements IAIClass {
                             };
                         }
                     } else {
-                        Exception.log("Invalid JSON in functionCall field");
+                        Exception.log(`Invalid JSON in functionCall field:\n${content.functionCall}`);
                         return {
                             role: content.role,
                             content: contentToExtract.trim() !== "" ? contentToExtract : "Error parsing function call"
@@ -232,7 +238,7 @@ export class OpenAI implements IAIClass {
                             };
                         }
                     } else {
-                        Exception.log("Invalid JSON in function response content");
+                        Exception.log(`Invalid JSON in function response content:\n${contentToExtract}`);
                         return {
                             role: content.role,
                             content: contentToExtract

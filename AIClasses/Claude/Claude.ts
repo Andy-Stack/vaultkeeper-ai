@@ -15,6 +15,8 @@ import type { SettingsService } from "Services/SettingsService";
 import type { RawMessageStreamEvent, ContentBlockParam, Tool } from '@anthropic-ai/sdk/resources/messages';
 import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
 import { StringTools } from "Helpers/StringTools";
+import { Exception } from "Helpers/Exception";
+import { ApiErrorType } from "Types/ApiError";
 
 export class Claude implements IAIClass {
 
@@ -124,7 +126,7 @@ export class Claude implements IAIClass {
                             this.accumulatedFunctionId || undefined
                         );
                     } catch (error) {
-                        console.error("Failed to parse accumulated function args:", error);
+                        Exception.log(error);
                     }
                     // Reset accumulation for next potential tool use
                     this.accumulatedFunctionName = null;
@@ -155,9 +157,13 @@ export class Claude implements IAIClass {
                 shouldContinue: shouldContinue,
             };
         } catch (error) {
-            const message = error instanceof Error ? error.message : "Unknown parsing error";
-            console.error("Failed to parse stream chunk:", message, "Chunk:", chunk);
-            return { content: "", isComplete: false, error: `Failed to parse chunk: ${message}` };
+            Exception.log(error);
+            return {
+                content: "",
+                isComplete: true,
+                error: `Failed to parse chunk: ${Exception.messageFrom(error)}`,
+                errorType: ApiErrorType.UNKNOWN
+            };
         }
     }
 
@@ -194,7 +200,7 @@ export class Claude implements IAIClass {
                                 });
                             }
                         } catch (error) {
-                            console.error("Failed to parse function call:", error);
+                            Exception.log(error);
                             // Fall back to treating as text
                             if (contentToExtract.trim() === "") {
                                 contentBlocks.push({
@@ -204,7 +210,7 @@ export class Claude implements IAIClass {
                             }
                         }
                     } else {
-                        console.error("Invalid JSON in functionCall field");
+                        Exception.log(`Invalid JSON in functionCall field:\n${content.functionCall}`);
                         // Fall back to treating as text
                         if (contentToExtract.trim() === "") {
                             contentBlocks.push({
@@ -234,14 +240,14 @@ export class Claude implements IAIClass {
                                 });
                             }
                         } catch (error) {
-                            console.error("Failed to parse function response:", error);
+                            Exception.log(error);
                             contentBlocks.push({
                                 type: "text",
                                 text: contentToExtract
                             });
                         }
                     } else {
-                        console.error("Invalid JSON in function response content");
+                        Exception.log(`Invalid JSON in function response content:\n${contentToExtract}`);
                         contentBlocks.push({
                             type: "text",
                             text: contentToExtract

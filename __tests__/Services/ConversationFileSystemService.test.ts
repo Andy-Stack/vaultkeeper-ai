@@ -377,7 +377,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 							functionCall: '',
 							timestamp: '2024-01-01T10:00:00.000Z',
 							isFunctionCall: false,
-							isFunctionCallResponse: false
+							isFunctionCallResponse: false,
+							errorType: undefined
 						}
 					]
 				})
@@ -393,7 +394,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 							functionCall: '',
 							timestamp: '2024-01-02T10:00:00.000Z',
 							isFunctionCall: false,
-							isFunctionCallResponse: false
+							isFunctionCallResponse: false,
+							errorType: undefined
 						}
 					]
 				});
@@ -426,7 +428,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						functionCall: '',
 						timestamp: '2024-01-01T10:00:00.000Z',
 						isFunctionCall: false,
-						isFunctionCallResponse: false
+						isFunctionCallResponse: false,
+						errorType: undefined
 					},
 					{
 						role: Role.Assistant,
@@ -435,7 +438,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						functionCall: '',
 						timestamp: '2024-01-01T10:01:00.000Z',
 						isFunctionCall: false,
-						isFunctionCallResponse: false
+						isFunctionCallResponse: false,
+						errorType: undefined
 					}
 				]
 			});
@@ -502,7 +506,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						timestamp: '2024-01-01T10:00:00.000Z',
 						isFunctionCall: true,
 						isFunctionCallResponse: false,
-						toolId: 'tool_1'
+						toolId: 'tool_1',
+						errorType: undefined
 					},
 					{
 						role: Role.User,
@@ -512,7 +517,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						timestamp: '2024-01-01T10:01:00.000Z',
 						isFunctionCall: false,
 						isFunctionCallResponse: true,
-						toolId: 'tool_1'
+						toolId: 'tool_1',
+						errorType: undefined
 					}
 				]
 			});

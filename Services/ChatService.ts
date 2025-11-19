@@ -187,9 +187,8 @@ export class ChatService {
 		let capturedShouldContinue = false;
 
 		for await (const chunk of this.ai.streamRequest(conversation, allowDestructiveActions, this.abortController?.signal)) {
-			if (chunk.error) {
-				console.error("Streaming error:", chunk.error);
-				conversation.setMostRecentContent(`Error: ${chunk.error}`);
+			if (chunk.error && chunk.errorType) {
+				conversation.setMostRecentError(chunk.error, chunk.errorType);
 				callbacks.onStreamingUpdate(aiMessage.timestamp.getTime().toString());
 				break;
 			}

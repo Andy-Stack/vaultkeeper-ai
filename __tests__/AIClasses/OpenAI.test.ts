@@ -251,7 +251,7 @@ describe('OpenAI', () => {
             const result = (openai as any).parseStreamChunk('not valid json {{{');
 
             expect(result.content).toBe('');
-            expect(result.isComplete).toBe(false);
+            expect(result.isComplete).toBe(true);
             // The error message comes from Exception.messageFrom which extracts the actual JSON parse error
             expect(result.error).toBeDefined();
             expect(exceptionSpy).toHaveBeenCalled();

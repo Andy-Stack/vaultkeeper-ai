@@ -18,7 +18,8 @@ export default defineConfig({
 			"Components": path.resolve(__dirname, "Components"),
 			"Stores": path.resolve(__dirname, "Stores"),
 			"Views": path.resolve(__dirname, "Views"),
-			"Modals": path.resolve(__dirname, "Modals")
+			"Modals": path.resolve(__dirname, "Modals"),
+			"Types": path.resolve(__dirname, "Types")
 		}
 	},
 	test: {

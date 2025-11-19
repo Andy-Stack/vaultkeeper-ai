@@ -120,9 +120,13 @@
 
     // For assistant messages that aren't streaming, use traditional parsing
     if (!isCurrentlyStreaming) {
-      // Check if this is a cancelled request message
+
       if (message.content.includes(Selector.ApiRequestAborted)) {
-        return `<span class="${Selector.ApiRequestAborted}">${Copy.ApiRequestAborted}</span>`;
+        return `<span class="${Selector.ErrorSelector}">${Copy.ApiRequestAborted}</span>`;
+      }
+
+      if (message.errorType) {
+        return `<div class="${Selector.ErrorSelector}">${message.content}</div>`;
       }
 
       try {

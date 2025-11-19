@@ -248,16 +248,11 @@ describe('Gemini', () => {
         });
 
         it('should handle malformed chunk JSON', () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
             const result = (gemini as any).parseStreamChunk('invalid json {');
 
             expect(result.content).toBe('');
-            expect(result.isComplete).toBe(false);
+            expect(result.isComplete).toBe(true);
             expect(result.error).toContain('Failed to parse chunk');
-            expect(consoleSpy).toHaveBeenCalled();
-
-            consoleSpy.mockRestore();
         });
     });
 

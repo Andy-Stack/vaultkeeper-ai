@@ -16,6 +16,8 @@ import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schem
 import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
 import { FinishReason } from "@google/genai";
 import { StringTools } from "Helpers/StringTools";
+import { Exception } from "Helpers/Exception";
+import { ApiErrorType } from "Types/ApiError";
 
 export class Gemini implements IAIClass {
 
@@ -150,9 +152,13 @@ export class Gemini implements IAIClass {
         shouldContinue: shouldContinue,
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown parsing error";
-      console.error("Failed to parse stream chunk:", message, "Chunk:", chunk);
-      return { content: "", isComplete: false, error: `Failed to parse chunk: ${message}` };
+      Exception.log(error);
+      return {
+        content: "",
+        isComplete: true,
+        error: `Failed to parse chunk: ${Exception.messageFrom(error)}`,
+        errorType: ApiErrorType.UNKNOWN
+      };
     }
   }
 
@@ -178,11 +184,11 @@ export class Gemini implements IAIClass {
                   parts.push({ text: contentToExtract });
                 }
               } catch (error) {
-                console.error("Failed to parse function response:", error);
+                Exception.log(error);
                 parts.push({ text: contentToExtract });
               }
             } else {
-              console.error("Invalid JSON in function response content");
+              Exception.log(`Invalid JSON in function response content:\n${contentToExtract}`)
               parts.push({ text: contentToExtract });
             }
           } else {
@@ -203,10 +209,10 @@ export class Gemini implements IAIClass {
                 });
               }
             } catch (error) {
-              console.error("Failed to parse function call:", error);
+              Exception.log(error);
             }
           } else {
-            console.error("Invalid JSON in functionCall field");
+            Exception.log(`Invalid JSON in functionCall field:\n${content.functionCall}`);
           }
         }
 

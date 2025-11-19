@@ -41,7 +41,8 @@ export class ConversationFileSystemService {
                     timestamp: content.timestamp.toISOString(),
                     isFunctionCall: content.isFunctionCall,
                     isFunctionCallResponse: content.isFunctionCallResponse,
-                    toolId: content.toolId
+                    toolId: content.toolId,
+                    errorType: content.errorType
                 }))
         };
 
@@ -104,7 +105,8 @@ export class ConversationFileSystemService {
                         new Date(content.timestamp),
                         content.isFunctionCall,
                         content.isFunctionCallResponse,
-                        content.toolId
+                        content.toolId,
+                        content.errorType
                     );
                 });
                 conversations.push(conversation);

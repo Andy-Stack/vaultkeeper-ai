@@ -498,8 +498,7 @@ describe('StreamingService', () => {
 
 			expect(results).toHaveLength(1);
 			expect(results[0].isComplete).toBe(true);
-			expect(results[0].error).toContain('404');
-			expect(results[0].error).toContain('Not Found');
+			expect(results[0].error).toBe('Resource not found');
 		});
 
 		it('should handle response with no body', async () => {
@@ -553,7 +552,7 @@ describe('StreamingService', () => {
 
 			expect(results).toHaveLength(1);
 			expect(results[0].isComplete).toBe(true);
-			expect(results[0].error).toBe('Unknown error');
+			expect(results[0].error).toBe('String error');
 		});
 	});
 

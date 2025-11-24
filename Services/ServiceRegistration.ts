@@ -11,7 +11,6 @@ import { StreamingMarkdownService } from "./StreamingMarkdownService";
 import { FileSystemService } from "./FileSystemService";
 import { ConversationFileSystemService } from "./ConversationFileSystemService";
 import { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
-import { FileManager } from "obsidian";
 import { AIFunctionService } from "./AIFunctionService";
 import { StreamingService } from "./StreamingService";
 import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
@@ -36,6 +35,8 @@ import { InputService } from "./InputService";
 import { HTMLService } from "./HTMLService";
 import { SettingsService, type IVaultkeeperAISettings } from "./SettingsService";
 import { HelpModal } from "Modals/HelpModal";
+import { EventService } from "./EventService";
+import { DiffService } from "./DiffService";
 
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
     RegisterSingleton<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin, plugin);
@@ -43,12 +44,11 @@ export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
 } 
 
 export function RegisterDependencies() {
-    const plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
-
-    RegisterSingleton<FileManager>(Services.FileManager, plugin.app.fileManager);
+    RegisterSingleton<EventService>(Services.EventService, new EventService());
     RegisterSingleton<StatusBarService>(Services.StatusBarService, new StatusBarService());
     RegisterSingleton<HTMLService>(Services.HTMLService, new HTMLService());
     RegisterSingleton<SanitiserService>(Services.SanitiserService, new SanitiserService());
+    RegisterSingleton<DiffService>(Services.DiffService, new DiffService());
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
     RegisterSingleton<VaultCacheService>(Services.VaultCacheService, new VaultCacheService());
     RegisterSingleton<SearchStateStore>(Services.SearchStateStore, new SearchStateStore());

@@ -10,6 +10,10 @@ import type { SanitiserService } from "./SanitiserService";
 import { FileEvent } from "Enums/FileEvent";
 import type { SettingsService } from "./SettingsService";
 import { Exception } from "Helpers/Exception";
+import type { EventService } from "./EventService";
+import { DiffService } from "./DiffService";
+import * as path from "path-browserify";
+import { Event } from "Enums/Event";
 
 interface IFileEventArgs {
     oldPath: string;
@@ -26,13 +30,19 @@ export class VaultService {
     private readonly settingsService: SettingsService;
     private readonly fileManager: FileManager;
     private readonly sanitiserService: SanitiserService;
+    private readonly diffService: DiffService;
+    private readonly eventService: EventService;
 
     public constructor() {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
+        
         this.vault = this.plugin.app.vault;
+        this.fileManager = this.plugin.app.fileManager
+
         this.settingsService = Resolve<SettingsService>(Services.SettingsService);
-        this.fileManager = Resolve<FileManager>(Services.FileManager);
         this.sanitiserService = Resolve<SanitiserService>(Services.SanitiserService);
+        this.diffService = Resolve<DiffService>(Services.DiffService);
+        this.eventService = Resolve<EventService>(Services.EventService);
     }
 
     public registerFileEvents(handleFileEvent: (event: FileEvent, file: TAbstractFile, args: IFileEventArgs) => void) {
@@ -74,34 +84,31 @@ export class VaultService {
         return await this.vault.read(file);
     }
 
-    public async create(filePath: string, content: string, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
+    public async create(filePath: string, content: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         filePath = this.sanitiserService.sanitize(filePath);
         if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
             Exception.log(`Plugin attempted to create a file that is in the exclusion list: ${filePath}`);
             return Exception.new(`Failed to create file, permission denied: ${filePath}`);
         }
-        try {
+
+        const fileName = path.basename(filePath);
+        return this.proposeChange(fileName, fileName, "", content, requiresConfirmation, async () => {
             await this.createDirectories(filePath, allowAccessToPluginRoot);
             return await this.vault.create(filePath, content);
-        } catch (error) {
-            Exception.log(error);
-            return Exception.new(error);
-        }
+        });
     }
 
-    public async modify(file: TFile, content: string, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
+    public async modify(file: TFile, content: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const filePath = this.sanitiserService.sanitize(file.path);
         if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
             Exception.log(`Plugin attempted to modify a file that is in the exclusion list: ${filePath}`);
             return Exception.new(`File does not exist: ${filePath}`);
         }
-        try {
+
+        return this.proposeChange(file.name, file.name, await this.vault.read(file), content, requiresConfirmation, async () => {
             await this.vault.process(file, () => content);
             return file;
-        } catch (error) {
-            Exception.log(error);
-            return Exception.new(error);
-        }
+        });
     }
 
     public async delete(file: TAbstractFile, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
@@ -407,5 +414,27 @@ export class VaultService {
         });
 
         return merged;
+    }
+
+    private async proposeChange<T>(oldFileName: string, newFileName: string, oldContent: string, newContent: string,
+        requiresConfirmation: boolean = true, performChange: () => Promise<T>): Promise<T | Error> {
+            try {
+                const result = requiresConfirmation ?
+                    await this.diffService.requestDiff(oldFileName, newFileName, oldContent, newContent) : { accepted: true };
+
+                if (result.accepted) {
+                    return await performChange();
+                }
+
+                let response = "User rejected this change"; // maybe need an event to abort an ongoing function call exchange?
+                if (result.suggestion) {
+                    response = `User has rejected the input with the following suggestion: ${result.suggestion}`;
+                }
+                return Exception.new(response);
+            } catch (error) {
+                this.eventService.trigger(Event.DiffClosed);
+                Exception.log(error);
+                return Exception.new(error);
+            }
     }
 }

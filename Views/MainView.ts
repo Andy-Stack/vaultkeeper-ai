@@ -24,20 +24,20 @@ export class MainView extends ItemView {
   topBar: ReturnType<typeof TopBar> | undefined;
   input: ChatWindowComponent | undefined;
 
-  getViewType() {
+  public getViewType() {
     return VIEW_TYPE_MAIN;
   }
 
-  getDisplayText() {
+  public getDisplayText() {
     return "Vaultkeeper AI";
   }
 
-  getIcon(): string {
+  public getIcon(): string {
     return 'sparkles';
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await -- mount operations are valid but synchronous
-  async onOpen() {
+  public async onOpen() {
     const container = this.contentEl;
     container.empty();
 
@@ -60,7 +60,7 @@ export class MainView extends ItemView {
     }) as ChatWindowComponent;
   }
 
-  async onClose() {
+  public async onClose() {
     if (this.topBar) {
       await unmount(this.topBar);
     }

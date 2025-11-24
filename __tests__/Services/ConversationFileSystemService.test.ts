@@ -127,7 +127,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						})
 					])
 				}),
-				true
+				true,
+				false
 			);
 		});
 
@@ -377,8 +378,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 							functionCall: '',
 							timestamp: '2024-01-01T10:00:00.000Z',
 							isFunctionCall: false,
-							isFunctionCallResponse: false,
-							errorType: undefined
+							isFunctionCallResponse: false
 						}
 					]
 				})
@@ -394,8 +394,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 							functionCall: '',
 							timestamp: '2024-01-02T10:00:00.000Z',
 							isFunctionCall: false,
-							isFunctionCallResponse: false,
-							errorType: undefined
+							isFunctionCallResponse: false
 						}
 					]
 				});
@@ -428,8 +427,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						functionCall: '',
 						timestamp: '2024-01-01T10:00:00.000Z',
 						isFunctionCall: false,
-						isFunctionCallResponse: false,
-						errorType: undefined
+						isFunctionCallResponse: false
 					},
 					{
 						role: Role.Assistant,
@@ -438,8 +436,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						functionCall: '',
 						timestamp: '2024-01-01T10:01:00.000Z',
 						isFunctionCall: false,
-						isFunctionCallResponse: false,
-						errorType: undefined
+						isFunctionCallResponse: false
 					}
 				]
 			});
@@ -506,8 +503,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						timestamp: '2024-01-01T10:00:00.000Z',
 						isFunctionCall: true,
 						isFunctionCallResponse: false,
-						toolId: 'tool_1',
-						errorType: undefined
+						toolId: 'tool_1'
 					},
 					{
 						role: Role.User,
@@ -517,8 +513,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						timestamp: '2024-01-01T10:01:00.000Z',
 						isFunctionCall: false,
 						isFunctionCallResponse: true,
-						toolId: 'tool_1',
-						errorType: undefined
+						toolId: 'tool_1'
 					}
 				]
 			});
@@ -614,7 +609,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			mockFileSystemService.listFilesInDirectory.mockResolvedValue(mockFiles);
 
 			const savedData = mockFileSystemService.writeObjectToFile.mock.calls[0][1];
-			mockFileSystemService.readObjectFromFile.mockResolvedValue(savedData);
+			// Simulate JSON serialization/deserialization which removes undefined values
+			mockFileSystemService.readObjectFromFile.mockResolvedValue(JSON.parse(JSON.stringify(savedData)));
 
 			const loaded = await service.getAllConversations();
 			expect(loaded[0].title).toBe('Original');
@@ -677,7 +673,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			mockFileSystemService.listFilesInDirectory.mockResolvedValue([
 				createMockFile('Vaultkeeper AI/Conversations/Complete Test.json')
 			]);
-			mockFileSystemService.readObjectFromFile.mockResolvedValue(savedData);
+			// Simulate JSON serialization/deserialization which removes undefined values
+			mockFileSystemService.readObjectFromFile.mockResolvedValue(JSON.parse(JSON.stringify(savedData)));
 
 			const loaded = await service.getAllConversations();
 			const reconstructed = loaded[0];

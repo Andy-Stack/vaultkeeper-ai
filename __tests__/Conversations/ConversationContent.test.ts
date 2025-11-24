@@ -122,10 +122,9 @@ describe('ConversationContent', () => {
 				content: 'Hello',
 				promptContent: '',
 				functionCall: '',
-				timestamp: '2024-01-01T00:00:00.000Z',
+				timestamp: '2024-01-01T00:00:00:00.000Z',
 				isFunctionCall: false,
-				isFunctionCallResponse: false,
-				errorType: undefined
+				isFunctionCallResponse: false
 			};
 
 			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
@@ -140,8 +139,7 @@ describe('ConversationContent', () => {
 				timestamp: '2024-01-01T00:00:00.000Z',
 				isFunctionCall: true,
 				isFunctionCallResponse: false,
-				toolId: 'tool-123',
-				errorType: undefined
+				toolId: 'tool-123'
 			};
 
 			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
@@ -328,8 +326,7 @@ describe('ConversationContent', () => {
 				functionCall: '',
 				timestamp: '2024-01-01T00:00:00.000Z',
 				isFunctionCall: false,
-				isFunctionCallResponse: false,
-				errorType: undefined
+				isFunctionCallResponse: false
 			};
 
 			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
@@ -343,8 +340,7 @@ describe('ConversationContent', () => {
 				functionCall: '',
 				timestamp: '',
 				isFunctionCall: false,
-				isFunctionCallResponse: false,
-				errorType: undefined
+				isFunctionCallResponse: false
 			};
 
 			expect(ConversationContent.isConversationContentData(validData)).toBe(true);

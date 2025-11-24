@@ -70,15 +70,15 @@ export class FileSystemService {
         return Exception.new(`File not found: ${filePath}`);
     }
 
-    public async writeObjectToFile(filePath: string, data: object, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
+    public async writeObjectToFile(filePath: string, data: object, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 
             let result: TFile | Error;
             if (file && file instanceof TFile) {
-                result = await this.vaultService.modify(file, JSON.stringify(data, null, 4), allowAccessToPluginRoot);
+                result = await this.vaultService.modify(file, JSON.stringify(data, null, 4), allowAccessToPluginRoot, requiresConfirmation);
             }
             else {
-                result = await this.vaultService.create(filePath, JSON.stringify(data, null, 4), allowAccessToPluginRoot);
+                result = await this.vaultService.create(filePath, JSON.stringify(data, null, 4), allowAccessToPluginRoot, requiresConfirmation);
             }
 
             return result;

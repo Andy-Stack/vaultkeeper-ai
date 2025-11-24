@@ -1,9 +1,10 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
-import { copyFileSync, mkdirSync, existsSync, readdirSync, statSync } from "fs";
-import esbuildSvelte from 'esbuild-svelte';
-import { sveltePreprocess } from 'svelte-preprocess';
+import { copyFileSync, mkdirSync, existsSync, readdirSync, statSync, readFileSync, writeFileSync, unlinkSync } from "fs";
+import { join } from "path";
+import esbuildSvelte from "esbuild-svelte";
+import { sveltePreprocess } from "svelte-preprocess";
 
 const banner =
 `/*
@@ -14,18 +15,21 @@ if you want to view the source, please visit the github repository of this plugi
 
 const prod = (process.argv[2] === "production");
 
+// Clean up build artifacts that aren"t needed (main.css, main.js, font files)
+const CLEANUP_BUILD_ARTIFACTS = true; // Set to false if you need to debug these files
+
 // Function to copy directory recursively
 function copyDir(src, dest) {
   if (!existsSync(dest)) {
     mkdirSync(dest, { recursive: true });
   }
-  
+
   const files = readdirSync(src);
-  
+
   for (const file of files) {
     const srcPath = join(src, file);
     const destPath = join(dest, file);
-    
+
     if (statSync(srcPath).isDirectory()) {
       copyDir(srcPath, destPath);
     } else {
@@ -35,12 +39,76 @@ function copyDir(src, dest) {
   }
 }
 
+// Plugin to merge CSS files into styles.css and cleanup build artifacts
+const cssMergerPlugin = {
+  name: "css-merger",
+  setup(build) {
+    build.onEnd(() => {
+      // esbuild outputs CSS as main.css (based on outfile: main.js)
+      const generatedCss = "main.css";
+      const customCssDir = "Styles";
+      const outputCss = "styles.css";
+
+      let mergedCss = "";
+
+      // Read generated CSS from dependencies if it exists
+      if (existsSync(generatedCss)) {
+        mergedCss += readFileSync(generatedCss, "utf-8");
+        mergedCss += "\n\n/* Custom Styles */\n\n";
+      }
+
+      // Append custom CSS files from styles directory
+      if (existsSync(customCssDir)) {
+        const cssFiles = readdirSync(customCssDir)
+          .filter(file => file.endsWith(".css"))
+          .sort();
+
+        for (const cssFile of cssFiles) {
+          const cssPath = join(customCssDir, cssFile);
+          mergedCss += readFileSync(cssPath, "utf-8");
+          mergedCss += "\n\n";
+          console.log(`📦 Merged: ${cssPath}`);
+        }
+      }
+
+      // Write merged CSS to styles.css
+      writeFileSync(outputCss, mergedCss);
+      console.log(`✅ Generated: ${outputCss}`);
+
+      // Clean up build artifacts if enabled
+      if (CLEANUP_BUILD_ARTIFACTS) {
+        // Remove main.css (intermediate CSS file)
+        if (existsSync(generatedCss)) {
+          unlinkSync(generatedCss);
+          console.log(`🗑️  Removed: ${generatedCss}`);
+        }
+
+        // Remove KaTeX font files
+		let anyRemoved = false;
+        const fontExtensions = [".woff", ".woff2", ".ttf"];
+        const files = readdirSync(".");
+        for (const file of files) {
+          const ext = file.substring(file.lastIndexOf("."));
+          if (fontExtensions.includes(ext)) {
+            unlinkSync(file);
+			anyRemoved = true;
+          }
+        }
+		if (anyRemoved) {
+			console.log("🗑️  Removed KaTeX Font Files");
+		}
+      }
+    });
+  }
+};
+
 const buildOptions = {
 	plugins: [
 		esbuildSvelte({
-			compilerOptions: { css: 'injected' },
+			compilerOptions: { css: "injected" },
 			preprocess: sveltePreprocess(),
 		}),
+		cssMergerPlugin,
 	],
 	banner: {
 		js: banner,
@@ -70,10 +138,10 @@ const buildOptions = {
 	outfile: "main.js",
 	minify: prod,
 	loader: {
-		'.css': 'css',
-		'.ttf': 'file',
-		'.woff': 'file',
-		'.woff2': 'file',
+		".css": "css",
+		".ttf": "file",
+		".woff": "file",
+		".woff2": "file",
 	},
 };
 
@@ -83,5 +151,4 @@ if (prod) {
 } else {
 	const ctx = await esbuild.context(buildOptions);
 	await ctx.watch();
-	console.log("👀 Watching for changes...");
 }

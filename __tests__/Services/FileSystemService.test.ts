@@ -489,7 +489,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.writeObjectToFile('data.json', data);
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.create).toHaveBeenCalledWith('data.json', expectedJson, false);
+			expect(mockVaultService.create).toHaveBeenCalledWith('data.json', expectedJson, false, true);
 		});
 
 		it('should serialize and write object to existing file', async () => {
@@ -503,7 +503,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.writeObjectToFile('existing.json', data);
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.modify).toHaveBeenCalledWith(mockFile, expectedJson, false);
+			expect(mockVaultService.modify).toHaveBeenCalledWith(mockFile, expectedJson, false, true);
 		});
 
 		it('should format JSON with 4-space indentation', async () => {
@@ -515,7 +515,7 @@ describe('FileSystemService', () => {
 			await fileSystemService.writeObjectToFile('formatted.json', data);
 
 			const expectedJson = JSON.stringify(data, null, 4);
-			expect(mockVaultService.create).toHaveBeenCalledWith('formatted.json', expectedJson, false);
+			expect(mockVaultService.create).toHaveBeenCalledWith('formatted.json', expectedJson, false, true);
 			// Verify it contains newlines and indentation
 			expect(expectedJson).toContain('\n');
 			expect(expectedJson).toContain('    ');
@@ -532,7 +532,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.writeObjectToFile('empty.json', data);
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.create).toHaveBeenCalledWith('empty.json', expectedJson, false);
+			expect(mockVaultService.create).toHaveBeenCalledWith('empty.json', expectedJson, false, true);
 		});
 
 		it('should handle arrays', async () => {
@@ -546,7 +546,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.writeObjectToFile('array.json', data);
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.create).toHaveBeenCalledWith('array.json', expectedJson, false);
+			expect(mockVaultService.create).toHaveBeenCalledWith('array.json', expectedJson, false, true);
 		});
 
 		it('should respect allowAccessToPluginRoot parameter', async () => {
@@ -559,7 +559,7 @@ describe('FileSystemService', () => {
 			await fileSystemService.writeObjectToFile('plugin/config.json', data, true);
 
 			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/config.json', true);
-			expect(mockVaultService.create).toHaveBeenCalledWith('plugin/config.json', expectedJson, true);
+			expect(mockVaultService.create).toHaveBeenCalledWith('plugin/config.json', expectedJson, true, true);
 		});
 
 		it('should return Error on write error', async () => {

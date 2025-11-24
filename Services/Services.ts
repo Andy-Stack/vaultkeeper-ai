@@ -1,9 +1,9 @@
 export class Services {
     static VaultkeeperAIPlugin = Symbol("VaultkeeperAIPlugin");
     static SettingsService = Symbol("SettingsService");
+    static EventService = Symbol("EventService");
     static StatusBarService = Symbol("StatusBarService");
     static HTMLService = Symbol("HTMLService");
-    static FileManager = Symbol("FileManager");
     static VaultService = Symbol("VaultService");
     static VaultCacheService = Symbol("VaultCacheService");
     static UserInputService = Symbol("UserInputService");
@@ -19,6 +19,7 @@ export class Services {
     static ChatService = Symbol("ChatService");
     static SanitiserService = Symbol("SanitiserService");
     static InputService = Symbol("InputService");
+    static DiffService = Symbol("DiffService");
 
     // stores
     static SearchStateStore = Symbol("SearchStateStore");

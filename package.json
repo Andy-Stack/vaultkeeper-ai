@@ -48,6 +48,7 @@
 		"@google/genai": "^1.30.0",
 		"@shikijs/rehype": "^3.15.0",
 		"core-js": "^3.47.0",
+		"diff": "^8.0.2",
 		"diff2html": "^3.4.52",
 		"express": "^5.1.0",
 		"fuzzysort": "^3.1.0",

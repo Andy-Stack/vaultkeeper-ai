@@ -66,8 +66,7 @@ describe('Conversation', () => {
 						functionCall: '',
 						timestamp: '2024-01-01T00:00:00.000Z',
 						isFunctionCall: false,
-						isFunctionCallResponse: false,
-						errorType: undefined
+						isFunctionCallResponse: false
 					}
 				]
 			};

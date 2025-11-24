@@ -46,7 +46,7 @@ export class ConversationFileSystemService {
                 }))
         };
 
-        const result = await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData, true);
+        const result = await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData, true, false);
 
         if (result instanceof Error) {
             return result;

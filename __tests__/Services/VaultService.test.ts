@@ -121,8 +121,18 @@ describe('VaultService - Integration Tests', () => {
 
 		// Register real dependencies in DependencyService
 		RegisterSingleton(Services.VaultkeeperAIPlugin, mockPlugin as any);
-		RegisterSingleton(Services.FileManager, mockFileManager);
 		RegisterSingleton(Services.SanitiserService, new SanitiserService());
+
+		// Mock EventService and DiffService to avoid Obsidian Events dependency
+		const mockEventService = { trigger: vi.fn(), on: vi.fn(), off: vi.fn() };
+		const mockDiffService = {
+			requestDiff: vi.fn().mockResolvedValue({ accepted: true }),
+			onAccept: vi.fn(),
+			onReject: vi.fn(),
+			onSuggest: vi.fn()
+		};
+		RegisterSingleton(Services.EventService, mockEventService as any);
+		RegisterSingleton(Services.DiffService, mockDiffService as any);
 
 		// Create and register SettingsService
 		settingsService = new SettingsService(mockSettings);

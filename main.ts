@@ -2,6 +2,7 @@ import { WorkspaceLeaf, Plugin } from "obsidian";
 import { MainView, VIEW_TYPE_MAIN } from "Views/MainView";
 import { RegisterDependencies, RegisterPlugin } from "Services/ServiceRegistration";
 import { VaultkeeperAISettingTab } from "VaultkeeperAISettingTab";
+import { DiffView, VIEW_TYPE_DIFF } from "Views/DiffView";
 import { Services } from "Services/Services";
 import type { StatusBarService } from "Services/StatusBarService";
 import { DeregisterAllServices, Resolve } from "Services/DependencyService";
@@ -9,9 +10,12 @@ import type { VaultService } from "Services/VaultService";
 import { Path } from "Enums/Path";
 import { Copy } from "Enums/Copy";
 import type { SettingsService } from "Services/SettingsService";
+import type { Diff2HtmlUIConfig } from "diff2html/lib/ui/js/diff2html-ui";
 
 import "katex/dist/katex.min.css";
-import "./styles.css";
+import 'highlight.js/styles/github.min.css';
+import 'diff2html/bundles/css/diff2html.min.css';
+import 'diff2html/bundles/js/diff2html-ui.min.js';
 
 export default class VaultkeeperAIPlugin extends Plugin {
 	
@@ -23,17 +27,21 @@ export default class VaultkeeperAIPlugin extends Plugin {
 			VIEW_TYPE_MAIN,
 			(leaf) => new MainView(leaf)
 		);
+		this.registerView(
+			VIEW_TYPE_DIFF,
+			(leaf) => new DiffView(leaf)
+		);
 
 		this.addCommand({
 			id: "open",
 			name: "Open",
 			callback: async () => {
-				await this.activateView();
+				await this.activateMainView();
 			}
 		});
 
 		this.addRibbonIcon("sparkles", "Vaultkeeper AI", async () => {
-			await this.activateView();
+			await this.activateMainView();
 		});
 
 		this.addSettingTab(new VaultkeeperAISettingTab());
@@ -48,7 +56,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		DeregisterAllServices();
 	}
 
-	public async activateView() {
+	public async activateMainView() {
 		const { workspace } = this.app;
 
 		let leaf: WorkspaceLeaf | null = null;
@@ -60,6 +68,25 @@ export default class VaultkeeperAIPlugin extends Plugin {
 			leaf = workspace.getRightLeaf(false);
 			await leaf?.setViewState({ type: VIEW_TYPE_MAIN, active: true });
 		}
+
+		if (leaf != null) {
+			await workspace.revealLeaf(leaf);
+		}
+	}
+
+	public async activateDiffView(diffString: string, config: Diff2HtmlUIConfig) {
+		const { workspace } = this.app;
+
+		let leaf: WorkspaceLeaf | null = null;
+		const leaves = workspace.getLeavesOfType(VIEW_TYPE_DIFF);
+
+		leaf = leaves.length > 0 ? leaves[0] : workspace.getLeaf("tab");
+
+		await leaf?.setViewState({ 
+			type: VIEW_TYPE_DIFF,
+			active: true,
+			state: { diffString, config }
+		});
 
 		if (leaf != null) {
 			await workspace.revealLeaf(leaf);

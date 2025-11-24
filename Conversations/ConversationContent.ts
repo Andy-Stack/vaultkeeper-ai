@@ -37,7 +37,6 @@ export class ConversationContent {
             "timestamp" in data &&
             "isFunctionCall" in data &&
             "isFunctionCallResponse" in data &&
-            "errorType" in data &&
             typeof data.role === "string" &&
             typeof data.content === "string" &&
             typeof data.promptContent === "string" &&
@@ -45,7 +44,10 @@ export class ConversationContent {
             typeof data.timestamp === "string" &&
             typeof data.isFunctionCall === "boolean" &&
             typeof data.isFunctionCallResponse === "boolean" &&
-            (typeof data.errorType === "string" || data.errorType === undefined)
+
+            // optional conversation data fields
+            (!("toolId" in data) || typeof data.toolId === "string") &&
+            (!("errorType" in data) || typeof data.errorType === "string")
         );
     }
 }

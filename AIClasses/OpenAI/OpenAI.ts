@@ -1,43 +1,25 @@
-import { Resolve } from "Services/DependencyService";
-import { Services } from "Services/Services";
-import type { IAIClass } from "AIClasses/IAIClass";
-import type { IPrompt } from "AIClasses/IPrompt";
-import { StreamingService, type IStreamChunk } from "Services/StreamingService";
+import { BaseAIClass } from "AIClasses/BaseAIClass";
+import type { IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
-import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
-import { Role } from "Enums/Role";
-import type { SettingsService } from "Services/SettingsService";
-import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
-import { StringTools } from "Helpers/StringTools";
 import type { ResponseEvent, ResponseOutputTextDelta, ResponseFunctionCallArgumentsDone, ResponseDone, OpenAIFunctionTool } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
-import { ApiErrorType } from "Types/ApiError";
 
-export class OpenAI implements IAIClass {
-
-    private readonly apiKey: string;
-    private readonly aiPrompt: IPrompt = Resolve<IPrompt>(Services.IPrompt);
-    private readonly settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
-    private readonly streamingService: StreamingService = Resolve<StreamingService>(Services.StreamingService);
-    private readonly aiFunctionDefinitions: AIFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
+export class OpenAI extends BaseAIClass {
 
     public constructor() {
-        this.apiKey = this.settingsService.getApiKeyForProvider(AIProvider.OpenAI);
+        super(AIProvider.OpenAI);
     }
 
     public async* streamRequest(
         conversation: Conversation, allowDestructiveActions: boolean, abortSignal?: AbortSignal
     ): AsyncGenerator<IStreamChunk, void, unknown> {
 
-        const systemPrompt = [
-            this.aiPrompt.systemInstruction(),
-            await this.aiPrompt.userInstruction()
-        ].filter(s => s).join("\n\n");
+        const systemPrompt = await this.buildSystemPrompt();
 
         const input = this.extractContents(conversation.contents);
 
@@ -69,7 +51,7 @@ export class OpenAI implements IAIClass {
         );
     }
 
-    private parseStreamChunk(chunk: string): IStreamChunk {
+    protected parseStreamChunk(chunk: string): IStreamChunk {
         try {
             // OpenAI Responses API sends "[DONE]" as the final message, which is not valid JSON
             if (chunk.trim() === "[DONE]") {
@@ -170,50 +152,34 @@ export class OpenAI implements IAIClass {
                 shouldContinue: shouldContinue,
             };
         } catch (error) {
-            Exception.log(error);
-            return {
-                content: "",
-                isComplete: true,
-                error: `Failed to parse chunk: ${Exception.messageFrom(error)}`,
-                errorType: ApiErrorType.UNKNOWN
-            };
+            return this.createErrorChunk(error);
         }
     }
 
-    private extractContents(conversationContent: ConversationContent[]) {
-        return conversationContent
-            .filter(content => content.content.trim() !== "" || content.functionCall.trim() !== "")
+    protected extractContents(conversationContent: ConversationContent[]) {
+        return this.filterConversationContents(conversationContent)
             .map(content => {
-                const contentToExtract = content.role === Role.User ? content.promptContent : content.content;
+                const contentToExtract = this.getContentToExtract(content);
                 // Handle function call
                 if (content.isFunctionCall && content.functionCall.trim() !== "") {
-                    if (StringTools.isValidJson(content.functionCall)) {
-                        try {
-                            const parsedContent = JSON.parse(content.functionCall) as StoredFunctionCall;
-                            return {
-                                role: content.role,
-                                content: contentToExtract.trim() !== "" ? contentToExtract : null,
-                                tool_calls: [
-                                    {
-                                        id: parsedContent.functionCall.id,
-                                        type: "function",
-                                        function: {
-                                            name: parsedContent.functionCall.name,
-                                            arguments: JSON.stringify(parsedContent.functionCall.args)
-                                        }
-                                    }
-                                ]
-                            };
-                        } catch (error) {
-                            Exception.log(error);
-                            return { // Fall back to regular message
-                                role: content.role,
-                                content: contentToExtract.trim() !== "" ? contentToExtract : "Error parsing function call"
-                            };
-                        }
-                    } else {
-                        Exception.log(`Invalid JSON in functionCall field:\n${content.functionCall}`);
+                    const parsedContent = this.parseFunctionCall(content.functionCall);
+                    if (parsedContent) {
                         return {
+                            role: content.role,
+                            content: contentToExtract.trim() !== "" ? contentToExtract : null,
+                            tool_calls: [
+                                {
+                                    id: parsedContent.functionCall.id,
+                                    type: "function",
+                                    function: {
+                                        name: parsedContent.functionCall.name,
+                                        arguments: JSON.stringify(parsedContent.functionCall.args)
+                                    }
+                                }
+                            ]
+                        };
+                    } else {
+                        return { // Fall back to regular message
                             role: content.role,
                             content: contentToExtract.trim() !== "" ? contentToExtract : "Error parsing function call"
                         };
@@ -222,24 +188,15 @@ export class OpenAI implements IAIClass {
 
                 // Handle function response
                 if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
-                    if (StringTools.isValidJson(contentToExtract)) {
-                        try {
-                            const parsedContent = JSON.parse(contentToExtract) as StoredFunctionResponse;
-                            return {
-                                role: "tool",
-                                tool_call_id: parsedContent.id,
-                                content: JSON.stringify(parsedContent.functionResponse.response)
-                            };
-                        } catch (error) {
-                            Exception.log(error);
-                            return { // Fall back to regular message
-                                role: content.role,
-                                content: contentToExtract
-                            };
-                        }
-                    } else {
-                        Exception.log(`Invalid JSON in function response content:\n${contentToExtract}`);
+                    const parsedContent = this.parseFunctionResponse(contentToExtract);
+                    if (parsedContent) {
                         return {
+                            role: "tool",
+                            tool_call_id: parsedContent.id,
+                            content: JSON.stringify(parsedContent.functionResponse.response)
+                        };
+                    } else {
+                        return { // Fall back to regular message
                             role: content.role,
                             content: contentToExtract
                         };
@@ -255,7 +212,7 @@ export class OpenAI implements IAIClass {
             .filter(message => message.content !== "" || message.tool_calls || message.tool_call_id);
     }
 
-    private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): OpenAIFunctionTool[] {
+    protected mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): OpenAIFunctionTool[] {
         return aiFunctionDefinitions.map((functionDefinition) => ({
             type: "function",
             name: functionDefinition.name,

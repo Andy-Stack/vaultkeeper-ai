@@ -455,6 +455,148 @@ describe('Gemini', () => {
             expect(result[0].parts[0].text).toBe('Hello');
             expect(result[1].parts[0].text).toBe('World');
         });
+
+        it('should exclude orphaned function calls without responses', () => {
+            const contents = [
+                new ConversationContent(Role.User, 'Search for files', 'Search for files'),
+                // Function call without response (orphaned)
+                new ConversationContent(
+                    Role.Assistant,
+                    '',
+                    '',
+                    JSON.stringify({
+                        functionCall: {
+                            name: 'search_vault_files',
+                            args: { query: 'test' }
+                        }
+                    }),
+                    new Date(),
+                    true
+                ),
+                new ConversationContent(Role.User, 'What about this?', 'What about this?')
+            ];
+
+            const result = (gemini as any).extractContents(contents);
+
+            // Should only have 2 messages (orphaned function call excluded)
+            expect(result).toHaveLength(2);
+            expect(result[0].parts[0].text).toBe('Search for files');
+            expect(result[1].parts[0].text).toBe('What about this?');
+        });
+
+        it('should include function call when it has a corresponding response', () => {
+            const contents = [
+                new ConversationContent(Role.User, 'Search for files', 'Search for files'),
+                // Function call with response (not orphaned)
+                new ConversationContent(
+                    Role.Assistant,
+                    '',
+                    '',
+                    JSON.stringify({
+                        functionCall: {
+                            name: 'search_vault_files',
+                            args: { query: 'test' }
+                        }
+                    }),
+                    new Date(),
+                    true
+                ),
+                // Corresponding function response
+                (() => {
+                    const responseContent = JSON.stringify({
+                        functionResponse: {
+                            name: 'search_vault_files',
+                            response: ['file1.txt']
+                        }
+                    });
+                    const content = new ConversationContent(Role.User, responseContent, responseContent);
+                    content.isFunctionCallResponse = true;
+                    return content;
+                })()
+            ];
+
+            const result = (gemini as any).extractContents(contents);
+
+            // Should have all 3 items (function call has response)
+            expect(result).toHaveLength(3);
+            expect(result[1].parts[0]).toHaveProperty('functionCall');
+            expect(result[2].parts[0]).toHaveProperty('functionResponse');
+        });
+
+        it('should include function call when it is the most recent item', () => {
+            const contents = [
+                new ConversationContent(Role.User, 'Search for files', 'Search for files'),
+                // Function call as most recent item (should be included)
+                new ConversationContent(
+                    Role.Assistant,
+                    '',
+                    '',
+                    JSON.stringify({
+                        functionCall: {
+                            name: 'search_vault_files',
+                            args: { query: 'test' }
+                        }
+                    }),
+                    new Date(),
+                    true
+                )
+            ];
+
+            const result = (gemini as any).extractContents(contents);
+
+            // Should have both items (most recent function call is included)
+            expect(result).toHaveLength(2);
+            expect(result[1].parts[0]).toEqual({
+                functionCall: {
+                    name: 'search_vault_files',
+                    args: { query: 'test' }
+                }
+            });
+        });
+
+        it('should handle multiple orphaned function calls correctly', () => {
+            const contents = [
+                new ConversationContent(Role.User, 'First message', 'First message'),
+                // Orphaned function call #1
+                new ConversationContent(
+                    Role.Assistant,
+                    '',
+                    '',
+                    JSON.stringify({
+                        functionCall: {
+                            name: 'search_vault_files',
+                            args: { query: 'test1' }
+                        }
+                    }),
+                    new Date(),
+                    true
+                ),
+                new ConversationContent(Role.User, 'Second message', 'Second message'),
+                // Orphaned function call #2
+                new ConversationContent(
+                    Role.Assistant,
+                    '',
+                    '',
+                    JSON.stringify({
+                        functionCall: {
+                            name: 'read_file',
+                            args: { path: 'test.md' }
+                        }
+                    }),
+                    new Date(),
+                    true
+                ),
+                new ConversationContent(Role.User, 'Third message', 'Third message')
+            ];
+
+            const result = (gemini as any).extractContents(contents);
+
+            // Should only have the 3 user messages (both orphaned calls excluded)
+            expect(result).toHaveLength(3);
+            expect(result[0].parts[0].text).toBe('First message');
+            expect(result[1].parts[0].text).toBe('Second message');
+            expect(result[2].parts[0].text).toBe('Third message');
+        });
     });
 
     describe('mapFunctionDefinitions', () => {

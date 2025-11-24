@@ -1,39 +1,26 @@
-import { Resolve } from "Services/DependencyService";
-import { Services } from "Services/Services";
-import type { IAIClass } from "AIClasses/IAIClass";
-import type { IPrompt } from "AIClasses/IPrompt";
-import { StreamingService, type IStreamChunk } from "Services/StreamingService";
+import { BaseAIClass } from "AIClasses/BaseAIClass";
+import type { IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
-import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
-import type { SettingsService } from "Services/SettingsService";
 import type { RawMessageStreamEvent, ContentBlockParam, Tool } from '@anthropic-ai/sdk/resources/messages';
 import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
-import { StringTools } from "Helpers/StringTools";
 import { Exception } from "Helpers/Exception";
-import { ApiErrorType } from "Types/ApiError";
 
-export class Claude implements IAIClass {
+export class Claude extends BaseAIClass {
 
     private readonly STOP_REASON_TOOL_USE: string = "tool_use";
-
-    private readonly apiKey: string;
-    private readonly aiPrompt: IPrompt = Resolve<IPrompt>(Services.IPrompt);
-    private readonly settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
-    private readonly streamingService: StreamingService = Resolve<StreamingService>(Services.StreamingService);
-    private readonly aiFunctionDefinitions: AIFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
 
     private accumulatedFunctionName: string | null = null;
     private accumulatedFunctionArgs: string = "";
     private accumulatedFunctionId: string | null = null;
 
     public constructor() {
-        this.apiKey = this.settingsService.getApiKeyForProvider(AIProvider.Claude);
+        super(AIProvider.Claude);
     }
 
     public async* streamRequest(
@@ -43,10 +30,7 @@ export class Claude implements IAIClass {
         this.accumulatedFunctionArgs = "";
         this.accumulatedFunctionId = null;
 
-        const systemPrompt = [
-            this.aiPrompt.systemInstruction(),
-            await this.aiPrompt.userInstruction()
-        ].filter(s => s).join("\n\n");
+        const systemPrompt = await this.buildSystemPrompt();
 
         const messages = this.extractContents(conversation.contents);
 
@@ -83,7 +67,7 @@ export class Claude implements IAIClass {
         );
     }
 
-    private parseStreamChunk(chunk: string): IStreamChunk {
+    protected parseStreamChunk(chunk: string): IStreamChunk {
         try {
             const data = JSON.parse(chunk) as RawMessageStreamEvent;
 
@@ -157,21 +141,15 @@ export class Claude implements IAIClass {
                 shouldContinue: shouldContinue,
             };
         } catch (error) {
-            Exception.log(error);
-            return {
-                content: "",
-                isComplete: true,
-                error: `Failed to parse chunk: ${Exception.messageFrom(error)}`,
-                errorType: ApiErrorType.UNKNOWN
-            };
+            return this.createErrorChunk(error);
         }
     }
 
-    private extractContents(conversationContent: ConversationContent[]): { role: Role; content: ContentBlockParam[]; }[] {
-        return conversationContent.filter(content => content.content.trim() !== "" || content.functionCall.trim() !== "")
+    protected extractContents(conversationContent: ConversationContent[]): { role: Role; content: ContentBlockParam[]; }[] {
+        return this.filterConversationContents(conversationContent)
             .map(content => {
                 const contentBlocks: ContentBlockParam[] = [];
-                const contentToExtract = content.role === Role.User ? content.promptContent : content.content;
+                const contentToExtract = this.getContentToExtract(content);
 
                 if (contentToExtract.trim() !== "" && !content.isFunctionCallResponse) {
                     contentBlocks.push({
@@ -182,72 +160,49 @@ export class Claude implements IAIClass {
 
                 // Add function call if present
                 if (content.isFunctionCall && content.functionCall.trim() !== "") {
-                    if (StringTools.isValidJson(content.functionCall)) {
-                        try {
-                            const parsedContent = JSON.parse(content.functionCall) as StoredFunctionCall;
+                    const parsedContent = this.parseFunctionCall(content.functionCall);
 
-                            if (parsedContent.functionCall.id && parsedContent.functionCall.id.trim() !== "") {
-                                contentBlocks.push({
-                                    type: "tool_use",
-                                    id: parsedContent.functionCall.id,
-                                    name: parsedContent.functionCall.name,
-                                    input: parsedContent.functionCall.args
-                                });
-                            } else {
-                                contentBlocks.push({
-                                    type: "text",
-                                    text: this.convertFunctionCallToText(parsedContent)
-                                });
-                            }
-                        } catch (error) {
-                            Exception.log(error);
-                            // Fall back to treating as text
-                            if (contentToExtract.trim() === "") {
-                                contentBlocks.push({
-                                    type: "text",
-                                    text: "Error parsing function call"
-                                });
-                            }
-                        }
-                    } else {
-                        Exception.log(`Invalid JSON in functionCall field:\n${content.functionCall}`);
-                        // Fall back to treating as text
-                        if (contentToExtract.trim() === "") {
+                    if (parsedContent) {
+                        if (parsedContent.functionCall.id && parsedContent.functionCall.id.trim() !== "") {
+                            contentBlocks.push({
+                                type: "tool_use",
+                                id: parsedContent.functionCall.id,
+                                name: parsedContent.functionCall.name,
+                                input: parsedContent.functionCall.args
+                            });
+                        } else {
                             contentBlocks.push({
                                 type: "text",
-                                text: "Error parsing function call"
+                                text: this.convertFunctionCallToText(parsedContent)
                             });
                         }
+                    } else if (contentToExtract.trim() === "") {
+                        // Fall back to treating as text
+                        contentBlocks.push({
+                            type: "text",
+                            text: "Error parsing function call"
+                        });
                     }
                 }
 
                 // Add function response if present
                 if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
-                    if (StringTools.isValidJson(contentToExtract)) {
-                        try {
-                            const parsedContent = JSON.parse(contentToExtract) as StoredFunctionResponse;
+                    const parsedContent = this.parseFunctionResponse(contentToExtract);
 
-                            if (parsedContent.id && parsedContent.id.trim() !== "") {
-                                contentBlocks.push({
-                                    type: "tool_result",
-                                    tool_use_id: parsedContent.id,
-                                    content: JSON.stringify(parsedContent.functionResponse.response)
-                                });
-                            } else {
-                                contentBlocks.push({
-                                    type: "text",
-                                    text: this.convertFunctionResponseToText(parsedContent)
-                                });
-                            }
-                        } catch (error) {
-                            Exception.log(error);
+                    if (parsedContent) {
+                        if (parsedContent.id && parsedContent.id.trim() !== "") {
+                            contentBlocks.push({
+                                type: "tool_result",
+                                tool_use_id: parsedContent.id,
+                                content: JSON.stringify(parsedContent.functionResponse.response)
+                            });
+                        } else {
                             contentBlocks.push({
                                 type: "text",
-                                text: contentToExtract
+                                text: this.convertFunctionResponseToText(parsedContent)
                             });
                         }
                     } else {
-                        Exception.log(`Invalid JSON in function response content:\n${contentToExtract}`);
                         contentBlocks.push({
                             type: "text",
                             text: contentToExtract
@@ -263,7 +218,7 @@ export class Claude implements IAIClass {
             .filter(message => message.content.length > 0);
     }
 
-    private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): Tool[] {
+    protected mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): Tool[] {
         return aiFunctionDefinitions.map((functionDefinition) => ({
             name: functionDefinition.name,
             description: functionDefinition.description,

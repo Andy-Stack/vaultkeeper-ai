@@ -1,38 +1,24 @@
-import { Resolve } from "Services/DependencyService";
-import { Services } from "Services/Services";
-import type { IAIClass } from "AIClasses/IAIClass";
-import type { IPrompt } from "AIClasses/IPrompt";
-import { StreamingService, type IStreamChunk } from "Services/StreamingService";
+import { BaseAIClass } from "AIClasses/BaseAIClass";
+import type { IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import { Role } from "Enums/Role";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
-import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import type { ConversationContent } from "Conversations/ConversationContent";
-import type { SettingsService } from "Services/SettingsService";
-import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
 import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
 import { FinishReason } from "@google/genai";
-import { StringTools } from "Helpers/StringTools";
-import { Exception } from "Helpers/Exception";
-import { ApiErrorType } from "Types/ApiError";
 
-export class Gemini implements IAIClass {
+export class Gemini extends BaseAIClass {
 
   private readonly REQUEST_WEB_SEARCH: string = "request_web_search";
 
-  private readonly apiKey: string;
-  private readonly aiPrompt: IPrompt = Resolve<IPrompt>(Services.IPrompt);
-  private readonly settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
-  private readonly streamingService: StreamingService = Resolve<StreamingService>(Services.StreamingService);
-  private readonly aiFunctionDefinitions: AIFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
   private accumulatedFunctionName: string | null = null;
   private accumulatedFunctionArgs: Record<string, unknown> = {};
 
   public constructor() {
-    this.apiKey = this.settingsService.getApiKeyForProvider(AIProvider.Gemini);
+    super(AIProvider.Gemini);
   }
 
   public async* streamRequest(
@@ -97,7 +83,7 @@ export class Gemini implements IAIClass {
     );
   }
 
-  private parseStreamChunk(chunk: string): IStreamChunk {
+  protected parseStreamChunk(chunk: string): IStreamChunk {
     try {
       const data = JSON.parse(chunk) as { candidates?: Candidate[] };
 
@@ -152,43 +138,27 @@ export class Gemini implements IAIClass {
         shouldContinue: shouldContinue,
       };
     } catch (error) {
-      Exception.log(error);
-      return {
-        content: "",
-        isComplete: true,
-        error: `Failed to parse chunk: ${Exception.messageFrom(error)}`,
-        errorType: ApiErrorType.UNKNOWN
-      };
+      return this.createErrorChunk(error);
     }
   }
 
-  private extractContents(conversationContent: ConversationContent[]): { role: Role, parts: Part[] }[] {
-    return conversationContent.filter(content => content.content.trim() !== "" || content.functionCall.trim() !== "")
+  protected extractContents(conversationContent: ConversationContent[]): { role: Role, parts: Part[] }[] {
+    return this.filterConversationContents(conversationContent)
       .map(content => {
         const parts: Part[] = [];
-        const contentToExtract = content.role === Role.User ? content.promptContent : content.content;
+        const contentToExtract = this.getContentToExtract(content);
 
         if (contentToExtract.trim() !== "") {
           if (content.isFunctionCallResponse) {
-            if (StringTools.isValidJson(contentToExtract)) {
-              try {
-                const parsedContent = JSON.parse(contentToExtract) as StoredFunctionResponse;
-                if (parsedContent.functionResponse) {
-                  parts.push({
-                    functionResponse: {
-                      name: parsedContent.functionResponse.name,
-                      response: parsedContent.functionResponse.response as Record<string, unknown>
-                    }
-                  });
-                } else {
-                  parts.push({ text: contentToExtract });
+            const parsedContent = this.parseFunctionResponse(contentToExtract);
+            if (parsedContent && parsedContent.functionResponse) {
+              parts.push({
+                functionResponse: {
+                  name: parsedContent.functionResponse.name,
+                  response: parsedContent.functionResponse.response as Record<string, unknown>
                 }
-              } catch (error) {
-                Exception.log(error);
-                parts.push({ text: contentToExtract });
-              }
+              });
             } else {
-              Exception.log(`Invalid JSON in function response content:\n${contentToExtract}`)
               parts.push({ text: contentToExtract });
             }
           } else {
@@ -197,22 +167,14 @@ export class Gemini implements IAIClass {
         }
 
         if (content.isFunctionCall && content.functionCall.trim() !== "") {
-          if (StringTools.isValidJson(content.functionCall)) {
-            try {
-              const parsedContent = JSON.parse(content.functionCall) as StoredFunctionCall;
-              if (parsedContent.functionCall) {
-                parts.push({
-                  functionCall: {
-                    name: parsedContent.functionCall.name,
-                    args: parsedContent.functionCall.args
-                  }
-                });
+          const parsedContent = this.parseFunctionCall(content.functionCall);
+          if (parsedContent && parsedContent.functionCall) {
+            parts.push({
+              functionCall: {
+                name: parsedContent.functionCall.name,
+                args: parsedContent.functionCall.args
               }
-            } catch (error) {
-              Exception.log(error);
-            }
-          } else {
-            Exception.log(`Invalid JSON in functionCall field:\n${content.functionCall}`);
+            });
           }
         }
 
@@ -224,7 +186,7 @@ export class Gemini implements IAIClass {
       .filter(message => message.parts.length > 0);
   }
 
-  private mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): FunctionDeclaration[] {
+  protected mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): FunctionDeclaration[] {
     return aiFunctionDefinitions.map((functionDefinition) => ({
       name: functionDefinition.name,
       description: functionDefinition.description,

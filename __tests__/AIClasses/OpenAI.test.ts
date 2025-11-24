@@ -491,6 +491,181 @@ describe('OpenAI', () => {
             // Should have 2 user messages in input (empty one filtered out)
             expect(requestBody.input).toHaveLength(2);
         });
+
+        it('should exclude orphaned function calls without responses', async () => {
+            const conversation = new Conversation();
+            conversation.contents.push(new ConversationContent(Role.User, 'Search for files', 'Search for files'));
+            // Function call without response (orphaned)
+            const orphanedCall = new ConversationContent(
+                Role.Assistant,
+                '',
+                '',
+                JSON.stringify({
+                    functionCall: {
+                        id: 'call_orphaned',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                new Date(),
+                true
+            );
+            conversation.contents.push(orphanedCall);
+            conversation.contents.push(new ConversationContent(Role.User, 'What about this?', 'What about this?'));
+
+            mockStreamingService.streamRequest.mockImplementation(async function* () {
+                yield { content: 'done', isComplete: true };
+            });
+
+            const generator = openai.streamRequest(conversation, true);
+            for await (const chunk of generator) {}
+
+            const callArgs = mockStreamingService.streamRequest.mock.calls[0];
+            const requestBody = callArgs[1];
+
+            // Should only have 2 messages (orphaned function call excluded)
+            expect(requestBody.input).toHaveLength(2);
+            expect(requestBody.input[0].content).toBe('Search for files');
+            expect(requestBody.input[1].content).toBe('What about this?');
+        });
+
+        it('should include function call when it has a corresponding response', async () => {
+            const conversation = new Conversation();
+            conversation.contents.push(new ConversationContent(Role.User, 'Search for files', 'Search for files'));
+            // Function call with response (not orphaned)
+            const functionCall = new ConversationContent(
+                Role.Assistant,
+                '',
+                '',
+                JSON.stringify({
+                    functionCall: {
+                        id: 'call_123',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                new Date(),
+                true
+            );
+            conversation.contents.push(functionCall);
+            // Corresponding function response
+            const responseContent = JSON.stringify({
+                id: 'call_123',
+                functionResponse: {
+                    name: 'search_vault_files',
+                    response: ['file1.txt']
+                }
+            });
+            const functionResponse = new ConversationContent(Role.User, responseContent, responseContent);
+            functionResponse.isFunctionCallResponse = true;
+            conversation.contents.push(functionResponse);
+
+            mockStreamingService.streamRequest.mockImplementation(async function* () {
+                yield { content: 'done', isComplete: true };
+            });
+
+            const generator = openai.streamRequest(conversation, true);
+            for await (const chunk of generator) {}
+
+            const callArgs = mockStreamingService.streamRequest.mock.calls[0];
+            const requestBody = callArgs[1];
+
+            // Should have all 3 items (function call has response)
+            expect(requestBody.input).toHaveLength(3);
+            expect(requestBody.input[1].tool_calls).toBeDefined();
+            expect(requestBody.input[2].role).toBe('tool');
+        });
+
+        it('should include function call when it is the most recent item', async () => {
+            const conversation = new Conversation();
+            conversation.contents.push(new ConversationContent(Role.User, 'Search for files', 'Search for files'));
+            // Function call as most recent item (should be included)
+            const latestCall = new ConversationContent(
+                Role.Assistant,
+                '',
+                '',
+                JSON.stringify({
+                    functionCall: {
+                        id: 'call_latest',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                new Date(),
+                true
+            );
+            conversation.contents.push(latestCall);
+
+            mockStreamingService.streamRequest.mockImplementation(async function* () {
+                yield { content: 'done', isComplete: true };
+            });
+
+            const generator = openai.streamRequest(conversation, true);
+            for await (const chunk of generator) {}
+
+            const callArgs = mockStreamingService.streamRequest.mock.calls[0];
+            const requestBody = callArgs[1];
+
+            // Should have both items (most recent function call is included)
+            expect(requestBody.input).toHaveLength(2);
+            expect(requestBody.input[1].tool_calls).toBeDefined();
+            expect(requestBody.input[1].tool_calls[0].id).toBe('call_latest');
+        });
+
+        it('should handle multiple orphaned function calls correctly', async () => {
+            const conversation = new Conversation();
+            conversation.contents.push(new ConversationContent(Role.User, 'First message', 'First message'));
+            // Orphaned function call #1
+            const orphan1 = new ConversationContent(
+                Role.Assistant,
+                '',
+                '',
+                JSON.stringify({
+                    functionCall: {
+                        id: 'call_orphan1',
+                        name: 'search_vault_files',
+                        args: { query: 'test1' }
+                    }
+                }),
+                new Date(),
+                true
+            );
+            conversation.contents.push(orphan1);
+            conversation.contents.push(new ConversationContent(Role.User, 'Second message', 'Second message'));
+            // Orphaned function call #2
+            const orphan2 = new ConversationContent(
+                Role.Assistant,
+                '',
+                '',
+                JSON.stringify({
+                    functionCall: {
+                        id: 'call_orphan2',
+                        name: 'read_file',
+                        args: { path: 'test.md' }
+                    }
+                }),
+                new Date(),
+                true
+            );
+            conversation.contents.push(orphan2);
+            conversation.contents.push(new ConversationContent(Role.User, 'Third message', 'Third message'));
+
+            mockStreamingService.streamRequest.mockImplementation(async function* () {
+                yield { content: 'done', isComplete: true };
+            });
+
+            const generator = openai.streamRequest(conversation, true);
+            for await (const chunk of generator) {}
+
+            const callArgs = mockStreamingService.streamRequest.mock.calls[0];
+            const requestBody = callArgs[1];
+
+            // Should only have the 3 user messages (both orphaned calls excluded)
+            expect(requestBody.input).toHaveLength(3);
+            expect(requestBody.input[0].content).toBe('First message');
+            expect(requestBody.input[1].content).toBe('Second message');
+            expect(requestBody.input[2].content).toBe('Third message');
+        });
     });
 
     describe('mapFunctionDefinitions', () => {

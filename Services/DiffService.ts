@@ -6,23 +6,32 @@ import type { EventService } from './EventService';
 import { Event } from 'Enums/Event';
 import type { Diff2HtmlUIConfig } from 'diff2html/lib/ui/js/diff2html-ui';
 import { ColorSchemeType, OutputFormatType } from 'diff2html/lib/types';
-import { Platform } from 'obsidian';
+import { Component, Platform } from 'obsidian';
 
 interface DiffResult {
     accepted: boolean;
     suggestion?: string;
 }
 
-export class DiffService {
+export class DiffService extends Component {
 
     private readonly plugin: VaultkeeperAIPlugin;
     private readonly eventService: EventService;
 
     private diffResolve?: (result: DiffResult) => void;
 
+    private ongoingDiff: boolean = false;
+
     public constructor() {
+        super();
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
         this.eventService = Resolve<EventService>(Services.EventService);
+
+        this.registerEvent(this.eventService.on(Event.DiffClosed, () => {
+            if (this.ongoingDiff) {
+                this.onReject();
+            }
+        }));
     }
 
     public async requestDiff(oldFileName: string, newFileName: string, oldContent: string, newContent: string): Promise<DiffResult> {
@@ -40,6 +49,8 @@ export class DiffService {
             synchronisedScroll: true,
             colorScheme: ColorSchemeType.AUTO
         };
+
+        this.ongoingDiff = true;
 
         return new Promise((resolve) => {
             this.diffResolve = resolve;
@@ -75,8 +86,9 @@ export class DiffService {
     }
 
     private finishDiff() {
+        this.ongoingDiff = false;
         this.diffResolve = undefined;
-        this.eventService.trigger(Event.DiffClosed);        
+        this.eventService.trigger(Event.DiffClosed);
     }
 
 }

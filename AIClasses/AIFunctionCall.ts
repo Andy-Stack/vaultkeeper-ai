@@ -12,7 +12,7 @@ export class AIFunctionCall {
         this.toolId = toolId;
     }
 
-    public toConversationString(): string {
+    public toConversationString() {
         return JSON.stringify({
             functionCall: {
                 name: this.name,

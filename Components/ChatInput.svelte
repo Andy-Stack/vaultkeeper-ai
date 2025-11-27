@@ -1,15 +1,19 @@
 <script lang="ts">
-  import { tick } from "svelte";
-  import { Platform, setIcon } from "obsidian";
+  import { onDestroy, tick } from "svelte";
+  import { Platform, setIcon, type EventRef } from "obsidian";
 	import type { UserInputService } from "Services/UserInputService";
 	import type { ISearchState, SearchStateStore } from "Stores/SearchStateStore";
 	import { Resolve } from "Services/DependencyService";
 	import { Services } from "Services/Services";
-	import { SearchTrigger, isSearchTrigger, isSearchTriggerElement, fromInput, toNode, triggerToText } from "Enums/SearchTrigger";
+	import { isSearchTrigger, isSearchTriggerElement, fromInput, toNode, triggerToText } from "Enums/SearchTrigger";
 	import ChatSearchResults from "./ChatSearchResults.svelte";
 	import type { Writable } from "svelte/store";
 	import type { InputService } from "Services/InputService";
 	import UserInstruction from "./UserInstruction.svelte";
+	import DiffControls from "./DiffControls.svelte";
+	import type { EventService } from "Services/EventService";
+	import { Event } from "Enums/Event";
+	import type { DiffService } from "Services/DiffService";
 
   export let hasNoApiKey: boolean;
   export let isSubmitting: boolean;
@@ -21,6 +25,8 @@
   const inputService: InputService = Resolve<InputService>(Services.InputService);
   const userInputService: UserInputService = Resolve<UserInputService>(Services.UserInputService);
   const searchStateStore: SearchStateStore = Resolve<SearchStateStore>(Services.SearchStateStore);
+  const diffService: DiffService = Resolve<DiffService>(Services.DiffService);
+  const eventService: EventService = Resolve<EventService>(Services.EventService);
 
   const searchState: Writable<ISearchState> = searchStateStore.searchState;
 
@@ -31,6 +37,15 @@
 
   let userInstructionActive = false;
   let userRequest = "";
+
+  let diffOpen: boolean = false;
+  const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { diffOpen = true; focusInput(); });
+  const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { diffOpen = false; focusInput(); });
+
+  onDestroy(() => {
+    eventService.offref(diffOpenedRef);
+    eventService.offref(diffClosedRef);
+  });
 
   export function focusInput() {
     tick().then(() => {
@@ -43,7 +58,7 @@
   }
 
   $: if (submitButton) {
-    setIcon(submitButton, isSubmitting ? "square" : "send-horizontal");
+    setIcon(submitButton, diffOpen || !isSubmitting ? "send-horizontal" : "square");
   }
 
   $: if (editModeButton) {
@@ -58,7 +73,19 @@
     if (userRequest.trim() === "" || isSubmitting) {
       return;
     }
+    const result = requestFromInput();
+    onsubmit(result.request, result.formattedRequest);
+  }
 
+  function handleSuggestion() {
+    if (userRequest.trim() === "" || !diffOpen) {
+      return;
+    }
+    const suggestion = requestFromInput().formattedRequest;
+    diffService.onSuggest(suggestion);
+  }
+
+  function requestFromInput() {
     const request = textareaElement.innerHTML;
     const formattedRequest = triggerToText(request);
 
@@ -71,7 +98,7 @@
       focusInput();
     }
 
-    onsubmit(request, formattedRequest);
+    return { request: request, formattedRequest: formattedRequest };
   }
 
   function toggleEditMode() {
@@ -110,7 +137,7 @@
         return;
       }
       e.preventDefault();
-      handleSubmit();
+      diffOpen ? handleSuggestion() : handleSubmit();
     }
   }
 
@@ -268,6 +295,10 @@
 </script>
 
 <div id="input-container" class:edit-mode={editModeActive}>
+  <div id="diff-controls-container" style:padding-top={diffOpen ? "var(--size-4-2)" : 0} style:display={diffOpen ? "inline" : "none"}>
+    <DiffControls/>
+  </div>
+
   <div id="input-search-results-container" style:padding-top={$searchState.results.length > 0 ? "var(--size-4-2)" : 0}>
     <ChatSearchResults searchState={$searchState} onResultAccept={handleSearchResultAcceptance}/>
   </div>
@@ -299,7 +330,7 @@
     on:click={handleCursorPositionChange}
     on:keyup={handleCursorPositionChange}
     on:focusout={handleFocusOut}
-    data-placeholder="Type a message..."
+    data-placeholder={diffOpen ? "Make a suggestion..." : "Type a message..."}
     role="textbox"
     aria-multiline="true"
     tabindex="0">
@@ -318,7 +349,7 @@
     id="submit-button"
     class:edit-mode={editModeActive}
     bind:this={submitButton}
-    on:click={() => { isSubmitting ? handleStop() : handleSubmit() }}
+    on:click={() => { diffOpen ? handleSuggestion() : isSubmitting ? handleStop() : handleSubmit() }}
     disabled={!isSubmitting && userRequest.trim() === ""}
     aria-label={isSubmitting ? "Cancel" : "Send Message"}>
   </button>
@@ -329,7 +360,7 @@
     grid-row: 2;
     grid-column: 1;
     display: grid;
-    grid-template-rows: auto var(--size-4-3) 1fr var(--size-4-3);
+    grid-template-rows: auto auto var(--size-4-3) 1fr var(--size-4-3);
     grid-template-columns: var(--size-4-3) auto var(--size-4-2) 1fr var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
     border-radius: var(--modal-radius);
     background-color: var(--background-primary);
@@ -340,18 +371,23 @@
     transition: border-color 0.5s ease-out;
   }
 
-  #input-search-results-container {
+  #diff-controls-container {
     grid-row: 1;
+    grid-column: 2 / 9;
+  }
+
+  #input-search-results-container {
+    grid-row: 2;
     grid-column: 2 / 9;
   }
 
   #user-instruction-container {
-    grid-row: 1;
+    grid-row: 2;
     grid-column: 2 / 9;
   }
 
   #user-instruction-button {
-    grid-row: 3;
+    grid-row: 4;
     grid-column: 2;
     border-radius: var(--button-radius);
     align-self: end;
@@ -367,7 +403,7 @@
   }
 
   #input-field {
-    grid-row: 3;
+    grid-row: 4;
     grid-column: 4;
     height: 100%;
     max-height: 30vh;
@@ -428,7 +464,7 @@
   }
 
   #edit-mode-button {
-    grid-row: 3;
+    grid-row: 4;
     grid-column: 6;
     border-radius: var(--button-radius);
     align-self: end;
@@ -440,7 +476,7 @@
   }
 
   #submit-button {
-    grid-row: 3;
+    grid-row: 4;
     grid-column: 8;
     border-radius: var(--button-radius);
     padding-left: var(--size-4-5);

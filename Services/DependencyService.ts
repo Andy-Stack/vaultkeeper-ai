@@ -1,4 +1,5 @@
 import { Exception } from "Helpers/Exception";
+import type { Component } from "obsidian";
 
 const services = new Map<symbol, unknown>();
 
@@ -16,15 +17,20 @@ export function Resolve<T>(type: symbol): T {
         Exception.throw(`Service not found for type: ${type.description}`);
     }
 
-    if (typeof service === 'function') {
-        // It's a transient factory, return a new instance
+    if (typeof service === "function") {
+        // It"s a transient factory, return a new instance
         return (service as () => T)();
     }
 
-    // It's a singleton, return the existing instance
+    // It"s a singleton, return the existing instance
     return service as T;
 }
 
 export function DeregisterAllServices() {
+    services.forEach((service) => {
+        if (service && typeof service === "object" && "unload" in service) {
+            (service as Component).unload();
+        }
+    });
     services.clear();
 }

@@ -4,7 +4,6 @@ import { RegisterDependencies, RegisterPlugin } from "Services/ServiceRegistrati
 import { VaultkeeperAISettingTab } from "VaultkeeperAISettingTab";
 import { DiffView, VIEW_TYPE_DIFF } from "Views/DiffView";
 import { Services } from "Services/Services";
-import type { StatusBarService } from "Services/StatusBarService";
 import { DeregisterAllServices, Resolve } from "Services/DependencyService";
 import type { VaultService } from "Services/VaultService";
 import { Path } from "Enums/Path";
@@ -13,7 +12,7 @@ import type { SettingsService } from "Services/SettingsService";
 import type { Diff2HtmlUIConfig } from "diff2html/lib/ui/js/diff2html-ui";
 
 import "katex/dist/katex.min.css";
-import 'highlight.js/styles/github.min.css';
+import 'highlight.js/styles/monokai.min.css';
 import 'diff2html/bundles/css/diff2html.min.css';
 import 'diff2html/bundles/js/diff2html-ui.min.js';
 
@@ -52,7 +51,6 @@ export default class VaultkeeperAIPlugin extends Plugin {
 	}
 
 	public onunload() {
-		Resolve<StatusBarService>(Services.StatusBarService).removeStatusBarMessage();
 		DeregisterAllServices();
 	}
 

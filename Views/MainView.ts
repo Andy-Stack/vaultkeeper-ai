@@ -36,8 +36,7 @@ export class MainView extends ItemView {
     return 'sparkles';
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await -- mount operations are valid but synchronous
-  public async onOpen() {
+  protected override onOpen(): Promise<void> {
     const container = this.contentEl;
     container.empty();
 
@@ -58,9 +57,11 @@ export class MainView extends ItemView {
       target: container,
       props: {}
     }) as ChatWindowComponent;
+
+    return Promise.resolve(); 
   }
 
-  public async onClose() {
+  public override async onClose(): Promise<void> {
     if (this.topBar) {
       await unmount(this.topBar);
     }

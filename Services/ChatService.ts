@@ -13,6 +13,8 @@ import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { Notice } from "obsidian";
+import type { EventService } from "./EventService";
+import { Event } from "Enums/Event";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
@@ -29,6 +31,7 @@ export class ChatService {
 	private tokenService: ITokenService | undefined;
 	private prompt: IPrompt;
 	private statusBarService: StatusBarService;
+	private eventService: EventService;
 
 	private semaphore: Semaphore;
 	private semaphoreHeld: boolean = false;
@@ -40,6 +43,7 @@ export class ChatService {
 		this.namingService = Resolve<ConversationNamingService>(Services.ConversationNamingService);
 		this.prompt = Resolve<IPrompt>(Services.IPrompt);
 		this.statusBarService = Resolve<StatusBarService>(Services.StatusBarService);
+		this.eventService = Resolve<EventService>(Services.EventService);
 		this.semaphore = new Semaphore(1, false);
 	}
 
@@ -96,6 +100,7 @@ export class ChatService {
 				response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
 			}
 		} finally {
+			this.eventService.trigger(Event.DiffClosed);
 			await this.saveConversation(conversation);
 			this.abortController = null;
 			if (this.semaphoreHeld) {

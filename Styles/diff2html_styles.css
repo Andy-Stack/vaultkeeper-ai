@@ -1,400 +1,214 @@
-/**
- * Diff2html Obsidian Theme Override
- * 
- * This stylesheet overrides diff2html's default styling to use Obsidian's CSS variables
- * 
- */
+/* Override diff2html blue tones with Obsidian's CSS variables */
 
-/* ========================================
-   ROOT VARIABLE OVERRIDES - LIGHT THEME
-   ======================================== */
-
-:root {
-  /* Background colors */
-  --d2h-bg-color: var(--background-primary);
-  --d2h-file-header-bg-color: var(--background-secondary);
-  --d2h-file-diff-wrapper-bg-color: var(--background-primary);
-  --d2h-file-list-wrapper-bg-color: var(--background-secondary);
-  --d2h-file-list-header-bg-color: var(--background-secondary-alt);
-  
-  /* Border colors */
-  --d2h-border-color: var(--background-modifier-border);
-  --d2h-file-border-color: var(--background-modifier-border);
-  --d2h-line-border-color: var(--background-modifier-border);
-  
-  /* Text colors */
-  --d2h-text-color: var(--text-normal);
-  --d2h-muted-text-color: var(--text-muted);
-  --d2h-file-name-color: var(--text-normal);
-  --d2h-file-stats-color: var(--text-muted);
-  --d2h-line-number-color: var(--text-muted);
-  
-  /* Insertion colors (additions) */
-  --d2h-ins-bg-color: color-mix(in srgb, var(--color-green) 15%, var(--background-primary));
-  --d2h-ins-label-color: var(--color-green);
-  --d2h-ins-highlight-bg-color: color-mix(in srgb, var(--color-green) 30%, var(--background-primary));
-  --d2h-ins-border-color: color-mix(in srgb, var(--color-green) 40%, var(--background-modifier-border));
-  
-  /* Deletion colors (removals) */
-  --d2h-del-bg-color: color-mix(in srgb, var(--color-red) 15%, var(--background-primary));
-  --d2h-del-label-color: var(--color-red);
-  --d2h-del-highlight-bg-color: color-mix(in srgb, var(--color-red) 30%, var(--background-primary));
-  --d2h-del-border-color: color-mix(in srgb, var(--color-red) 40%, var(--background-modifier-border));
-  
-  /* Change/modification colors */
-  --d2h-change-bg-color: color-mix(in srgb, var(--color-yellow) 15%, var(--background-primary));
-  --d2h-change-label-color: var(--color-yellow);
-  
-  /* Info colors */
-  --d2h-info-bg-color: color-mix(in srgb, var(--color-cyan) 10%, var(--background-secondary));
-  --d2h-info-text-color: var(--text-muted);
-  
-  /* Link colors */
-  --d2h-link-color: var(--interactive-accent);
-  --d2h-link-hover-color: var(--interactive-accent-hover);
-  
-  /* Code colors */
-  --d2h-code-bg-color: var(--background-primary-alt);
-  --d2h-code-text-color: var(--text-normal);
-  
-  /* Selection and hover */
-  --d2h-hover-bg-color: var(--background-modifier-hover);
-  --d2h-selected-bg-color: var(--background-modifier-active-hover);
-}
-
-/* ========================================
-   DARK THEME OVERRIDES
-   ======================================== */
-
-/* Dark theme with explicit class */
-.d2h-dark-color-scheme,
-.theme-dark {
-  /* Background colors */
-  --d2h-dark-bg-color: var(--background-primary);
-  --d2h-dark-file-header-bg-color: var(--background-secondary);
-  --d2h-dark-file-diff-wrapper-bg-color: var(--background-primary);
-  --d2h-dark-file-list-wrapper-bg-color: var(--background-secondary);
-  --d2h-dark-file-list-header-bg-color: var(--background-secondary-alt);
-  
-  /* Border colors */
-  --d2h-dark-border-color: var(--background-modifier-border);
-  --d2h-dark-file-border-color: var(--background-modifier-border);
-  --d2h-dark-line-border-color: var(--background-modifier-border);
-  
-  /* Text colors */
-  --d2h-dark-text-color: var(--text-normal);
-  --d2h-dark-muted-text-color: var(--text-muted);
-  --d2h-dark-file-name-color: var(--text-normal);
-  --d2h-dark-file-stats-color: var(--text-muted);
-  --d2h-dark-line-number-color: var(--text-muted);
-  
-  /* Insertion colors (additions) */
-  --d2h-dark-ins-bg-color: color-mix(in srgb, var(--color-green) 15%, var(--background-primary));
-  --d2h-dark-ins-label-color: color-mix(in srgb, var(--color-green) 120%, white);
-  --d2h-dark-ins-highlight-bg-color: color-mix(in srgb, var(--color-green) 30%, var(--background-primary));
-  --d2h-dark-ins-border-color: color-mix(in srgb, var(--color-green) 50%, var(--background-modifier-border));
-  
-  /* Deletion colors (removals) */
-  --d2h-dark-del-bg-color: color-mix(in srgb, var(--color-red) 20%, var(--background-primary));
-  --d2h-dark-del-label-color: color-mix(in srgb, var(--color-red) 120%, white);
-  --d2h-dark-del-highlight-bg-color: color-mix(in srgb, var(--color-red) 35%, var(--background-primary));
-  --d2h-dark-del-border-color: color-mix(in srgb, var(--color-red) 50%, var(--background-modifier-border));
-  
-  /* Change/modification colors */
-  --d2h-dark-change-bg-color: color-mix(in srgb, var(--color-yellow) 20%, var(--background-primary));
-  --d2h-dark-change-label-color: color-mix(in srgb, var(--color-yellow) 120%, white);
-  
-  /* Info colors */
-  --d2h-dark-info-bg-color: color-mix(in srgb, var(--color-cyan) 15%, var(--background-secondary));
-  --d2h-dark-info-text-color: var(--text-muted);
-  
-  /* Link colors */
-  --d2h-dark-link-color: var(--interactive-accent);
-  --d2h-dark-link-hover-color: var(--interactive-accent-hover);
-  
-  /* Code colors */
-  --d2h-dark-code-bg-color: var(--background-primary-alt);
-  --d2h-dark-code-text-color: var(--text-normal);
-  
-  /* Selection and hover */
-  --d2h-dark-hover-bg-color: var(--background-modifier-hover);
-  --d2h-dark-selected-bg-color: var(--background-modifier-active-hover);
-}
-
-/* Auto theme - follows system preference */
-@media (prefers-color-scheme: dark) {
-  .d2h-auto-color-scheme {
-    /* Apply dark theme variables */
-    --d2h-bg-color: var(--d2h-dark-bg-color);
-    --d2h-file-header-bg-color: var(--d2h-dark-file-header-bg-color);
-    --d2h-border-color: var(--d2h-dark-border-color);
-    --d2h-text-color: var(--d2h-dark-text-color);
-    --d2h-ins-bg-color: var(--d2h-dark-ins-bg-color);
-    --d2h-ins-label-color: var(--d2h-dark-ins-label-color);
-    --d2h-ins-highlight-bg-color: var(--d2h-dark-ins-highlight-bg-color);
-    --d2h-del-bg-color: var(--d2h-dark-del-bg-color);
-    --d2h-del-label-color: var(--d2h-dark-del-label-color);
-    --d2h-del-highlight-bg-color: var(--d2h-dark-del-highlight-bg-color);
-  }
-}
-
-/* ========================================
-   COMPONENT-SPECIFIC OVERRIDES
-   ======================================== */
-
-/* File wrapper */
+/* Main diff container background */
 .d2h-wrapper {
-  background-color: var(--background-primary);
-  color: var(--text-normal);
-  font-family: var(--font-interface);
-  font-size: var(--font-ui-small);
+    background-color: var(--background-primary) !important;
+    box-shadow: 0px 0px 4px 1px var(--color-accent) !important;
 }
 
-/* File header */
+/* File header background */
 .d2h-file-header {
-  background-color: var(--background-secondary);
-  border-color: var(--background-modifier-border);
-  color: var(--text-normal);
+    background-color: var(--background-primary) !important;
+    border-color: var(--background-modifier-border) !important;
 }
 
-.d2h-file-name {
-  color: var(--text-normal);
-  font-family: var(--font-monospace);
+/* File name container */
+.d2h-file-name-wrapper {
+    background-color: var(--background-primary-alt) !important;
 }
 
-.d2h-file-stats {
-  color: var(--text-muted);
-  font-size: var(--font-ui-smaller);
+/* Line number backgrounds - only override context lines */
+.d2h-code-linenumber.d2h-cntx {
+    background-color: var(--background-primary-alt) !important;
+    border-color: var(--background-modifier-border) !important;
 }
 
-/* Code lines */
-.d2h-code-line {
-  color: var(--text-normal);
-  font-family: var(--font-monospace);
-  font-size: var(--font-ui-small);
+/* Code line backgrounds - only override context lines */
+.d2h-code-line.d2h-cntx {
+    background-color: var(--background-primary) !important;
 }
 
-.d2h-code-line-ctn {
-  color: var(--text-normal);
-}
-
-.d2h-code-line-prefix {
-  color: var(--text-muted);
-}
-
-/* Line numbers */
-.d2h-code-linenumber {
-  background-color: var(--background-secondary-alt);
-  color: var(--text-muted);
-  border-color: var(--background-modifier-border);
-}
-
-/* Insertion (added) lines */
-.d2h-ins {
-  background-color: var(--d2h-ins-bg-color);
-}
-
-.d2h-ins .d2h-code-line-prefix {
-  color: var(--d2h-ins-label-color);
-}
-
-.d2h-ins .d2h-code-line-ctn {
-  background-color: transparent;
-}
-
-.d2h-ins.d2h-change {
-  background-color: var(--d2h-change-bg-color);
-}
-
-/* Deletion (removed) lines */
-.d2h-del {
-  background-color: var(--d2h-del-bg-color);
-}
-
-.d2h-del .d2h-code-line-prefix {
-  color: var(--d2h-del-label-color);
-}
-
-.d2h-del .d2h-code-line-ctn {
-  background-color: transparent;
-}
-
-.d2h-del.d2h-change {
-  background-color: var(--d2h-change-bg-color);
-}
-
-/* Word-level highlighting */
-.d2h-ins .d2h-change-highlight {
-  background-color: var(--d2h-ins-highlight-bg-color);
-  border-radius: 2px;
-  padding: 0 2px;
-}
-
-.d2h-del .d2h-change-highlight {
-  background-color: var(--d2h-del-highlight-bg-color);
-  border-radius: 2px;
-  padding: 0 2px;
-}
-
-/* Context (unchanged) lines */
-.d2h-cxt {
-  background-color: var(--background-primary);
-  color: var(--text-normal);
-}
-
-/* Info lines */
+/* Info section background */
 .d2h-info {
-  background-color: var(--d2h-info-bg-color);
-  color: var(--d2h-info-text-color);
-  border-color: var(--background-modifier-border);
+    background-color: var(--background-secondary) !important;
+    border-color: var(--background-modifier-border) !important;
 }
 
-/* File list */
-.d2h-file-list-wrapper {
-  background-color: var(--background-secondary);
-  border-color: var(--background-modifier-border);
-}
-
-.d2h-file-list-header {
-  background-color: var(--background-secondary-alt);
-  border-color: var(--background-modifier-border);
-  color: var(--text-normal);
-}
-
-.d2h-file-list-line {
-  border-color: var(--background-modifier-border);
-}
-
-.d2h-file-list-line:hover {
-  background-color: var(--background-modifier-hover);
-}
-
-/* Links */
-.d2h-file-name-link,
-.d2h-file-link {
-  color: var(--interactive-accent);
-  text-decoration: none;
-}
-
-.d2h-file-name-link:hover,
-.d2h-file-link:hover {
-  color: var(--interactive-accent-hover);
-  text-decoration: underline;
-}
-
-/* Tag/label styling */
-.d2h-tag {
-  background-color: var(--background-modifier-border);
-  color: var(--text-normal);
-  border-radius: var(--radius-s);
-  padding: 2px 6px;
-  font-size: var(--font-ui-smaller);
-}
-
-/* Diff table */
-.d2h-diff-table {
-  border-color: var(--background-modifier-border);
-  background-color: var(--background-primary);
+/* File diff background */
+.d2h-file-diff {
+    background-color: var(--background-primary) !important;
+    border-color: var(--background-modifier-border) !important;
 }
 
 /* Empty placeholder */
-.d2h-empty-placeholder {
-  color: var(--text-faint);
-  background-color: var(--background-secondary);
+.d2h-emptyplaceholder {
+    background-color: var(--background-secondary-alt) !important;
 }
 
-/* ========================================
-   OBSIDIAN-SPECIFIC ENHANCEMENTS
-   ======================================== */
-
-/* Integrate with Obsidian's scrollbar styling */
-.d2h-wrapper::-webkit-scrollbar {
-  width: var(--scrollbar-width);
+/* Code side backgrounds for side-by-side view - only override context lines */
+.d2h-code-side-linenumber.d2h-cntx,
+.d2h-code-side-line.d2h-cntx {
+    background-color: var(--background-primary) !important;
 }
 
-.d2h-wrapper::-webkit-scrollbar-track {
-  background: var(--background-primary);
+/* Fix transparent backgrounds on insertion/deletion line numbers */
+/* Dark mode styles - side-by-side view */
+.theme-dark .d2h-code-side-linenumber.d2h-ins {
+    background-color: #1e3a1e !important; /* Dark green - solid color */
 }
 
-.d2h-wrapper::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb-bg);
-  border-radius: var(--radius-s);
+.theme-dark .d2h-code-side-linenumber.d2h-del {
+    background-color: #3a1e1e !important; /* Dark red - solid color */
 }
 
-.d2h-wrapper::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-active-thumb-bg);
+/* Dark mode styles - inline view */
+.theme-dark .d2h-code-linenumber.d2h-ins {
+    background-color: #1e3a1e !important; /* Dark green - solid color */
 }
 
-/* Match Obsidian's border radius */
-.d2h-file-wrapper {
-  border-radius: var(--radius-m);
+.theme-dark .d2h-code-linenumber.d2h-del {
+    background-color: #3a1e1e !important; /* Dark red - solid color */
+}
+
+/* Light mode styles - side-by-side view */
+.theme-light .d2h-code-side-linenumber.d2h-ins {
+    background-color: #c8e6c9 !important; /* Light green with better contrast */
+}
+
+.theme-light .d2h-code-side-linenumber.d2h-del {
+    background-color: #ffcdd2 !important; /* Light red with better contrast */
+}
+
+/* Light mode styles - inline view */
+.theme-light .d2h-code-linenumber.d2h-ins {
+    background-color: #c8e6c9 !important; /* Light green with better contrast */
+}
+
+.theme-light .d2h-code-linenumber.d2h-del {
+    background-color: #ffcdd2 !important; /* Light red with better contrast */
+}
+
+/* Tags and labels */
+.d2h-tag {
+    background-color: var(--background-secondary) !important;
+    border-color: var(--background-modifier-border) !important;
+}
+
+/* File list wrapper */
+.d2h-file-list-wrapper {
+    background-color: var(--background-primary) !important;
+}
+
+/* File list header */
+.d2h-file-list-header {
+    background-color: var(--background-primary-alt) !important;
+    border-color: var(--background-modifier-border) !important;
+}
+
+/* File list line */
+.d2h-file-list-line {
+    background-color: var(--background-primary) !important;
+    border-color: var(--background-modifier-border) !important;
+}
+
+/* File switch container */
+.d2h-file-switch {
+    background-color: var(--background-primary-alt) !important;
+}
+
+/* Toolbar */
+.d2h-file-diff-toolbar {
+    background-color: var(--background-secondary) !important;
 }
 
 .d2h-file-header {
-  border-top-left-radius: var(--radius-m);
-  border-top-right-radius: var(--radius-m);
+  padding: 0 !important;
 }
 
-/* Ensure proper contrast in Obsidian's theme */
-.theme-light .d2h-code-line,
-.theme-light .d2h-code-linenumber {
-  border-color: var(--background-modifier-border);
+.d2h-file-name-wrapper {
+  padding-left: 8px !important;
 }
 
-.theme-dark .d2h-code-line,
-.theme-dark .d2h-code-linenumber {
-  border-color: var(--background-modifier-border);
+/* Text colors */
+.d2h-file-header,
+.d2h-file-name,
+.d2h-file-stats,
+.d2h-code-linenumber,
+.d2h-info {
+    color: var(--text-normal) !important;
 }
 
-/* Responsive adjustments for mobile */
-.is-mobile .d2h-wrapper {
-  font-size: var(--font-ui-smaller);
+/* Light mode syntax highlighting overrides for better visibility */
+.theme-light .d2h-code-side-line {
+    color: var(--text-normal) !important;
 }
 
-.is-mobile .d2h-code-line {
-  font-size: var(--font-ui-smaller);
-  padding: var(--size-2-1) var(--size-2-2);
+/* Force base text color for all code content in light mode */
+.theme-light .d2h-code-line-ctn,
+.theme-light .d2h-code-line-ctn * {
+    color: var(--text-normal) !important;
 }
 
-/* ========================================
-   ACCESSIBILITY IMPROVEMENTS
-   ======================================== */
-
-/* Ensure focus states are visible */
-.d2h-file-list-line:focus,
-.d2h-file-name-link:focus {
-  outline: 2px solid var(--interactive-accent);
-  outline-offset: 2px;
+/* Override Monokai theme colors in light mode for better contrast */
+.theme-light .hljs-comment,
+.theme-light .hljs-quote {
+    color: #5c6370 !important; /* Medium gray for comments */
 }
 
-/* Improve contrast for line numbers */
-.d2h-code-linenumber {
-  opacity: 0.7;
+.theme-light .hljs-keyword,
+.theme-light .hljs-selector-tag,
+.theme-light .hljs-literal,
+.theme-light .hljs-type {
+    color: #a626a4 !important; /* Purple for keywords */
 }
 
-.d2h-code-line:hover .d2h-code-linenumber {
-  opacity: 1;
+.theme-light .hljs-string,
+.theme-light .hljs-doctag {
+    color: #50a14f !important; /* Green for strings */
 }
 
-/* ========================================
-   PRINT STYLES
-   ======================================== */
+.theme-light .hljs-title,
+.theme-light .hljs-section,
+.theme-light .hljs-selector-id {
+    color: #4078f2 !important; /* Blue for titles/functions */
+}
 
-@media print {
-  .d2h-wrapper {
-    background: white;
-    color: black;
-  }
-  
-  .d2h-ins {
-    background-color: #d4ffd4 !important;
-  }
-  
-  .d2h-del {
-    background-color: #ffd4d4 !important;
-  }
-  
-  .d2h-code-linenumber {
-    background-color: #f5f5f5 !important;
-  }
+.theme-light .hljs-subst,
+.theme-light .hljs-tag,
+.theme-light .hljs-name,
+.theme-light .hljs-attr,
+.theme-light .hljs-attribute {
+    color: #e45649 !important; /* Red for tags/attributes */
+}
+
+.theme-light .hljs-variable,
+.theme-light .hljs-template-variable {
+    color: #986801 !important; /* Orange for variables */
+}
+
+.theme-light .hljs-number,
+.theme-light .hljs-built_in,
+.theme-light .hljs-builtin-name,
+.theme-light .hljs-class .hljs-title {
+    color: #c18401 !important; /* Gold for numbers/built-ins */
+}
+
+.theme-light .hljs-meta,
+.theme-light .hljs-meta-keyword {
+    color: #a626a4 !important; /* Purple for meta */
+}
+
+.theme-light .hljs-symbol,
+.theme-light .hljs-bullet,
+.theme-light .hljs-link {
+    color: #0184bc !important; /* Cyan for symbols */
+}
+
+/* Ensure deletion and insertion text is visible */
+.theme-light .d2h-code-line.d2h-del .hljs {
+    color: #24292e !important; /* Dark text on light red background */
+}
+
+.theme-light .d2h-code-line.d2h-ins .hljs {
+    color: #24292e !important; /* Dark text on light green background */
 }

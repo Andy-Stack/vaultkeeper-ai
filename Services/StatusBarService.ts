@@ -1,8 +1,9 @@
 import type VaultkeeperAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
+import { Component } from "obsidian";
 
-export class StatusBarService {
+export class StatusBarService extends Component {
 
     private readonly plugin: VaultkeeperAIPlugin;
     private statusBarItem: HTMLElement | null;
@@ -11,7 +12,12 @@ export class StatusBarService {
     private animationFrame: number | null = null;
 
     public constructor() {
+        super();
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
+    }
+
+    override onunload(): void {
+        this.removeStatusBarMessage();
     }
 
     public setStatusBarMessage(message: string) {

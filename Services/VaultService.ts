@@ -426,7 +426,7 @@ export class VaultService {
                     return await performChange();
                 }
 
-                let response = "User rejected this change"; // maybe need an event to abort an ongoing function call exchange?
+                let response = "User rejected this change. Stop all actions and consult with the user";
                 if (result.suggestion) {
                     response = `User has rejected the input with the following suggestion: ${result.suggestion}`;
                 }

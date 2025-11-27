@@ -134,7 +134,7 @@ export class AIFunctionService {
             filePaths.map(async (filePath) => {
                 const result = await this.fileSystemService.readFile(filePath);
                 if (result instanceof Error) {
-                    return { path: filePath, error: result }
+                    return { path: filePath, error: result.message }
                 }
                 return { path: filePath, contents: result }
             })
@@ -145,7 +145,7 @@ export class AIFunctionService {
     private async writeVaultFile(filePath: string, content: string): Promise<object> {
         const result = await this.fileSystemService.writeFile(normalizePath(filePath), content);
         if (result instanceof Error) {
-            return { success: false, error: result };
+            return { success: false, error: result.message };
         }
         return { success: true };
     }
@@ -158,7 +158,7 @@ export class AIFunctionService {
         const results = await Promise.all(filePaths.map(async filePath => {
             const result = await this.fileSystemService.deleteFile(filePath);
             if (result instanceof Error) {
-                return { path: filePath, success: false, error: result }
+                return { path: filePath, success: false, error: result.message }
             }
             return { path: filePath, success: true };
         }));
@@ -175,7 +175,7 @@ export class AIFunctionService {
             const destinationPath = destinationPaths[index];
             const result = await this.fileSystemService.moveFile(sourcePath, destinationPath);
             if (result instanceof Error) {
-                return { path: destinationPath, success: false, error: result }
+                return { path: destinationPath, success: false, error: result.message }
             }
             return { path: destinationPath, success: true };
         }));

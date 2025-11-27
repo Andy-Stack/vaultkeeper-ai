@@ -26,7 +26,7 @@
   };
 
   function startNewConversation() {
-
+    chatService.stop();
     conversationFileSystemService.resetCurrentConversation();
     conversationStore.reset();
     onNewConversation?.();

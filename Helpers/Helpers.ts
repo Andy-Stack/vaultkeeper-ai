@@ -1,10 +1,18 @@
 import type VaultkeeperAIPlugin from "main";
 
 export function openPluginSettings(plugin: VaultkeeperAIPlugin) {
-    // @ts-ignore - accessing internal API
-    plugin.app.setting.open();
-    // @ts-ignore - accessing internal API
-    plugin.app.setting.openTabById(plugin.manifest.id);
+    if (!("setting" in plugin.app) || typeof plugin.app.setting !== "object" || plugin.app.setting === null) {
+        return;
+    }
+
+    if ("open" in plugin.app.setting) {
+        // @ts-expect-error - accessing internal API
+        plugin.app.setting.open();
+    }
+    if ("openTabById" in plugin.app.setting) {
+        // @ts-expect-error - accessing internal API
+        plugin.app.setting.openTabById(plugin.manifest.id);
+    }
 }
 
 export function randomSample<T>(array: T[], n: number): T[] {

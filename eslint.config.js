@@ -55,13 +55,6 @@ export default [
       // Obsidian plugin recommended rules
       ...obsidianmd.configs.recommended,
 
-      // Override TypeScript recommended to match Obsidian's style
-      "@typescript-eslint/ban-ts-comment": "off",
-      "@typescript-eslint/no-empty-function": "off",
-      "no-prototype-builtins": "off",
-      "@typescript-eslint/no-unsafe-call": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
-
       // Enable additional TypeScript rules for PR issues
       "@typescript-eslint/require-await": "error",
       "@typescript-eslint/no-floating-promises": "error",
@@ -121,10 +114,6 @@ export default [
           message: "The 'moment' package is bundled with Obsidian. Please import it from 'obsidian' instead.",
         },
       ],
-
-      // Allow namespace merging with enums (TypeScript pattern)
-      "no-redeclare": "off",
-      "@typescript-eslint/no-redeclare": "off",
     }
   }
 ];

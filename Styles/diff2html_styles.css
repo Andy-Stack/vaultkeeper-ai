@@ -17,6 +17,10 @@
     background-color: var(--background-primary-alt) !important;
 }
 
+.d2h-code-line {
+    padding: 0 5em;
+}
+
 /* Line number backgrounds - only override context lines */
 .d2h-code-linenumber.d2h-cntx {
     background-color: var(--background-primary-alt) !important;
@@ -136,6 +140,7 @@
 .d2h-code-linenumber,
 .d2h-info {
     color: var(--text-normal) !important;
+    width: 4.5em;
 }
 
 /* Light mode syntax highlighting overrides for better visibility */

@@ -28,9 +28,7 @@ export class DiffService extends Component {
         this.eventService = Resolve<EventService>(Services.EventService);
 
         this.registerEvent(this.eventService.on(Event.DiffClosed, () => {
-            if (this.ongoingDiff) {
-                this.onReject();
-            }
+            this.cancelPendingDiff();
         }));
     }
 
@@ -79,6 +77,15 @@ export class DiffService extends Component {
             this.diffResolve({ accepted: false, suggestion: suggestion });
         }
         this.finishDiff();
+    }
+
+    private cancelPendingDiff() {
+        if (this.ongoingDiff) {
+            if (this.diffResolve) {
+                this.diffResolve({ accepted: false });
+            }
+            this.finishDiff();
+        }
     }
 
     private createDiffString(oldFileName: string, newFileName: string, oldContent: string, newContent: string): string {

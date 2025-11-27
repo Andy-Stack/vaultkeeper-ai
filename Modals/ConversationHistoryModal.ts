@@ -81,14 +81,13 @@ export class ConversationHistoryModal extends Modal {
         );
 
         if (conversation && item) {
+            this.chatService.stop();
             conversationStore.loadConversation(conversation, item.filePath);
             this.close();
         }
     }
 
     async handleDelete(itemIds: string[]) {
-        this.chatService.stop();
-
         const itemsToDelete = this.items.filter(item => itemIds.includes(item.id));
 
         let shouldResetChat = false;
@@ -115,6 +114,7 @@ export class ConversationHistoryModal extends Modal {
         }
 
         if (shouldResetChat) {
+            this.chatService.stop();
             this.conversationFileSystemService.resetCurrentConversation();
             conversationStore.reset();
         }

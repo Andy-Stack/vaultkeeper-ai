@@ -1,21 +1,27 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StreamingService, IStreamChunk } from '../../Services/StreamingService';
-import { Selector } from '../../Enums/Selector';
 import { Exception } from '../../Helpers/Exception';
+import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
+import { Services } from '../../Services/Services';
+import { AbortService } from '../../Services/AbortService';
 
 /**
  * UNIT TESTS
  *
- * StreamingService has no dependencies, so we use pure unit tests.
- * We mock the global fetch API to test streaming behavior.
+ * StreamingService now depends on AbortService, so we mock that dependency.
+ * We also mock the global fetch API to test streaming behavior.
  */
 
 describe('StreamingService', () => {
 	let service: StreamingService;
 	let mockFetch: any;
 	let originalFetch: any;
+	let abortService: AbortService;
 
 	beforeEach(() => {
+		DeregisterAllServices();
+		abortService = new AbortService();
+		RegisterSingleton<AbortService>(Services.AbortService, abortService);
 		service = new StreamingService();
 		originalFetch = global.fetch;
 		mockFetch = vi.fn();
@@ -130,7 +136,6 @@ describe('StreamingService', () => {
 				'https://api.example.com/stream',
 				{ prompt: 'test' },
 				simpleParser,
-				undefined,
 				{ 'Authorization': 'Bearer token123', 'X-Custom': 'value' }
 			)) {
 				// Just consume the stream
@@ -436,13 +441,10 @@ describe('StreamingService', () => {
 				body: createMockStream(['data: {"content":"test","done":true}\n'])
 			});
 
-			const abortController = new AbortController();
-
 			for await (const chunk of service.streamRequest(
 				'https://api.example.com/stream',
 				{},
-				simpleParser,
-				abortController.signal
+				simpleParser
 			)) {
 				// Just consume the stream
 			}
@@ -450,31 +452,28 @@ describe('StreamingService', () => {
 			expect(mockFetch).toHaveBeenCalledWith(
 				expect.any(String),
 				expect.objectContaining({
-					signal: abortController.signal
+					signal: abortService.signal()
 				})
 			);
 		});
 
 		it('should handle abort error gracefully', async () => {
-			const abortError = new Error('The operation was aborted');
-			abortError.name = 'AbortError';
+			const abortError = new DOMException('The operation was aborted', 'AbortError');
 			mockFetch.mockRejectedValue(abortError);
 
 			const results: IStreamChunk[] = [];
-			for await (const chunk of service.streamRequest(
-				'https://api.example.com/stream',
-				{},
-				simpleParser,
-				new AbortController().signal
-			)) {
-				results.push(chunk);
+			try {
+				for await (const chunk of service.streamRequest(
+					'https://api.example.com/stream',
+					{},
+					simpleParser
+				)) {
+					results.push(chunk);
+				}
+			} catch (error) {
+				// Abort errors are now thrown instead of yielded as chunks
+				expect(AbortService.isAbortError(error)).toBe(true);
 			}
-
-			expect(results).toHaveLength(1);
-			expect(results[0]).toEqual({
-				content: Selector.ApiRequestAborted,
-				isComplete: true
-			});
 		});
 	});
 

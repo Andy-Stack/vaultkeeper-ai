@@ -32,6 +32,13 @@ describe('ConversationNamingService', () => {
         };
         RegisterSingleton(Services.VaultService, mockVaultService);
 
+        // Mock AbortService
+        const mockAbortService = {
+            signal: vi.fn(() => new AbortController().signal),
+            abortableOperation: vi.fn(async (fn) => await fn())
+        };
+        RegisterSingleton(Services.AbortService, mockAbortService);
+
         service = new ConversationNamingService();
     });
 
@@ -120,13 +127,11 @@ describe('ConversationNamingService', () => {
 
     describe('requestName', () => {
         let conversation: Conversation;
-        let abortController: AbortController;
         let onNameChanged: any;
 
         beforeEach(() => {
             conversation = new Conversation();
             conversation.title = 'Old Title';
-            abortController = new AbortController();
             onNameChanged = vi.fn();
 
             RegisterSingleton(Services.IConversationNamingService, mockNamingProvider);
@@ -137,9 +142,9 @@ describe('ConversationNamingService', () => {
             mockNamingProvider.generateName.mockResolvedValue('New Conversation Title');
             mockVaultService.exists.mockReturnValue(false);
 
-            await service.requestName(conversation, 'User prompt', onNameChanged, abortController);
+            await service.requestName(conversation, 'User prompt', onNameChanged);
 
-            expect(mockNamingProvider.generateName).toHaveBeenCalledWith('User prompt', abortController.signal);
+            expect(mockNamingProvider.generateName).toHaveBeenCalledWith('User prompt');
             expect(mockConversationService.updateConversationTitle).toHaveBeenCalledWith(
                 'conversations/test.json',
                 'New Conversation Title'
@@ -152,7 +157,7 @@ describe('ConversationNamingService', () => {
         it('should return early if naming provider is not resolved', async () => {
             (service as any).namingProvider = undefined;
 
-            await service.requestName(conversation, 'Test', onNameChanged, abortController);
+            await service.requestName(conversation, 'Test', onNameChanged);
 
             expect(mockNamingProvider.generateName).not.toHaveBeenCalled();
             expect(onNameChanged).not.toHaveBeenCalled();
@@ -161,7 +166,7 @@ describe('ConversationNamingService', () => {
         it('should return early if no conversation path exists', async () => {
             mockConversationService.getCurrentConversationPath.mockReturnValue(null);
 
-            await service.requestName(conversation, 'Test', onNameChanged, abortController);
+            await service.requestName(conversation, 'Test', onNameChanged);
 
             expect(mockNamingProvider.generateName).not.toHaveBeenCalled();
             expect(onNameChanged).not.toHaveBeenCalled();
@@ -171,7 +176,7 @@ describe('ConversationNamingService', () => {
             mockNamingProvider.generateName.mockResolvedValue('"Quoted Name"');
             mockVaultService.exists.mockReturnValue(false);
 
-            await service.requestName(conversation, 'Test', onNameChanged, abortController);
+            await service.requestName(conversation, 'Test', onNameChanged);
 
             expect(conversation.title).toBe('Quoted Name'); // Quotes removed
         });
@@ -181,7 +186,7 @@ describe('ConversationNamingService', () => {
                 .mockReturnValueOnce('conversations/original.json')
                 .mockReturnValueOnce('conversations/different.json'); // Changed!
 
-            await service.requestName(conversation, 'Test', onNameChanged, abortController);
+            await service.requestName(conversation, 'Test', onNameChanged);
 
             expect(mockNamingProvider.generateName).toHaveBeenCalled();
             // Should not update or save because path changed
@@ -197,7 +202,7 @@ describe('ConversationNamingService', () => {
 
             const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
-            await service.requestName(conversation, 'Test', onNameChanged, abortController);
+            await service.requestName(conversation, 'Test', onNameChanged);
 
             // Should not throw, but will log the error (behavior changed with new error handling)
             expect(exceptionSpy).toHaveBeenCalledWith(abortError);
@@ -212,7 +217,7 @@ describe('ConversationNamingService', () => {
 
             const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
-            await service.requestName(conversation, 'Test', onNameChanged, abortController);
+            await service.requestName(conversation, 'Test', onNameChanged);
 
             expect(exceptionSpy).toHaveBeenCalledWith(error);
             expect(onNameChanged).not.toHaveBeenCalled();
@@ -225,7 +230,7 @@ describe('ConversationNamingService', () => {
             mockVaultService.exists.mockReturnValue(false);
 
             // Pass undefined for callback
-            await service.requestName(conversation, 'Test', undefined, abortController);
+            await service.requestName(conversation, 'Test', undefined);
 
             expect(conversation.title).toBe('New Title');
             expect(mockConversationService.saveConversation).toHaveBeenCalled();
@@ -238,7 +243,7 @@ describe('ConversationNamingService', () => {
                 return path === `${Path.Conversations}/Popular Name.json`;
             });
 
-            await service.requestName(conversation, 'Test', onNameChanged, abortController);
+            await service.requestName(conversation, 'Test', onNameChanged);
 
             expect(conversation.title).toBe('Popular Name(1)');
             expect(mockConversationService.updateConversationTitle).toHaveBeenCalledWith(
@@ -251,7 +256,7 @@ describe('ConversationNamingService', () => {
             mockNamingProvider.generateName.mockResolvedValue('One Two Three Four Five Six Seven Eight Nine');
             mockVaultService.exists.mockReturnValue(false);
 
-            await service.requestName(conversation, 'Test', onNameChanged, abortController);
+            await service.requestName(conversation, 'Test', onNameChanged);
 
             expect(conversation.title).toBe('One Two Three Four Five Six');
         });

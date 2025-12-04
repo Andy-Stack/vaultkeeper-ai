@@ -4,11 +4,13 @@ import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
 import { AIProvider } from "Enums/ApiProvider";
 import type { SettingsService } from "Services/SettingsService";
+import type { AbortService } from "Services/AbortService";
 
 export class GeminiTokenService implements ITokenService {
 
     private readonly ai: GoogleGenAI;
     private model: string;
+    private readonly abortService: AbortService;
 
     public constructor() {
         const settingsService = Resolve<SettingsService>(Services.SettingsService);
@@ -16,6 +18,7 @@ export class GeminiTokenService implements ITokenService {
             apiKey: settingsService.getApiKeyForProvider(AIProvider.Gemini)
         });
         this.model = settingsService.settings.model;
+        this.abortService = Resolve<AbortService>(Services.AbortService);
     }
 
     public async countTokens(input: string): Promise<number> {

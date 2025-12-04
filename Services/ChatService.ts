@@ -15,12 +15,14 @@ import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { Notice } from "obsidian";
 import type { EventService } from "./EventService";
 import { Event } from "Enums/Event";
+import { AbortService } from "./AbortService";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
 	onStreamingUpdate: (streamingMessageId: string | null) => void;
 	onThoughtUpdate: (thought: string | null) => void;
 	onComplete: () => void;
+	onCancel: () => void;
 }
 
 export class ChatService {
@@ -32,10 +34,10 @@ export class ChatService {
 	private prompt: IPrompt;
 	private statusBarService: StatusBarService;
 	private eventService: EventService;
+	private abortService: AbortService;
 
 	private semaphore: Semaphore;
 	private semaphoreHeld: boolean = false;
-	private abortController: AbortController | null = null;
 
 	constructor() {
 		this.conversationService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
@@ -44,6 +46,7 @@ export class ChatService {
 		this.prompt = Resolve<IPrompt>(Services.IPrompt);
 		this.statusBarService = Resolve<StatusBarService>(Services.StatusBarService);
 		this.eventService = Resolve<EventService>(Services.EventService);
+		this.abortService = Resolve<AbortService>(Services.AbortService);
 		this.semaphore = new Semaphore(1, false);
 	}
 
@@ -66,43 +69,49 @@ export class ChatService {
 				return;
 			}
 
-			this.abortController = new AbortController();
+			this.abortService.initialiseAbortController();
 
-			conversation.contents.push(new ConversationContent(Role.User, userRequest, formattedRequest));
-			await this.saveConversation(conversation);
+			await this.abortService.abortableOperation(async () => {
+				conversation.contents.push(new ConversationContent(Role.User, userRequest, formattedRequest));
+				await this.saveConversation(conversation);
 
-			callbacks.onSubmit();
-			callbacks.onStreamingUpdate(null);
+				callbacks.onSubmit();
+				callbacks.onStreamingUpdate(null);
 
-			if (conversation.contents.length === 1) {
-				this.onNameChanged?.(conversation.title); // on change for initial conversation name
-				await this.namingService.requestName(conversation, formattedRequest, this.onNameChanged, this.abortController);
-			}
-
-			// Process AI responses and function calls
-			let response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
-			while (response.functionCall || response.shouldContinue) {
-				if (response.functionCall) {
-					const userMessage = response.functionCall.arguments.user_message;
-					if (userMessage && typeof userMessage === "string") {
-						callbacks.onThoughtUpdate(userMessage);
-					}
-
-					const functionResponse = await this.aiFunctionService.performAIFunction(response.functionCall);
-
-					const functionResponseString = functionResponse.toConversationString();
-					conversation.contents.push(new ConversationContent(
-						Role.User, functionResponseString, functionResponseString, "", new Date(), false, true, functionResponse.toolId
-					));
+				if (conversation.contents.length === 1) {
+					this.onNameChanged?.(conversation.title); // on change for initial conversation name
+					await this.namingService.requestName(conversation, formattedRequest, this.onNameChanged);
 				}
 
-				this.ensureCorrectConversationStructure(conversation);
-				response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
+				// Process AI responses and function calls
+				let response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
+				while (response.functionCall || response.shouldContinue) {
+					if (response.functionCall) {
+						const userMessage = response.functionCall.arguments.user_message;
+						if (userMessage && typeof userMessage === "string") {
+							callbacks.onThoughtUpdate(userMessage);
+						}
+
+						const functionResponse = await this.aiFunctionService.performAIFunction(response.functionCall);
+
+						const functionResponseString = functionResponse.toConversationString();
+						conversation.contents.push(new ConversationContent(
+							Role.User, functionResponseString, functionResponseString, "", new Date(), false, true, functionResponse.toolId
+						));
+					}
+
+					this.ensureCorrectConversationStructure(conversation);
+					response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
+				}
+			});
+		} catch (error) {
+			if (AbortService.isAbortError(error)) {
+				callbacks.onCancel();
 			}
 		} finally {
+			// reset "Cancelling..." flag this needs to get to window (window may actually handle this itself)
 			this.eventService.trigger(Event.DiffClosed);
 			await this.saveConversation(conversation);
-			this.abortController = null;
 			if (this.semaphoreHeld) {
 				this.semaphoreHeld = false;
 				this.semaphore.release();	
@@ -113,11 +122,8 @@ export class ChatService {
 	}
 
 	public stop() {
-		if (this.abortController) {
-			this.abortController.abort();
-			this.abortController = null;
-		}
-		this.semaphore.release();
+		this.abortService.abort("User requested cancellation");
+		this.eventService.trigger(Event.DiffClosed);
 	}
 
 	public async updateTokenDisplay(conversation: Conversation) {
@@ -163,15 +169,7 @@ export class ChatService {
 			const lastMessage = conversation.contents[conversation.contents.length - 1];
 			if (lastMessage.role === Role.Assistant) {
 				// Insert a hidden "Continue" message to maintain proper conversation structure
-				conversation.contents.push(new ConversationContent(
-					Role.User,
-					"Continue",
-					"Continue",
-					"",
-					new Date(),
-					false,
-					true  // isFunctionCallResponse = true (hides from UI)
-				));
+				conversation.contents.push(ConversationContent.safeContinue());
 			}
 		}
 	}
@@ -191,7 +189,7 @@ export class ChatService {
 		let capturedFunctionCall: AIFunctionCall | null = null;
 		let capturedShouldContinue = false;
 
-		for await (const chunk of this.ai.streamRequest(conversation, allowDestructiveActions, this.abortController?.signal)) {
+		for await (const chunk of this.ai.streamRequest(conversation, allowDestructiveActions)) {
 			if (chunk.error && chunk.errorType) {
 				conversation.setMostRecentError(chunk.error, chunk.errorType);
 				callbacks.onStreamingUpdate(aiMessage.timestamp.getTime().toString());
@@ -208,6 +206,7 @@ export class ChatService {
 
 			if (chunk.content) {
 				accumulatedContent += chunk.content;
+
 				conversation.setMostRecentContent(accumulatedContent);
 				if (accumulatedContent.trim() !== "") {
 					callbacks.onThoughtUpdate(null);

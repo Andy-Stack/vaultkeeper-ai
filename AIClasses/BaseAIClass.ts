@@ -15,16 +15,24 @@ import { Role } from "Enums/Role";
 import { StringTools } from "Helpers/StringTools";
 import { Exception } from "Helpers/Exception";
 import { ApiErrorType } from "Types/ApiError";
+import type { AbortService } from "Services/AbortService";
 
 export abstract class BaseAIClass implements IAIClass {
 
     protected readonly apiKey: string;
-    protected readonly aiPrompt: IPrompt = Resolve<IPrompt>(Services.IPrompt);
-    protected readonly settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
-    protected readonly streamingService: StreamingService = Resolve<StreamingService>(Services.StreamingService);
-    protected readonly aiFunctionDefinitions: AIFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
+    protected readonly aiPrompt: IPrompt;
+    protected readonly abortService: AbortService;
+    protected readonly settingsService: SettingsService;
+    protected readonly streamingService: StreamingService;
+    protected readonly aiFunctionDefinitions: AIFunctionDefinitions;
 
     protected constructor(provider: AIProvider) {
+        this.aiPrompt = Resolve<IPrompt>(Services.IPrompt);
+        this.abortService = Resolve<AbortService>(Services.AbortService);
+        this.settingsService = Resolve<SettingsService>(Services.SettingsService);
+        this.streamingService = Resolve<StreamingService>(Services.StreamingService);
+        this.aiFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
+
         this.apiKey = this.settingsService.getApiKeyForProvider(provider);
     }
 

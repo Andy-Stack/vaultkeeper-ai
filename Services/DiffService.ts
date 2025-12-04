@@ -6,7 +6,8 @@ import type { EventService } from './EventService';
 import { Event } from 'Enums/Event';
 import type { Diff2HtmlUIConfig } from 'diff2html/lib/ui/js/diff2html-ui';
 import { ColorSchemeType, OutputFormatType } from 'diff2html/lib/types';
-import { Component, Platform } from 'obsidian';
+import { Component } from 'obsidian';
+import { AbortService } from './AbortService';
 
 interface DiffResult {
     accepted: boolean;
@@ -17,6 +18,7 @@ export class DiffService extends Component {
 
     private readonly plugin: VaultkeeperAIPlugin;
     private readonly eventService: EventService;
+    private readonly abortService: AbortService;
 
     private diffResolve?: (result: DiffResult) => void;
 
@@ -26,6 +28,7 @@ export class DiffService extends Component {
         super();
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
         this.eventService = Resolve<EventService>(Services.EventService);
+        this.abortService = Resolve<AbortService>(Services.AbortService);
 
         this.registerEvent(this.eventService.on(Event.DiffClosed, () => {
             this.cancelPendingDiff();
@@ -35,7 +38,7 @@ export class DiffService extends Component {
     public async requestDiff(oldFileName: string, newFileName: string, oldContent: string, newContent: string): Promise<DiffResult> {
         const diffString = this.createDiffString(oldFileName, newFileName, oldContent, newContent);
 
-        const outputFormat: OutputFormatType = (Platform.isMobile || oldContent.trim() === "") ? "line-by-line" : "side-by-side";
+        const outputFormat: OutputFormatType = "line-by-line";
 
         const config: Diff2HtmlUIConfig = {
             drawFileList: false,
@@ -50,8 +53,24 @@ export class DiffService extends Component {
 
         this.ongoingDiff = true;
 
-        return new Promise((resolve) => {
-            this.diffResolve = resolve;
+        const signal = this.abortService.signal();
+        return new Promise<DiffResult>((resolve, reject) => {
+            if (signal.aborted) {
+                this.finishDiff();
+                reject(this.abortService.reason());
+                return;
+            }
+
+            const abortHandler = () => {
+                this.finishDiff();
+                reject(this.abortService.reason());
+            };
+            signal.addEventListener("abort", abortHandler, { once: true });
+
+            this.diffResolve = (result: DiffResult) => {
+                signal.removeEventListener("abort", abortHandler);
+                resolve(result);
+            };
 
             void this.plugin.activateDiffView(diffString, config);
             this.eventService.trigger(Event.DiffOpened);
@@ -89,7 +108,7 @@ export class DiffService extends Component {
     }
 
     private createDiffString(oldFileName: string, newFileName: string, oldContent: string, newContent: string): string {
-        return Diff.createTwoFilesPatch(oldFileName, newFileName, oldContent, newContent);
+        return Diff.createTwoFilesPatch(oldFileName, newFileName, oldContent, newContent, undefined, undefined, { context: Infinity });
     }
 
     private finishDiff() {

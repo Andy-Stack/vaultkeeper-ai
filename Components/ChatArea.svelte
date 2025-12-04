@@ -2,15 +2,16 @@
   import { Resolve } from "Services/DependencyService";
   import { Services } from "Services/Services";
   import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
-	import ChatAreaThought from "./ChatAreaThought.svelte";
+	import ThoughtIndicator from "./ThoughtIndicator.svelte";
 	import StreamingIndicator from "./StreamingIndicator.svelte";
+  import CancellationIndicator from "./CancellationIndicator.svelte";
 	import { Greeting } from "Enums/Greeting";
 	import { Role } from "Enums/Role";
   import type { ConversationContent } from "Conversations/ConversationContent";
 	import { tick } from "svelte";
-	import { Copy } from "Enums/Copy";
 	import { Selector } from "Enums/Selector";
 
+  export let cancelling: boolean = false;
   export let messages: ConversationContent[] = [];
   export let currentThought: string | null = null;
   export let isSubmitting: boolean = false;
@@ -19,6 +20,7 @@
   export let editModeActive: boolean = false;
 
   export function resetChatArea() {
+    cancelling = false;
     messageElements = [];
     lastProcessedContent.clear();
     currentStreamFinalized = false;
@@ -67,8 +69,6 @@
 
   let settled: boolean = false;
 
-  let thoughtElement: HTMLElement | undefined;
-  let streamingElement: HTMLElement | undefined;
   let chatAreaPaddingElement: HTMLElement | undefined;
 
   let streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
@@ -120,11 +120,6 @@
 
     // For assistant messages that aren't streaming, use traditional parsing
     if (!isCurrentlyStreaming) {
-
-      if (message.content.includes(Selector.ApiRequestAborted)) {
-        return `<span class="${Selector.ErrorSelector}">${Copy.ApiRequestAborted}</span>`;
-      }
-
       if (message.errorType) {
         return `<div class="${Selector.ErrorSelector}">${message.content}</div>`;
       }
@@ -204,10 +199,14 @@
   {/each}
   
   {#if settled}
-    <ChatAreaThought bind:thoughtElement thought={currentThought}/>
+    <ThoughtIndicator thought={currentThought}/>
     {#if isSubmitting}
-      <StreamingIndicator bind:streamingElement editModeActive={editModeActive}/>
+      <StreamingIndicator editModeActive={editModeActive}/>
     {/if}
+  {/if}
+
+  {#if cancelling}
+    <CancellationIndicator/>
   {/if}
 
   <div bind:this={chatAreaPaddingElement}></div>

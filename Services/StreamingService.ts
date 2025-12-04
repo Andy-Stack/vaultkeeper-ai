@@ -1,7 +1,9 @@
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
-import { Selector } from "Enums/Selector";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
+import { AbortService } from "./AbortService";
+import { Resolve } from "./DependencyService";
+import { Services } from "./Services";
 
 export interface IStreamChunk {
   content: string;
@@ -17,14 +19,20 @@ export class StreamingService {
   private static readonly MAX_RETRIES = 3;
   private static readonly RETRY_DELAYS = [1000, 2000, 4000]; // ms
 
+  private readonly abortService: AbortService;
+
+  public constructor() {
+    this.abortService = Resolve<AbortService>(Services.AbortService);
+  }
+
   public async* streamRequest(url: string, requestBody: unknown, parseStreamChunk: (chunk: string) => IStreamChunk,
-    abortSignal?: AbortSignal, additionalHeaders?: Record<string, string>): AsyncGenerator<IStreamChunk, void, unknown> {
+    additionalHeaders?: Record<string, string>): AsyncGenerator<IStreamChunk, void, unknown> {
 
       let lastError: Error | null = null;
 
       for (let attempt = 0; attempt <= StreamingService.MAX_RETRIES; attempt++) {
         try {
-          const response = await this.makeRequest(url, requestBody, additionalHeaders, abortSignal);
+          const response = await this.makeRequest(url, requestBody, additionalHeaders);
 
           const reader = response.body?.getReader();
           if (!reader) {
@@ -42,9 +50,8 @@ export class StreamingService {
         } catch (error) {
           lastError = error instanceof Error ? error : Exception.new(error);
 
-          if (error instanceof Error && error.name === 'AbortError') {
-            yield this.createErrorChunk(lastError, true);
-            return;
+          if (AbortService.isAbortError(error)) {
+            throw error;
           }
 
           if (!this.shouldRetry(error, attempt)) {
@@ -64,7 +71,7 @@ export class StreamingService {
   }
 
   private async makeRequest(url: string, requestBody: unknown,
-    additionalHeaders?: Record<string, string>, abortSignal?: AbortSignal): Promise<Response> {
+    additionalHeaders?: Record<string, string>): Promise<Response> {
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -72,7 +79,7 @@ export class StreamingService {
           ...additionalHeaders,
         },
         body: JSON.stringify(requestBody),
-        signal: abortSignal,
+        signal: this.abortService.signal(),
       });
 
       if (!response.ok) {
@@ -85,13 +92,16 @@ export class StreamingService {
 
   private async* processStream(reader: ReadableStreamDefaultReader<Uint8Array>,
     parseStreamChunk: (chunk: string) => IStreamChunk): AsyncGenerator<IStreamChunk, boolean, unknown> {
-      
       let buffer = "";
       let lastChunkWasComplete = false;
 
       const decoder = new TextDecoder();
 
       while (true) {
+        if (this.abortService.signal().aborted) {
+          this.abortService.throw();
+        }
+
         const { done, value } = await reader.read();
 
         buffer += decoder.decode(value, { stream: true });
@@ -106,6 +116,9 @@ export class StreamingService {
               lastChunkWasComplete = chunk.isComplete;
               yield chunk;
             } catch (error) {
+              if (AbortService.isAbortError(error)) {
+                throw error;
+              }
               Exception.log(error);
               yield {
                 content: "",
@@ -125,14 +138,7 @@ export class StreamingService {
       return lastChunkWasComplete;
   }
 
-  private createErrorChunk(error: Error | ApiError, isAborted = false): IStreamChunk {
-    if (isAborted) {
-      return {
-        content: Selector.ApiRequestAborted,
-        isComplete: true
-      };
-    }
-
+  private createErrorChunk(error: Error | ApiError): IStreamChunk {
     if (error instanceof ApiError) {
       return {
         content: "",
@@ -151,14 +157,12 @@ export class StreamingService {
   }
 
   private shouldRetry(error: unknown, attempt: number): boolean {
-    // Don't retry abort errors
-    if (error instanceof Error && error.name === 'AbortError') {
-      return false;
+    if (AbortService.isAbortError(error)) {
+      return false; // Don't retry abort errors
     }
 
-    // Don't retry non-retryable errors
     if (error instanceof ApiError && !error.info.isRetryable) {
-      return false;
+      return false; // Don't retry non-retryable errors
     }
 
     return attempt < StreamingService.MAX_RETRIES;

@@ -1,6 +1,5 @@
 export enum Copy {
     // General Copy
-    ApiRequestAborted = "Request has been cancelled",
     UserInstructions1 = "You can create custom ",
     UserInstructions2 = "instructions",
     UserInstructions3 = " that the AI will follow.",

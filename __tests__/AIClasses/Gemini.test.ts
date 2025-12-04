@@ -11,6 +11,8 @@ import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { SettingsService } from '../../Services/SettingsService';
 import { AIProvider } from '../../Enums/ApiProvider';
+import { AbortService } from '../../Services/AbortService';
+import { Exception } from '../../Helpers/Exception';
 
 describe('Gemini', () => {
     let gemini: Gemini;
@@ -19,6 +21,7 @@ describe('Gemini', () => {
     let mockPlugin: any;
     let mockSettingsService: any;
     let mockFunctionDefinitions: any;
+    let abortService: AbortService;
 
     beforeEach(() => {
         // Mock IPrompt
@@ -51,6 +54,10 @@ describe('Gemini', () => {
             getApiKeyForCurrentModel: vi.fn(() => 'test-gemini-key')
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
+
+        // Create real AbortService instance
+        abortService = new AbortService();
+        RegisterSingleton(Services.AbortService, abortService);
 
         // Mock StreamingService
         mockStreamingService = {
@@ -401,7 +408,7 @@ describe('Gemini', () => {
         });
 
         it('should handle invalid JSON in function call gracefully', () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
             const invalidContent = new ConversationContent(
                 Role.Assistant,
@@ -416,13 +423,13 @@ describe('Gemini', () => {
 
             // Should be filtered out since it has no valid parts (no text, invalid function call)
             expect(result).toHaveLength(0);
-            expect(consoleSpy).toHaveBeenCalled();
+            expect(exceptionSpy).toHaveBeenCalled();
 
-            consoleSpy.mockRestore();
+            exceptionSpy.mockRestore();
         });
 
         it('should handle invalid JSON in function response gracefully', () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
             const invalidContent = new ConversationContent(
                 Role.User,
@@ -437,9 +444,9 @@ describe('Gemini', () => {
             expect(result).toHaveLength(1);
             expect(result[0].parts).toHaveLength(1);
             expect(result[0].parts[0]).toEqual({ text: 'invalid json {' });
-            expect(consoleSpy).toHaveBeenCalled();
+            expect(exceptionSpy).toHaveBeenCalled();
 
-            consoleSpy.mockRestore();
+            exceptionSpy.mockRestore();
         });
 
         it('should filter out empty content', () => {

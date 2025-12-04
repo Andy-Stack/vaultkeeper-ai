@@ -4,12 +4,12 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { Role } from '../../Enums/Role';
-import { SettingsService } from '../../Services/SettingsService';
 
 describe('GeminiConversationNamingService', () => {
     let service: GeminiConversationNamingService;
     let mockPlugin: any;
     let mockSettingsService: any;
+    let mockAbortService: any;
     let fetchMock: any;
 
     beforeEach(() => {
@@ -36,6 +36,13 @@ describe('GeminiConversationNamingService', () => {
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
 
+        // Mock AbortService
+        mockAbortService = {
+            signal: vi.fn(() => new AbortController().signal),
+            abortableOperation: vi.fn((fn) => fn())
+        };
+        RegisterSingleton(Services.AbortService, mockAbortService);
+
         // Mock global fetch
         fetchMock = vi.fn();
         global.fetch = fetchMock;
@@ -58,7 +65,7 @@ describe('GeminiConversationNamingService', () => {
                 })
             });
 
-            await service.generateName('User prompt', undefined);
+            await service.generateName('User prompt');
 
             expect(fetchMock).toHaveBeenCalled();
             const fetchUrl = fetchMock.mock.calls[0][0];
@@ -95,7 +102,7 @@ describe('GeminiConversationNamingService', () => {
                 })
             });
 
-            const result = await service.generateName('Test prompt', undefined);
+            const result = await service.generateName('Test prompt');
 
             expect(result).toBe('Generated Name');
         });
@@ -108,7 +115,7 @@ describe('GeminiConversationNamingService', () => {
                 text: async () => 'Invalid request'
             });
 
-            await expect(service.generateName('Test', undefined))
+            await expect(service.generateName('Test'))
                 .rejects.toThrow('Gemini API error: 400 Bad Request - Invalid request');
         });
 
@@ -120,13 +127,11 @@ describe('GeminiConversationNamingService', () => {
                 })
             });
 
-            await expect(service.generateName('Test', undefined))
+            await expect(service.generateName('Test'))
                 .rejects.toThrow('Failed to generate conversation name');
         });
 
         it('should pass abort signal to fetch', async () => {
-            const abortController = new AbortController();
-
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
@@ -134,12 +139,12 @@ describe('GeminiConversationNamingService', () => {
                 })
             });
 
-            await service.generateName('Test', abortController.signal);
+            await service.generateName('Test');
 
             expect(fetchMock).toHaveBeenCalledWith(
                 expect.any(String),
                 expect.objectContaining({
-                    signal: abortController.signal
+                    signal: expect.any(AbortSignal)
                 })
             );
         });
@@ -153,7 +158,7 @@ describe('GeminiConversationNamingService', () => {
                 })
             });
 
-            await expect(service.generateName('Test', undefined))
+            await expect(service.generateName('Test'))
                 .rejects.toThrow('Failed to generate conversation name');
         });
     });

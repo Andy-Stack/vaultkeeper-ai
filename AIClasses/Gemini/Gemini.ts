@@ -22,7 +22,7 @@ export class Gemini extends BaseAIClass {
   }
 
   public async* streamRequest(
-    conversation: Conversation, allowDestructiveActions: boolean, abortSignal?: AbortSignal
+    conversation: Conversation, allowDestructiveActions: boolean
   ): AsyncGenerator<IStreamChunk, void, unknown> {
     // next request should use web search only (gemini api doesn't support custom tooling and grounding at the same time)
     const requestWebSearch = this.accumulatedFunctionName == this.REQUEST_WEB_SEARCH;
@@ -78,8 +78,7 @@ export class Gemini extends BaseAIClass {
     yield* this.streamingService.streamRequest(
       `${AIProviderURL.Gemini}/${this.settingsService.settings.model}:streamGenerateContent?key=${this.apiKey}&alt=sse`,
       requestBody,
-      (chunk: string) => this.parseStreamChunk(chunk),
-      abortSignal
+      (chunk: string) => this.parseStreamChunk(chunk)
     );
   }
 

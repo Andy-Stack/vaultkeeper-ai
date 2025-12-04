@@ -2,6 +2,7 @@ export class Services {
     static VaultkeeperAIPlugin = Symbol("VaultkeeperAIPlugin");
     static SettingsService = Symbol("SettingsService");
     static EventService = Symbol("EventService");
+    static AbortService = Symbol("AbortService");
     static StatusBarService = Symbol("StatusBarService");
     static HTMLService = Symbol("HTMLService");
     static VaultService = Symbol("VaultService");

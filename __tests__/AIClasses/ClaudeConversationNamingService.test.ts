@@ -4,12 +4,12 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { Role } from '../../Enums/Role';
-import { SettingsService } from '../../Services/SettingsService';
 
 describe('ClaudeConversationNamingService', () => {
     let service: ClaudeConversationNamingService;
     let mockPlugin: any;
     let mockSettingsService: any;
+    let mockAbortService: any;
     let fetchMock: any;
 
     beforeEach(() => {
@@ -36,6 +36,13 @@ describe('ClaudeConversationNamingService', () => {
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
 
+        // Mock AbortService
+        mockAbortService = {
+            signal: vi.fn(() => new AbortController().signal),
+            abortableOperation: vi.fn((fn) => fn())
+        };
+        RegisterSingleton(Services.AbortService, mockAbortService);
+
         // Mock global fetch
         fetchMock = vi.fn();
         global.fetch = fetchMock;
@@ -58,7 +65,7 @@ describe('ClaudeConversationNamingService', () => {
                 })
             });
 
-            await service.generateName('User prompt', undefined);
+            await service.generateName('User prompt');
 
             expect(fetchMock).toHaveBeenCalledWith(
                 expect.any(String),
@@ -91,7 +98,7 @@ describe('ClaudeConversationNamingService', () => {
                 })
             });
 
-            const result = await service.generateName('Test prompt', undefined);
+            const result = await service.generateName('Test prompt');
 
             expect(result).toBe('Generated Name');
         });
@@ -104,7 +111,7 @@ describe('ClaudeConversationNamingService', () => {
                 text: async () => 'Invalid API key'
             });
 
-            await expect(service.generateName('Test', undefined))
+            await expect(service.generateName('Test'))
                 .rejects.toThrow('Claude API error: 401 Unauthorized - Invalid API key');
         });
 
@@ -116,13 +123,11 @@ describe('ClaudeConversationNamingService', () => {
                 })
             });
 
-            await expect(service.generateName('Test', undefined))
+            await expect(service.generateName('Test'))
                 .rejects.toThrow('Failed to generate conversation name');
         });
 
         it('should pass abort signal to fetch', async () => {
-            const abortController = new AbortController();
-
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
@@ -130,12 +135,12 @@ describe('ClaudeConversationNamingService', () => {
                 })
             });
 
-            await service.generateName('Test', abortController.signal);
+            await service.generateName('Test');
 
             expect(fetchMock).toHaveBeenCalledWith(
                 expect.any(String),
                 expect.objectContaining({
-                    signal: abortController.signal
+                    signal: expect.any(AbortSignal)
                 })
             );
         });
@@ -149,7 +154,7 @@ describe('ClaudeConversationNamingService', () => {
                 })
             });
 
-            await expect(service.generateName('Test', undefined))
+            await expect(service.generateName('Test'))
                 .rejects.toThrow('Failed to generate conversation name');
         });
     });

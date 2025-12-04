@@ -1,9 +1,8 @@
 <script lang="ts">
-  export let streamingElement: HTMLElement | undefined;
   export let editModeActive: boolean = false;
 </script>
 
-<div class="loader" class:edit-mode={editModeActive} bind:this={streamingElement}>
+<div class="loader" class:edit-mode={editModeActive}>
   <div class="circle">
     <div class="dot"></div>
     <div class="outline"></div>

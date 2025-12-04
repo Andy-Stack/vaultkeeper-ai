@@ -5,11 +5,13 @@ import { Services } from "Services/Services";
 import { Role } from "Enums/Role";
 import { AIProvider } from "Enums/ApiProvider";
 import type { SettingsService } from "Services/SettingsService";
+import type { AbortService } from "Services/AbortService";
 
 export class ClaudeTokenService implements ITokenService {
 
     private ai: Anthropic;
     private model: string;
+    private readonly abortService: AbortService;
 
     public constructor() {
         const settingsService = Resolve<SettingsService>(Services.SettingsService);
@@ -18,6 +20,7 @@ export class ClaudeTokenService implements ITokenService {
             dangerouslyAllowBrowser: true
         });
         this.model = settingsService.settings.model;
+        this.abortService = Resolve<AbortService>(Services.AbortService);
     }
 
     public async countTokens(input: string): Promise<number> {

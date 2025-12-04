@@ -50,4 +50,16 @@ export class ConversationContent {
             (!("errorType" in data) || typeof data.errorType === "string")
         );
     }
+
+    public static safeContinue() {
+        return new ConversationContent(
+            Role.User,
+            "Continue",
+            "Continue",
+            "",
+            new Date(),
+            false,
+            true  // isFunctionCallResponse = true (hides from UI)
+        );
+    }
 }

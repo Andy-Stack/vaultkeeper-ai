@@ -12,6 +12,7 @@ import { Role } from '../../Enums/Role';
 import { SettingsService } from '../../Services/SettingsService';
 import { AIProvider } from '../../Enums/ApiProvider';
 import { Exception } from '../../Helpers/Exception';
+import { AbortService } from '../../Services/AbortService';
 
 describe('OpenAI', () => {
     let openai: OpenAI;
@@ -20,6 +21,7 @@ describe('OpenAI', () => {
     let mockPlugin: any;
     let mockSettingsService: any;
     let mockFunctionDefinitions: any;
+    let abortService: AbortService;
 
     beforeEach(() => {
         // Mock Exception methods
@@ -55,6 +57,10 @@ describe('OpenAI', () => {
             getApiKeyForCurrentModel: vi.fn(() => 'test-openai-key')
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
+
+        // Create real AbortService instance
+        abortService = new AbortService();
+        RegisterSingleton(Services.AbortService, abortService);
 
         // Mock StreamingService
         mockStreamingService = {
@@ -727,8 +733,7 @@ describe('OpenAI', () => {
                 yield { content: 'response', isComplete: true };
             });
 
-            const abortSignal = new AbortController().signal;
-            const generator = openai.streamRequest(conversation, true, abortSignal);
+            const generator = openai.streamRequest(conversation, true);
 
             for await (const chunk of generator) {
                 // Just consume
@@ -744,7 +749,6 @@ describe('OpenAI', () => {
                     stream: true
                 }),
                 expect.any(Function), // parseStreamChunk
-                abortSignal,
                 expect.objectContaining({
                     'Authorization': 'Bearer test-openai-key',
                     'Content-Type': 'application/json'

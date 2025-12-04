@@ -7,6 +7,7 @@ import type { VaultService } from "./VaultService";
 import { Path } from "Enums/Path";
 import { Exception } from "Helpers/Exception";
 import { Notice } from "obsidian";
+import { AbortService } from "./AbortService";
 
 export class ConversationNamingService {
     private readonly stackLimit: number = 1000;
@@ -14,54 +15,60 @@ export class ConversationNamingService {
     private namingProvider: IConversationNamingService | undefined;
     private conversationService: ConversationFileSystemService;
     private vaultService: VaultService;
+    private abortService: AbortService;
 
     constructor() {
         this.conversationService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
         this.vaultService = Resolve<VaultService>(Services.VaultService);
+        this.abortService = Resolve<AbortService>(Services.AbortService);
     }
 
     public resolveNamingProvider() {
         this.namingProvider = Resolve<IConversationNamingService>(Services.IConversationNamingService);
     }
 
-    public async requestName(conversation: Conversation, userPrompt: string, onNameChanged: ((name: string) => void) | undefined, abortController: AbortController) {
-        if (!this.namingProvider) {
-            return;
-        }
-
-        const conversationPath = this.conversationService.getCurrentConversationPath();
-        
-        if (!conversationPath) {
-            return;
-        }
-
-        try {
-            const generatedName: string = await this.namingProvider.generateName(userPrompt, abortController.signal);
-            const validatedName: string = await this.validateName(generatedName);
-
-            const stillExists = this.conversationService.getCurrentConversationPath() === conversationPath;
-            if (!stillExists) {
+    public async requestName(conversation: Conversation, userPrompt: string, onNameChanged: ((name: string) => void) | undefined) {
+        await this.abortService.abortableOperation(async () => {
+            if (!this.namingProvider) {
                 return;
             }
-
-            const updateResult = await this.conversationService.updateConversationTitle(conversationPath, validatedName);
+    
+            const conversationPath = this.conversationService.getCurrentConversationPath();
             
-            if (updateResult instanceof Error) {
-                Exception.throw(updateResult);
+            if (!conversationPath) {
+                return;
             }
-
-            conversation.title = validatedName;
-            const saveResult = await this.conversationService.saveConversation(conversation);
-
-            if (saveResult instanceof Error) {
-                Exception.throw(saveResult);
+    
+            try {
+                const generatedName: string = await this.namingProvider.generateName(userPrompt);
+                const validatedName: string = await this.validateName(generatedName);
+    
+                const stillExists = this.conversationService.getCurrentConversationPath() === conversationPath;
+                if (!stillExists) {
+                    return;
+                }
+    
+                const updateResult = await this.conversationService.updateConversationTitle(conversationPath, validatedName);
+                
+                if (updateResult instanceof Error) {
+                    Exception.throw(updateResult);
+                }
+    
+                conversation.title = validatedName;
+                const saveResult = await this.conversationService.saveConversation(conversation);
+    
+                if (saveResult instanceof Error) {
+                    Exception.throw(saveResult);
+                }
+                
+                onNameChanged?.(conversation.title);
+            } catch (error) {
+                if (!AbortService.isAbortError(error)) {
+                    Exception.log(error);
+                    new Notice(`Failed to name conversation '${conversation.title}'`);
+                }
             }
-            
-            onNameChanged?.(conversation.title);
-        } catch (error) {
-            Exception.log(error);
-            new Notice(`Failed to name conversation '${conversation.title}'`);
-        }
+        });
     }
 
     private async validateName(generatedName: string): Promise<string> {

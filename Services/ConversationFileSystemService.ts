@@ -4,7 +4,6 @@ import { FileSystemService } from "./FileSystemService";
 import { Services } from "./Services";
 import { Conversation } from "Conversations/Conversation";
 import { ConversationContent } from "Conversations/ConversationContent";
-import { Copy } from "Enums/Copy";
 import { Exception } from "Helpers/Exception";
 
 export class ConversationFileSystemService {
@@ -23,6 +22,12 @@ export class ConversationFileSystemService {
     public async saveConversation(conversation: Conversation): Promise<string | Error> {
         if (!this.currentConversationPath) {
             this.currentConversationPath = this.generateConversationPath(conversation);
+        } else {
+            // can happen if the conversation is deleted during an active request
+            const fileExists = await this.fileSystemService.exists(this.currentConversationPath, true);
+            if (!fileExists) {
+                return this.currentConversationPath;
+            }
         }
 
         conversation.updated = new Date();
@@ -32,7 +37,6 @@ export class ConversationFileSystemService {
             created: conversation.created.toISOString(),
             updated: conversation.updated.toISOString(),
             contents: conversation.contents
-                .filter(content => content.content !== Copy.ApiRequestAborted.toString())
                 .map(content => ({
                     role: content.role,
                     content: content.content,
@@ -72,7 +76,7 @@ export class ConversationFileSystemService {
             return;
         }
 
-        const result = await this.fileSystemService.deleteFile(this.currentConversationPath, true);
+        const result = await this.fileSystemService.deleteFile(this.currentConversationPath, true, false);
 
         if (result instanceof Error) {
             return result;

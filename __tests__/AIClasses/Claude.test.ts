@@ -11,6 +11,8 @@ import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { SettingsService } from '../../Services/SettingsService';
 import { AIProvider } from '../../Enums/ApiProvider';
+import { AbortService } from '../../Services/AbortService';
+import { Exception } from '../../Helpers/Exception';
 
 describe('Claude', () => {
     let claude: Claude;
@@ -19,6 +21,7 @@ describe('Claude', () => {
     let mockPlugin: any;
     let mockSettingsService: any;
     let mockFunctionDefinitions: any;
+    let abortService: AbortService;
 
     beforeEach(() => {
         // Mock IPrompt
@@ -51,6 +54,10 @@ describe('Claude', () => {
             getApiKeyForCurrentModel: vi.fn(() => 'test-claude-key')
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
+
+        // Create real AbortService instance
+        abortService = new AbortService();
+        RegisterSingleton(Services.AbortService, abortService);
 
         // Mock StreamingService
         mockStreamingService = {
@@ -244,7 +251,7 @@ describe('Claude', () => {
             (claude as any).accumulatedFunctionArgs = 'invalid json {';
             (claude as any).accumulatedFunctionId = 'func_789';
 
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
             const chunk = JSON.stringify({
                 type: 'content_block_stop'
@@ -253,9 +260,9 @@ describe('Claude', () => {
             const result = (claude as any).parseStreamChunk(chunk);
 
             expect(result.functionCall).toBeUndefined();
-            expect(consoleSpy).toHaveBeenCalled();
+            expect(exceptionSpy).toHaveBeenCalled();
 
-            consoleSpy.mockRestore();
+            exceptionSpy.mockRestore();
         });
 
         it('should handle malformed chunk JSON', () => {
@@ -341,7 +348,7 @@ describe('Claude', () => {
         });
 
         it('should handle invalid JSON in function call gracefully', () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
             const invalidContent = new ConversationContent(
                 Role.Assistant,
@@ -358,13 +365,13 @@ describe('Claude', () => {
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
             expect(result[0].content[0].type).toBe('text');
-            expect(consoleSpy).toHaveBeenCalled();
+            expect(exceptionSpy).toHaveBeenCalled();
 
-            consoleSpy.mockRestore();
+            exceptionSpy.mockRestore();
         });
 
         it('should handle invalid JSON in function response gracefully', () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
             const invalidContent = new ConversationContent(
                 Role.User,
@@ -380,9 +387,9 @@ describe('Claude', () => {
             expect(result[0].content).toHaveLength(1);
             expect(result[0].content[0].type).toBe('text');
             expect(result[0].content[0].text).toBe('invalid json {');
-            expect(consoleSpy).toHaveBeenCalled();
+            expect(exceptionSpy).toHaveBeenCalled();
 
-            consoleSpy.mockRestore();
+            exceptionSpy.mockRestore();
         });
 
         it('should filter out empty content', () => {
@@ -727,8 +734,7 @@ describe('Claude', () => {
                 yield { content: 'response', isComplete: true };
             });
 
-            const abortSignal = new AbortController().signal;
-            const generator = claude.streamRequest(conversation, true, abortSignal);
+            const generator = claude.streamRequest(conversation, true);
 
             // Consume the generator
             for await (const chunk of generator) {
@@ -746,7 +752,6 @@ describe('Claude', () => {
                     stream: true
                 }),
                 expect.any(Function), // parseStreamChunk
-                abortSignal,
                 expect.objectContaining({
                     'x-api-key': 'test-claude-key',
                     'anthropic-version': '2023-06-01',

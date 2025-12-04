@@ -4,12 +4,12 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { Role } from '../../Enums/Role';
-import { SettingsService } from '../../Services/SettingsService';
 
 describe('OpenAIConversationNamingService', () => {
     let service: OpenAIConversationNamingService;
     let mockPlugin: any;
     let mockSettingsService: any;
+    let mockAbortService: any;
     let fetchMock: any;
 
     beforeEach(() => {
@@ -35,6 +35,13 @@ describe('OpenAIConversationNamingService', () => {
             getApiKeyForCurrentModel: vi.fn(() => 'test-openai-key')
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
+
+        // Mock AbortService
+        mockAbortService = {
+            signal: vi.fn(() => new AbortController().signal),
+            abortableOperation: vi.fn((fn) => fn())
+        };
+        RegisterSingleton(Services.AbortService, mockAbortService);
 
         // Mock global fetch
         fetchMock = vi.fn();
@@ -72,7 +79,7 @@ describe('OpenAIConversationNamingService', () => {
                 })
             });
 
-            await service.generateName('User prompt', undefined);
+            await service.generateName('User prompt');
 
             expect(fetchMock).toHaveBeenCalledWith(
                 expect.any(String),
@@ -119,7 +126,7 @@ describe('OpenAIConversationNamingService', () => {
                 })
             });
 
-            const result = await service.generateName('Test prompt', undefined);
+            const result = await service.generateName('Test prompt');
 
             expect(result).toBe('Generated Name');
         });
@@ -160,7 +167,7 @@ describe('OpenAIConversationNamingService', () => {
                 })
             });
 
-            const result = await service.generateName('Test prompt', undefined);
+            const result = await service.generateName('Test prompt');
 
             expect(result).toBe('Generated Name');
         });
@@ -173,7 +180,7 @@ describe('OpenAIConversationNamingService', () => {
                 text: async () => 'Rate limit exceeded'
             });
 
-            await expect(service.generateName('Test', undefined))
+            await expect(service.generateName('Test'))
                 .rejects.toThrow('OpenAI API error: 429 Too Many Requests - Rate limit exceeded');
         });
 
@@ -187,13 +194,11 @@ describe('OpenAIConversationNamingService', () => {
                 })
             });
 
-            await expect(service.generateName('Test', undefined))
+            await expect(service.generateName('Test'))
                 .rejects.toThrow('Failed to generate conversation name');
         });
 
         it('should pass abort signal to fetch', async () => {
-            const abortController = new AbortController();
-
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
@@ -215,12 +220,12 @@ describe('OpenAIConversationNamingService', () => {
                 })
             });
 
-            await service.generateName('Test', abortController.signal);
+            await service.generateName('Test');
 
             expect(fetchMock).toHaveBeenCalledWith(
                 expect.any(String),
                 expect.objectContaining({
-                    signal: abortController.signal
+                    signal: expect.any(AbortSignal)
                 })
             );
         });
@@ -235,7 +240,7 @@ describe('OpenAIConversationNamingService', () => {
                 })
             });
 
-            await expect(service.generateName('Test', undefined))
+            await expect(service.generateName('Test'))
                 .rejects.toThrow('Failed to generate conversation name');
         });
     });

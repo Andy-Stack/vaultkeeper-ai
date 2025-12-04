@@ -37,6 +37,7 @@ import { SettingsService, type IVaultkeeperAISettings } from "./SettingsService"
 import { HelpModal } from "Modals/HelpModal";
 import { EventService } from "./EventService";
 import { DiffService } from "./DiffService";
+import { AbortService } from "./AbortService";
 
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
     RegisterSingleton<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin, plugin);
@@ -45,6 +46,7 @@ export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
 
 export function RegisterDependencies() {
     RegisterSingleton<EventService>(Services.EventService, new EventService());
+    RegisterSingleton<AbortService>(Services.AbortService, new AbortService());
     RegisterSingleton<StatusBarService>(Services.StatusBarService, new StatusBarService());
     RegisterSingleton<HTMLService>(Services.HTMLService, new HTMLService());
     RegisterSingleton<SanitiserService>(Services.SanitiserService, new SanitiserService());

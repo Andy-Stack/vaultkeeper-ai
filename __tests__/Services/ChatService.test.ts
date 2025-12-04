@@ -7,6 +7,7 @@ import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { AIFunctionCall } from '../../AIClasses/AIFunctionCall';
 import { AIFunction, fromString } from '../../Enums/AIFunction';
+import { AbortService } from '../../Services/AbortService';
 
 /**
  * INTEGRATION TESTS - Simplified
@@ -26,6 +27,8 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 	let mockPrompt: any;
 	let mockStatusBarService: any;
 	let mockTokenService: any;
+	let mockEventService: any;
+	let abortService: AbortService;
 
 	beforeEach(() => {
 		// Setup minimal mocks
@@ -54,12 +57,24 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			countTokens: vi.fn().mockResolvedValue(100)
 		};
 
+		// Mock EventService since it extends Obsidian's Events class
+		mockEventService = {
+			trigger: vi.fn(),
+			on: vi.fn(),
+			off: vi.fn()
+		};
+
+		// Create real AbortService instance
+		abortService = new AbortService();
+
 		// Register dependencies
 		RegisterSingleton(Services.ConversationFileSystemService, mockConversationService);
 		RegisterSingleton(Services.AIFunctionService, mockAIFunctionService);
 		RegisterSingleton(Services.ConversationNamingService, mockNamingService);
 		RegisterSingleton(Services.IPrompt, mockPrompt);
 		RegisterSingleton(Services.StatusBarService, mockStatusBarService);
+		RegisterSingleton(Services.EventService, mockEventService);
+		RegisterSingleton(Services.AbortService, abortService);
 
 		// Create service
 		service = new ChatService();
@@ -227,15 +242,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			if (conversation.contents.length > 0) {
 				const lastMessage = conversation.contents[conversation.contents.length - 1];
 				if (lastMessage.role === Role.Assistant) {
-					conversation.contents.push(new ConversationContent(
-						Role.User,
-						"Continue",
-						"Continue",
-						"",
-						new Date(),
-						false,
-						true
-					));
+					conversation.contents.push(ConversationContent.safeContinue());
 				}
 			}
 
@@ -260,15 +267,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			if (conversation.contents.length > 0) {
 				const lastMessage = conversation.contents[conversation.contents.length - 1];
 				if (lastMessage.role === Role.Assistant) {
-					conversation.contents.push(new ConversationContent(
-						Role.User,
-						"Continue",
-						"Continue",
-						"",
-						new Date(),
-						false,
-						true
-					));
+					conversation.contents.push(ConversationContent.safeContinue());
 				}
 			}
 
@@ -286,15 +285,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			if (conversation.contents.length > 0) {
 				const lastMessage = conversation.contents[conversation.contents.length - 1];
 				if (lastMessage.role === Role.Assistant) {
-					conversation.contents.push(new ConversationContent(
-						Role.User,
-						"Continue",
-						"Continue",
-						"",
-						new Date(),
-						false,
-						true
-					));
+					conversation.contents.push(ConversationContent.safeContinue());
 				}
 			}
 
@@ -311,15 +302,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			if (conversation.contents.length > 0) {
 				const lastMessage = conversation.contents[conversation.contents.length - 1];
 				if (lastMessage.role === Role.Assistant) {
-					conversation.contents.push(new ConversationContent(
-						Role.User,
-						"Continue",
-						"Continue",
-						"",
-						new Date(),
-						false,
-						true
-					));
+					conversation.contents.push(ConversationContent.safeContinue());
 				}
 			}
 
@@ -355,15 +338,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			if (conversation.contents.length > 0) {
 				const lastMessage = conversation.contents[conversation.contents.length - 1];
 				if (lastMessage.role === Role.Assistant) {
-					conversation.contents.push(new ConversationContent(
-						Role.User,
-						"Continue",
-						"Continue",
-						"",
-						new Date(),
-						false,
-						true
-					));
+					conversation.contents.push(ConversationContent.safeContinue());
 				}
 			}
 

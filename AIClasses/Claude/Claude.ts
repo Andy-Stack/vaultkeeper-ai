@@ -24,7 +24,7 @@ export class Claude extends BaseAIClass {
     }
 
     public async* streamRequest(
-        conversation: Conversation, allowDestructiveActions: boolean, abortSignal?: AbortSignal
+        conversation: Conversation, allowDestructiveActions: boolean
     ): AsyncGenerator<IStreamChunk, void, unknown> {
         this.accumulatedFunctionName = null;
         this.accumulatedFunctionArgs = "";
@@ -62,7 +62,6 @@ export class Claude extends BaseAIClass {
             AIProviderURL.Claude,
             requestBody,
             (chunk: string) => this.parseStreamChunk(chunk),
-            abortSignal,
             headers
         );
     }

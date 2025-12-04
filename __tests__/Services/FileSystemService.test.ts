@@ -134,7 +134,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.writeFile('new.md', 'content');
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.create).toHaveBeenCalledWith('new.md', 'content', false);
+			expect(mockVaultService.create).toHaveBeenCalledWith('new.md', 'content', false, true);
 			expect(mockVaultService.modify).not.toHaveBeenCalled();
 		});
 
@@ -147,7 +147,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.writeFile('existing.md', 'new content');
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.modify).toHaveBeenCalledWith(mockFile, 'new content', false);
+			expect(mockVaultService.modify).toHaveBeenCalledWith(mockFile, 'new content', false, true);
 			expect(mockVaultService.create).not.toHaveBeenCalled();
 		});
 
@@ -158,14 +158,14 @@ describe('FileSystemService', () => {
 			await fileSystemService.writeFile('plugin/data.json', 'content', true);
 
 			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/data.json', true);
-			expect(mockVaultService.create).toHaveBeenCalledWith('plugin/data.json', 'content', true);
+			expect(mockVaultService.create).toHaveBeenCalledWith('plugin/data.json', 'content', true, true);
 		});
 
 		it('should return error object when create fails', async () => {
 			const error = new Error('Create failed');
 
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(null);
-			mockVaultService.create = vi.fn().mockRejectedValue(error);
+			mockVaultService.create = vi.fn().mockResolvedValue(error);
 
 			const result = await fileSystemService.writeFile('error.md', 'content');
 
@@ -178,7 +178,7 @@ describe('FileSystemService', () => {
 			const error = new Error('Modify failed');
 
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
-			mockVaultService.modify = vi.fn().mockRejectedValue(error);
+			mockVaultService.modify = vi.fn().mockResolvedValue(error);
 
 			const result = await fileSystemService.writeFile('existing.md', 'content');
 
@@ -197,7 +197,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.deleteFile('delete-me.md');
 
 			expect(result).toBeUndefined();
-			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFile, false);
+			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFile, false, true);
 		});
 
 		it('should return error when file does not exist', async () => {
@@ -219,7 +219,7 @@ describe('FileSystemService', () => {
 			await fileSystemService.deleteFile('plugin/temp.json', true);
 
 			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/temp.json', true);
-			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFile, true);
+			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFile, true, true);
 		});
 
 		it('should delete folder successfully (supports both files and folders)', async () => {
@@ -231,7 +231,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.deleteFile('folder');
 
 			expect(result).toBeUndefined();
-			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFolder, false);
+			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFolder, false, true);
 		});
 	});
 

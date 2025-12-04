@@ -2,6 +2,7 @@
 
 /* Main diff container background */
 .d2h-wrapper {
+    transform: translateZ(0);
     background-color: var(--background-primary) !important;
     box-shadow: 0px 0px 4px 1px var(--color-accent) !important;
 }
@@ -17,8 +18,8 @@
     background-color: var(--background-primary-alt) !important;
 }
 
-.d2h-code-line {
-    padding: 0 5em;
+.d2h-code-linenumber {
+    cursor: default;
 }
 
 /* Line number backgrounds - only override context lines */
@@ -40,13 +41,40 @@
 
 /* File diff background */
 .d2h-file-diff {
+    overflow: auto;
     background-color: var(--background-primary) !important;
     border-color: var(--background-modifier-border) !important;
+}
+
+/* File diff size */
+@container diff-container (max-height: 199px) {
+    .d2h-file-diff { max-height: 90cqh; }
+}
+
+@container diff-container (min-height: 200px) {
+    .d2h-file-diff { max-height: 95cqh; }
+}
+
+@container diff-container (min-height: 400px) {
+    .d2h-file-diff { max-height: 97cqh; }
+}
+
+@container diff-container (min-height: 550px) {
+    .d2h-file-diff { max-height: 98cqh; }
+}
+
+@container diff-container (min-height: 1000px) {
+    .d2h-file-diff { max-height: 99cqh; }
 }
 
 /* Empty placeholder */
 .d2h-emptyplaceholder {
     background-color: var(--background-secondary-alt) !important;
+}
+
+.d2h-code-side-linenumber {
+    position: relative;
+    display: table-cell;
 }
 
 /* Code side backgrounds for side-by-side view - only override context lines */
@@ -140,8 +168,11 @@
 .d2h-code-linenumber,
 .d2h-info {
     color: var(--text-normal) !important;
-    width: 4.5em;
 }
+
+.d2h-diff-table {
+    position: relative;
+ }
 
 /* Light mode syntax highlighting overrides for better visibility */
 .theme-light .d2h-code-side-line {

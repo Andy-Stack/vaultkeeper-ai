@@ -7,48 +7,52 @@ import { NamePrompt } from "AIClasses/NamePrompt";
 import type { GenerateContentResponse } from "@google/genai";
 import type { SettingsService } from "Services/SettingsService";
 import { Exception } from "Helpers/Exception";
+import type { AbortService } from "Services/AbortService";
 
 export class GeminiConversationNamingService implements IConversationNamingService {
-    
+
     private readonly apiKey: string;
+    private readonly abortService: AbortService;
 
     public constructor() {
         const settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.apiKey = settingsService.getApiKeyForProvider(AIProvider.Gemini);
+        this.abortService = Resolve<AbortService>(Services.AbortService);
     }
 
-    public async generateName(userPrompt: string, abortSignal?: AbortSignal): Promise<string> {
+    public async generateName(userPrompt: string): Promise<string> {
+        return await this.abortService.abortableOperation(async () => {
+            const requestBody = {
+                system_instruction: {
+                    parts: [{ text: NamePrompt }]
+                },
+                contents: [{
+                    role: Role.User,
+                    parts: [{ text: userPrompt }]
+                }]
+            };
 
-        const requestBody = {
-            system_instruction: {
-                parts: [{ text: NamePrompt }]
-            },
-            contents: [{
-                role: Role.User,
-                parts: [{ text: userPrompt }]
-            }]
-        };
+            const response = await fetch(`${AIProviderURL.Gemini}/${AIProviderModel.GeminiNamer}:generateContent?key=${this.apiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+                signal: this.abortService.signal()
+            });
 
-        const response = await fetch(`${AIProviderURL.Gemini}/${AIProviderModel.GeminiNamer}:generateContent?key=${this.apiKey}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody),
-            signal: abortSignal
+            if (!response.ok) {
+                Exception.throw(`Gemini API error: ${response.status} ${response.statusText} - ${await response.text()}`);
+            }
+
+            const data = await response.json() as GenerateContentResponse;
+            const generatedName = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!generatedName) {
+                Exception.throw("Failed to generate conversation name");
+            }
+
+            return generatedName;
         });
-
-        if (!response.ok) {
-            Exception.throw(`Gemini API error: ${response.status} ${response.statusText} - ${await response.text()}`);
-        }
-
-        const data = await response.json() as GenerateContentResponse;
-        const generatedName = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (!generatedName) {
-            Exception.throw("Failed to generate conversation name");
-        }
-
-        return generatedName;
     }
 }

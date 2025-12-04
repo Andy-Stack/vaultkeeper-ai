@@ -24,6 +24,7 @@
   let chatArea: ChatArea;
   let chatInput: ChatInput;
 
+  let cancelling = false;
   let hasNoApiKey = false;
   let isSubmitting = false;
   let editModeActive = false;
@@ -85,7 +86,6 @@
   function handleStop() {
     chatService.stop();
     currentThought = null;
-    isSubmitting = false;
     chatArea.scrollChatArea("smooth");
   }
 
@@ -108,10 +108,14 @@
       onThoughtUpdate: (thought) => {
         currentThought = thought;
       },
-      onComplete: () => {
+      onComplete: async () => {
+        cancelling = false;
         isSubmitting = false;
         chatArea.scrollChatArea(undefined);
-        chatService.updateTokenDisplay(conversation);
+        await chatService.updateTokenDisplay(conversation);
+      },
+      onCancel: () => {
+        cancelling = true;
       }
     });
   }
@@ -119,11 +123,21 @@
   $: if ($conversationStore.shouldReset) {
     conversation = new Conversation();
     chatService.setStatusBarTokens(0, 0);
+
+    isSubmitting = false;
+    currentStreamingMessageId = null;
+    currentThought = null;
+
     conversationStore.clearResetFlag();
   }
 
   $: if ($conversationStore.conversationToLoad) {
     conversation.contents = [];
+
+    isSubmitting = false;
+    currentStreamingMessageId = null;
+    currentThought = null;
+
     chatArea.resetChatArea();
 
     tick().then(() => {
@@ -147,7 +161,7 @@
 
 <main class="container">
   <div id="chat-container">
-    <ChatArea messages={conversation.contents} bind:this={chatArea} bind:currentThought bind:isSubmitting bind:chatContainer
+    <ChatArea messages={conversation.contents} bind:this={chatArea} bind:currentThought bind:isSubmitting bind:chatContainer bind:cancelling
       currentStreamingMessageId={currentStreamingMessageId} editModeActive={editModeActive}/>
   </div>
 

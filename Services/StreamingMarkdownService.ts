@@ -32,7 +32,7 @@ export class StreamingMarkdownService {
 
     constructor() {
         this.processor = unified()
-        .use(remarkParse)
+            .use(remarkParse)
             .use(remarkGfm)
             .use(remarkEmoji)
             .use(remarkMath)

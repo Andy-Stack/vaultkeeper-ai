@@ -16,7 +16,7 @@ export class OpenAI extends BaseAIClass {
     }
 
     public async* streamRequest(
-        conversation: Conversation, allowDestructiveActions: boolean, abortSignal?: AbortSignal
+        conversation: Conversation, allowDestructiveActions: boolean
     ): AsyncGenerator<IStreamChunk, void, unknown> {
 
         const systemPrompt = await this.buildSystemPrompt();
@@ -46,7 +46,6 @@ export class OpenAI extends BaseAIClass {
             AIProviderURL.OpenAI,
             requestBody,
             (chunk: string) => this.parseStreamChunk(chunk),
-            abortSignal,
             headers
         );
     }

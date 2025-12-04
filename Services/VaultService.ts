@@ -14,6 +14,7 @@ import type { EventService } from "./EventService";
 import { DiffService } from "./DiffService";
 import * as path from "path-browserify";
 import { Event } from "Enums/Event";
+import { AbortService } from "./AbortService";
 
 interface IFileEventArgs {
     oldPath: string;
@@ -111,12 +112,21 @@ export class VaultService {
         });
     }
 
-    public async delete(file: TAbstractFile, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
+    public async delete(file: TAbstractFile, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<void | Error> {
         const filePath = this.sanitiserService.sanitize(file.path);
         if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
             Exception.log(`Plugin attempted to delete a file that is in the exclusions list: ${filePath}`)
             return Exception.new(`File does not exist: ${filePath}`);
         }
+
+        // handle file deletion
+        if (file instanceof TFile) {
+            return this.proposeChange(file.name, file.name, await this.vault.read(file), "", requiresConfirmation, async () => {
+                await this.fileManager.trashFile(file);    
+            });
+        }
+
+        // handle folder deletion
         try {
             await this.fileManager.trashFile(file);
         } catch (error) {
@@ -428,12 +438,16 @@ export class VaultService {
 
                 let response = "User rejected this change. Stop all actions and consult with the user";
                 if (result.suggestion) {
-                    response = `User has rejected the input with the following suggestion: ${result.suggestion}`;
+                    response = `User has rejected the change with the following suggestion: ${result.suggestion}`;
                 }
                 return Exception.new(response);
             } catch (error) {
+                if (AbortService.isAbortError(error)) {
+                    throw error;
+                }
                 this.eventService.trigger(Event.DiffClosed);
                 Exception.log(error);
+
                 return Exception.new(error);
             }
     }

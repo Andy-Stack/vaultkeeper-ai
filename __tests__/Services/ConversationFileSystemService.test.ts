@@ -5,7 +5,6 @@ import { Services } from '../../Services/Services';
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
-import { Copy } from '../../Enums/Copy';
 import { TFile } from 'obsidian';
 import { Exception } from '../../Helpers/Exception';
 
@@ -20,7 +19,6 @@ import { Exception } from '../../Helpers/Exception';
  * - Path management
  * - Conversation title updates
  * - Listing all conversations
- * - Filtering aborted requests
  */
 
 describe('ConversationFileSystemService - Integration Tests', () => {
@@ -34,7 +32,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			readObjectFromFile: vi.fn(),
 			deleteFile: vi.fn(),
 			moveFile: vi.fn(),
-			listFilesInDirectory: vi.fn()
+			listFilesInDirectory: vi.fn(),
+			exists: vi.fn().mockResolvedValue(true)
 		};
 
 		// Register the mock
@@ -142,21 +141,6 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(conversation.updated.getTime()).toBeGreaterThanOrEqual(originalUpdated.getTime());
 		});
 
-		it('should filter out aborted request messages', async () => {
-			const conversation = createTestConversation('Test Filter');
-			conversation.contents.push(
-				new ConversationContent(Role.Assistant, Copy.ApiRequestAborted, '', '', new Date())
-			);
-
-			await service.saveConversation(conversation);
-
-			const savedData = mockFileSystemService.writeObjectToFile.mock.calls[0][1];
-			const savedContents = savedData.contents;
-
-			// Should have 2 contents (original user and assistant), not 3
-			expect(savedContents).toHaveLength(2);
-			expect(savedContents.every((c: any) => c.content !== Copy.ApiRequestAborted)).toBe(true);
-		});
 
 		it('should set current conversation path on first save', async () => {
 			const conversation = createTestConversation('First Save');
@@ -328,7 +312,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(result).toBeUndefined(); // void = success
 			expect(mockFileSystemService.deleteFile).toHaveBeenCalledWith(
 				'Vaultkeeper AI/Conversations/To Delete.json',
-				true
+				true,
+				false
 			);
 			expect(service.getCurrentConversationPath()).toBeNull();
 		});

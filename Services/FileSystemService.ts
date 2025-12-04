@@ -13,6 +13,10 @@ export class FileSystemService {
         this.vaultService = Resolve<VaultService>(Services.VaultService);
     }
 
+    public async exists(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<boolean> {
+        return await this.vaultService.exists(filePath, allowAccessToPluginRoot);
+    }
+
     public async readFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<string | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
         if (file && file instanceof TFile) {
@@ -21,28 +25,22 @@ export class FileSystemService {
         return Exception.new(`Path is a folder, not a file: ${filePath}`);
     }
 
-    public async writeFile(filePath: string, content: string, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
-        try {
-            const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
-            if (file == null || !(file instanceof TFile)) {
-                return await this.vaultService.create(filePath, content, allowAccessToPluginRoot);
-            }
-            return await this.vaultService.modify(file, content, allowAccessToPluginRoot);
+    public async writeFile(filePath: string, content: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+        const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
+        if (file == null || !(file instanceof TFile)) {
+            return await this.vaultService.create(filePath, content, allowAccessToPluginRoot, requiresConfirmation);
         }
-        catch (error) {
-            Exception.log(error);
-            return Exception.new(error);
-        }
+        return await this.vaultService.modify(file, content, allowAccessToPluginRoot, requiresConfirmation);
     }
 
-    public async deleteFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<Error | void> {
+    public async deleteFile(filePath: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<Error | void> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 
         if (!file) {
             return Exception.new(`File does not exist: ${filePath}`);
         }
 
-        return await this.vaultService.delete(file, allowAccessToPluginRoot);
+        return await this.vaultService.delete(file, allowAccessToPluginRoot, requiresConfirmation);
     }
 
     public async moveFile(sourcePath: string, destinationPath: string, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
@@ -61,11 +59,11 @@ export class FileSystemService {
         return await this.vaultService.listDirectoryContents(dirPath, recursive, allowAccessToPluginRoot);
     }
 
-    public async readObjectFromFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<object | Error> {
+    public async readObjectFromFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<Record<string, unknown> | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
         if (file && file instanceof TFile) {
             const result = await this.vaultService.read(file, allowAccessToPluginRoot);
-            return typeof result === "string" ? JSON.parse(result) as object : result;
+            return typeof result === "string" ? JSON.parse(result) as Record<string, unknown> : result;
         }
         return Exception.new(`File not found: ${filePath}`);
     }
@@ -73,15 +71,15 @@ export class FileSystemService {
     public async writeObjectToFile(filePath: string, data: object, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 
-            let result: TFile | Error;
-            if (file && file instanceof TFile) {
-                result = await this.vaultService.modify(file, JSON.stringify(data, null, 4), allowAccessToPluginRoot, requiresConfirmation);
-            }
-            else {
-                result = await this.vaultService.create(filePath, JSON.stringify(data, null, 4), allowAccessToPluginRoot, requiresConfirmation);
-            }
+        let result: TFile | Error;
+        if (file && file instanceof TFile) {
+            result = await this.vaultService.modify(file, JSON.stringify(data, null, 4), allowAccessToPluginRoot, requiresConfirmation);
+        }
+        else {
+            result = await this.vaultService.create(filePath, JSON.stringify(data, null, 4), allowAccessToPluginRoot, requiresConfirmation);
+        }
 
-            return result;
+        return result;
     }
 
     public async searchVaultFiles(searchTerm: string, allowAccessToPluginRoot: boolean = false): Promise<ISearchMatch[]> {

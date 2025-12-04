@@ -1,12 +1,11 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
   export let thought: string | null = null;
-  export let thoughtElement: HTMLElement | undefined;
   $: isVisible = thought !== null && thought.trim().length > 0;
 </script>
 
 {#if isVisible}
-  <div class="ai-thought-container" bind:this={thoughtElement} in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
+  <div class="ai-thought-container" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
     <div class="ai-thought-bubble">
       <span>{thought}</span>
     </div>

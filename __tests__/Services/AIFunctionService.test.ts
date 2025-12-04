@@ -5,6 +5,7 @@ import { Services } from '../../Services/Services';
 import { AIFunction } from '../../Enums/AIFunction';
 import { TFile } from 'obsidian';
 import { Exception } from '../../Helpers/Exception';
+import { AbortService } from '../../Services/AbortService';
 
 /**
  * INTEGRATION TESTS - AIFunctionService
@@ -24,6 +25,7 @@ import { Exception } from '../../Helpers/Exception';
 describe('AIFunctionService - Integration Tests', () => {
 	let service: AIFunctionService;
 	let mockFileSystemService: any;
+	let abortService: AbortService;
 
 	beforeEach(() => {
 		// Mock FileSystemService with common operations
@@ -36,13 +38,17 @@ describe('AIFunctionService - Integration Tests', () => {
 			moveFile: vi.fn()
 		};
 
-		// Register the mock
+		// Create real AbortService instance
+		abortService = new AbortService();
+
+		// Register the mocks
 		RegisterSingleton(Services.FileSystemService, mockFileSystemService);
+		RegisterSingleton(Services.AbortService, abortService);
 
 		// Mock Exception.log
 		vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
-		// Create service - it will resolve the mock FileSystemService
+		// Create service - it will resolve the mock FileSystemService and real AbortService
 		service = new AIFunctionService();
 	});
 
@@ -211,8 +217,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			expect(result.response).toEqual({
 				results: [
 					{ path: 'exists.md', contents: 'Existing content' },
-					{ path: 'missing1.md', error: error1 },
-					{ path: 'missing2.md', error: error2 }
+					{ path: 'missing1.md', error: 'File not found' },
+					{ path: 'missing2.md', error: 'File not found' }
 				]
 			});
 		});
@@ -231,7 +237,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			const results = result.response.results;
 			expect(results[0].contents).toBe('Content A');
-			expect(results[1].error).toBeInstanceOf(Error);
+			expect(results[1].error).toBe('File not found');
 			expect(results[2].contents).toBe('Content B');
 		});
 
@@ -399,7 +405,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			expect(result.response.results).toEqual([
 				{ path: 'a.md', success: true },
-				{ path: 'missing.md', success: false, error: error },
+				{ path: 'missing.md', success: false, error: 'File not found' },
 				{ path: 'c.md', success: true }
 			]);
 		});
@@ -502,7 +508,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			expect(result.response.results).toEqual([
 				{ path: 'new/a.md', success: true },
-				{ path: 'existing.md', success: false, error: error },
+				{ path: 'existing.md', success: false, error: 'Destination exists' },
 				{ path: 'new/c.md', success: true }
 			]);
 		});

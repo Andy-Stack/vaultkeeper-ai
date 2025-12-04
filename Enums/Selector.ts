@@ -7,12 +7,5 @@ export enum Selector {
     HelpModal = "help-modal",
     ContextSettingItemDescription = "context-setting-item-description",
 
-    ApiRequestAborted = "api-request-aborted",
-    APIRequestError = "api-request-error",
-
     ErrorSelector = "error-selector"
-}
-
-export function isErrorSelector(selector: Selector) {
-    return selector === Selector.ApiRequestAborted || selector === Selector.APIRequestError;
 }

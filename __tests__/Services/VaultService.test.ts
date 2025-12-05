@@ -99,6 +99,7 @@ function createMockFolder(path: string, children: TAbstractFile[] = []): TFolder
 describe('VaultService - Integration Tests', () => {
 	let vaultService: VaultService;
 	let settingsService: SettingsService;
+	let mockDiffService: any;
 	let consoleErrorSpy: any;
 
 	beforeEach(() => {
@@ -125,8 +126,9 @@ describe('VaultService - Integration Tests', () => {
 
 		// Mock EventService and DiffService to avoid Obsidian Events dependency
 		const mockEventService = { trigger: vi.fn(), on: vi.fn(), off: vi.fn() };
-		const mockDiffService = {
+		mockDiffService = {
 			requestDiff: vi.fn().mockResolvedValue({ accepted: true }),
+			applyPatch: vi.fn(),
 			onAccept: vi.fn(),
 			onReject: vi.fn(),
 			onSuggest: vi.fn()
@@ -406,6 +408,189 @@ describe('VaultService - Integration Tests', () => {
 			await vaultService.modify(mockFile, 'new content');
 
 			expect(processCallback()).toBe('new content');
+		});
+	});
+
+	describe('patch', () => {
+		it('should apply patch successfully when file is not excluded', async () => {
+			const mockFile = createMockFile('note.md');
+			const patch = `@@ -1,3 +1,3 @@
+ # Title
+-old content
++new content
+ more lines`;
+			const currentContent = '# Title\nold content\nmore lines';
+			const patchedContent = '# Title\nnew content\nmore lines';
+
+			mockVault.read.mockResolvedValue(currentContent);
+			mockDiffService.applyPatch.mockReturnValue(patchedContent);
+			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
+			mockVault.process.mockResolvedValue(undefined);
+
+			const result = await vaultService.patch(mockFile, patch);
+
+			expect(mockVault.read).toHaveBeenCalledWith(mockFile);
+			expect(mockDiffService.applyPatch).toHaveBeenCalledWith(currentContent, patch);
+			expect(mockDiffService.requestDiff).toHaveBeenCalled();
+			expect(mockVault.process).toHaveBeenCalled();
+			expect(result).toBe(mockFile);
+		});
+
+		it('should return error when file is excluded', async () => {
+			const mockFile = createMockFile('Vaultkeeper AI/test.md');
+			const patch = `@@ -1,1 +1,1 @@
+-old
++new`;
+
+			const result = await vaultService.patch(mockFile, patch, false);
+
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toContain('File does not exist');
+			expect(mockDiffService.applyPatch).not.toHaveBeenCalled();
+			expect(mockVault.process).not.toHaveBeenCalled();
+		});
+
+		it('should return error when patch fails to apply', async () => {
+			const mockFile = createMockFile('note.md');
+			const patch = `@@ -1,1 +1,1 @@
+-old
++new`;
+			const currentContent = '# Different content';
+
+			mockVault.read.mockResolvedValue(currentContent);
+			mockDiffService.applyPatch.mockReturnValue(false);
+
+			const result = await vaultService.patch(mockFile, patch);
+
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toContain('Failed to apply patch');
+			expect(mockVault.process).not.toHaveBeenCalled();
+		});
+
+		it('should return error when patch format is invalid', async () => {
+			const mockFile = createMockFile('note.md');
+			const patch = `@@ -1,5 +1,1 @@
+-old
++new`;
+			const currentContent = 'content';
+
+			mockVault.read.mockResolvedValue(currentContent);
+			mockDiffService.applyPatch.mockReturnValue(new Error('Removed line count did not match for hunk at line 1'));
+
+			const result = await vaultService.patch(mockFile, patch);
+
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toContain('Failed to apply patch - invalid patch format');
+			expect(mockVault.process).not.toHaveBeenCalled();
+		});
+
+		it('should allow patching excluded files when allowAccessToPluginRoot is true', async () => {
+			const mockFile = createMockFile('Vaultkeeper AI/config.md');
+			const patch = `@@ -1,1 +1,1 @@
+-setting=old
++setting=new`;
+			const currentContent = 'setting=old';
+			const patchedContent = 'setting=new';
+
+			mockVault.read.mockResolvedValue(currentContent);
+			mockDiffService.applyPatch.mockReturnValue(patchedContent);
+			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
+			mockVault.process.mockResolvedValue(undefined);
+
+			const result = await vaultService.patch(mockFile, patch, true);
+
+			expect(mockVault.read).toHaveBeenCalledWith(mockFile);
+			expect(mockDiffService.applyPatch).toHaveBeenCalledWith(currentContent, patch);
+			expect(result).toBe(mockFile);
+		});
+
+		it('should request diff confirmation when requiresConfirmation is true', async () => {
+			const mockFile = createMockFile('note.md');
+			const patch = `@@ -1,1 +1,1 @@
+-old
++new`;
+			const currentContent = 'old';
+			const patchedContent = 'new';
+
+			mockVault.read.mockResolvedValue(currentContent);
+			mockDiffService.applyPatch.mockReturnValue(patchedContent);
+			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
+			mockVault.process.mockResolvedValue(undefined);
+
+			await vaultService.patch(mockFile, patch, false, true);
+
+			expect(mockDiffService.requestDiff).toHaveBeenCalledWith(
+				mockFile.name,
+				mockFile.name,
+				currentContent,
+				patchedContent
+			);
+		});
+
+		it('should handle multi-hunk patches', async () => {
+			const mockFile = createMockFile('document.md');
+			const patch = `@@ -1,3 +1,3 @@
+ # Title
+-Old intro
++New intro
+ Content
+@@ -10,2 +10,2 @@
+ Section
+-Old conclusion
++New conclusion`;
+			const currentContent = '# Title\nOld intro\nContent\n...\nSection\nOld conclusion';
+			const patchedContent = '# Title\nNew intro\nContent\n...\nSection\nNew conclusion';
+
+			mockVault.read.mockResolvedValue(currentContent);
+			mockDiffService.applyPatch.mockReturnValue(patchedContent);
+			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
+			mockVault.process.mockResolvedValue(undefined);
+
+			const result = await vaultService.patch(mockFile, patch);
+
+			expect(mockDiffService.applyPatch).toHaveBeenCalledWith(currentContent, patch);
+			expect(result).toBe(mockFile);
+		});
+
+		it('should call vault.process with function that returns patched content', async () => {
+			const mockFile = createMockFile('note.md');
+			const patch = `@@ -1,1 +1,1 @@
+-old
++new`;
+			const patchedContent = 'new';
+			let processCallback: any;
+
+			mockVault.read.mockResolvedValue('old');
+			mockDiffService.applyPatch.mockReturnValue(patchedContent);
+			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
+			mockVault.process.mockImplementation((file, fn) => {
+				processCallback = fn;
+				return Promise.resolve();
+			});
+
+			await vaultService.patch(mockFile, patch);
+
+			expect(processCallback()).toBe(patchedContent);
+		});
+
+		it('should skip confirmation when requiresConfirmation is false', async () => {
+			const mockFile = createMockFile('note.md');
+			const patch = `@@ -1,1 +1,1 @@
+-old
++new`;
+
+			mockVault.read.mockResolvedValue('old');
+			mockDiffService.applyPatch.mockReturnValue('new');
+			mockVault.process.mockResolvedValue(undefined);
+
+			// Clear previous calls
+			mockDiffService.requestDiff.mockClear();
+
+			await vaultService.patch(mockFile, patch, false, false);
+
+			// When requiresConfirmation is false, requestDiff should not be called
+			// because proposeChange should skip the diff step
+			expect(mockVault.process).toHaveBeenCalled();
 		});
 	});
 

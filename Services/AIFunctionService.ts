@@ -13,7 +13,8 @@ import {
     WriteVaultFileArgsSchema,
     DeleteVaultFilesArgsSchema,
     MoveVaultFilesArgsSchema,
-    ListVaultFilesArgsSchema
+    ListVaultFilesArgsSchema,
+    PatchVaultFileArgsSchema
 } from "AIClasses/Schemas/AIFunctionSchemas";
 
 export class AIFunctionService {
@@ -63,6 +64,18 @@ export class AIFunctionService {
                         );
                     }
                     return new AIFunctionResponse(functionCall.name, await this.writeVaultFile(parseResult.data.file_path, parseResult.data.content), functionCall.toolId);
+                }
+
+                case AIFunction.PatchVaultFile: {
+                    const parseResult = PatchVaultFileArgsSchema.safeParse(functionCall.arguments);
+                    if (!parseResult.success) {
+                        return new AIFunctionResponse(
+                            functionCall.name,
+                            { error: `Invalid arguments for PatchVaultFile: ${parseResult.error.message}` },
+                            functionCall.toolId
+                        );
+                    }
+                    return new AIFunctionResponse(functionCall.name, await this.patchVaultFile(parseResult.data.file_path, parseResult.data.patch), functionCall.toolId);
                 }
     
                 case AIFunction.DeleteVaultFiles: {
@@ -153,6 +166,14 @@ export class AIFunctionService {
 
     private async writeVaultFile(filePath: string, content: string): Promise<object> {
         const result = await this.fileSystemService.writeFile(normalizePath(filePath), content);
+        if (result instanceof Error) {
+            return { success: false, error: result.message };
+        }
+        return { success: true };
+    }
+
+    private async patchVaultFile(filePath: string, patch: string): Promise<object> {
+        const result = await this.fileSystemService.patchFile(normalizePath(filePath), patch);
         if (result instanceof Error) {
             return { success: false, error: result.message };
         }

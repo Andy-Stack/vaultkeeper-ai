@@ -106,8 +106,32 @@ export class VaultService {
             return Exception.new(`File does not exist: ${filePath}`);
         }
 
-        return this.proposeChange(file.name, file.name, await this.vault.read(file), content, requiresConfirmation, async () => {
+        return this.proposeChange(file.name, file.name, await this.read(file, allowAccessToPluginRoot), content, requiresConfirmation, async () => {
             await this.vault.process(file, () => content);
+            return file;
+        });
+    }
+
+    public async patch(file: TFile, patch: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+        const filePath = this.sanitiserService.sanitize(file.path);
+        if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
+            Exception.log(`Plugin attempted to patch a file that is in the exclusion list: ${filePath}`);
+            return Exception.new(`File does not exist: ${filePath}`);
+        }
+
+        const currentContent = await this.read(file, allowAccessToPluginRoot);
+        const patchedContent = this.diffService.applyPatch(currentContent, patch);
+
+        if (patchedContent instanceof Error) {
+            return Exception.new(`Failed to apply patch - invalid patch format. ${patchedContent.message}`);
+        }
+
+        if (patchedContent === false) {
+            return Exception.new("Failed to apply patch - the file may have been modified since the patch was created");
+        }
+
+        return this.proposeChange(file.name, file.name, currentContent, patchedContent, requiresConfirmation, async () => {
+            await this.vault.process(file, () => patchedContent);
             return file;
         });
     }
@@ -121,7 +145,7 @@ export class VaultService {
 
         // handle file deletion
         if (file instanceof TFile) {
-            return this.proposeChange(file.name, file.name, await this.vault.read(file), "", requiresConfirmation, async () => {
+            return this.proposeChange(file.name, file.name, await this.read(file, allowAccessToPluginRoot), "", requiresConfirmation, async () => {
                 await this.fileManager.trashFile(file);    
             });
         }

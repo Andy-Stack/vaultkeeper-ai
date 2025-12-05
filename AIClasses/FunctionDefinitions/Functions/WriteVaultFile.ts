@@ -4,9 +4,11 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 export const WriteVaultFile: IAIFunctionDefinition = {
     name: AIFunction.WriteVaultFile,
     description: `Writes content to a file, creating it if it doesn't exist or replacing its contents if it does.
-                  Use this for creating new notes or completely updating existing ones when you have the full content ready.
-                  IMPORTANT: This replaces the entire file content - always read the file first with ${AIFunction.ReadVaultFiles} if you need to preserve existing content and make partial changes.
-                  For simple updates or additions, reading first ensures you don't lose data.`,
+                  
+                  **When to use this tool:**
+                  - Creating new notes, documents, or files from scratch
+                  - Completely rewriting a file's contents (when most/all content needs to change)
+                  - Generating new files from templates or structured data`,
     parameters: {
         type: "object",
         properties: {
@@ -20,7 +22,7 @@ export const WriteVaultFile: IAIFunctionDefinition = {
             },
             user_message: {
                 type: "string",
-                description: "A short message to be displayed to the user explaining what you're writing and why (e.g., 'Creating your daily note for today' or 'Updating project plan with new tasks')"
+                description: "A short message to be displayed to the user explaining what you're writing and why (e.g., 'Creating your daily note for today')"
             }
         },
         required: ["file_path", "content", "user_message"]

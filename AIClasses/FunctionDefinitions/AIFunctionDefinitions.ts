@@ -5,6 +5,7 @@ import { WriteVaultFile } from "./Functions/WriteVaultFile";
 import { DeleteVaultFiles } from "./Functions/DeleteVaultFiles";
 import { MoveVaultFiles } from "./Functions/MoveVaultFiles";
 import { ListVaultFiles } from "./Functions/ListVaultFiles";
+import { PatchVaultFile } from "./Functions/PatchVaultFile";
 
 export class AIFunctionDefinitions {
     public getQueryActions(destructive: boolean): IAIFunctionDefinition[] {
@@ -17,6 +18,7 @@ export class AIFunctionDefinitions {
         if (destructive) {
             actions = actions.concat([
                 WriteVaultFile,
+                PatchVaultFile,
                 DeleteVaultFiles,
                 MoveVaultFiles
             ]);

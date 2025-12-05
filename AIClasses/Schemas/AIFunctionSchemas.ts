@@ -21,6 +21,12 @@ export const WriteVaultFileArgsSchema = z.object({
 	user_message: z.string()
 });
 
+export const PatchVaultFileArgsSchema = z.object({
+	file_path: z.string(),
+	patch: z.string(),
+	user_message: z.string()
+});
+
 export const DeleteVaultFilesArgsSchema = z.object({
 	file_paths: z.array(z.string()),
 	user_message: z.string(),
@@ -43,6 +49,7 @@ export const ListVaultFilesArgsSchema = z.object({
 export type SearchVaultFilesArgs = z.infer<typeof SearchVaultFilesArgsSchema>;
 export type ReadVaultFilesArgs = z.infer<typeof ReadVaultFilesArgsSchema>;
 export type WriteVaultFileArgs = z.infer<typeof WriteVaultFileArgsSchema>;
+export type PatchVaultFileArgs = z.infer<typeof PatchVaultFileArgsSchema>;
 export type DeleteVaultFilesArgs = z.infer<typeof DeleteVaultFilesArgsSchema>;
 export type MoveVaultFilesArgs = z.infer<typeof MoveVaultFilesArgsSchema>;
 export type ListVaultFilesArgs = z.infer<typeof ListVaultFilesArgsSchema>;

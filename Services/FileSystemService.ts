@@ -33,6 +33,24 @@ export class FileSystemService {
         return await this.vaultService.modify(file, content, allowAccessToPluginRoot, requiresConfirmation);
     }
 
+    public async patchFile(filePath: string, patch: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+        const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
+
+        let fileToPatch: TFile;
+        if (file instanceof TFile) {
+            fileToPatch = file;
+        } else {
+            // if the file doesn't exist we may as well create it even though this is just a patch operation
+            const result = await this.writeFile(filePath, "", allowAccessToPluginRoot, requiresConfirmation);
+            if (result instanceof Error) {
+                return result;
+            }
+            fileToPatch = result;
+        }
+
+        return await this.vaultService.patch(fileToPatch, patch, allowAccessToPluginRoot, requiresConfirmation);
+    }
+
     public async deleteFile(filePath: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<Error | void> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 

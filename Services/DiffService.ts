@@ -8,6 +8,7 @@ import type { Diff2HtmlUIConfig } from 'diff2html/lib/ui/js/diff2html-ui';
 import { ColorSchemeType, OutputFormatType } from 'diff2html/lib/types';
 import { Component } from 'obsidian';
 import { AbortService } from './AbortService';
+import { Exception } from 'Helpers/Exception';
 
 interface DiffResult {
     accepted: boolean;
@@ -33,6 +34,14 @@ export class DiffService extends Component {
         this.registerEvent(this.eventService.on(Event.DiffClosed, () => {
             this.cancelPendingDiff();
         }));
+    }
+
+    public applyPatch(source: string, patch: string): string | false | Error {
+        try {
+            return Diff.applyPatch(source, patch);
+        } catch (error) {
+            return Exception.new(error);
+        }
     }
 
     public async requestDiff(oldFileName: string, newFileName: string, oldContent: string, newContent: string): Promise<DiffResult> {

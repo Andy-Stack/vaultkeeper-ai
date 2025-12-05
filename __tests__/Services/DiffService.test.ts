@@ -824,4 +824,129 @@ describe('DiffService', () => {
 			expect(() => new DiffService()).toThrow();
 		});
 	});
+
+	describe('applyPatch', () => {
+		it('should successfully apply a valid patch', () => {
+			const source = 'line 1\nline 2\nline 3';
+			const patch = `--- test.md
++++ test.md
+@@ -1,3 +1,3 @@
+ line 1
+-line 2
++line 2 modified
+ line 3`;
+
+			const result = service.applyPatch(source, patch);
+
+			expect(result).toBe('line 1\nline 2 modified\nline 3');
+		});
+
+		it('should return false when patch does not match source', () => {
+			const source = 'different content';
+			const patch = `--- test.md
++++ test.md
+@@ -1,3 +1,3 @@
+ line 1
+-line 2
++line 2 modified
+ line 3`;
+
+			const result = service.applyPatch(source, patch);
+
+			expect(result).toBe(false);
+		});
+
+		it('should return Error when patch format is invalid', () => {
+			const source = 'line 1\nline 2';
+			const patch = `--- test.md
++++ test.md
+@@ -1,5 +1,2 @@
+-line 1
++modified`;
+
+			const result = service.applyPatch(source, patch);
+
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toContain('line count did not match');
+		});
+
+		it('should return false when patch has malformed hunk header', () => {
+			const source = 'content';
+			const patch = `--- test.md
++++ test.md
+@@ invalid header @@
+-old
++new`;
+
+			const result = service.applyPatch(source, patch);
+
+			// Malformed headers result in patch not applying (returns false)
+			expect(result).toBe(false);
+		});
+
+		it('should handle empty source', () => {
+			const source = '';
+			const patch = `--- test.md
++++ test.md
+@@ -0,0 +1,2 @@
++line 1
++line 2`;
+
+			const result = service.applyPatch(source, patch);
+
+			// applyPatch adds a trailing newline
+			expect(result).toBe('line 1\nline 2\n');
+		});
+
+		it('should handle patch that removes all content', () => {
+			const source = 'line 1\nline 2';
+			const patch = `--- test.md
++++ test.md
+@@ -1,2 +0,0 @@
+-line 1
+-line 2`;
+
+			const result = service.applyPatch(source, patch);
+
+			expect(result).toBe('');
+		});
+
+		it('should return Error when patch has extra lines (real-world case)', () => {
+			// Based on actual failure: AI provided more lines than declared in header
+			const source = 'line 1\nline 2\nline 3';
+			const patch = `--- test.md
++++ test.md
+@@ -1,3 +1,4 @@
+ line 1
+ line 2
+ line 3
++new line
+ extra line`;  // This is 5 lines total but header says 3 old, 4 new
+
+			const result = service.applyPatch(source, patch);
+
+			expect(result).toBeInstanceOf(Error);
+			// Error message varies: could be "Unknown line" or "line count did not match"
+			expect((result as Error).message).toMatch(/Unknown line|line count did not match/);
+		});
+
+		it('should return Error when missing blank lines (real-world case)', () => {
+			// Based on actual failure: AI missing consecutive blank lines
+			const source = 'text\n\n\n---\nmore text';  // Two blank lines before ---
+			const patch = `--- test.md
++++ test.md
+@@ -1,5 +1,6 @@
+ text
+
++inserted line
+ ---
+ more text`;  // Only one blank line - doesn't match header count!
+
+			const result = service.applyPatch(source, patch);
+
+			// This throws because line count doesn't match (header says 5->6 but only shows 4->5)
+			expect(result).toBeInstanceOf(Error);
+			expect((result as Error).message).toContain('line count did not match');
+		});
+	});
 });

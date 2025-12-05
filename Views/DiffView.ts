@@ -68,6 +68,12 @@ export class DiffView extends ItemView {
         const diff2htmlUi = new Diff2HtmlUI(this.diffContainer, this.diffString, this.config);
 
         diff2htmlUi.draw();
+        diff2htmlUi.highlightCode();
+
+        requestAnimationFrame(() => {
+            const firstChange = this.diffContainer?.querySelector('.d2h-change, .d2h-ins, .d2h-del');
+            firstChange?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
     }
 
     private resetContainer(): HTMLElement {

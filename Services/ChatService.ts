@@ -108,8 +108,8 @@ export class ChatService {
 			if (AbortService.isAbortError(error)) {
 				callbacks.onCancel();
 			}
+			new Notice("Vaultkeeper AI encountered an error");
 		} finally {
-			// reset "Cancelling..." flag this needs to get to window (window may actually handle this itself)
 			this.eventService.trigger(Event.DiffClosed);
 			await this.saveConversation(conversation);
 			if (this.semaphoreHeld) {

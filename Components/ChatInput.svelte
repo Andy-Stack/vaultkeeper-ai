@@ -58,7 +58,11 @@
   }
 
   $: if (submitButton) {
-    setIcon(submitButton, diffOpen || !isSubmitting ? "send-horizontal" : "square");
+    if (diffOpen) {
+      setIcon(submitButton, userRequest.trim() === "" ? "square" : "send-horizontal");
+    } else {
+      setIcon(submitButton, isSubmitting ? "square" : "send-horizontal");
+    }
   }
 
   $: if (editModeButton) {
@@ -349,9 +353,15 @@
     id="submit-button"
     class:edit-mode={editModeActive}
     bind:this={submitButton}
-    on:click={() => { diffOpen ? handleSuggestion() : isSubmitting ? handleStop() : handleSubmit() }}
-    disabled={!isSubmitting && userRequest.trim() === ""}
-    aria-label={isSubmitting ? "Cancel" : "Send Message"}>
+    on:click={() => {
+      if (diffOpen) {
+        userRequest.trim() === "" ? handleStop() : handleSuggestion();
+      } else {
+        isSubmitting ? handleStop() : handleSubmit();
+      }
+    }}
+    disabled={diffOpen ? false : !isSubmitting && userRequest.trim() === ""}
+    aria-label={diffOpen ? (userRequest.trim() === "" ? "Cancel" : "Make Suggestion") : (isSubmitting ? "Cancel" : "Send Message")}>
   </button>
 </div>
 

@@ -2,13 +2,16 @@
 
 /* Main diff container background */
 .d2h-wrapper {
+    container-type: size;
+    container-name: diff-wrapper;
     transform: translateZ(0);
     background-color: var(--background-primary) !important;
-    box-shadow: 0px 0px 4px 1px var(--color-accent) !important;
+    height: 100cqh;
 }
 
 /* File header background */
 .d2h-file-header {
+    height: 35px;
     background-color: var(--background-primary) !important;
     border-color: var(--background-modifier-border) !important;
 }
@@ -44,27 +47,7 @@
     overflow: auto;
     background-color: var(--background-primary) !important;
     border-color: var(--background-modifier-border) !important;
-}
-
-/* File diff size */
-@container diff-container (max-height: 199px) {
-    .d2h-file-diff { max-height: 90cqh; }
-}
-
-@container diff-container (min-height: 200px) {
-    .d2h-file-diff { max-height: 95cqh; }
-}
-
-@container diff-container (min-height: 400px) {
-    .d2h-file-diff { max-height: 97cqh; }
-}
-
-@container diff-container (min-height: 550px) {
-    .d2h-file-diff { max-height: 98cqh; }
-}
-
-@container diff-container (min-height: 1000px) {
-    .d2h-file-diff { max-height: 99cqh; }
+    max-height: calc(100cqh - 37px);
 }
 
 /* Empty placeholder */

@@ -348,61 +348,58 @@ describe('AIFunctionService - Integration Tests', () => {
 		it('should apply patch successfully', async () => {
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('notes/test.md', 'test'));
 
-			const patch = `@@ -1,3 +1,3 @@
- # Test Note
--old content
-+new content
- more content`;
+			const oldContent = 'old content';
+			const newContent = 'new content';
 
 			const result = await service.performAIFunction({
 				name: AIFunction.PatchVaultFile,
 				arguments: {
 					file_path: 'notes/test.md',
-					patch: patch,
+					oldContent: oldContent,
+					newContent: newContent,
 					user_message: 'Updating test note'
 				},
 				toolId: 'tool_patch_1'
 			} as any);
 
-			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('notes/test.md', patch);
+			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('notes/test.md', oldContent, newContent);
 			expect(result.response).toEqual({ success: true });
 		});
 
 		it('should handle patch failure', async () => {
-			const error = new Error('Failed to apply patch - the file may have been modified since the patch was created');
+			const error = new Error('Content to replace was not found in the file');
 			mockFileSystemService.patchFile.mockResolvedValue(error);
 
-			const patch = `@@ -1,3 +1,3 @@
- # Test
--old
-+new`;
+			const oldContent = 'old content';
+			const newContent = 'new content';
 
 			const result = await service.performAIFunction({
 				name: AIFunction.PatchVaultFile,
 				arguments: {
 					file_path: 'notes/test.md',
-					patch: patch,
+					oldContent: oldContent,
+					newContent: newContent,
 					user_message: 'Updating note'
 				},
 				toolId: 'tool_patch_2'
 			} as any);
 
 			expect(result.response.success).toBe(false);
-			expect(result.response.error).toBe('Failed to apply patch - the file may have been modified since the patch was created');
+			expect(result.response.error).toBe('Content to replace was not found in the file');
 		});
 
 		it('should normalize file path', async () => {
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('folder/file.md', 'file'));
 
-			const patch = `@@ -1,1 +1,1 @@
--old
-+new`;
+			const oldContent = 'old';
+			const newContent = 'new';
 
 			await service.performAIFunction({
 				name: AIFunction.PatchVaultFile,
 				arguments: {
 					file_path: 'folder\\subfolder\\file.md',
-					patch: patch,
+					oldContent: oldContent,
+					newContent: newContent,
 					user_message: 'Patching file'
 				},
 				toolId: 'tool_patch_3'
@@ -411,7 +408,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			// normalizePath should convert backslashes to forward slashes
 			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith(
 				expect.stringContaining('/'),
-				patch
+				oldContent,
+				newContent
 			);
 		});
 
@@ -419,15 +417,15 @@ describe('AIFunctionService - Integration Tests', () => {
 			const error = new Error('File does not exist: missing.md');
 			mockFileSystemService.patchFile.mockResolvedValue(error);
 
-			const patch = `@@ -1,1 +1,1 @@
--old
-+new`;
+			const oldContent = 'old';
+			const newContent = 'new';
 
 			const result = await service.performAIFunction({
 				name: AIFunction.PatchVaultFile,
 				arguments: {
 					file_path: 'missing.md',
-					patch: patch,
+					oldContent: oldContent,
+					newContent: newContent,
 					user_message: 'Patching missing file'
 				},
 				toolId: 'tool_patch_4'
@@ -437,48 +435,39 @@ describe('AIFunctionService - Integration Tests', () => {
 			expect(result.response.error).toContain('File does not exist');
 		});
 
-		it('should handle complex multi-hunk patch', async () => {
+		it('should handle complex multi-line replacement', async () => {
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('complex.md', 'complex'));
 
-			const patch = `@@ -1,3 +1,3 @@
- # Title
--Old line 1
-+New line 1
- Context line
-@@ -10,3 +10,3 @@
- Another context
--Old line 2
-+New line 2
- Final context`;
+			const oldContent = '# Title\nOld line 1\nContext line';
+			const newContent = '# Title\nNew line 1\nContext line';
 
 			const result = await service.performAIFunction({
 				name: AIFunction.PatchVaultFile,
 				arguments: {
 					file_path: 'complex.md',
-					patch: patch,
+					oldContent: oldContent,
+					newContent: newContent,
 					user_message: 'Applying complex patch'
 				},
 				toolId: 'tool_patch_5'
 			} as any);
 
-			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('complex.md', patch);
+			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('complex.md', oldContent, newContent);
 			expect(result.response.success).toBe(true);
 		});
 
-		it('should handle patch with additions only', async () => {
+		it('should handle adding new content', async () => {
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('additions.md', 'additions'));
 
-			const patch = `@@ -1,2 +1,4 @@
- # Title
- Existing content
-+New line 1
-+New line 2`;
+			const oldContent = '# Title\nExisting content';
+			const newContent = '# Title\nExisting content\nNew line 1\nNew line 2';
 
 			const result = await service.performAIFunction({
 				name: AIFunction.PatchVaultFile,
 				arguments: {
 					file_path: 'additions.md',
-					patch: patch,
+					oldContent: oldContent,
+					newContent: newContent,
 					user_message: 'Adding new lines'
 				},
 				toolId: 'tool_patch_6'
@@ -487,20 +476,18 @@ describe('AIFunctionService - Integration Tests', () => {
 			expect(result.response.success).toBe(true);
 		});
 
-		it('should handle patch with deletions only', async () => {
+		it('should handle removing content', async () => {
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('deletions.md', 'deletions'));
 
-			const patch = `@@ -1,4 +1,2 @@
- # Title
--Line to remove 1
--Line to remove 2
- Remaining content`;
+			const oldContent = '# Title\nLine to remove 1\nLine to remove 2\nRemaining content';
+			const newContent = '# Title\nRemaining content';
 
 			const result = await service.performAIFunction({
 				name: AIFunction.PatchVaultFile,
 				arguments: {
 					file_path: 'deletions.md',
-					patch: patch,
+					oldContent: oldContent,
+					newContent: newContent,
 					user_message: 'Removing lines'
 				},
 				toolId: 'tool_patch_7'
@@ -513,15 +500,15 @@ describe('AIFunctionService - Integration Tests', () => {
 			const error = new Error('Permission denied');
 			mockFileSystemService.patchFile.mockResolvedValue(error);
 
-			const patch = `@@ -1,1 +1,1 @@
--old
-+new`;
+			const oldContent = 'old';
+			const newContent = 'new';
 
 			const result = await service.performAIFunction({
 				name: AIFunction.PatchVaultFile,
 				arguments: {
 					file_path: 'protected.md',
-					patch: patch,
+					oldContent: oldContent,
+					newContent: newContent,
 					user_message: 'Patching protected file'
 				},
 				toolId: 'tool_patch_8'
@@ -534,15 +521,15 @@ describe('AIFunctionService - Integration Tests', () => {
 		it('should return correct toolId in response', async () => {
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('test.md', 'test'));
 
-			const patch = `@@ -1,1 +1,1 @@
--old
-+new`;
+			const oldContent = 'old';
+			const newContent = 'new';
 
 			const result = await service.performAIFunction({
 				name: AIFunction.PatchVaultFile,
 				arguments: {
 					file_path: 'test.md',
-					patch: patch,
+					oldContent: oldContent,
+					newContent: newContent,
 					user_message: 'Test patch'
 				},
 				toolId: 'unique_tool_id_123'
@@ -558,7 +545,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				arguments: {
 					// missing required fields
 					file_path: 'test.md'
-					// patch and user_message are missing
+					// oldContent, newContent and user_message are missing
 				},
 				toolId: 'tool_patch_invalid'
 			} as any);
@@ -904,24 +891,22 @@ describe('AIFunctionService - Integration Tests', () => {
 			// Then patch it
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('document.md', 'document'));
 
-			const patch = `@@ -1,3 +1,3 @@
--# Original Title
-+# Updated Title
-
- Original content`;
+			const oldContent = '# Original Title';
+			const newContent = '# Updated Title';
 
 			const patchResult = await service.performAIFunction({
 				name: AIFunction.PatchVaultFile,
 				arguments: {
 					file_path: 'document.md',
-					patch: patch,
+					oldContent: oldContent,
+					newContent: newContent,
 					user_message: 'Updating title'
 				},
 				toolId: 'patch_1'
 			} as any);
 
 			expect(patchResult.response.success).toBe(true);
-			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('document.md', patch);
+			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('document.md', oldContent, newContent);
 		});
 	});
 });

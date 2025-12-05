@@ -34,13 +34,13 @@
   }
 
   async function deleteCurrentConversation() {
-    chatService.stop();
     const result = await conversationFileSystemService.deleteCurrentConversation();
 
     if (result instanceof Error) {
       new Notice(`Failed to delete conversation data for '${conversationFileSystemService.getCurrentConversationPath()}'`);
     }
 
+    chatService.stop();
     conversationStore.reset();
     onNewConversation?.();
     conversationTitle = "";

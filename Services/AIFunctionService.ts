@@ -75,7 +75,7 @@ export class AIFunctionService {
                             functionCall.toolId
                         );
                     }
-                    return new AIFunctionResponse(functionCall.name, await this.patchVaultFile(parseResult.data.file_path, parseResult.data.patch), functionCall.toolId);
+                    return new AIFunctionResponse(functionCall.name, await this.patchVaultFile(parseResult.data.file_path, parseResult.data.oldContent, parseResult.data.newContent), functionCall.toolId);
                 }
     
                 case AIFunction.DeleteVaultFiles: {
@@ -172,8 +172,8 @@ export class AIFunctionService {
         return { success: true };
     }
 
-    private async patchVaultFile(filePath: string, patch: string): Promise<object> {
-        const result = await this.fileSystemService.patchFile(normalizePath(filePath), patch);
+    private async patchVaultFile(filePath: string, oldContent: string, newContent: string): Promise<object> {
+        const result = await this.fileSystemService.patchFile(normalizePath(filePath), oldContent, newContent);
         if (result instanceof Error) {
             return { success: false, error: result.message };
         }

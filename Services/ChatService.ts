@@ -107,8 +107,9 @@ export class ChatService {
 		} catch (error) {
 			if (AbortService.isAbortError(error)) {
 				callbacks.onCancel();
+			} else {
+				new Notice("Vaultkeeper AI encountered an error");
 			}
-			new Notice("Vaultkeeper AI encountered an error");
 		} finally {
 			this.eventService.trigger(Event.DiffClosed);
 			await this.saveConversation(conversation);

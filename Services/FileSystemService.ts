@@ -33,7 +33,7 @@ export class FileSystemService {
         return await this.vaultService.modify(file, content, allowAccessToPluginRoot, requiresConfirmation);
     }
 
-    public async patchFile(filePath: string, patch: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+    public async patchFile(filePath: string, oldContent: string, newContent: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 
         let fileToPatch: TFile;
@@ -48,7 +48,7 @@ export class FileSystemService {
             fileToPatch = result;
         }
 
-        return await this.vaultService.patch(fileToPatch, patch, allowAccessToPluginRoot, requiresConfirmation);
+        return await this.vaultService.patch(fileToPatch, oldContent, newContent, allowAccessToPluginRoot, requiresConfirmation);
     }
 
     public async deleteFile(filePath: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<Error | void> {

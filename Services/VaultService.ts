@@ -112,7 +112,7 @@ export class VaultService {
         });
     }
 
-    public async patch(file: TFile, patch: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+    public async patch(file: TFile, oldContent: string, newContent: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const filePath = this.sanitiserService.sanitize(file.path);
         if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
             Exception.log(`Plugin attempted to patch a file that is in the exclusion list: ${filePath}`);
@@ -120,18 +120,15 @@ export class VaultService {
         }
 
         const currentContent = await this.read(file, allowAccessToPluginRoot);
-        const patchedContent = this.diffService.applyPatch(currentContent, patch);
 
-        if (patchedContent instanceof Error) {
-            return Exception.new(`Failed to apply patch - invalid patch format. ${patchedContent.message}`);
+        if (!currentContent.includes(oldContent)) {
+            return Exception.new(`Content to replace was not found in the file. The old content must match exactly.`);
         }
 
-        if (patchedContent === false) {
-            return Exception.new("Failed to apply patch - the file may have been modified since the patch was created");
-        }
+        const updatedContent = currentContent.replace(oldContent, newContent);
 
-        return this.proposeChange(file.name, file.name, currentContent, patchedContent, requiresConfirmation, async () => {
-            await this.vault.process(file, () => patchedContent);
+        return this.proposeChange(file.name, file.name, currentContent, updatedContent, requiresConfirmation, async () => {
+            await this.vault.process(file, () => updatedContent);
             return file;
         });
     }

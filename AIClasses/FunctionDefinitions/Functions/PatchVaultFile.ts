@@ -3,16 +3,17 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 
 export const PatchVaultFile: IAIFunctionDefinition = {
     name: AIFunction.PatchVaultFile,
-    description: `Apply targeted changes to an existing file in the vault using a unified diff patch format.
+    description: `Apply targeted changes to an existing file in the vault by finding and replacing specific content.
 
-                  This tool efficiently modifies specific sections of a file without requiring the entire file content to be sent. The patch follows standard unified diff format (similar to git diff output).
+                  This tool modifies specific sections of a file by matching exact content and replacing it with new content. It works by performing a direct string match and replace operation.
 
                   **When to use this tool:**
                   - Making small, targeted edits to large files (a few lines changed)
                   - Edits in the middle of a file where you have clear surrounding context
                   - Simple line additions, deletions, or replacements with minimal changes
+                  - When you know the exact content that needs to be changed
 
-                  **CRITICAL:** The patch must match the existing file content EXACTLY - blank lines, spaces and exact line contents should all correspond to the current state of the file.`,
+                  **CRITICAL:** The content to match must be EXACTLY as it appears in the file - including all whitespace, indentation, blank lines, and line breaks.`,
     parameters: {
         type: "object",
         properties: {
@@ -20,35 +21,33 @@ export const PatchVaultFile: IAIFunctionDefinition = {
                 type: "string",
                 description: "The full path to the file within the vault (e.g., 'folder/note.md')"
             },
-            patch: {
+            oldContent: {
                 type: "string",
-                description: `A unified diff format patch string showing the changes to apply.
+                description: `The exact content to find and replace in the file.
 
-                              CRITICAL FORMAT REQUIREMENTS:
-                              - Must follow standard unified diff format with @@ line markers
-                              - Line counts in @@ headers MUST be exact (e.g., @@ -10,5 +10,6 @@ means 5 old lines, 6 new lines)
-                              - Include ALL blank/empty lines exactly as they appear in the source file
-                              - Context lines (no prefix) must match the file content EXACTLY including whitespace
-                              - Use '+' prefix for added lines and '-' prefix for removed lines (no space after prefix)
-                              - Context lines should have a single space prefix
+                              CRITICAL MATCHING REQUIREMENTS:
+                              - Must match the file content EXACTLY character-for-character
+                              - Include all whitespace, indentation, and line breaks exactly as they appear
+                              - Include enough context to make the match unique within the file
+                              - Typically include 2-3 lines before and after the change for context
+                              - Match complete lines/statements to avoid breaking code structure
+                              - Preserve all blank lines that exist in the original
 
-                              Example (adding a line after line 10):
-                              @@ -10,3 +10,4 @@
-                               existing line before
-                               existing line where we insert
-                              +new content to add
-                               existing line after
-
-                              WARNING: The patch will fail if:
-                              - Line counts don't match the actual number of lines shown
-                              - Blank lines are missing or extra blank lines are included
-                              - Context lines don't exactly match the file content`
+                              WARNING: The replacement will fail if:
+                              - The content doesn't exist in the file
+                              - Whitespace/indentation doesn't match exactly
+                              - The match is ambiguous (appears multiple times in the file)
+                              - Line breaks are missing or incorrect`
+            },
+            newContent: {
+                type: "string",
+                description: `The new content that will replace the old content. Ensure proper indentation and formatting matches the surrounding code.`
             },
             user_message: {
                 type: "string",
                 description: "A short message to be displayed to the user explaining what you're writing and why (e.g., 'Updating project plan with new tasks')"
             }
         },
-        required: ["file_path", "patch", "user_message"]
+        required: ["file_path", "oldContent", "newContent", "user_message"]
     }
 }

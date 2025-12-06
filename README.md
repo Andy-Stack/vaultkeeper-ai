@@ -15,12 +15,13 @@
 - **Two Operating Modes**
   - 🔍 **Read-Only Mode**: AI can search, read, and list your notes safely
   - ✏️ **Agent Mode**: AI can create, edit, delete, and move notes (when you need it)
+- **Interactive Diff Viewer** - Review and approve AI-proposed changes before they're applied with side-by-side diff view
 - **Smart Reference System** - Mention tags (`#`), files (`@`), and folders (`/`) with autocomplete
 - **Custom System Instructions** - Create and switch between personalized AI behaviors
 - **Conversation Management** - Persistent chat history with automatic conversation naming
 - **Privacy Controls** - Exclude sensitive files and directories from AI access with glob patterns
 - **Token Tracking** - Real-time monitoring of API usage with configurable search limits
-- **Mobile Compatible** - Full functionality on mobile devices
+- **Mobile Compatible** - Full functionality on mobile devices with touch-friendly controls
 - **Streaming Responses** - See AI responses as they're generated
 - **Local & Private** - API keys stored locally, no data sent to third parties
 
@@ -65,17 +66,18 @@ The plugin supports multiple AI models:
 **Claude (Anthropic)**
 
 - Claude Sonnet 4.5 ⚡ (Recommended)
-- Claude Opus 4.1, 4
+- Claude Opus 4.5, 4.1, 4
 - Claude Haiku 4.5
 
 **Gemini (Google)**
 
+- Gemini 3 Pro Preview
 - Gemini 2.5 Flash, Pro
 - Gemini 2.5 Flash Lite
 
 **OpenAI**
 
-- GPT-5 (Pro, Mini, Nano)
+- GPT-5.1, GPT-5 (Pro, Mini, Nano)
 - GPT-4o, GPT-4.1
 
 Switch models anytime in the settings without losing your conversation context.
@@ -97,6 +99,17 @@ Toggle to **Agent Mode** ✏️ when you need the AI to:
 - Move/rename files
 
 The mode toggle is clearly visible in the chat input area with visual indicators.
+
+### Interactive Diff Viewer
+
+When the AI proposes changes to your files in Agent Mode, an interactive diff viewer appears that lets you:
+
+- **Review Changes**: See a side-by-side comparison of the current file and proposed changes
+- **Approve or Reject**: Accept the changes to apply them, or reject to cancel
+- **Provide Feedback**: Suggest modifications before accepting by typing your feedback and clicking the suggestion button
+- **Mobile Support**: Touch-friendly Accept/Reject buttons on mobile devices
+
+The diff viewer ensures you're always in control of what changes are made to your vault, providing transparency and safety when working with AI-generated edits.
 
 ### Reference System
 
@@ -307,6 +320,10 @@ This plugin is built on the shoulders of many excellent projects:
 - [Shiki](https://shiki.style/) - Modern syntax highlighting
 - [rehype-sanitize](https://github.com/rehypejs/rehype-sanitize) - HTML sanitization for security
 
+**Diff & Code Review**
+- [diff](https://github.com/kpdecker/jsdiff) - Text diffing library for change detection
+- [diff2html](https://github.com/rtfpessoa/diff2html) - Beautiful side-by-side diff viewer
+
 **Utilities**
 - [fuzzysort](https://github.com/farzher/fuzzysort) - Fuzzy search for reference autocomplete
 - [gpt-tokenizer](https://github.com/niieani/gpt-tokenizer) - Token counting and usage tracking
@@ -321,6 +338,7 @@ This plugin is built on the shoulders of many excellent projects:
 **CSS**
 - [Loader](https://uiverse.io/Li-Deheng/bright-firefox-37) - Animated streaming indicator adapted from original by Li-Deheng
 - [Gradient Border](https://codepen.io/alphardex/pen/vYEYGzp) - Animated border adapted from original by alphardex
+- [Cancellation Indicator](https://codepen.io/aybukeceylan/pen/abLNeox) - Animated cancellation spinner adapted from original by Aybüke Ceylan
 
 ---
 

@@ -1,3 +1,4 @@
+import { Exception } from "Helpers/Exception";
 import { isSearchTriggerElement } from "../Enums/SearchTrigger";
 
 export class InputService {
@@ -127,7 +128,7 @@ export class InputService {
             return false;
             
         } catch (error) {
-            console.error("Error setting cursor position:", error);
+            Exception.log(error);
             return false;
         }
     }
@@ -334,7 +335,7 @@ export class InputService {
             this.ensureCursorNotInNonEditableElement(element);
             
         } catch (error) {
-            console.error("Error deleting text range:", error);
+            Exception.log(error);
         }
     }
     
@@ -409,7 +410,7 @@ export class InputService {
             selection.addRange(range);
             container.focus();
         } catch (error) {
-            console.error("Error positioning cursor:", error);
+            Exception.log(error);
         }
     }
 

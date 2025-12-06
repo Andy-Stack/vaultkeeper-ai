@@ -783,8 +783,6 @@ describe('AIFunctionService - Integration Tests', () => {
 
 	describe('performAIFunction - Unknown Function', () => {
 		it('should return error for unknown function', async () => {
-			const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
 			const result = await service.performAIFunction({
 				name: 'UnknownFunction' as any,
 				arguments: {},
@@ -794,9 +792,6 @@ describe('AIFunctionService - Integration Tests', () => {
 			expect(result.response).toEqual({
 				error: 'Unknown function request UnknownFunction'
 			});
-			expect(consoleSpy).toHaveBeenCalledWith('Unknown function request UnknownFunction');
-
-			consoleSpy.mockRestore();
 		});
 
 		it('should preserve toolId in error response', async () => {

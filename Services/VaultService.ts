@@ -291,7 +291,7 @@ export class VaultService {
 
                     return null;
                 } catch (error) {
-                    console.error(`Error processing file ${file.path}:`, error);
+                    Exception.log(error);
                     return null;
                 }
             });

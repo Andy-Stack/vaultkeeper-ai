@@ -16,6 +16,7 @@ import { Notice } from "obsidian";
 import type { EventService } from "./EventService";
 import { Event } from "Enums/Event";
 import { AbortService } from "./AbortService";
+import { Exception } from "Helpers/Exception";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
@@ -108,6 +109,7 @@ export class ChatService {
 			if (AbortService.isAbortError(error)) {
 				callbacks.onCancel();
 			} else {
+				Exception.log(error);
 				new Notice("Vaultkeeper AI encountered an error");
 			}
 		} finally {

@@ -25,6 +25,10 @@ export class ApiError extends Error {
         this.name = "ApiError";
     }
 
+    static isApiError(error: unknown): boolean {
+        return error instanceof ApiError;
+    }
+
     static fromResponse(status: number, statusText: string, responseBody: string): ApiError {
         let type: ApiErrorType;
         let userMessage: string;

@@ -2,12 +2,13 @@ import { BaseAIClass } from "AIClasses/BaseAIClass";
 import type { IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import type { ConversationContent } from "Conversations/ConversationContent";
-import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
+import { AIProvider, AIProviderURL, toProviderModel } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
-import type { ResponseEvent, ResponseOutputTextDelta, ResponseFunctionCallArgumentsDone, ResponseDone, OpenAIFunctionTool } from "./OpenAITypes";
+import type { ResponseEvent, ResponseOutputTextDelta, ResponseFunctionCallArgumentsDone, ResponseDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIFunctionTool } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
+import { ApiErrorType } from "Types/ApiError";
 
 export class OpenAI extends BaseAIClass {
 
@@ -30,7 +31,7 @@ export class OpenAI extends BaseAIClass {
         )];
 
         const requestBody = {
-            model: this.settingsService.settings.model,
+            model: toProviderModel(this.settingsService.settings.model),
             instructions: systemPrompt,
             input: input,
             tools: tools,
@@ -80,10 +81,24 @@ export class OpenAI extends BaseAIClass {
                     break;
                 }
 
+                case "error":
                 case "response.error": {
-                    // Error occurred during response generation
-                    isComplete = true;
-                    console.error("Response error:", event);
+                    const errorEvent = event as ResponseErrorEvent;
+                    this.throwRetryableError(
+                        errorEvent.message,
+                        errorEvent.code || undefined,
+                        ApiErrorType.SERVER_ERROR
+                    );
+                    break;
+                }
+
+                case "response.failed": {
+                    const errorEvent = event as ResponseFailedEvent;
+                    this.throwRetryableError(
+                        errorEvent.response?.error?.message || "Response failed",
+                        errorEvent.response?.error?.code || undefined,
+                        ApiErrorType.SERVER_ERROR
+                    );
                     break;
                 }
 
@@ -133,13 +148,22 @@ export class OpenAI extends BaseAIClass {
                     break;
                 }
 
+                case "response.created":
+                case "response.in_progress":
+                case "response.content_part.added":
+                case "response.content_part.done":
                 case "response.output_item.added":
                 case "response.output_item.done":
+                case "response.output_text.done":
+                case "response.web_search_call.in_progress":
+                case "response.web_search_call.searching":
+                case "response.web_search_call.completed":
                     // These events can be used for more granular tracking if needed
                     // For now, we handle content through the delta events
                     break;
 
                 default:
+                    // log in dev but just ignore unhandled cases in prod
                     Exception.log(`Unknown event type: ${event.type}`);
                     break;
             }

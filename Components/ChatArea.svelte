@@ -10,6 +10,7 @@
   import type { ConversationContent } from "Conversations/ConversationContent";
 	import { tick } from "svelte";
 	import { Selector } from "Enums/Selector";
+	import { Exception } from "Helpers/Exception";
 
   export let cancelling: boolean = false;
   export let messages: ConversationContent[] = [];
@@ -126,8 +127,8 @@
 
       try {
         return streamingMarkdownService.formatText(message.content) || `<div>${message.content}</div>`;
-      } catch (err) {
-        console.error("HTML processing failed:", err);
+      } catch (error) {
+        Exception.log(error);
         return `<div>${message.content}</div>`;
       }
     }

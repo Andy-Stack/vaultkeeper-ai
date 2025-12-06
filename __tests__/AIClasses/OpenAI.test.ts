@@ -290,19 +290,16 @@ describe('OpenAI', () => {
         });
 
         it('should handle response.error events', () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
             const chunk = JSON.stringify({
                 type: 'response.error',
-                error: { message: 'Something went wrong' }
+                code: 'error_code',
+                message: 'Something went wrong',
+                param: null
             });
 
-            const result = (openai as any).parseStreamChunk(chunk);
-
-            expect(result.isComplete).toBe(true);
-            expect(consoleSpy).toHaveBeenCalled();
-
-            consoleSpy.mockRestore();
+            expect(() => {
+                (openai as any).parseStreamChunk(chunk);
+            }).toThrow('Something went wrong (error_code)');
         });
 
         it('should handle response.completed event', () => {

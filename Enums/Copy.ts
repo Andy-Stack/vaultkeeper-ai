@@ -9,6 +9,7 @@ export enum Copy {
     ClaudeSonnet_4_5 = "Claude Sonnet 4.5",
     ClaudeSonnet_4 = "Claude Sonnet 4",
     ClaudeSonnet_3_7 = "Claude Sonnet 3.7",
+    ClaudeOpus_4_5 = "Claude Opus 4.5",
     ClaudeOpus_4_1 = "Claude Opus 4.1",
     ClaudeOpus_4 = "Claude Opus 4",
     ClaudeHaiku_4_5 = "Claude Haiku 4.5",
@@ -16,7 +17,9 @@ export enum Copy {
     GeminiFlash_2_5_Lite = "Gemini 2.5 Flash Lite",
     GeminiFlash_2_5 = "Gemini 2.5 Flash",
     GeminiPro_2_5 = "Gemini 2.5 Pro",
+    GeminiPro_3_Preview = "Gemini 3 Pro Preview",
 
+    GPT_5_1 = "GPT-5.1",
     GPT_5 = "GPT-5",
     GPT_5_Mini = "GPT-5 Mini",
     GPT_5_Nano = "GPT-5 Nano",

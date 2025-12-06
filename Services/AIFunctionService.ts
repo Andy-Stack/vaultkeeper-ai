@@ -7,6 +7,7 @@ import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import type { ISearchMatch } from "../Helpers/SearchTypes";
 import { AbortService } from "./AbortService";
 import { normalizePath, TAbstractFile, TFile } from "obsidian";
+import { Exception } from "Helpers/Exception";
 import { 
     SearchVaultFilesArgsSchema,
     ReadVaultFilesArgsSchema,
@@ -120,7 +121,7 @@ export class AIFunctionService {
     
                 default: {
                     const error = `Unknown function request ${functionCall.name as string}`
-                    console.error(error);
+                    Exception.log(error);
                     return new AIFunctionResponse(
                         functionCall.name,
                         { error: error },

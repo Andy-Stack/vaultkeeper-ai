@@ -72,22 +72,29 @@ export class StreamingService {
 
   private async makeRequest(url: string, requestBody: unknown,
     additionalHeaders?: Record<string, string>): Promise<Response> {
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...additionalHeaders,
-        },
-        body: JSON.stringify(requestBody),
-        signal: this.abortService.signal(),
-      });
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...additionalHeaders,
+          },
+          body: JSON.stringify(requestBody),
+          signal: this.abortService.signal(),
+        });
 
-      if (!response.ok) {
-        const responseBody = await response.text();
-        throw ApiError.fromResponse(response.status, response.statusText, responseBody);
+        if (!response.ok) {
+          const responseBody = await response.text();
+          throw ApiError.fromResponse(response.status, response.statusText, responseBody);
+        }
+
+        return response;
+      } catch (error) {
+        if (ApiError.isApiError(error) || AbortService.isAbortError(error)) {
+          throw error;
+        }
+        throw ApiError.fromNetworkError(Exception.new(error));
       }
-
-      return response;
   }
 
   private async* processStream(reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -116,10 +123,12 @@ export class StreamingService {
               lastChunkWasComplete = chunk.isComplete;
               yield chunk;
             } catch (error) {
-              if (AbortService.isAbortError(error)) {
+              if (AbortService.isAbortError(error) || ApiError.isApiError(error)) {
                 throw error;
               }
+
               Exception.log(error);
+              
               yield {
                 content: "",
                 isComplete: true,

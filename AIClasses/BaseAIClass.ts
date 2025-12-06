@@ -14,7 +14,7 @@ import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schem
 import { Role } from "Enums/Role";
 import { StringTools } from "Helpers/StringTools";
 import { Exception } from "Helpers/Exception";
-import { ApiErrorType } from "Types/ApiError";
+import { ApiError, ApiErrorType } from "Types/ApiError";
 import type { AbortService } from "Services/AbortService";
 
 export abstract class BaseAIClass implements IAIClass {
@@ -94,13 +94,27 @@ export abstract class BaseAIClass implements IAIClass {
         }
     }
 
-    protected createErrorChunk(error: unknown): IStreamChunk {
+    protected throwRetryableError(message: string, code?: string, errorType?: ApiErrorType): never {
+        throw new ApiError({
+            type: errorType || ApiErrorType.SERVER_ERROR,
+            message: code ? `${message} (${code})` : message,
+            userMessage: "Service error. Retrying...",
+            isRetryable: true
+        });
+    }
+
+    protected createErrorChunk(error: unknown, errorType?: ApiErrorType, userMessage?: string): IStreamChunk {
+        // let ApiError propagate
+        if (error instanceof ApiError) {
+            throw error;
+        }
+
         Exception.log(error);
         return {
             content: "",
             isComplete: true,
-            error: `Failed to parse chunk: ${Exception.messageFrom(error)}`,
-            errorType: ApiErrorType.UNKNOWN
+            error: userMessage || `Failed to parse chunk: ${Exception.messageFrom(error)}`,
+            errorType: errorType || ApiErrorType.UNKNOWN
         };
     }
 

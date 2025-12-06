@@ -47,6 +47,10 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					text: Copy.ClaudeSonnet_3_7
 				});
 				claudeGroup.createEl("option", {
+					value: AIProviderModel.ClaudeOpus_4_5,
+					text: Copy.ClaudeOpus_4_5
+				});
+				claudeGroup.createEl("option", {
 					value: AIProviderModel.ClaudeOpus_4_1,
 					text: Copy.ClaudeOpus_4_1
 				});
@@ -61,6 +65,10 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 
 				// OpenAI models group
 				const openaiGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderOpenAI } });
+				openaiGroup.createEl("option", {
+					value: AIProviderModel.GPT_5_1,
+					text: Copy.GPT_5_1
+				});
 				openaiGroup.createEl("option", {
 					value: AIProviderModel.GPT_5,
 					text: Copy.GPT_5
@@ -107,6 +115,10 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				geminiGroup.createEl("option", {
 					value: AIProviderModel.GeminiPro_2_5,
 					text: Copy.GeminiPro_2_5
+				});
+				geminiGroup.createEl("option", {
+					value: AIProviderModel.GeminiPro_3_Preview,
+					text: Copy.GeminiPro_3_Preview
 				});
 
 				dropdown.setValue(this.settingsService.settings.model);

@@ -1,21 +1,47 @@
 import { Exception } from "Helpers/Exception";
 
+export function fromModel(model: string): AIProvider {
+    if (!isValidProviderModel(model)) {
+        Exception.throw(`Invalid model: ${model}`);
+    }
+    if (isClaudeModel(model)) {
+        return AIProvider.Claude;
+    } else if (isGeminiModel(model)) {
+        return AIProvider.Gemini;
+    } else if (isOpenAIModel(model)) {
+        return AIProvider.OpenAI;
+    } else {
+        Exception.throw("Invalid model selection");
+    }
+}
+
+export function toProviderModel(model: string): AIProviderModel {
+    if (isValidProviderModel(model)) {
+        return model;
+    }
+    Exception.throw(`Invalid model: ${model}`);
+}
+
+function isClaudeModel(model: string): boolean {
+    return isValidProviderModel(model) && model.startsWith("claude-");
+}
+
+function isGeminiModel(model: string): boolean {
+    return isValidProviderModel(model) && model.startsWith("gemini-");
+}
+
+function isOpenAIModel(model: string): boolean {
+    return isValidProviderModel(model) && model.startsWith("gpt-");
+}
+
+function isValidProviderModel(model: string): model is AIProviderModel {
+    return Object.values(AIProviderModel).includes(model as AIProviderModel);
+}
+
 export enum AIProvider {
     Claude = "Claude",
     Gemini = "Gemini",
     OpenAI = "OpenAI"
-}
-
-export function fromModel(model: string): AIProvider {
-    if (model.startsWith("claude-")) {
-        return AIProvider.Claude;
-    } else if (model.startsWith("gemini-")) {
-        return AIProvider.Gemini;
-    } else if (model.startsWith("gpt-")) {
-        return AIProvider.OpenAI;
-    } else {
-        Exception.throw("Invalid Model Selection!");
-    }
 }
 
 export enum AIProviderModel {
@@ -23,6 +49,7 @@ export enum AIProviderModel {
     ClaudeSonnet_4_5 = "claude-sonnet-4-5-20250929",
     ClaudeSonnet_4 = "claude-sonnet-4-20250514",
     ClaudeSonnet_3_7 = "claude-3-7-sonnet-20250219",
+    ClaudeOpus_4_5 = "claude-opus-4-5-20251101",
     ClaudeOpus_4_1 = "claude-opus-4-1-20250805",
     ClaudeOpus_4 = "claude-opus-4-20250514",
     ClaudeHaiku_4_5 = "claude-haiku-4-5-20251001",
@@ -31,8 +58,10 @@ export enum AIProviderModel {
     GeminiFlash_2_5_Lite = "gemini-2.5-flash-lite",
     GeminiFlash_2_5 = "gemini-2.5-flash",
     GeminiPro_2_5 = "gemini-2.5-pro",
+    GeminiPro_3_Preview = "gemini-3-pro-preview",
 
     // OpenAI models
+    GPT_5_1 = "gpt-5.1",
     GPT_5 = "gpt-5",
     GPT_5_Mini = "gpt-5-mini",
     GPT_5_Nano = "gpt-5-nano",

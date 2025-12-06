@@ -534,7 +534,8 @@ describe('StreamingService', () => {
 
 			expect(results).toHaveLength(1);
 			expect(results[0].isComplete).toBe(true);
-			expect(results[0].error).toBe('Network connection failed');
+			expect(results[0].error).toBe('Network error. Please check your connection.');
+			expect(results[0].errorType).toBe('NETWORK_ERROR');
 		});
 
 		it('should handle unknown error type', async () => {
@@ -551,7 +552,8 @@ describe('StreamingService', () => {
 
 			expect(results).toHaveLength(1);
 			expect(results[0].isComplete).toBe(true);
-			expect(results[0].error).toBe('String error');
+			expect(results[0].error).toBe('Network error. Please check your connection.');
+			expect(results[0].errorType).toBe('NETWORK_ERROR');
 		});
 	});
 

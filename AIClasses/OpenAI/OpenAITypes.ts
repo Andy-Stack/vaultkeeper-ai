@@ -50,6 +50,23 @@ export interface ResponseDone extends ResponseEvent {
     };
 }
 
+export interface ResponseErrorEvent extends ResponseEvent {
+    type: "error";
+    code: string | null;
+    message: string;
+    param: string | null;
+}
+
+export interface ResponseFailedEvent extends ResponseEvent {
+    type: "response.failed";
+    response: {
+        error: {
+            code: string | null;
+            message: string;
+        } | null;
+    };
+}
+
 export interface OpenAIFunctionTool {
     type: "function";
     name: string;

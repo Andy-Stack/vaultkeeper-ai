@@ -15,6 +15,7 @@ import { DiffService } from "./DiffService";
 import * as path from "path-browserify";
 import { Event } from "Enums/Event";
 import { AbortService } from "./AbortService";
+import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 
 interface IFileEventArgs {
     oldPath: string;
@@ -457,9 +458,9 @@ export class VaultService {
                     return await performChange();
                 }
 
-                let response = "User rejected this change. Stop all actions and consult with the user";
+                let response = AIFunctionResponse.UserRejectionMessage;
                 if (result.suggestion) {
-                    response = `User has rejected the change with the following suggestion: ${result.suggestion}`;
+                    response = AIFunctionResponse.UserSuggestionMessage + result.suggestion;
                 }
                 return Exception.new(response);
             } catch (error) {

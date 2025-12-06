@@ -231,3 +231,64 @@
 .theme-light .d2h-code-line.d2h-ins .hljs {
     color: #24292e !important; /* Dark text on light green background */
 }
+
+/* ============================== */
+/* Mobile Controls */
+/* ============================== */
+
+.diff-mobile-controls {
+    display: none; /* Hidden by default (desktop) */
+}
+
+.diff-view-mobile .diff-mobile-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--size-4-2);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--size-4-3);
+    background-color: var(--background-primary);
+    border-top: 1px solid var(--background-modifier-border);
+    z-index: 10;
+}
+
+.diff-mobile-button {
+    min-height: 44px;
+    font-size: var(--font-ui-medium);
+    font-weight: var(--font-semibold);
+    border-radius: var(--button-radius);
+    cursor: pointer;
+    border: none;
+    color: var(--text-on-accent);
+}
+
+.diff-mobile-accept {
+    background-color: color-mix(
+        in srgb,
+        var(--color-green) 75%,
+        var(--background-primary) 25%
+    ) !important;
+}
+
+.diff-mobile-accept:active {
+    background-color: var(--color-green) !important;
+}
+
+.diff-mobile-reject {
+    background-color: color-mix(
+        in srgb,
+        var(--color-red) 75%,
+        var(--background-primary) 25%
+    ) !important;
+}
+
+.diff-mobile-reject:active {
+    background-color: var(--color-red) !important;
+}
+
+/* Adjust diff height on mobile to account for buttons */
+.diff-view-mobile .d2h-file-diff {
+    max-height: calc(100cqh - 37px - 40px);
+}

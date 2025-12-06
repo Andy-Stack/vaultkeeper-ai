@@ -5,6 +5,13 @@ export class AIFunctionResponse {
     public readonly response: object;
     public readonly toolId?: string;
 
+    public static readonly UserRejectionMessage: string = `The user has explicitly rejected this change.
+                                                           They may have changed their mind about the requested change.
+
+                                                           **CRITICAL:** Immediately stop all further actions and consult with the user`;
+                                                           
+    public static readonly UserSuggestionMessage: string = "The user has rejected the change with the following suggestion: ";
+
     constructor(name: string, response: object, toolId?: string) {
         this.name = name;
         this.response = response;

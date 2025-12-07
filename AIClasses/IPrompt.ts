@@ -3,7 +3,6 @@ import { Services } from "Services/Services";
 import { SystemInstruction } from "./SystemPrompt";
 import type { FileSystemService } from "Services/FileSystemService";
 import type { SettingsService } from "Services/SettingsService";
-import { Notice } from "obsidian";
 
 export interface IPrompt {
   systemInstruction(): string;
@@ -26,10 +25,6 @@ export class AIPrompt implements IPrompt {
 
   public async userInstruction(): Promise<string> {
     const result = await this.fileSystemService.readFile(this.settingsService.settings.userInstruction, true);
-    if (result instanceof Error) {
-      new Notice("Failed to load user instructions!");
-      return "";
-    }
-    return result;
+    return result instanceof Error ? "" : result;
   }
 }

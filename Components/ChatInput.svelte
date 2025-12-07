@@ -39,8 +39,9 @@
   let userRequest = "";
 
   let diffOpen: boolean = false;
-  const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { diffOpen = true; focusInput(); });
-  const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { diffOpen = false; focusInput(); });
+  
+  const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { diffOpen = true; if (!Platform.isMobile){ focusInput(); } });
+  const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { diffOpen = false; if (!Platform.isMobile){ focusInput(); } });
 
   onDestroy(() => {
     eventService.offref(diffOpenedRef);

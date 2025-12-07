@@ -19,7 +19,10 @@ export class FileSystemService {
 
     public async readFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<string | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
-        if (file && file instanceof TFile) {
+        if (file == null) {
+            return Exception.new(`File does not exist: ${filePath}`);    
+        }
+        if (file instanceof TFile) {
             return await this.vaultService.read(file, allowAccessToPluginRoot);
         }
         return Exception.new(`Path is a folder, not a file: ${filePath}`);

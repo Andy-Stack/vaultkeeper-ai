@@ -96,7 +96,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.readFile('nonexistent.md');
 
 			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toContain('Path is a folder, not a file');
+			expect((result as Error).message).toContain('File does not exist: ');
 			expect(mockVaultService.read).not.toHaveBeenCalled();
 		});
 

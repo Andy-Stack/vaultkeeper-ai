@@ -13,12 +13,15 @@
   import type { ChatService } from "Services/ChatService";
   import type { ConversationFileSystemService } from "Services/ConversationFileSystemService";
 	import type { SettingsService } from "Services/SettingsService";
+	import { Copy } from "Enums/Copy";
+	import { AbortService } from "Services/AbortService";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
   const chatService: ChatService = Resolve<ChatService>(Services.ChatService);
   const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
   const conversationService: ConversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
+  const abortService: AbortService = Resolve<AbortService>(Services.AbortService);
 
   let chatContainer: HTMLDivElement;
   let chatArea: ChatArea;
@@ -86,7 +89,7 @@
   function handleStop() {
     chatService.stop();
     currentThought = null;
-    chatArea.scrollChatArea("smooth");
+    chatArea.updateChatAreaLayout("smooth");
   }
 
   async function handleSubmit(userRequest: string, formattedRequest: string) {
@@ -98,20 +101,27 @@
 
     await chatService.submit(conversation, editModeActive, currentRequest, formattedRequest, {
       onSubmit: () => {
-        chatArea.scrollChatArea("smooth");
+        chatArea.updateChatAreaLayout("smooth");
         isSubmitting = true;
       },
       onStreamingUpdate: (streamingId) => {
         conversation = conversation;
         currentStreamingMessageId = streamingId;
+        chatArea.updateChatAreaLayout("smooth");
       },
       onThoughtUpdate: (thought) => {
-        currentThought = thought;
+        if (thought !== Copy.AIThoughtMessage) {
+          currentThought = thought;
+        } else if (currentThought !== null) {
+          // we are in-between thoughts so use generic copy
+          currentThought = thought;
+        }
       },
       onComplete: async () => {
         cancelling = false;
         isSubmitting = false;
-        chatArea.scrollChatArea(undefined);
+        abortService.reset();
+        chatArea.updateChatAreaLayout("smooth");
         await chatService.updateTokenDisplay(conversation);
       },
       onCancel: () => {
@@ -148,7 +158,7 @@
         chatService.onNameChanged?.(loadedConversation.title);
         chatService.updateTokenDisplay(loadedConversation);
         conversationStore.clearLoadFlag();
-        chatArea.scrollChatArea("instant");
+        chatArea.updateChatAreaLayout("instant");
       }
     });
   }

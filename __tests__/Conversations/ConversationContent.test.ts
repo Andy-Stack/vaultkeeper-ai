@@ -26,6 +26,32 @@ describe('ConversationContent', () => {
 			expect(content.toolId).toBe('tool-123');
 		});
 
+		it('should create content with all parameters including thoughtSignature', () => {
+			const timestamp = new Date('2024-01-01T00:00:00.000Z');
+			const signature = 'base64EncodedSignature==';
+			const content = new ConversationContent(
+				'user',
+				'Hello',
+				'promptContent',
+				'functionCall',
+				timestamp,
+				true,
+				false,
+				'tool-123',
+				signature
+			);
+
+			expect(content.role).toBe('user');
+			expect(content.content).toBe('Hello');
+			expect(content.promptContent).toBe('promptContent');
+			expect(content.functionCall).toBe('functionCall');
+			expect(content.timestamp).toBe(timestamp);
+			expect(content.isFunctionCall).toBe(true);
+			expect(content.isFunctionCallResponse).toBe(false);
+			expect(content.toolId).toBe('tool-123');
+			expect(content.thoughtSignature).toBe(signature);
+		});
+
 		it('should use default values when optional parameters are omitted', () => {
 			const content = new ConversationContent('assistant');
 
@@ -37,6 +63,7 @@ describe('ConversationContent', () => {
 			expect(content.isFunctionCall).toBe(false);
 			expect(content.isFunctionCallResponse).toBe(false);
 			expect(content.toolId).toBeUndefined();
+			expect(content.thoughtSignature).toBeUndefined();
 		});
 
 		it('should use current date as default timestamp', () => {
@@ -140,6 +167,37 @@ describe('ConversationContent', () => {
 				isFunctionCall: true,
 				isFunctionCallResponse: false,
 				toolId: 'tool-123'
+			};
+
+			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
+		});
+
+		it('should return true for valid data with thoughtSignature', () => {
+			const validData = {
+				role: 'assistant',
+				content: '',
+				promptContent: '',
+				functionCall: 'readFile',
+				timestamp: '2024-01-01T00:00:00.000Z',
+				isFunctionCall: true,
+				isFunctionCallResponse: false,
+				thoughtSignature: 'base64Signature=='
+			};
+
+			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
+		});
+
+		it('should return true for valid data with both toolId and thoughtSignature', () => {
+			const validData = {
+				role: 'assistant',
+				content: '',
+				promptContent: '',
+				functionCall: 'readFile',
+				timestamp: '2024-01-01T00:00:00.000Z',
+				isFunctionCall: true,
+				isFunctionCallResponse: false,
+				toolId: 'tool-123',
+				thoughtSignature: 'base64Signature=='
 			};
 
 			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
@@ -332,6 +390,35 @@ describe('ConversationContent', () => {
 			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
 		});
 
+		it('should return true when thoughtSignature is missing (optional field)', () => {
+			const validData = {
+				role: 'user',
+				content: 'Hello',
+				promptContent: '',
+				functionCall: '',
+				timestamp: '2024-01-01T00:00:00.000Z',
+				isFunctionCall: false,
+				isFunctionCallResponse: false
+			};
+
+			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
+		});
+
+		it('should return false when thoughtSignature is not a string', () => {
+			const invalidData = {
+				role: 'user',
+				content: 'Hello',
+				promptContent: '',
+				functionCall: '',
+				timestamp: '2024-01-01T00:00:00.000Z',
+				isFunctionCall: false,
+				isFunctionCallResponse: false,
+				thoughtSignature: 123
+			};
+
+			expect(ConversationContent.isConversationContentData(invalidData)).toBe(false);
+		});
+
 		it('should handle edge case with empty strings', () => {
 			const validData = {
 				role: '',
@@ -396,6 +483,13 @@ describe('ConversationContent', () => {
 			content.toolId = 'tool-456';
 
 			expect(content.toolId).toBe('tool-456');
+		});
+
+		it('should allow thoughtSignature to be modified', () => {
+			const content = new ConversationContent('assistant');
+			content.thoughtSignature = 'newSignature==';
+
+			expect(content.thoughtSignature).toBe('newSignature==');
 		});
 	});
 

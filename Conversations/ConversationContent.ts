@@ -10,9 +10,10 @@ export class ConversationContent {
     isFunctionCall: boolean;
     isFunctionCallResponse: boolean;
     toolId?: string;
+    thoughtSignature?: string;
     errorType?: ApiErrorType;
 
-    constructor(role: Role, content: string = "", promptContent: string = "", functionCall: string = "", timestamp: Date = new Date(), isFunctionCall = false, isFunctionCallResponse = false, toolId?: string, errorType?: ApiErrorType) {
+    constructor(role: Role, content: string = "", promptContent: string = "", functionCall: string = "", timestamp: Date = new Date(), isFunctionCall = false, isFunctionCallResponse = false, toolId?: string, thoughtSignature?: string, errorType?: ApiErrorType) {
         this.role = role;
         this.content = content;
         this.promptContent = promptContent;
@@ -21,11 +22,13 @@ export class ConversationContent {
         this.isFunctionCall = isFunctionCall;
         this.isFunctionCallResponse = isFunctionCallResponse;
         this.toolId = toolId;
+        this.thoughtSignature = thoughtSignature;
         this.errorType = errorType;
     }
 
     public static isConversationContentData(this: void, data: unknown): data is {
-        role: string; content: string; promptContent: string; functionCall: string; timestamp: string, isFunctionCall: boolean, isFunctionCallResponse: boolean, toolId?: string, errorType?: string
+        role: string; content: string; promptContent: string; functionCall: string; timestamp: string, isFunctionCall: boolean,
+        isFunctionCallResponse: boolean, toolId?: string, thoughtSignature?: string, errorType?: string
     } {
         return (
             data !== null &&
@@ -47,6 +50,7 @@ export class ConversationContent {
 
             // optional conversation data fields
             (!("toolId" in data) || typeof data.toolId === "string") &&
+            (!("thoughtSignature" in data) || typeof data.thoughtSignature === "string") &&
             (!("errorType" in data) || typeof data.errorType === "string")
         );
     }

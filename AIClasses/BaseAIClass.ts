@@ -44,7 +44,7 @@ export abstract class BaseAIClass implements IAIClass {
     ): AsyncGenerator<IStreamChunk, void, unknown>;
 
     protected abstract parseStreamChunk(chunk: string): IStreamChunk;
-    protected abstract extractContents(conversationContent: ConversationContent[]): object;
+    protected abstract extractContents(conversationContent: ConversationContent[]): unknown;
     protected abstract mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): object;
 
     protected filterConversationContents(conversationContent: ConversationContent[]): ConversationContent[] {
@@ -98,7 +98,7 @@ export abstract class BaseAIClass implements IAIClass {
         throw new ApiError({
             type: errorType || ApiErrorType.SERVER_ERROR,
             message: code ? `${message} (${code})` : message,
-            userMessage: "Service error. Retrying...",
+            userMessage: "Service error.",
             isRetryable: true
         });
     }

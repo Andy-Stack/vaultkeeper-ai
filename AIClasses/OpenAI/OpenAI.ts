@@ -6,7 +6,7 @@ import { AIProvider, AIProviderURL, toProviderModel } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
-import type { ResponseEvent, ResponseOutputTextDelta, ResponseFunctionCallArgumentsDone, ResponseDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIFunctionTool } from "./OpenAITypes";
+import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIFunctionTool, ResponsesAPIInput } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
 import { ApiErrorType } from "Types/ApiError";
 
@@ -109,17 +109,33 @@ export class OpenAI extends BaseAIClass {
                 }
 
                 case "response.function_call_arguments.done": {
-                    // Complete function call received
-                    const doneEvent = event as ResponseFunctionCallArgumentsDone;
-                    const toolCall = doneEvent.call;
+                    // Function call arguments streaming - we can ignore these
+                    // The complete function call info comes in response.output_item.done
+                    break;
+                }
 
-                    if (toolCall.type === "function" && toolCall.function) {
+                case "response.completed":
+                case "response.done": {
+                    // Response completed
+                    isComplete = true;
+                    break;
+                }
+
+                case "response.output_item.done": {
+                    // Complete output item received - this includes function calls with name
+                    const itemDoneEvent = event as ResponseOutputItemDone;
+
+                    // Check if this is a function call
+                    if (itemDoneEvent.item.type === "function_call" &&
+                        itemDoneEvent.item.name &&
+                        itemDoneEvent.item.arguments) {
                         try {
-                            const args = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+                            const args = JSON.parse(itemDoneEvent.item.arguments) as Record<string, unknown>;
                             functionCall = new AIFunctionCall(
-                                aiFunctionFromString(toolCall.function.name),
+                                aiFunctionFromString(itemDoneEvent.item.name),
                                 args as Record<string, object>,
-                                toolCall.id
+                                itemDoneEvent.item.call_id || itemDoneEvent.item_id,
+                                undefined  // thoughtSignature not used by OpenAI
                             );
                             // When we receive a function call, we should continue the conversation
                             shouldContinue = true;
@@ -130,30 +146,11 @@ export class OpenAI extends BaseAIClass {
                     break;
                 }
 
-                case "response.completed":
-                case "response.done": {
-                    // Response completed
-                    isComplete = true;
-                    const doneEvent = event as ResponseDone;
-
-                    // Check if the response contains tool calls that should trigger continuation
-                    if (doneEvent.response?.output) {
-                        for (const outputItem of doneEvent.response.output) {
-                            if (outputItem.tool_calls && outputItem.tool_calls.length > 0) {
-                                shouldContinue = true;
-                                break;
-                            }
-                        }
-                    }
-                    break;
-                }
-
                 case "response.created":
                 case "response.in_progress":
                 case "response.content_part.added":
                 case "response.content_part.done":
                 case "response.output_item.added":
-                case "response.output_item.done":
                 case "response.output_text.done":
                 case "response.web_search_call.in_progress":
                 case "response.web_search_call.searching":
@@ -179,60 +176,73 @@ export class OpenAI extends BaseAIClass {
         }
     }
 
-    protected extractContents(conversationContent: ConversationContent[]) {
-        return this.filterConversationContents(conversationContent)
-            .map(content => {
-                const contentToExtract = this.getContentToExtract(content);
-                // Handle function call
-                if (content.isFunctionCall && content.functionCall.trim() !== "") {
-                    const parsedContent = this.parseFunctionCall(content.functionCall);
-                    if (parsedContent) {
-                        return {
-                            role: content.role,
-                            content: contentToExtract.trim() !== "" ? contentToExtract : null,
-                            tool_calls: [
-                                {
-                                    id: parsedContent.functionCall.id,
-                                    type: "function",
-                                    function: {
-                                        name: parsedContent.functionCall.name,
-                                        arguments: JSON.stringify(parsedContent.functionCall.args)
-                                    }
-                                }
-                            ]
-                        };
-                    } else {
-                        return { // Fall back to regular message
-                            role: content.role,
-                            content: contentToExtract.trim() !== "" ? contentToExtract : "Error parsing function call"
-                        };
-                    }
-                }
+    protected extractContents(conversationContent: ConversationContent[]): ResponsesAPIInput[] {
+        const results: ResponsesAPIInput[] = [];
 
-                // Handle function response
-                if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
-                    const parsedContent = this.parseFunctionResponse(contentToExtract);
-                    if (parsedContent) {
-                        return {
-                            role: "tool",
-                            tool_call_id: parsedContent.id,
-                            content: JSON.stringify(parsedContent.functionResponse.response)
-                        };
-                    } else {
-                        return { // Fall back to regular message
-                            role: content.role,
-                            content: contentToExtract
-                        };
-                    }
-                }
+        for (const content of this.filterConversationContents(conversationContent)) {
+            const contentToExtract = this.getContentToExtract(content);
 
-                // Regular text message
-                return {
-                    role: content.role,
+            // Case 1: Assistant message with function call
+            if (content.isFunctionCall && content.functionCall.trim() !== "") {
+                const parsedContent = this.parseFunctionCall(content.functionCall);
+
+                if (parsedContent) {
+                    // Add assistant text message if present
+                    const messageContent = contentToExtract.trim();
+                    if (messageContent !== "") {
+                        results.push({
+                            role: content.role as "user" | "assistant",
+                            content: messageContent
+                        });
+                    }
+
+                    // Add function call as separate input item
+                    results.push({
+                        type: "function_call",
+                        call_id: parsedContent.functionCall.id,
+                        name: parsedContent.functionCall.name,
+                        arguments: JSON.stringify(parsedContent.functionCall.args)
+                    });
+                } else {
+                    // Fall back to regular message if parsing fails
+                    results.push({
+                        role: content.role as "user" | "assistant",
+                        content: contentToExtract.trim() !== "" ? contentToExtract : "Error parsing function call"
+                    });
+                }
+                continue;
+            }
+
+            // Case 2: Function call response
+            if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
+                const parsedContent = this.parseFunctionResponse(contentToExtract);
+
+                if (parsedContent) {
+                    results.push({
+                        type: "function_call_output",
+                        call_id: parsedContent.id,
+                        output: JSON.stringify(parsedContent.functionResponse.response)
+                    });
+                } else {
+                    // Fall back to regular user message if parsing fails
+                    results.push({
+                        role: content.role as "user" | "assistant",
+                        content: contentToExtract
+                    });
+                }
+                continue;
+            }
+
+            // Case 3: Regular text message (user or assistant)
+            if (contentToExtract.trim() !== "") {
+                results.push({
+                    role: content.role as "user" | "assistant",
                     content: contentToExtract
-                };
-            })
-            .filter(message => message.content !== "" || message.tool_calls || message.tool_call_id);
+                });
+            }
+        }
+
+        return results;
     }
 
     protected mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): OpenAIFunctionTool[] {

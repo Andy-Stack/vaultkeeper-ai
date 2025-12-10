@@ -57,6 +57,8 @@ export enum Copy {
     TooltipShowApiKey = "Show API Key",
     TooltipHideApiKey = "Hide API Key",
 
+    AIThoughtMessage = "Thinking...",
+
     // Help Modal Copy
     HelpModalAboutTitle = "About",
     HelpModalAboutContent = `#### About Vaultkeeper AI

@@ -17,6 +17,7 @@ import type { EventService } from "./EventService";
 import { Event } from "Enums/Event";
 import { AbortService } from "./AbortService";
 import { Exception } from "Helpers/Exception";
+import { Copy } from "Enums/Copy";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
@@ -99,6 +100,8 @@ export class ChatService {
 						conversation.contents.push(new ConversationContent(
 							Role.User, functionResponseString, functionResponseString, "", new Date(), false, true, functionResponse.toolId
 						));
+					} else {
+						callbacks.onThoughtUpdate(Copy.AIThoughtMessage);
 					}
 
 					this.ensureCorrectConversationStructure(conversation);
@@ -184,9 +187,8 @@ export class ChatService {
 			return { functionCall: null, shouldContinue: false };;
 		}
 
-		const aiMessage = new ConversationContent(Role.Assistant);
-		conversation.contents.push(aiMessage);
-		callbacks.onStreamingUpdate(aiMessage.timestamp.getTime().toString());
+		const conversationContent = new ConversationContent(Role.Assistant);
+		conversation.contents.push(conversationContent);
 
 		let accumulatedContent = "";
 		let capturedFunctionCall: AIFunctionCall | null = null;
@@ -194,8 +196,9 @@ export class ChatService {
 
 		for await (const chunk of this.ai.streamRequest(conversation, allowDestructiveActions)) {
 			if (chunk.error && chunk.errorType) {
-				conversation.setMostRecentError(chunk.error, chunk.errorType);
-				callbacks.onStreamingUpdate(aiMessage.timestamp.getTime().toString());
+				conversationContent.content = chunk.error;
+				conversationContent.errorType = chunk.errorType;
+				callbacks.onStreamingUpdate(null);
 				break;
 			}
 
@@ -210,7 +213,7 @@ export class ChatService {
 			if (chunk.content) {
 				accumulatedContent += chunk.content;
 
-				conversation.setMostRecentContent(accumulatedContent);
+				conversationContent.content = accumulatedContent;
 				if (accumulatedContent.trim() !== "") {
 					callbacks.onThoughtUpdate(null);
 				}
@@ -222,13 +225,20 @@ export class ChatService {
 				if (sanitizedContent.trim() === "" && !capturedFunctionCall) {
 					conversation.contents.pop();
 				} else {
-					conversation.setMostRecentContent(sanitizedContent);
+					conversationContent.content = sanitizedContent;
 					if (capturedFunctionCall) {
-						conversation.setMostRecentFunctionCall(capturedFunctionCall?.toConversationString());
+						conversationContent.isFunctionCall = true;
+						conversationContent.functionCall = capturedFunctionCall.toConversationString();
+						if (capturedFunctionCall.thoughtSignature) {
+							conversationContent.thoughtSignature = capturedFunctionCall.thoughtSignature;
+						}
 					}
 				}
 			}
-			callbacks.onStreamingUpdate(aiMessage.timestamp.getTime().toString());
+
+			if (conversationContent.content.trim() !== "") {
+				callbacks.onStreamingUpdate(conversationContent.timestamp.getTime().toString());
+			}
 		}
 
 		callbacks.onStreamingUpdate(null);

@@ -205,13 +205,14 @@ describe('Conversation', () => {
 		});
 	});
 
-	describe('setMostRecentContent', () => {
+	describe('content manipulation', () => {
 		it('should update content of most recent conversation content', () => {
 			const conversation = new Conversation();
 			const content = new ConversationContent('user', 'initial');
 			conversation.contents.push(content);
 
-			conversation.setMostRecentContent('updated');
+			const mostRecent = conversation.contents[conversation.contents.length - 1];
+			mostRecent.content = 'updated';
 
 			expect(conversation.contents[0].content).toBe('updated');
 		});
@@ -222,7 +223,8 @@ describe('Conversation', () => {
 			conversation.contents.push(new ConversationContent('assistant', 'second'));
 			conversation.contents.push(new ConversationContent('user', 'third'));
 
-			conversation.setMostRecentContent('modified');
+			const mostRecent = conversation.contents[conversation.contents.length - 1];
+			mostRecent.content = 'modified';
 
 			expect(conversation.contents[0].content).toBe('first');
 			expect(conversation.contents[1].content).toBe('second');
@@ -233,7 +235,12 @@ describe('Conversation', () => {
 			const conversation = new Conversation();
 
 			// Should not throw error
-			expect(() => conversation.setMostRecentContent('test')).not.toThrow();
+			expect(() => {
+				const mostRecent = conversation.contents[conversation.contents.length - 1];
+				if (mostRecent) {
+					mostRecent.content = 'test';
+				}
+			}).not.toThrow();
 			expect(conversation.contents).toHaveLength(0);
 		});
 
@@ -241,7 +248,8 @@ describe('Conversation', () => {
 			const conversation = new Conversation();
 			conversation.contents.push(new ConversationContent('user', 'initial'));
 
-			conversation.setMostRecentContent('');
+			const mostRecent = conversation.contents[conversation.contents.length - 1];
+			mostRecent.content = '';
 
 			expect(conversation.contents[0].content).toBe('');
 		});
@@ -251,19 +259,22 @@ describe('Conversation', () => {
 			conversation.contents.push(new ConversationContent('user', 'initial'));
 
 			const multilineContent = 'Line 1\nLine 2\nLine 3';
-			conversation.setMostRecentContent(multilineContent);
+			const mostRecent = conversation.contents[conversation.contents.length - 1];
+			mostRecent.content = multilineContent;
 
 			expect(conversation.contents[0].content).toBe(multilineContent);
 		});
 	});
 
-	describe('setMostRecentFunctionCall', () => {
+	describe('function call manipulation', () => {
 		it('should set function call on most recent content', () => {
 			const conversation = new Conversation();
 			const content = new ConversationContent('assistant');
 			conversation.contents.push(content);
 
-			conversation.setMostRecentFunctionCall('readFile');
+			const mostRecent = conversation.contents[conversation.contents.length - 1];
+			mostRecent.functionCall = 'readFile';
+			mostRecent.isFunctionCall = true;
 
 			expect(conversation.contents[0].functionCall).toBe('readFile');
 		});
@@ -273,7 +284,9 @@ describe('Conversation', () => {
 			const content = new ConversationContent('assistant');
 			conversation.contents.push(content);
 
-			conversation.setMostRecentFunctionCall('readFile');
+			const mostRecent = conversation.contents[conversation.contents.length - 1];
+			mostRecent.functionCall = 'readFile';
+			mostRecent.isFunctionCall = true;
 
 			expect(conversation.contents[0].isFunctionCall).toBe(true);
 		});
@@ -284,7 +297,9 @@ describe('Conversation', () => {
 			conversation.contents.push(new ConversationContent('assistant'));
 			conversation.contents.push(new ConversationContent('assistant'));
 
-			conversation.setMostRecentFunctionCall('searchFiles');
+			const mostRecent = conversation.contents[conversation.contents.length - 1];
+			mostRecent.functionCall = 'searchFiles';
+			mostRecent.isFunctionCall = true;
 
 			expect(conversation.contents[0].functionCall).toBe('');
 			expect(conversation.contents[0].isFunctionCall).toBe(false);
@@ -298,7 +313,13 @@ describe('Conversation', () => {
 			const conversation = new Conversation();
 
 			// Should not throw error
-			expect(() => conversation.setMostRecentFunctionCall('test')).not.toThrow();
+			expect(() => {
+				const mostRecent = conversation.contents[conversation.contents.length - 1];
+				if (mostRecent) {
+					mostRecent.functionCall = 'test';
+					mostRecent.isFunctionCall = true;
+				}
+			}).not.toThrow();
 			expect(conversation.contents).toHaveLength(0);
 		});
 
@@ -306,7 +327,9 @@ describe('Conversation', () => {
 			const conversation = new Conversation();
 			conversation.contents.push(new ConversationContent('assistant'));
 
-			conversation.setMostRecentFunctionCall('');
+			const mostRecent = conversation.contents[conversation.contents.length - 1];
+			mostRecent.functionCall = '';
+			mostRecent.isFunctionCall = true;
 
 			expect(conversation.contents[0].functionCall).toBe('');
 			expect(conversation.contents[0].isFunctionCall).toBe(true);
@@ -317,7 +340,9 @@ describe('Conversation', () => {
 			const content = new ConversationContent('assistant', '', '', 'oldFunction', new Date(), true);
 			conversation.contents.push(content);
 
-			conversation.setMostRecentFunctionCall('newFunction');
+			const mostRecent = conversation.contents[conversation.contents.length - 1];
+			mostRecent.functionCall = 'newFunction';
+			mostRecent.isFunctionCall = true;
 
 			expect(conversation.contents[0].functionCall).toBe('newFunction');
 			expect(conversation.contents[0].isFunctionCall).toBe(true);
@@ -337,11 +362,13 @@ describe('Conversation', () => {
 			conversation.contents.push(assistantMessage);
 
 			// Stream in assistant response
-			conversation.setMostRecentContent('Hi there');
-			conversation.setMostRecentContent('Hi there, how can I help you?');
+			const mostRecent = conversation.contents[conversation.contents.length - 1];
+			mostRecent.content = 'Hi there';
+			mostRecent.content = 'Hi there, how can I help you?';
 
 			// Assistant makes a function call
-			conversation.setMostRecentFunctionCall('readFile');
+			mostRecent.functionCall = 'readFile';
+			mostRecent.isFunctionCall = true;
 
 			expect(conversation.contents).toHaveLength(2);
 			expect(conversation.contents[0].role).toBe('user');

@@ -81,9 +81,9 @@ describe('ConversationNamingService', () => {
             expect(result2).toBe('Test Title');
         });
 
-        it('should limit to 6 words', async () => {
+        it('should not limit words', async () => {
             const result = await (service as any).validateName('One Two Three Four Five Six Seven Eight');
-            expect(result).toBe('One Two Three Four Five Six');
+            expect(result).toBe('One Two Three Four Five Six Seven Eight');
         });
 
         it('should handle duplicate names with incrementing index', async () => {
@@ -109,9 +109,9 @@ describe('ConversationNamingService', () => {
             }).rejects.toThrow('Stack limit reached');
         });
 
-        it('should handle names with multiple spaces correctly', async () => {
+        it('should preserve multiple spaces in names', async () => {
             const result = await (service as any).validateName('Test    Title    With    Spaces');
-            expect(result).toBe('Test Title With Spaces');
+            expect(result).toBe('Test    Title    With    Spaces');
         });
 
         it('should return unique name when no duplicates exist', async () => {
@@ -252,13 +252,13 @@ describe('ConversationNamingService', () => {
             );
         });
 
-        it('should limit name to 6 words', async () => {
+        it('should not limit words in generated name', async () => {
             mockNamingProvider.generateName.mockResolvedValue('One Two Three Four Five Six Seven Eight Nine');
             mockVaultService.exists.mockReturnValue(false);
 
             await service.requestName(conversation, 'Test', onNameChanged);
 
-            expect(conversation.title).toBe('One Two Three Four Five Six');
+            expect(conversation.title).toBe('One Two Three Four Five Six Seven Eight Nine');
         });
     });
 });

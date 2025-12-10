@@ -18,9 +18,7 @@ export interface ApiErrorInfo {
 }
 
 export class ApiError extends Error {
-    constructor(
-        public info: ApiErrorInfo
-    ) {
+    constructor(public info: ApiErrorInfo) {
         super(info.message);
         this.name = "ApiError";
     }
@@ -46,19 +44,19 @@ export class ApiError extends Error {
         switch (status) {
             case 429:
                 type = ApiErrorType.RATE_LIMIT;
-                userMessage = "Rate limit exceeded. Retrying...";
+                userMessage = "Rate limit exceeded.";
                 isRetryable = true;
                 break;
             case 503:
                 type = ApiErrorType.OVERLOADED;
-                userMessage = "Service overloaded. Retrying...";
+                userMessage = "Service overloaded.";
                 isRetryable = true;
                 break;
             case 500:
             case 502:
             case 504:
                 type = ApiErrorType.SERVER_ERROR;
-                userMessage = "Server error. Retrying...";
+                userMessage = "Server error.";
                 isRetryable = true;
                 break;
             case 401:
@@ -78,7 +76,7 @@ export class ApiError extends Error {
                 isRetryable = false;
         }
 
-        const message = `API request failed: ${status} - ${statusText}${providerMessage ? ` - ${providerMessage}` : ""}`;
+        const message = `API request failed: ${status} - ${statusText} ${providerMessage ? `${providerMessage}` : ""}`;
 
         return new ApiError({
             type,

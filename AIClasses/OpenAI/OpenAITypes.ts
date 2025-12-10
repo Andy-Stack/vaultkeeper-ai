@@ -14,13 +14,23 @@ export interface ResponseOutputTextDelta extends ResponseEvent {
 
 export interface ResponseFunctionCallArgumentsDone extends ResponseEvent {
     type: "response.function_call_arguments.done";
-    call: {
+    item_id: string;
+    name: string;
+    output_index: number;
+    arguments: string;
+    sequence_number: number;
+}
+
+export interface ResponseOutputItemDone extends ResponseEvent {
+    type: "response.output_item.done";
+    item_id: string;
+    output_index: number;
+    item: {
         id: string;
-        type: "function";
-        function: {
-            name: string;
-            arguments: string;
-        };
+        type: string;
+        name?: string;
+        call_id?: string;
+        arguments?: string;
     };
 }
 
@@ -30,16 +40,12 @@ export interface ResponseDone extends ResponseEvent {
         id: string;
         status: string;
         output: Array<{
-            role: string;
-            content?: string;
-            tool_calls?: Array<{
-                id: string;
-                type: string;
-                function: {
-                    name: string;
-                    arguments: string;
-                };
-            }>;
+            type?: string;            // "message" | "function_call" | etc.
+            role?: string;            // For message items
+            content?: string;         // For message items
+            name?: string;            // For function_call items
+            call_id?: string;         // For function_call items
+            arguments?: string;       // For function_call items
         }>;
         output_text?: string;
         usage?: {
@@ -73,3 +79,35 @@ export interface OpenAIFunctionTool {
     description: string;
     parameters: IAIFunctionDefinition["parameters"];
 }
+
+/**
+ * Responses API Input Item Types
+ * These are the formats that can appear in the input array
+ */
+
+// Regular user/assistant message
+export interface ResponsesAPIMessageInput {
+    role: "user" | "assistant";
+    content: string;
+}
+
+// Function call item (reconstructed from storage or appended from response.output)
+export interface ResponsesAPIFunctionCallInput {
+    type: "function_call";
+    call_id: string;
+    name: string;
+    arguments: string; // JSON string
+}
+
+// Function call output (result of executing a function)
+export interface ResponsesAPIFunctionCallOutputInput {
+    type: "function_call_output";
+    call_id: string;
+    output: string; // JSON string
+}
+
+// Union type for all possible input items
+export type ResponsesAPIInput =
+    | ResponsesAPIMessageInput
+    | ResponsesAPIFunctionCallInput
+    | ResponsesAPIFunctionCallOutputInput;

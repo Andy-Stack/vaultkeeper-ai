@@ -1,6 +1,5 @@
 import { StringTools } from "Helpers/StringTools";
 import { ConversationContent } from "./ConversationContent";
-import { ApiErrorType } from "Types/ApiError";
 
 export class Conversation {
 
@@ -31,29 +30,5 @@ export class Conversation {
             Array.isArray(data.contents) &&
             data.contents.every(ConversationContent.isConversationContentData)
         );
-    }
-
-    public setMostRecentContent(content: string) {
-        const conversationContent: ConversationContent | undefined = this.contents[this.contents.length - 1];
-        if (conversationContent) {
-            conversationContent.content = content;
-            conversationContent.errorType = undefined;
-        }
-    }
-
-    public setMostRecentError(content: string, errorType: ApiErrorType) {
-        const conversationContent: ConversationContent | undefined = this.contents[this.contents.length - 1];
-        if (conversationContent) {
-            conversationContent.content = content;
-            conversationContent.errorType = errorType;
-        }
-    }
-
-    public setMostRecentFunctionCall(functionCall: string) {
-        const conversationContent: ConversationContent | undefined = this.contents[this.contents.length - 1];
-        if (conversationContent) {
-            conversationContent.functionCall = functionCall;
-            conversationContent.isFunctionCall = true;
-        }
     }
 }

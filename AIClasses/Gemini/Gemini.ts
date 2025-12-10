@@ -16,6 +16,7 @@ export class Gemini extends BaseAIClass {
 
   private accumulatedFunctionName: string | null = null;
   private accumulatedFunctionArgs: Record<string, unknown> = {};
+  private accumulatedThoughtSignature: string | null = null;
 
   public constructor() {
     super(AIProvider.Gemini);
@@ -29,6 +30,7 @@ export class Gemini extends BaseAIClass {
 
     this.accumulatedFunctionName = null;
     this.accumulatedFunctionArgs = {};
+    this.accumulatedThoughtSignature = null;
 
     const contents = this.extractContents(conversation.contents);
 
@@ -112,6 +114,11 @@ export class Gemini extends BaseAIClass {
                 ...part.functionCall.args
               };
             }
+
+            // Accumulate thought signature (sibling property on Part)
+            if (part.thoughtSignature) {
+              this.accumulatedThoughtSignature = part.thoughtSignature;
+            }
             break; // Only handle first function call per chunk
           }
         }
@@ -126,7 +133,9 @@ export class Gemini extends BaseAIClass {
       if (isComplete && this.accumulatedFunctionName) {
         functionCall = new AIFunctionCall(
           aiFunctionFromString(this.accumulatedFunctionName),
-          this.accumulatedFunctionArgs as Record<string, object>
+          this.accumulatedFunctionArgs as Record<string, object>,
+          undefined,  // toolId not used by Gemini
+          this.accumulatedThoughtSignature || undefined
         );
       }
 
@@ -147,10 +156,47 @@ export class Gemini extends BaseAIClass {
         const parts: Part[] = [];
         const contentToExtract = this.getContentToExtract(content);
 
-        if (contentToExtract.trim() !== "") {
-          if (content.isFunctionCallResponse) {
-            const parsedContent = this.parseFunctionResponse(contentToExtract);
-            if (parsedContent && parsedContent.functionResponse) {
+        // Add text content if not a function call response
+        if (contentToExtract.trim() !== "" && !content.isFunctionCallResponse) {
+          parts.push({ text: contentToExtract });
+        }
+
+        // Add function call if present
+        if (content.isFunctionCall && content.functionCall.trim() !== "") {
+          const parsedContent = this.parseFunctionCall(content.functionCall);
+
+          if (parsedContent) {
+            if (content.thoughtSignature && content.thoughtSignature.trim() !== "") {
+              // Has signature - use proper function call format
+              const part: Part = {
+                functionCall: {
+                  name: parsedContent.functionCall.name,
+                  args: parsedContent.functionCall.args
+                },
+                thoughtSignature: content.thoughtSignature
+              };
+              parts.push(part);
+            } else {
+              // No signature (cross-provider scenario) - use legacy text format
+              parts.push({
+                text: this.convertFunctionCallToText(parsedContent)
+              });
+            }
+          } else if (contentToExtract.trim() === "") {
+            // Fall back to treating as text
+            parts.push({
+              text: "Error parsing function call"
+            });
+          }
+        }
+
+        // Add function response if present
+        if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
+          const parsedContent = this.parseFunctionResponse(contentToExtract);
+
+          if (parsedContent) {
+            if (parsedContent.id && parsedContent.id.trim() !== "") {
+              // Has ID - use proper function response format
               parts.push({
                 functionResponse: {
                   name: parsedContent.functionResponse.name,
@@ -158,21 +204,15 @@ export class Gemini extends BaseAIClass {
                 }
               });
             } else {
-              parts.push({ text: contentToExtract });
+              // No ID (cross-provider scenario) - use legacy text format
+              parts.push({
+                text: this.convertFunctionResponseToText(parsedContent)
+              });
             }
           } else {
-            parts.push({ text: contentToExtract });
-          }
-        }
-
-        if (content.isFunctionCall && content.functionCall.trim() !== "") {
-          const parsedContent = this.parseFunctionCall(content.functionCall);
-          if (parsedContent && parsedContent.functionCall) {
+            // Fall back to text content
             parts.push({
-              functionCall: {
-                name: parsedContent.functionCall.name,
-                args: parsedContent.functionCall.args
-              }
+              text: contentToExtract
             });
           }
         }
@@ -191,5 +231,20 @@ export class Gemini extends BaseAIClass {
       description: functionDefinition.description,
       parameters: functionDefinition.parameters as FunctionDeclaration['parameters']
     }));
+  }
+
+  /*
+    If a conversation used another provider it may not have thought signatures required by Gemini 3.
+    Instead provide the function call and response as plain text to preserve context without breaking.
+  */
+
+  private convertFunctionCallToText(parsedContent: import("AIClasses/Schemas/AIFunctionTypes").StoredFunctionCall): string {
+    const inputJson = JSON.stringify(parsedContent.functionCall.args);
+    return `[Legacy Tool Call] ${parsedContent.functionCall.name}\nInput: ${inputJson}`;
+  }
+
+  private convertFunctionResponseToText(parsedContent: import("AIClasses/Schemas/AIFunctionTypes").StoredFunctionResponse): string {
+    const resultJson = JSON.stringify(parsedContent.functionResponse.response);
+    return `[Legacy Tool Result] ${parsedContent.functionResponse.name}\nResult: ${resultJson}`;
   }
 }

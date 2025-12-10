@@ -6,6 +6,8 @@ export class AbortService {
     return error instanceof DOMException && error.name === "AbortError";
   }
 
+  public reset = () => this.initialiseAbortController(); // semantic alias for initialiseAbortController
+
   public initialiseAbortController(): void {
       this.abortController.abort();
       this.abortController = new AbortController();

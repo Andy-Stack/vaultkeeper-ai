@@ -166,6 +166,10 @@ export class VaultService {
             return Exception.new(`File does not exist: ${sourcePath}`);
         }
 
+        if (this.isExclusion(destinationPath, allowAccessToPluginRoot)) {
+            return Exception.new(`Failed to rename "${sourcePath}" to "${destinationPath}", permission denied.`)
+        }
+
         try {
             await this.createDirectories(destinationPath, allowAccessToPluginRoot)
             await this.fileManager.renameFile(file, destinationPath);

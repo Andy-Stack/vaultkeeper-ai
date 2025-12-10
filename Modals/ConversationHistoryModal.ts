@@ -95,7 +95,7 @@ export class ConversationHistoryModal extends Modal {
 
         const deletedIds: string[] = [];
         for (const item of itemsToDelete) {
-            const result = await this.fileSystemService.deleteFile(item.filePath, true);
+            const result = await this.fileSystemService.deleteFile(item.filePath, true, false);
             if (result instanceof Error) {
                 new Notice(`Failed to delete conversation '${item.title}'`);
                 continue;

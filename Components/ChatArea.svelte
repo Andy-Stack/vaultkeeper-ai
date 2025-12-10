@@ -31,36 +31,28 @@
     chatContainer.scroll({ top: 0, behavior: "instant" });
   }
 
-  export function scrollChatArea(behavior: ScrollBehavior | undefined) {
+  export function updateChatAreaLayout(behavior: ScrollBehavior | undefined) {
     tick().then(() => {
       settled = false;
 
-      if (messageElements.length === 0 || !chatAreaPaddingElement) {
+      if (messageElements.length <= 0 || !chatAreaPaddingElement) {
         if (chatAreaPaddingElement) {
           chatAreaPaddingElement.style.padding = "0px";
         }
         return;
       }
-      messageElements.sort((a, b) => a.index - b.index)[messageElements.length - 1];
 
-      const gap = parseFloat(getComputedStyle(chatContainer).gap) || 0;
       const paddingTop = parseFloat(getComputedStyle(chatContainer).paddingTop) || 0;
       const paddingBottom = parseFloat(getComputedStyle(chatContainer).paddingBottom) || 0;
 
-      let usedSpace = 0;
-      for (let i = messageElements.length - 1; i >= 0; i--) {
-        const messageElement = messageElements[i];
-        usedSpace += messageElement.element.offsetHeight + gap;
-        if (messageElement.element.classList.contains(Role.User)) {
-          break;
-        }
-      }
-      const padding = chatContainer.offsetHeight - paddingTop - paddingBottom - usedSpace;
+      const messageElement = messageElements.sort((a, b) => a.index - b.index)[messageElements.length - 1];
+      const messageSpace = messageElement.element.offsetHeight;
 
+      const padding = chatContainer.offsetHeight - paddingTop - paddingBottom - messageSpace;
       chatAreaPaddingElement.style.padding = `${Math.max(0, padding / 2)}px`;
 
       tick().then(() => {
-        if (behavior) {
+        if (autoScroll && behavior) {
           chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: behavior })
         }
         tick().then(() => settled = true);
@@ -69,6 +61,8 @@
   }
 
   let settled: boolean = false;
+  let autoScroll: boolean = true;
+  let lastScrollTop: number = 0;
 
   let chatAreaPaddingElement: HTMLElement | undefined;
 
@@ -144,6 +138,35 @@
     messageElements.push({ index: index, element: element });
   }
 
+  // decide if we should be auto scrolling
+  function handleScroll() {
+    if (!chatContainer) {
+      return;
+    }
+
+    const scrollTop = chatContainer.scrollTop;
+    const scrollHeight = chatContainer.scrollHeight;
+    const clientHeight = chatContainer.clientHeight;
+
+    // Only process if the user actually scrolled (scrollTop changed)
+    // This prevents false triggers when content grows and pushes things down
+    if (scrollTop === lastScrollTop) {
+      return;
+    }
+
+    const previousScrollTop = lastScrollTop;
+    lastScrollTop = scrollTop;
+
+    // Check if we're at the bottom (with a small tolerance for rounding errors)
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 5;
+
+    if (isAtBottom) {
+      autoScroll = true;
+    } else if (scrollTop < previousScrollTop) {
+      autoScroll = false; // user scrolled up
+    }
+  }
+
   // Track streaming messages and update them incrementally
   $: {
     messages.forEach((message) => {
@@ -173,7 +196,7 @@
   }
 </script>
 
-<div class="chat-area" bind:this={chatContainer}>
+<div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll}>
   {#each messages as message, index}
     {#if !message.isFunctionCallResponse && message.content.trim() !== ""}
       {#if message.role === Role.User}

@@ -168,6 +168,48 @@ describe('Gemini', () => {
             expect((gemini as any).accumulatedFunctionArgs).toEqual({ query: 'test' });
         });
 
+        it('should capture thoughtSignature when present in part', () => {
+            const signature = 'base64EncodedSignature==';
+            const chunk = JSON.stringify({
+                candidates: [{
+                    content: {
+                        parts: [{
+                            functionCall: {
+                                name: 'search_vault_files',
+                                args: { query: 'test' }
+                            },
+                            thoughtSignature: signature
+                        }]
+                    }
+                }]
+            });
+
+            (gemini as any).parseStreamChunk(chunk);
+
+            expect((gemini as any).accumulatedFunctionName).toBe('search_vault_files');
+            expect((gemini as any).accumulatedFunctionArgs).toEqual({ query: 'test' });
+            expect((gemini as any).accumulatedThoughtSignature).toBe(signature);
+        });
+
+        it('should not set thoughtSignature when not present in part', () => {
+            const chunk = JSON.stringify({
+                candidates: [{
+                    content: {
+                        parts: [{
+                            functionCall: {
+                                name: 'search_vault_files',
+                                args: { query: 'test' }
+                            }
+                        }]
+                    }
+                }]
+            });
+
+            (gemini as any).parseStreamChunk(chunk);
+
+            expect((gemini as any).accumulatedThoughtSignature).toBeNull();
+        });
+
         it('should merge function arguments incrementally (object spread)', () => {
             // First chunk with partial args
             (gemini as any).parseStreamChunk(JSON.stringify({
@@ -224,6 +266,47 @@ describe('Gemini', () => {
             expect(result.functionCall).toBeDefined();
             expect(result.functionCall?.name).toBe('search_vault_files');
             expect(result.functionCall?.arguments).toEqual({ query: 'test' });
+        });
+
+        it('should finalize function call with thoughtSignature on completion', () => {
+            const signature = 'finalSignature==';
+            // Setup accumulated state
+            (gemini as any).accumulatedFunctionName = 'search_vault_files';
+            (gemini as any).accumulatedFunctionArgs = { query: 'test' };
+            (gemini as any).accumulatedThoughtSignature = signature;
+
+            const chunk = JSON.stringify({
+                candidates: [{
+                    finishReason: 'FUNCTION_CALL'
+                }]
+            });
+
+            const result = (gemini as any).parseStreamChunk(chunk);
+
+            expect(result.isComplete).toBe(true);
+            expect(result.shouldContinue).toBe(true);
+            expect(result.functionCall).toBeDefined();
+            expect(result.functionCall?.name).toBe('search_vault_files');
+            expect(result.functionCall?.arguments).toEqual({ query: 'test' });
+            expect(result.functionCall?.thoughtSignature).toBe(signature);
+        });
+
+        it('should finalize function call without thoughtSignature when not accumulated', () => {
+            // Setup accumulated state without signature
+            (gemini as any).accumulatedFunctionName = 'search_vault_files';
+            (gemini as any).accumulatedFunctionArgs = { query: 'test' };
+            (gemini as any).accumulatedThoughtSignature = null;
+
+            const chunk = JSON.stringify({
+                candidates: [{
+                    finishReason: 'FUNCTION_CALL'
+                }]
+            });
+
+            const result = (gemini as any).parseStreamChunk(chunk);
+
+            expect(result.functionCall).toBeDefined();
+            expect(result.functionCall?.thoughtSignature).toBeUndefined();
         });
 
         it('should detect completion with STOP finish reason', () => {
@@ -352,7 +435,7 @@ describe('Gemini', () => {
             expect(requestBody.system_instruction.parts[2].text).toBe('User instruction');
         });
 
-        it('should convert function call to Gemini format', () => {
+        it('should convert function call to Gemini format (with signature from Gemini)', () => {
             const functionCallContent = new ConversationContent(
                 Role.Assistant,
                 '',
@@ -364,7 +447,10 @@ describe('Gemini', () => {
                     }
                 }),
                 new Date(),
-                true
+                true,
+                false,
+                undefined,
+                'geminiSignatureFromAPI=='  // Has signature from Gemini
             );
 
             const result = (gemini as any).extractContents([functionCallContent]);
@@ -376,12 +462,101 @@ describe('Gemini', () => {
                 functionCall: {
                     name: 'search_vault_files',
                     args: { query: 'test' }
-                }
+                },
+                thoughtSignature: 'geminiSignatureFromAPI=='
             });
+        });
+
+        it('should convert function call with thoughtSignature to Gemini format with signature', () => {
+            const signature = 'geminiSignature==';
+            const functionCallContent = new ConversationContent(
+                Role.Assistant,
+                '',
+                '',
+                JSON.stringify({
+                    functionCall: {
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                new Date(),
+                true,
+                false,
+                undefined,
+                signature
+            );
+
+            const result = (gemini as any).extractContents([functionCallContent]);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].role).toBe(Role.Model);
+            expect(result[0].parts).toHaveLength(1);
+            expect(result[0].parts[0]).toEqual({
+                functionCall: {
+                    name: 'search_vault_files',
+                    args: { query: 'test' }
+                },
+                thoughtSignature: signature
+            });
+        });
+
+        it('should fall back to legacy text format for function call without thoughtSignature (cross-provider)', () => {
+            const functionCallContent = new ConversationContent(
+                Role.Assistant,
+                '',
+                '',
+                JSON.stringify({
+                    functionCall: {
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                new Date(),
+                true,
+                false,
+                undefined,
+                undefined  // No thoughtSignature (came from Claude/OpenAI)
+            );
+
+            const result = (gemini as any).extractContents([functionCallContent]);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].role).toBe(Role.Model);
+            expect(result[0].parts).toHaveLength(1);
+            expect(result[0].parts[0]).toHaveProperty('text');
+            expect(result[0].parts[0].text).toContain('[Legacy Tool Call]');
+            expect(result[0].parts[0].text).toContain('search_vault_files');
+            expect(result[0].parts[0].text).toContain('Input:');
+        });
+
+        it('should fall back to legacy text format for function call with empty thoughtSignature', () => {
+            const functionCallContent = new ConversationContent(
+                Role.Assistant,
+                '',
+                '',
+                JSON.stringify({
+                    functionCall: {
+                        name: 'read_file',
+                        args: { path: 'note.md' }
+                    }
+                }),
+                new Date(),
+                true,
+                false,
+                undefined,
+                ''  // Empty thoughtSignature
+            );
+
+            const result = (gemini as any).extractContents([functionCallContent]);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].parts[0]).toHaveProperty('text');
+            expect(result[0].parts[0].text).toContain('[Legacy Tool Call] read_file');
         });
 
         it('should convert function response to Gemini format', () => {
             const responseContent = JSON.stringify({
+                id: 'call-123',
                 functionResponse: {
                     name: 'search_vault_files',
                     response: ['file1.txt', 'file2.txt']
@@ -407,6 +582,52 @@ describe('Gemini', () => {
             });
         });
 
+        it('should fall back to legacy text format for function response without id (cross-provider)', () => {
+            const responseContent = JSON.stringify({
+                functionResponse: {
+                    name: 'search_vault_files',
+                    response: ['file1.txt', 'file2.txt']
+                }
+            });
+            const functionResponseContent = new ConversationContent(
+                Role.User,
+                responseContent,
+                responseContent
+            );
+            functionResponseContent.isFunctionCallResponse = true;
+
+            const result = (gemini as any).extractContents([functionResponseContent]);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].parts).toHaveLength(1);
+            expect(result[0].parts[0]).toHaveProperty('text');
+            expect(result[0].parts[0].text).toContain('[Legacy Tool Result]');
+            expect(result[0].parts[0].text).toContain('search_vault_files');
+            expect(result[0].parts[0].text).toContain('Result:');
+        });
+
+        it('should fall back to legacy text format for function response with empty id', () => {
+            const responseContent = JSON.stringify({
+                id: '',
+                functionResponse: {
+                    name: 'read_file',
+                    response: { content: 'file contents' }
+                }
+            });
+            const functionResponseContent = new ConversationContent(
+                Role.User,
+                responseContent,
+                responseContent
+            );
+            functionResponseContent.isFunctionCallResponse = true;
+
+            const result = (gemini as any).extractContents([functionResponseContent]);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].parts[0]).toHaveProperty('text');
+            expect(result[0].parts[0].text).toContain('[Legacy Tool Result] read_file');
+        });
+
         it('should handle invalid JSON in function call gracefully', () => {
             const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
@@ -421,8 +642,10 @@ describe('Gemini', () => {
 
             const result = (gemini as any).extractContents([invalidContent]);
 
-            // Should be filtered out since it has no valid parts (no text, invalid function call)
-            expect(result).toHaveLength(0);
+            // Should fallback to error message as text (since content is empty and function call is invalid)
+            // The implementation includes an error message as text when parsing fails
+            expect(result).toHaveLength(1);
+            expect(result[0].parts[0]).toHaveProperty('text');
             expect(exceptionSpy).toHaveBeenCalled();
 
             exceptionSpy.mockRestore();
@@ -494,7 +717,7 @@ describe('Gemini', () => {
         it('should include function call when it has a corresponding response', () => {
             const contents = [
                 new ConversationContent(Role.User, 'Search for files', 'Search for files'),
-                // Function call with response (not orphaned)
+                // Function call with response (not orphaned) - with thoughtSignature
                 new ConversationContent(
                     Role.Assistant,
                     '',
@@ -506,11 +729,15 @@ describe('Gemini', () => {
                         }
                     }),
                     new Date(),
-                    true
+                    true,
+                    false,
+                    undefined,
+                    'signature123=='  // Has signature
                 ),
                 // Corresponding function response
                 (() => {
                     const responseContent = JSON.stringify({
+                        id: 'resp-1',
                         functionResponse: {
                             name: 'search_vault_files',
                             response: ['file1.txt']
@@ -533,7 +760,7 @@ describe('Gemini', () => {
         it('should include function call when it is the most recent item', () => {
             const contents = [
                 new ConversationContent(Role.User, 'Search for files', 'Search for files'),
-                // Function call as most recent item (should be included)
+                // Function call as most recent item (should be included) - with signature
                 new ConversationContent(
                     Role.Assistant,
                     '',
@@ -545,7 +772,10 @@ describe('Gemini', () => {
                         }
                     }),
                     new Date(),
-                    true
+                    true,
+                    false,
+                    undefined,
+                    'latestCallSignature=='
                 )
             ];
 
@@ -557,7 +787,8 @@ describe('Gemini', () => {
                 functionCall: {
                     name: 'search_vault_files',
                     args: { query: 'test' }
-                }
+                },
+                thoughtSignature: 'latestCallSignature=='
             });
         });
 
@@ -603,6 +834,124 @@ describe('Gemini', () => {
             expect(result[0].parts[0].text).toBe('First message');
             expect(result[1].parts[0].text).toBe('Second message');
             expect(result[2].parts[0].text).toBe('Third message');
+        });
+    });
+
+    describe('Helper Methods', () => {
+        describe('convertFunctionCallToText', () => {
+            it('should convert function call to legacy text format', () => {
+                const parsedContent = {
+                    functionCall: {
+                        name: 'search_vault_files',
+                        args: { query: 'test notes' }
+                    }
+                };
+
+                const result = (gemini as any).convertFunctionCallToText(parsedContent);
+
+                expect(result).toContain('[Legacy Tool Call]');
+                expect(result).toContain('search_vault_files');
+                expect(result).toContain('Input:');
+                expect(result).toContain('"query":"test notes"');
+            });
+
+            it('should format complex arguments correctly', () => {
+                const parsedContent = {
+                    functionCall: {
+                        name: 'write_file',
+                        args: {
+                            path: 'note.md',
+                            content: 'Hello World',
+                            metadata: { tags: ['important'] }
+                        }
+                    }
+                };
+
+                const result = (gemini as any).convertFunctionCallToText(parsedContent);
+
+                expect(result).toContain('[Legacy Tool Call] write_file');
+                expect(result).toContain('Input:');
+                expect(result).toContain('"path":"note.md"');
+                expect(result).toContain('"content":"Hello World"');
+                expect(result).toContain('"metadata"');
+            });
+
+            it('should handle function call with empty args', () => {
+                const parsedContent = {
+                    functionCall: {
+                        name: 'list_files',
+                        args: {}
+                    }
+                };
+
+                const result = (gemini as any).convertFunctionCallToText(parsedContent);
+
+                expect(result).toBe('[Legacy Tool Call] list_files\nInput: {}');
+            });
+        });
+
+        describe('convertFunctionResponseToText', () => {
+            it('should convert function response to legacy text format', () => {
+                const parsedContent = {
+                    functionResponse: {
+                        name: 'search_vault_files',
+                        response: ['file1.txt', 'file2.txt', 'file3.txt']
+                    }
+                };
+
+                const result = (gemini as any).convertFunctionResponseToText(parsedContent);
+
+                expect(result).toContain('[Legacy Tool Result]');
+                expect(result).toContain('search_vault_files');
+                expect(result).toContain('Result:');
+                expect(result).toContain('file1.txt');
+                expect(result).toContain('file2.txt');
+            });
+
+            it('should format complex response objects correctly', () => {
+                const parsedContent = {
+                    functionResponse: {
+                        name: 'read_file',
+                        response: {
+                            content: 'File contents here',
+                            metadata: { size: 1024, modified: '2024-01-01' }
+                        }
+                    }
+                };
+
+                const result = (gemini as any).convertFunctionResponseToText(parsedContent);
+
+                expect(result).toContain('[Legacy Tool Result] read_file');
+                expect(result).toContain('Result:');
+                expect(result).toContain('"content":"File contents here"');
+                expect(result).toContain('"metadata"');
+            });
+
+            it('should handle empty response', () => {
+                const parsedContent = {
+                    functionResponse: {
+                        name: 'delete_file',
+                        response: null
+                    }
+                };
+
+                const result = (gemini as any).convertFunctionResponseToText(parsedContent);
+
+                expect(result).toBe('[Legacy Tool Result] delete_file\nResult: null');
+            });
+
+            it('should handle string response', () => {
+                const parsedContent = {
+                    functionResponse: {
+                        name: 'get_status',
+                        response: 'Success'
+                    }
+                };
+
+                const result = (gemini as any).convertFunctionResponseToText(parsedContent);
+
+                expect(result).toBe('[Legacy Tool Result] get_status\nResult: "Success"');
+            });
         });
     });
 
@@ -670,6 +1019,7 @@ describe('Gemini', () => {
             // Set some accumulated state
             (gemini as any).accumulatedFunctionName = 'old_func';
             (gemini as any).accumulatedFunctionArgs = { old: 'args' };
+            (gemini as any).accumulatedThoughtSignature = 'oldSignature';
 
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent(Role.User, 'Test'));
@@ -684,6 +1034,7 @@ describe('Gemini', () => {
             // State should be reset (after checking web search mode)
             expect((gemini as any).accumulatedFunctionName).toBeNull();
             expect((gemini as any).accumulatedFunctionArgs).toEqual({});
+            expect((gemini as any).accumulatedThoughtSignature).toBeNull();
         });
     });
 });

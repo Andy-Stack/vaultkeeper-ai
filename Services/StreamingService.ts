@@ -48,15 +48,15 @@ export class StreamingService {
           return;
 
         } catch (error) {
-          lastError = error instanceof Error ? error : Exception.new(error);
+          lastError = Exception.new(error);
 
           if (AbortService.isAbortError(error)) {
             throw error;
           }
 
           if (!this.shouldRetry(error, attempt)) {
-            Exception.log(lastError);
-            yield this.createErrorChunk(lastError);
+            Exception.log(error);
+            yield this.createErrorChunk(Exception.new(error));
             return;
           }
 

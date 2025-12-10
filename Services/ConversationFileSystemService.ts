@@ -46,6 +46,7 @@ export class ConversationFileSystemService {
                     isFunctionCall: content.isFunctionCall,
                     isFunctionCallResponse: content.isFunctionCallResponse,
                     toolId: content.toolId,
+                    thoughtSignature: content.thoughtSignature,
                     errorType: content.errorType
                 }))
         };
@@ -110,6 +111,7 @@ export class ConversationFileSystemService {
                         content.isFunctionCall,
                         content.isFunctionCallResponse,
                         content.toolId,
+                        content.thoughtSignature,
                         content.errorType
                     );
                 });

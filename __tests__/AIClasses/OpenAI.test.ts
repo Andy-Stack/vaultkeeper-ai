@@ -138,17 +138,18 @@ describe('OpenAI', () => {
             expect(result.isComplete).toBe(false);
         });
 
-        it('should handle complete function call in done event', () => {
-            // Responses API provides the complete function call in one event
+        it('should handle complete function call in output_item.done event', () => {
+            // Responses API provides the complete function call in response.output_item.done event
             const chunk = JSON.stringify({
-                type: 'response.function_call_arguments.done',
-                call: {
-                    id: 'call_123',
-                    type: 'function',
-                    function: {
-                        name: 'search_vault_files',
-                        arguments: '{"query":"test"}'
-                    }
+                type: 'response.output_item.done',
+                item_id: 'item_123',
+                output_index: 0,
+                item: {
+                    id: 'item_123',
+                    type: 'function_call',
+                    name: 'search_vault_files',
+                    call_id: 'call_123',
+                    arguments: '{"query":"test"}'
                 }
             });
 
@@ -162,8 +163,9 @@ describe('OpenAI', () => {
             expect(result.functionCall?.toolId).toBe('call_123');
         });
 
-        it('should handle response.done event with tool calls', () => {
-            // response.done event indicates completion and may contain tool calls
+        it('should handle response.done event', () => {
+            // response.done event indicates completion
+            // In Responses API, function calls are detected via output_item.done events, not response.done
             const chunk = JSON.stringify({
                 type: 'response.done',
                 response: {
@@ -171,17 +173,9 @@ describe('OpenAI', () => {
                     status: 'completed',
                     output: [
                         {
+                            type: 'message',
                             role: 'assistant',
-                            tool_calls: [
-                                {
-                                    id: 'call_1',
-                                    type: 'function',
-                                    function: {
-                                        name: 'search_vault_files',
-                                        arguments: '{"a":1}'
-                                    }
-                                }
-                            ]
+                            content: 'Done'
                         }
                     ]
                 }
@@ -190,7 +184,7 @@ describe('OpenAI', () => {
             const result = (openai as any).parseStreamChunk(chunk);
 
             expect(result.isComplete).toBe(true);
-            expect(result.shouldContinue).toBe(true);
+            expect(result.shouldContinue).toBe(false);
         });
 
         it('should handle unknown event types gracefully', () => {
@@ -234,14 +228,15 @@ describe('OpenAI', () => {
             const exceptionSpy = vi.spyOn(Exception, 'log');
 
             const chunk = JSON.stringify({
-                type: 'response.function_call_arguments.done',
-                call: {
-                    id: 'call_123',
-                    type: 'function',
-                    function: {
-                        name: 'search_vault_files',
-                        arguments: 'invalid json {'
-                    }
+                type: 'response.output_item.done',
+                item_id: 'item_123',
+                output_index: 0,
+                item: {
+                    id: 'item_123',
+                    type: 'function_call',
+                    name: 'search_vault_files',
+                    call_id: 'call_123',
+                    arguments: 'invalid json {'
                 }
             });
 
@@ -343,7 +338,7 @@ describe('OpenAI', () => {
             expect(requestBody.messages).toBeUndefined();
         });
 
-        it('should convert function call to OpenAI tool_calls format', async () => {
+        it('should convert function call to Responses API format', async () => {
             const conversation = new Conversation();
             const functionCallContent = new ConversationContent(
                 Role.Assistant,
@@ -370,25 +365,31 @@ describe('OpenAI', () => {
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
             const requestBody = callArgs[1];
-            const assistantMessage = requestBody.input.find((m: any) => m.role === Role.Assistant);
 
-            expect(assistantMessage).toBeDefined();
-            expect(assistantMessage.tool_calls).toHaveLength(1);
-            expect(assistantMessage.tool_calls[0]).toEqual({
-                id: 'call_123',
-                type: 'function',
-                function: {
-                    name: 'search_vault_files',
-                    arguments: '{"query":"test"}'
-                }
+            // Should have 2 items: assistant message + function call
+            expect(requestBody.input).toHaveLength(2);
+
+            // First item: assistant message with text
+            expect(requestBody.input[0]).toEqual({
+                role: Role.Assistant,
+                content: 'Let me search'
+            });
+
+            // Second item: function call
+            expect(requestBody.input[1]).toEqual({
+                type: 'function_call',
+                call_id: 'call_123',
+                name: 'search_vault_files',
+                arguments: '{"query":"test"}'
             });
         });
 
-        it('should convert function response to role:tool format', async () => {
+        it('should convert function response to function_call_output format', async () => {
             const conversation = new Conversation();
             const responseContent = JSON.stringify({
                 id: 'call_123',
                 functionResponse: {
+                    name: 'search_vault_files',
                     response: ['file1.txt', 'file2.txt']
                 }
             });
@@ -409,11 +410,14 @@ describe('OpenAI', () => {
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
             const requestBody = callArgs[1];
-            const toolMessage = requestBody.input.find((m: any) => m.role === 'tool');
 
-            expect(toolMessage).toBeDefined();
-            expect(toolMessage.tool_call_id).toBe('call_123');
-            expect(toolMessage.content).toBe(JSON.stringify(['file1.txt', 'file2.txt']));
+            // Should have 1 function_call_output item
+            expect(requestBody.input).toHaveLength(1);
+            expect(requestBody.input[0]).toEqual({
+                type: 'function_call_output',
+                call_id: 'call_123',
+                output: '["file1.txt","file2.txt"]'
+            });
         });
 
         it('should handle invalid JSON in function call gracefully', async () => {
@@ -573,10 +577,23 @@ describe('OpenAI', () => {
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
             const requestBody = callArgs[1];
 
-            // Should have all 3 items (function call has response)
+            // Should have 3 items: user message, function_call, function_call_output
             expect(requestBody.input).toHaveLength(3);
-            expect(requestBody.input[1].tool_calls).toBeDefined();
-            expect(requestBody.input[2].role).toBe('tool');
+            expect(requestBody.input[0]).toEqual({
+                role: Role.User,
+                content: 'Search for files'
+            });
+            expect(requestBody.input[1]).toEqual({
+                type: 'function_call',
+                call_id: 'call_123',
+                name: 'search_vault_files',
+                arguments: '{"query":"test"}'
+            });
+            expect(requestBody.input[2]).toEqual({
+                type: 'function_call_output',
+                call_id: 'call_123',
+                output: '["file1.txt"]'
+            });
         });
 
         it('should include function call when it is the most recent item', async () => {
@@ -609,10 +626,18 @@ describe('OpenAI', () => {
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
             const requestBody = callArgs[1];
 
-            // Should have both items (most recent function call is included)
+            // Should have 2 items: user message and function_call (no assistant message since content is empty)
             expect(requestBody.input).toHaveLength(2);
-            expect(requestBody.input[1].tool_calls).toBeDefined();
-            expect(requestBody.input[1].tool_calls[0].id).toBe('call_latest');
+            expect(requestBody.input[0]).toEqual({
+                role: Role.User,
+                content: 'Search for files'
+            });
+            expect(requestBody.input[1]).toEqual({
+                type: 'function_call',
+                call_id: 'call_latest',
+                name: 'search_vault_files',
+                arguments: '{"query":"test"}'
+            });
         });
 
         it('should handle multiple orphaned function calls correctly', async () => {
@@ -668,6 +693,212 @@ describe('OpenAI', () => {
             expect(requestBody.input[0].content).toBe('First message');
             expect(requestBody.input[1].content).toBe('Second message');
             expect(requestBody.input[2].content).toBe('Third message');
+        });
+
+        describe('Responses API Format Edge Cases', () => {
+            it('should handle assistant message with both text and function call', async () => {
+                const conversation = new Conversation();
+                const functionCallContent = new ConversationContent(
+                    Role.Assistant,
+                    'I will search for that.',
+                    '',
+                    JSON.stringify({
+                        functionCall: {
+                            id: 'call_123',
+                            name: 'search_vault_files',
+                            args: { query: 'test' }
+                        }
+                    }),
+                    new Date(),
+                    true
+                );
+                conversation.contents.push(functionCallContent);
+
+                mockStreamingService.streamRequest.mockImplementation(async function* () {
+                    yield { content: 'done', isComplete: true };
+                });
+
+                const generator = openai.streamRequest(conversation, true);
+                for await (const chunk of generator) {}
+
+                const callArgs = mockStreamingService.streamRequest.mock.calls[0];
+                const requestBody = callArgs[1];
+
+                // Should have 2 items: assistant message + function call
+                expect(requestBody.input).toHaveLength(2);
+                expect(requestBody.input[0]).toEqual({
+                    role: Role.Assistant,
+                    content: 'I will search for that.'
+                });
+                expect(requestBody.input[1].type).toBe('function_call');
+            });
+
+            it('should handle function call with empty text content', async () => {
+                const conversation = new Conversation();
+                const functionCallContent = new ConversationContent(
+                    Role.Assistant,
+                    '',
+                    '',
+                    JSON.stringify({
+                        functionCall: {
+                            id: 'call_123',
+                            name: 'search_vault_files',
+                            args: { query: 'test' }
+                        }
+                    }),
+                    new Date(),
+                    true
+                );
+                conversation.contents.push(functionCallContent);
+
+                mockStreamingService.streamRequest.mockImplementation(async function* () {
+                    yield { content: 'done', isComplete: true };
+                });
+
+                const generator = openai.streamRequest(conversation, true);
+                for await (const chunk of generator) {}
+
+                const callArgs = mockStreamingService.streamRequest.mock.calls[0];
+                const requestBody = callArgs[1];
+
+                // Should have only 1 item: function call (no empty message)
+                expect(requestBody.input).toHaveLength(1);
+                expect(requestBody.input[0]).toEqual({
+                    type: 'function_call',
+                    call_id: 'call_123',
+                    name: 'search_vault_files',
+                    arguments: '{"query":"test"}'
+                });
+            });
+
+            it('should handle complex function response objects', async () => {
+                const conversation = new Conversation();
+                const complexResponse = {
+                    files: ['file1.txt', 'file2.md'],
+                    count: 2,
+                    metadata: { total: 100, filtered: 2 }
+                };
+                const responseContent = JSON.stringify({
+                    id: 'call_123',
+                    functionResponse: {
+                        name: 'search_vault_files',
+                        response: complexResponse
+                    }
+                });
+                const functionResponseContent = new ConversationContent(
+                    Role.User,
+                    responseContent,
+                    responseContent
+                );
+                functionResponseContent.isFunctionCallResponse = true;
+                conversation.contents.push(functionResponseContent);
+
+                mockStreamingService.streamRequest.mockImplementation(async function* () {
+                    yield { content: 'done', isComplete: true };
+                });
+
+                const generator = openai.streamRequest(conversation, true);
+                for await (const chunk of generator) {}
+
+                const callArgs = mockStreamingService.streamRequest.mock.calls[0];
+                const requestBody = callArgs[1];
+
+                expect(requestBody.input).toHaveLength(1);
+                expect(requestBody.input[0]).toEqual({
+                    type: 'function_call_output',
+                    call_id: 'call_123',
+                    output: JSON.stringify(complexResponse)
+                });
+            });
+
+            it('should handle multiple sequential function calls and responses', async () => {
+                const conversation = new Conversation();
+
+                // First function call
+                conversation.contents.push(new ConversationContent(
+                    Role.Assistant,
+                    '',
+                    '',
+                    JSON.stringify({
+                        functionCall: {
+                            id: 'call_1',
+                            name: 'search_vault_files',
+                            args: { query: 'test' }
+                        }
+                    }),
+                    new Date(),
+                    true
+                ));
+
+                // First response
+                const response1 = new ConversationContent(
+                    Role.User,
+                    JSON.stringify({
+                        id: 'call_1',
+                        functionResponse: { name: 'search_vault_files', response: ['file1.txt'] }
+                    }),
+                    JSON.stringify({
+                        id: 'call_1',
+                        functionResponse: { name: 'search_vault_files', response: ['file1.txt'] }
+                    })
+                );
+                response1.isFunctionCallResponse = true;
+                conversation.contents.push(response1);
+
+                // Second function call
+                conversation.contents.push(new ConversationContent(
+                    Role.Assistant,
+                    'Let me read that file',
+                    '',
+                    JSON.stringify({
+                        functionCall: {
+                            id: 'call_2',
+                            name: 'read_file',
+                            args: { path: 'file1.txt' }
+                        }
+                    }),
+                    new Date(),
+                    true
+                ));
+
+                // Second response
+                const response2 = new ConversationContent(
+                    Role.User,
+                    JSON.stringify({
+                        id: 'call_2',
+                        functionResponse: { name: 'read_file', response: 'file content' }
+                    }),
+                    JSON.stringify({
+                        id: 'call_2',
+                        functionResponse: { name: 'read_file', response: 'file content' }
+                    })
+                );
+                response2.isFunctionCallResponse = true;
+                conversation.contents.push(response2);
+
+                mockStreamingService.streamRequest.mockImplementation(async function* () {
+                    yield { content: 'done', isComplete: true };
+                });
+
+                const generator = openai.streamRequest(conversation, true);
+                for await (const chunk of generator) {}
+
+                const callArgs = mockStreamingService.streamRequest.mock.calls[0];
+                const requestBody = callArgs[1];
+
+                // Should have 5 items in correct order
+                expect(requestBody.input).toHaveLength(5);
+                expect(requestBody.input[0].type).toBe('function_call');
+                expect(requestBody.input[0].call_id).toBe('call_1');
+                expect(requestBody.input[1].type).toBe('function_call_output');
+                expect(requestBody.input[1].call_id).toBe('call_1');
+                expect(requestBody.input[2].role).toBe(Role.Assistant);
+                expect(requestBody.input[2].content).toBe('Let me read that file');
+                expect(requestBody.input[3].type).toBe('function_call');
+                expect(requestBody.input[3].call_id).toBe('call_2');
+                expect(requestBody.input[4].type).toBe('function_call_output');
+                expect(requestBody.input[4].call_id).toBe('call_2');
+            });
         });
     });
 

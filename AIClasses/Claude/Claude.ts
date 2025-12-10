@@ -106,7 +106,8 @@ export class Claude extends BaseAIClass {
                         functionCall = new AIFunctionCall(
                             aiFunctionFromString(this.accumulatedFunctionName),
                             args as Record<string, object>,
-                            this.accumulatedFunctionId || undefined
+                            this.accumulatedFunctionId || undefined,
+                            undefined  // thoughtSignature not used by Claude
                         );
                     } catch (error) {
                         Exception.log(error);

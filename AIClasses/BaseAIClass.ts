@@ -124,4 +124,22 @@ export abstract class BaseAIClass implements IAIClass {
             await this.aiPrompt.userInstruction()
         ].filter(s => s).join("\n\n");
     }
+
+    /**
+     * Converts a function call to legacy text format for cross-provider compatibility.
+     * Used when a provider doesn't have the required ID field (e.g., Gemini → Claude/OpenAI).
+     */
+    protected convertFunctionCallToText(parsedContent: StoredFunctionCall): string {
+        const inputJson = JSON.stringify(parsedContent.functionCall.args);
+        return `[Legacy Tool Call] ${parsedContent.functionCall.name}\nInput: ${inputJson}`;
+    }
+
+    /**
+     * Converts a function response to legacy text format for cross-provider compatibility.
+     * Used when a provider doesn't have the required ID field (e.g., Gemini → Claude/OpenAI).
+     */
+    protected convertFunctionResponseToText(parsedContent: StoredFunctionResponse): string {
+        const resultJson = JSON.stringify(parsedContent.functionResponse.response);
+        return `[Legacy Tool Result] ${parsedContent.functionResponse.name}\nResult: ${resultJson}`;
+    }
 }

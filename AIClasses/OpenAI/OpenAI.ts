@@ -6,6 +6,7 @@ import { AIProvider, AIProviderURL, toProviderModel } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
+import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
 import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIFunctionTool, ResponsesAPIInput } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
 import { ApiErrorType } from "Types/ApiError";
@@ -187,22 +188,37 @@ export class OpenAI extends BaseAIClass {
                 const parsedContent = this.parseFunctionCall(content.functionCall);
 
                 if (parsedContent) {
-                    // Add assistant text message if present
-                    const messageContent = contentToExtract.trim();
-                    if (messageContent !== "") {
+                    // Check if function call has required id field (for OpenAI Responses API)
+                    if (parsedContent.functionCall.id && parsedContent.functionCall.id.trim() !== "") {
+                        // Add assistant text message if present
+                        const messageContent = contentToExtract.trim();
+                        if (messageContent !== "") {
+                            results.push({
+                                role: content.role as "user" | "assistant",
+                                content: messageContent
+                            });
+                        }
+
+                        // Add function call as separate input item
+                        results.push({
+                            type: "function_call",
+                            call_id: parsedContent.functionCall.id,
+                            name: parsedContent.functionCall.name,
+                            arguments: JSON.stringify(parsedContent.functionCall.args)
+                        });
+                    } else {
+                        // No id (from Gemini or legacy) - convert to text message
+                        const legacyText = this.convertFunctionCallToText(parsedContent);
+                        const messageContent = contentToExtract.trim();
+                        const combinedContent = messageContent !== ""
+                            ? `${messageContent}\n\n${legacyText}`
+                            : legacyText;
+
                         results.push({
                             role: content.role as "user" | "assistant",
-                            content: messageContent
+                            content: combinedContent
                         });
                     }
-
-                    // Add function call as separate input item
-                    results.push({
-                        type: "function_call",
-                        call_id: parsedContent.functionCall.id,
-                        name: parsedContent.functionCall.name,
-                        arguments: JSON.stringify(parsedContent.functionCall.args)
-                    });
                 } else {
                     // Fall back to regular message if parsing fails
                     results.push({
@@ -218,11 +234,21 @@ export class OpenAI extends BaseAIClass {
                 const parsedContent = this.parseFunctionResponse(contentToExtract);
 
                 if (parsedContent) {
-                    results.push({
-                        type: "function_call_output",
-                        call_id: parsedContent.id,
-                        output: JSON.stringify(parsedContent.functionResponse.response)
-                    });
+                    // Check if response has required id field (for OpenAI Responses API)
+                    if (parsedContent.id && parsedContent.id.trim() !== "") {
+                        results.push({
+                            type: "function_call_output",
+                            call_id: parsedContent.id,
+                            output: JSON.stringify(parsedContent.functionResponse.response)
+                        });
+                    } else {
+                        // No id (from Gemini or legacy) - convert to text message
+                        const legacyText = this.convertFunctionResponseToText(parsedContent);
+                        results.push({
+                            role: content.role as "user" | "assistant",
+                            content: legacyText
+                        });
+                    }
                 } else {
                     // Fall back to regular user message if parsing fails
                     results.push({

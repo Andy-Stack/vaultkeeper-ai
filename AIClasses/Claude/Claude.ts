@@ -229,19 +229,4 @@ export class Claude extends BaseAIClass {
             }
         }));
     }
-
-    /* 
-     If a conversation used another provider it may not have function id's required by Claude.
-     Instead provide the function call and response as plain text to preserve context without breaking.
-    */
-
-    private convertFunctionCallToText(parsedContent: StoredFunctionCall): string {
-        const inputJson = JSON.stringify(parsedContent.functionCall.args);
-        return `[Legacy Tool Call] ${parsedContent.functionCall.name}\nInput: ${inputJson}`;
-    }
-
-    private convertFunctionResponseToText(parsedContent: StoredFunctionResponse): string {
-        const resultJson = JSON.stringify(parsedContent.functionResponse.response);
-        return `[Legacy Tool Result] ${parsedContent.functionResponse.name}\nResult: ${resultJson}`;
-    }
 }

@@ -232,19 +232,4 @@ export class Gemini extends BaseAIClass {
       parameters: functionDefinition.parameters as FunctionDeclaration['parameters']
     }));
   }
-
-  /*
-    If a conversation used another provider it may not have thought signatures required by Gemini 3.
-    Instead provide the function call and response as plain text to preserve context without breaking.
-  */
-
-  private convertFunctionCallToText(parsedContent: import("AIClasses/Schemas/AIFunctionTypes").StoredFunctionCall): string {
-    const inputJson = JSON.stringify(parsedContent.functionCall.args);
-    return `[Legacy Tool Call] ${parsedContent.functionCall.name}\nInput: ${inputJson}`;
-  }
-
-  private convertFunctionResponseToText(parsedContent: import("AIClasses/Schemas/AIFunctionTypes").StoredFunctionResponse): string {
-    const resultJson = JSON.stringify(parsedContent.functionResponse.response);
-    return `[Legacy Tool Result] ${parsedContent.functionResponse.name}\nResult: ${resultJson}`;
-  }
 }

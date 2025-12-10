@@ -808,6 +808,61 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             });
         });
 
+        it('should convert Gemini function call (no id) to OpenAI legacy format - REGRESSION', () => {
+            // REGRESSION TEST: Bug discovered where Gemini → OpenAI switching failed
+            // because OpenAI tried to use undefined call_id
+            // Gemini function call with thoughtSignature but no id
+            const geminiFunctionCall = new ConversationContent(
+                Role.Assistant,
+                '',
+                '',
+                JSON.stringify({
+                    functionCall: {
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                new Date(),
+                true,
+                false,
+                undefined,
+                'gemini_signature_123=='  // Has thoughtSignature
+            );
+
+            const geminiResponse = (() => {
+                const responseContent = JSON.stringify({
+                    // Gemini response without id field
+                    functionResponse: {
+                        name: 'search_vault_files',
+                        response: ['file1.md', 'file2.md']
+                    }
+                });
+                const content = new ConversationContent(Role.User, responseContent, responseContent);
+                content.isFunctionCallResponse = true;
+                return content;
+            })();
+
+            // OpenAI should convert to legacy text format (not try to use undefined call_id)
+            const openai = new OpenAI();
+            const result = (openai as any).extractContents([geminiFunctionCall, geminiResponse]);
+
+            // Should have 2 items (both converted to messages)
+            expect(result).toHaveLength(2);
+
+            // First should be a text message with legacy format (NOT a function_call with undefined call_id)
+            expect(result[0]).toHaveProperty('role');
+            expect(result[0]).toHaveProperty('content');
+            expect(result[0].content).toContain('[Legacy Tool Call]');
+            expect(result[0].content).toContain('search_vault_files');
+            expect(result[0]).not.toHaveProperty('type'); // Should be message, not function_call
+            expect(result[0]).not.toHaveProperty('call_id'); // Should NOT have call_id field
+
+            // Second should be a text message with legacy format
+            expect(result[1]).toHaveProperty('role');
+            expect(result[1]).toHaveProperty('content');
+            expect(result[1].content).toContain('[Legacy Tool Result]');
+        });
+
         it('should handle OpenAI → Gemini → Claude round-trip', () => {
             // Test that function call survives multiple provider switches
             const conversation = [

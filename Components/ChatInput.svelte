@@ -5,7 +5,7 @@
 	import type { ISearchState, SearchStateStore } from "Stores/SearchStateStore";
 	import { Resolve } from "Services/DependencyService";
 	import { Services } from "Services/Services";
-	import { isSearchTrigger, isSearchTriggerElement, fromInput, toNode, triggerToText } from "Enums/SearchTrigger";
+	import { isSearchTrigger, fromInput, toNode, triggerToText } from "Enums/SearchTrigger";
 	import ChatSearchResults from "./ChatSearchResults.svelte";
 	import type { Writable } from "svelte/store";
 	import type { InputService } from "Services/InputService";
@@ -114,26 +114,6 @@
     userInstructionActive = false;
     if ($searchState.active) {
       await continueSearch(e);
-      return;
-    }
-
-    if (e.key === "Backspace") {
-      const position = inputService.getCursorPosition(textareaElement);
-      
-      if (position === 0) {
-        return;
-      }
-
-      e.preventDefault();
-      
-      const elementBeforeCursor = inputService.getElementBeforeCursor(textareaElement);
-      if (elementBeforeCursor && isSearchTriggerElement(elementBeforeCursor)) {
-          elementBeforeCursor.remove();
-          return;
-      }
-    
-      inputService.deleteTextRange(position - 1, position, textareaElement);
-
       return;
     }
 

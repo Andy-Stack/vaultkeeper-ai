@@ -8,7 +8,6 @@ import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFun
 import type { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import type { RawMessageStreamEvent, ContentBlockParam, Tool } from '@anthropic-ai/sdk/resources/messages';
-import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
 import { Exception } from "Helpers/Exception";
 
 export class Claude extends BaseAIClass {

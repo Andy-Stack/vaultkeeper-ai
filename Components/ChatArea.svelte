@@ -31,10 +31,8 @@
     chatContainer.scroll({ top: 0, behavior: "instant" });
   }
 
-  export function updateChatAreaLayout(behavior: ScrollBehavior | undefined) {
+  export function updateChatAreaLayout(behavior: ScrollBehavior | undefined, shouldSettle: boolean = false) {
     tick().then(() => {
-      settled = false;
-
       if (messageElements.length <= 0 || !chatAreaPaddingElement) {
         if (chatAreaPaddingElement) {
           chatAreaPaddingElement.style.padding = "0px";
@@ -46,25 +44,39 @@
       const paddingBottom = parseFloat(getComputedStyle(chatContainer).paddingBottom) || 0;
 
       const messageElement = messageElements.sort((a, b) => a.index - b.index)[messageElements.length - 1];
-      const messageSpace = messageElement.element.offsetHeight;
+      let messageSpace = messageElement.element.offsetHeight;
 
-      const padding = chatContainer.offsetHeight - paddingTop - paddingBottom - messageSpace;
+      if (!shouldSettle) {
+        const gap = parseFloat(getComputedStyle(chatContainer).gap) || 0;
+
+        if (thoughtIndicatorElement) {
+          messageSpace += thoughtIndicatorElement.offsetHeight + gap + gap;
+        }
+        if (streamingIndicatorElement) {
+          messageSpace += streamingIndicatorElement.offsetHeight + gap + gap;
+        }
+      }
+
+      let padding = chatContainer.offsetHeight - paddingTop - paddingBottom - messageSpace;
+      if (!shouldSettle) {
+        padding = Math.max(padding, chatContainer.offsetHeight * 0.25);
+      }
       chatAreaPaddingElement.style.padding = `${Math.max(0, padding / 2)}px`;
 
       tick().then(() => {
         if (autoScroll && behavior) {
           chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: behavior })
         }
-        tick().then(() => settled = true);
       });
     });
   }
 
-  let settled: boolean = false;
   let autoScroll: boolean = true;
   let lastScrollTop: number = 0;
 
   let chatAreaPaddingElement: HTMLElement | undefined;
+  let thoughtIndicatorElement: HTMLElement | undefined;
+  let streamingIndicatorElement: HTMLElement | undefined;
 
   let streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
 
@@ -138,6 +150,20 @@
     messageElements.push({ index: index, element: element });
   }
 
+  function observeResize(element: HTMLElement) {
+    const observer = new ResizeObserver(() => {
+      updateChatAreaLayout("smooth", false);
+    });
+
+    observer.observe(element);
+
+    return {
+      destroy() {
+        observer.disconnect();
+      }
+    };
+  }
+
   // decide if we should be auto scrolling
   function handleScroll() {
     if (!chatContainer) {
@@ -196,7 +222,7 @@
   }
 </script>
 
-<div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll}>
+<div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll} use:observeResize>
   {#each messages as message, index}
     {#if !message.isFunctionCallResponse && message.content.trim() !== ""}
       {#if message.role === Role.User}
@@ -222,11 +248,9 @@
     {/if}
   {/each}
   
-  {#if settled}
-    <ThoughtIndicator thought={currentThought}/>
-    {#if isSubmitting}
-      <StreamingIndicator editModeActive={editModeActive}/>
-    {/if}
+  <ThoughtIndicator thought={currentThought} bind:thoughtIndicatorElement={thoughtIndicatorElement}/>
+  {#if isSubmitting}
+    <StreamingIndicator editModeActive={editModeActive} bind:streamingIndicatorElement={streamingIndicatorElement}/>
   {/if}
 
   {#if cancelling}

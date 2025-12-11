@@ -89,7 +89,6 @@
   function handleStop() {
     chatService.stop();
     currentThought = null;
-    chatArea.updateChatAreaLayout("smooth");
   }
 
   async function handleSubmit(userRequest: string, formattedRequest: string) {
@@ -121,7 +120,7 @@
         cancelling = false;
         isSubmitting = false;
         abortService.reset();
-        chatArea.updateChatAreaLayout("smooth");
+        chatArea.updateChatAreaLayout("smooth", true);
         await chatService.updateTokenDisplay(conversation);
       },
       onCancel: () => {
@@ -158,7 +157,7 @@
         chatService.onNameChanged?.(loadedConversation.title);
         chatService.updateTokenDisplay(loadedConversation);
         conversationStore.clearLoadFlag();
-        chatArea.updateChatAreaLayout("instant");
+        chatArea.updateChatAreaLayout("instant", true);
       }
     });
   }

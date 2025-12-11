@@ -6,7 +6,6 @@ import { AIProvider, AIProviderURL, toProviderModel } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
-import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
 import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIFunctionTool, ResponsesAPIInput } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
 import { ApiErrorType } from "Types/ApiError";

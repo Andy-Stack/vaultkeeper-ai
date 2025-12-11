@@ -1,8 +1,9 @@
 <script lang="ts">
   export let editModeActive: boolean = false;
+  export let streamingIndicatorElement: HTMLElement | undefined = undefined;
 </script>
 
-<div class="loader" class:edit-mode={editModeActive}>
+<div class="loader" class:edit-mode={editModeActive} bind:this={streamingIndicatorElement}>
   <div class="circle">
     <div class="dot"></div>
     <div class="outline"></div>

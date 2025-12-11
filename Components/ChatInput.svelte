@@ -207,8 +207,9 @@
         const fullText = textareaElement.textContent || "";
         const triggerPos = $searchState.position;
 
-        // Extract the query portion (everything after the trigger)
-        const actualQuery = fullText.substring(triggerPos + 1);
+        // Extract the query portion (from trigger to cursor position)
+        const currentCursorPos = inputService.getCursorPosition(textareaElement);
+        const actualQuery = fullText.substring(triggerPos + 1, currentCursorPos);
 
         // Only update if the query has changed
         if (actualQuery !== $searchState.query) {

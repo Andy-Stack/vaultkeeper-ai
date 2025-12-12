@@ -127,9 +127,10 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             expect(result).toHaveLength(1);
             expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('[Legacy Tool Call]');
-            expect(result[0].parts[0].text).toContain('search_vault_files');
-            expect(result[0].parts[0].text).toContain('meeting notes');
+            expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
+            expect(result[0].parts[0].text).toContain('"name": "search_vault_files"');
+            expect(result[0].parts[0].text).toContain('"args": {');
+            expect(result[0].parts[0].text).toContain('  "query": "meeting notes"');
         });
 
         it('should convert OpenAI function call (no thoughtSignature) to legacy text format', () => {
@@ -153,8 +154,10 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             const result = (gemini as any).extractContents([openaiFunctionCall]);
 
-            expect(result[0].parts[0].text).toContain('[Legacy Tool Call] read_file');
-            expect(result[0].parts[0].text).toContain('project.md');
+            expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
+            expect(result[0].parts[0].text).toContain('"name": "read_file"');
+            expect(result[0].parts[0].text).toContain('"args": {');
+            expect(result[0].parts[0].text).toContain('  "path": "project.md"');
         });
 
         it('should convert function response without id to legacy text format', () => {
@@ -176,9 +179,11 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             const result = (gemini as any).extractContents([claudeResponse]);
 
             expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('[Legacy Tool Result]');
-            expect(result[0].parts[0].text).toContain('search_vault_files');
-            expect(result[0].parts[0].text).toContain('note1.md');
+            expect(result[0].parts[0].text).toContain('<!-- Historical tool result');
+            expect(result[0].parts[0].text).toContain('"name": "search_vault_files"');
+            expect(result[0].parts[0].text).toContain('"response": [');
+            expect(result[0].parts[0].text).toContain('  "note1.md"');
+            expect(result[0].parts[0].text).toContain('  "note2.md"');
         });
     });
 
@@ -303,8 +308,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             // Find the Claude function call - should be legacy text
             const claudeFunctionCall = result.find((r: any) =>
-                r.parts[0]?.text?.includes('[Legacy Tool Call]') &&
-                r.parts[0]?.text?.includes('search_vault_files')
+                r.parts[0]?.text?.includes('<!-- Historical tool call') &&
+                r.parts[0]?.text?.includes('"name": "search_vault_files"')
             );
             expect(claudeFunctionCall).toBeDefined();
 
@@ -360,8 +365,10 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             // Verify OpenAI function call was converted to legacy format
             expect(result).toHaveLength(3);
-            expect(result[1].parts[0].text).toContain('[Legacy Tool Call]');
-            expect(result[2].parts[0].text).toContain('[Legacy Tool Result]');
+            expect(result[1].parts[0].text).toContain('<!-- Historical tool call');
+            expect(result[1].parts[0].text).toContain('"name": "list_files"');
+            expect(result[2].parts[0].text).toContain('<!-- Historical tool result');
+            expect(result[2].parts[0].text).toContain('"name": "list_files"');
         });
 
         it('should preserve context when alternating between providers with function calls', () => {
@@ -435,11 +442,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             // First function call should be legacy format
             expect(result[1].parts[0]).toHaveProperty('text');
-            expect(result[1].parts[0].text).toContain('[Legacy Tool Call] func1');
+            expect(result[1].parts[0].text).toContain('<!-- Historical tool call');
+            expect(result[1].parts[0].text).toContain('"name": "func1"');
 
             // First response should be legacy format
             expect(result[2].parts[0]).toHaveProperty('text');
-            expect(result[2].parts[0].text).toContain('[Legacy Tool Result] func1');
+            expect(result[2].parts[0].text).toContain('<!-- Historical tool result');
+            expect(result[2].parts[0].text).toContain('"name": "func1"');
 
             // Second function call should have proper format
             expect(result[4].parts[0]).toHaveProperty('functionCall');
@@ -677,7 +686,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             const claude = new Claude();
             const claudeResult = (claude as any).extractContents([emptyToolIdCall]);
             expect(claudeResult[0].content[0].type).toBe('text');
-            expect(claudeResult[0].content[0].text).toContain('[Legacy Tool Call]');
+            expect(claudeResult[0].content[0].text).toContain('<!-- Historical tool call');
+            expect(claudeResult[0].content[0].text).toContain('"name": "search_vault_files"');
 
             // OpenAI should also handle it gracefully (fall back to regular message)
             const openai = new OpenAI();
@@ -709,7 +719,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             const claude = new Claude();
             const claudeResult = (claude as any).extractContents([whitespaceToolIdCall]);
             expect(claudeResult[0].content[0].type).toBe('text');
-            expect(claudeResult[0].content[0].text).toContain('[Legacy Tool Call]');
+            expect(claudeResult[0].content[0].text).toContain('<!-- Historical tool call');
+            expect(claudeResult[0].content[0].text).toContain('"name": "search_vault_files"');
         });
     });
 
@@ -776,9 +787,10 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             // Gemini should convert to legacy format since there's no thoughtSignature
             expect(result).toHaveLength(1);
             expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('[Legacy Tool Call]');
-            expect(result[0].parts[0].text).toContain('search_vault_files');
-            expect(result[0].parts[0].text).toContain('project notes');
+            expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
+            expect(result[0].parts[0].text).toContain('"name": "search_vault_files"');
+            expect(result[0].parts[0].text).toContain('"args": {');
+            expect(result[0].parts[0].text).toContain('  "query": "project notes"');
         });
 
         it('should handle OpenAI function response when switching to Gemini', () => {
@@ -852,15 +864,16 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             // First should be a text message with legacy format (NOT a function_call with undefined call_id)
             expect(result[0]).toHaveProperty('role');
             expect(result[0]).toHaveProperty('content');
-            expect(result[0].content).toContain('[Legacy Tool Call]');
-            expect(result[0].content).toContain('search_vault_files');
+            expect(result[0].content).toContain('<!-- Historical tool call');
+            expect(result[0].content).toContain('"name": "search_vault_files"');
             expect(result[0]).not.toHaveProperty('type'); // Should be message, not function_call
             expect(result[0]).not.toHaveProperty('call_id'); // Should NOT have call_id field
 
             // Second should be a text message with legacy format
             expect(result[1]).toHaveProperty('role');
             expect(result[1]).toHaveProperty('content');
-            expect(result[1].content).toContain('[Legacy Tool Result]');
+            expect(result[1].content).toContain('<!-- Historical tool result');
+            expect(result[1].content).toContain('"name": "search_vault_files"');
         });
 
         it('should handle OpenAI → Gemini → Claude round-trip', () => {
@@ -906,7 +919,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             // Gemini reads OpenAI conversation - function call becomes legacy
             const geminiResult = (gemini as any).extractContents(conversation);
             const geminiLegacyCall = geminiResult.find((r: any) =>
-                r.parts[0]?.text?.includes('[Legacy Tool Call]')
+                r.parts[0]?.text?.includes('<!-- Historical tool call')
             );
             expect(geminiLegacyCall).toBeDefined();
 
@@ -1006,7 +1019,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(geminiResult.length).toBeGreaterThan(0);
 
             const legacyCalls = geminiResult.filter((r: any) =>
-                r.parts[0]?.text?.includes('[Legacy Tool Call]')
+                r.parts[0]?.text?.includes('<!-- Historical tool call')
             );
             expect(legacyCalls.length).toBe(2); // Both Claude and OpenAI calls
 
@@ -1138,12 +1151,12 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             // Verify all three function calls are present in each provider's view
             const geminiFunctionCalls = geminiResult.filter((r: any) =>
-                r.parts[0]?.functionCall || r.parts[0]?.text?.includes('[Legacy Tool Call]')
+                r.parts[0]?.functionCall || r.parts[0]?.text?.includes('<!-- Historical tool call')
             );
             expect(geminiFunctionCalls.length).toBe(3);
 
             const claudeToolUses = claudeResult.filter((r: any) =>
-                r.content.some((c: any) => c.type === 'tool_use' || c.text?.includes('[Legacy Tool Call]'))
+                r.content.some((c: any) => c.type === 'tool_use' || c.text?.includes('<!-- Historical tool call'))
             );
             expect(claudeToolUses.length).toBeGreaterThan(0);
         });
@@ -1202,7 +1215,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             // Gemini reads it (converts to legacy)
             const geminiResult = (gemini as any).extractContents(conversation);
             const geminiLegacy = geminiResult.find((r: any) =>
-                r.parts[0]?.text?.includes('[Legacy Tool Call]')
+                r.parts[0]?.text?.includes('<!-- Historical tool call')
             );
             expect(geminiLegacy).toBeDefined();
             expect(geminiLegacy.parts[0].text).toContain('search_vault_files');
@@ -1387,7 +1400,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             // Each provider should see all 3 function calls (in their own format or legacy)
             const claudeToolUses = claudeResult.filter((r: any) =>
-                r.content.some((c: any) => c.type === 'tool_use' || c.text?.includes('[Legacy Tool Call]'))
+                r.content.some((c: any) => c.type === 'tool_use' || c.text?.includes('<!-- Historical tool call'))
             );
             expect(claudeToolUses.length).toBe(3);
 
@@ -1403,7 +1416,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(geminiNativeCalls.length).toBe(1);
 
             const geminiLegacyCalls = geminiResult.filter((r: any) =>
-                r.parts[0]?.text?.includes('[Legacy Tool Call]')
+                r.parts[0]?.text?.includes('<!-- Historical tool call')
             );
             // Note: Orphaned function calls without responses are filtered out by filterConversationContents
             // So we verify at least the function calls with responses are present
@@ -1430,7 +1443,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             const result = (gemini as any).extractContents([content]);
 
             expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('[Legacy Tool Call]');
+            expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
+            expect(result[0].parts[0].text).toContain('"name": "test_func"');
         });
 
         it('should handle whitespace-only thoughtSignature as missing signature (legacy format)', () => {
@@ -1453,7 +1467,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             // Whitespace-only signature is trimmed and treated as missing
             // Should fall back to legacy text format
             expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('[Legacy Tool Call]');
+            expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
+            expect(result[0].parts[0].text).toContain('"name": "test_func"');
         });
 
         it('should gracefully handle conversation with only legacy format calls', () => {
@@ -1484,8 +1499,10 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             const result = (gemini as any).extractContents(conversation);
 
             // All function calls/responses should be in legacy format
-            expect(result[1].parts[0].text).toContain('[Legacy Tool Call]');
-            expect(result[2].parts[0].text).toContain('[Legacy Tool Result]');
+            expect(result[1].parts[0].text).toContain('<!-- Historical tool call');
+            expect(result[1].parts[0].text).toContain('"name": "func1"');
+            expect(result[2].parts[0].text).toContain('<!-- Historical tool result');
+            expect(result[2].parts[0].text).toContain('"name": "func1"');
         });
 
         it('should handle both toolId and thoughtSignature present (defensive)', () => {
@@ -1558,7 +1575,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             const claude = new Claude();
             const claudeResult = (claude as any).extractContents([content]);
             expect(claudeResult[0].content[0].type).toBe('text');
-            expect(claudeResult[0].content[0].text).toContain('[Legacy Tool Call]');
+            expect(claudeResult[0].content[0].text).toContain('<!-- Historical tool call');
+            expect(claudeResult[0].content[0].text).toContain('"name": "test_func"');
 
             // OpenAI should also fall back gracefully
             const openai = new OpenAI();

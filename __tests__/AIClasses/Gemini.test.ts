@@ -524,9 +524,10 @@ describe('Gemini', () => {
             expect(result[0].role).toBe(Role.Model);
             expect(result[0].parts).toHaveLength(1);
             expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('[Legacy Tool Call]');
-            expect(result[0].parts[0].text).toContain('search_vault_files');
-            expect(result[0].parts[0].text).toContain('Input:');
+            expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
+            expect(result[0].parts[0].text).toContain('"name": "search_vault_files"');
+            expect(result[0].parts[0].text).toContain('"args": {');
+            expect(result[0].parts[0].text).toContain('  "query": "test"');
         });
 
         it('should fall back to legacy text format for function call with empty thoughtSignature', () => {
@@ -551,7 +552,10 @@ describe('Gemini', () => {
 
             expect(result).toHaveLength(1);
             expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('[Legacy Tool Call] read_file');
+            expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
+            expect(result[0].parts[0].text).toContain('"name": "read_file"');
+            expect(result[0].parts[0].text).toContain('"args": {');
+            expect(result[0].parts[0].text).toContain('  "path": "note.md"');
         });
 
         it('should convert function response to Gemini format', () => {
@@ -601,9 +605,11 @@ describe('Gemini', () => {
             expect(result).toHaveLength(1);
             expect(result[0].parts).toHaveLength(1);
             expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('[Legacy Tool Result]');
-            expect(result[0].parts[0].text).toContain('search_vault_files');
-            expect(result[0].parts[0].text).toContain('Result:');
+            expect(result[0].parts[0].text).toContain('<!-- Historical tool result');
+            expect(result[0].parts[0].text).toContain('"name": "search_vault_files"');
+            expect(result[0].parts[0].text).toContain('"response": [');
+            expect(result[0].parts[0].text).toContain('  "file1.txt"');
+            expect(result[0].parts[0].text).toContain('  "file2.txt"');
         });
 
         it('should fall back to legacy text format for function response with empty id', () => {
@@ -625,7 +631,10 @@ describe('Gemini', () => {
 
             expect(result).toHaveLength(1);
             expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('[Legacy Tool Result] read_file');
+            expect(result[0].parts[0].text).toContain('<!-- Historical tool result');
+            expect(result[0].parts[0].text).toContain('"name": "read_file"');
+            expect(result[0].parts[0].text).toContain('"response": {');
+            expect(result[0].parts[0].text).toContain('  "content": "file contents"');
         });
 
         it('should handle invalid JSON in function call gracefully', () => {
@@ -849,10 +858,11 @@ describe('Gemini', () => {
 
                 const result = (gemini as any).convertFunctionCallToText(parsedContent);
 
-                expect(result).toContain('[Legacy Tool Call]');
-                expect(result).toContain('search_vault_files');
-                expect(result).toContain('Input:');
-                expect(result).toContain('"query":"test notes"');
+                expect(result).toContain('<!-- Historical tool call');
+                expect(result).toContain('This action was ALREADY COMPLETED');
+                expect(result).toContain('"name": "search_vault_files"');
+                expect(result).toContain('"args": {');
+                expect(result).toContain('  "query": "test notes"');
             });
 
             it('should format complex arguments correctly', () => {
@@ -869,11 +879,14 @@ describe('Gemini', () => {
 
                 const result = (gemini as any).convertFunctionCallToText(parsedContent);
 
-                expect(result).toContain('[Legacy Tool Call] write_file');
-                expect(result).toContain('Input:');
-                expect(result).toContain('"path":"note.md"');
-                expect(result).toContain('"content":"Hello World"');
-                expect(result).toContain('"metadata"');
+                expect(result).toContain('<!-- Historical tool call');
+                expect(result).toContain('"name": "write_file"');
+                expect(result).toContain('"args": {');
+                expect(result).toContain('  "path": "note.md"');
+                expect(result).toContain('  "content": "Hello World"');
+                expect(result).toContain('  "metadata": {');
+                expect(result).toContain('    "tags": [');
+                expect(result).toContain('      "important"');
             });
 
             it('should handle function call with empty args', () => {
@@ -886,7 +899,13 @@ describe('Gemini', () => {
 
                 const result = (gemini as any).convertFunctionCallToText(parsedContent);
 
-                expect(result).toBe('[Legacy Tool Call] list_files\nInput: {}');
+                const expected = `<!-- Historical tool call. This action was ALREADY COMPLETED.
+     Use your native function calling for any NEW operations. -->
+{
+  "name": "list_files",
+  "args": {}
+}`;
+                expect(result).toBe(expected);
             });
         });
 
@@ -901,11 +920,13 @@ describe('Gemini', () => {
 
                 const result = (gemini as any).convertFunctionResponseToText(parsedContent);
 
-                expect(result).toContain('[Legacy Tool Result]');
-                expect(result).toContain('search_vault_files');
-                expect(result).toContain('Result:');
-                expect(result).toContain('file1.txt');
-                expect(result).toContain('file2.txt');
+                expect(result).toContain('<!-- Historical tool result');
+                expect(result).toContain('This action was ALREADY COMPLETED');
+                expect(result).toContain('"name": "search_vault_files"');
+                expect(result).toContain('"response": [');
+                expect(result).toContain('  "file1.txt"');
+                expect(result).toContain('  "file2.txt"');
+                expect(result).toContain('  "file3.txt"');
             });
 
             it('should format complex response objects correctly', () => {
@@ -921,10 +942,13 @@ describe('Gemini', () => {
 
                 const result = (gemini as any).convertFunctionResponseToText(parsedContent);
 
-                expect(result).toContain('[Legacy Tool Result] read_file');
-                expect(result).toContain('Result:');
-                expect(result).toContain('"content":"File contents here"');
-                expect(result).toContain('"metadata"');
+                expect(result).toContain('<!-- Historical tool result');
+                expect(result).toContain('"name": "read_file"');
+                expect(result).toContain('"response": {');
+                expect(result).toContain('  "content": "File contents here"');
+                expect(result).toContain('  "metadata": {');
+                expect(result).toContain('    "size": 1024');
+                expect(result).toContain('    "modified": "2024-01-01"');
             });
 
             it('should handle empty response', () => {
@@ -937,7 +961,12 @@ describe('Gemini', () => {
 
                 const result = (gemini as any).convertFunctionResponseToText(parsedContent);
 
-                expect(result).toBe('[Legacy Tool Result] delete_file\nResult: null');
+                const expected = `<!-- Historical tool result. This action was ALREADY COMPLETED. -->
+{
+  "name": "delete_file",
+  "response": null
+}`;
+                expect(result).toBe(expected);
             });
 
             it('should handle string response', () => {
@@ -950,7 +979,12 @@ describe('Gemini', () => {
 
                 const result = (gemini as any).convertFunctionResponseToText(parsedContent);
 
-                expect(result).toBe('[Legacy Tool Result] get_status\nResult: "Success"');
+                const expected = `<!-- Historical tool result. This action was ALREADY COMPLETED. -->
+{
+  "name": "get_status",
+  "response": "Success"
+}`;
+                expect(result).toBe(expected);
             });
         });
     });

@@ -450,10 +450,16 @@ describe('Claude', () => {
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
-            expect(result[0].content[0]).toEqual({
-                type: 'text',
-                text: '[Legacy Tool Call] search_vault_files\nInput: {"query":"test"}'
-            });
+            expect(result[0].content[0].type).toBe('text');
+            const expected = `<!-- Historical tool call. This action was ALREADY COMPLETED.
+     Use your native function calling for any NEW operations. -->
+{
+  "name": "search_vault_files",
+  "args": {
+    "query": "test"
+  }
+}`;
+            expect(result[0].content[0].text).toBe(expected);
         });
 
         it('should convert function call with empty ID to legacy text format', () => {
@@ -476,10 +482,16 @@ describe('Claude', () => {
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
-            expect(result[0].content[0]).toEqual({
-                type: 'text',
-                text: '[Legacy Tool Call] search_vault_files\nInput: {"query":"test"}'
-            });
+            expect(result[0].content[0].type).toBe('text');
+            const expected = `<!-- Historical tool call. This action was ALREADY COMPLETED.
+     Use your native function calling for any NEW operations. -->
+{
+  "name": "search_vault_files",
+  "args": {
+    "query": "test"
+  }
+}`;
+            expect(result[0].content[0].text).toBe(expected);
         });
 
         it('should convert function response without ID to legacy text format', () => {
@@ -501,10 +513,16 @@ describe('Claude', () => {
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
-            expect(result[0].content[0]).toEqual({
-                type: 'text',
-                text: '[Legacy Tool Result] search_vault_files\nResult: ["file1.txt","file2.txt"]'
-            });
+            expect(result[0].content[0].type).toBe('text');
+            const expected = `<!-- Historical tool result. This action was ALREADY COMPLETED. -->
+{
+  "name": "search_vault_files",
+  "response": [
+    "file1.txt",
+    "file2.txt"
+  ]
+}`;
+            expect(result[0].content[0].text).toBe(expected);
         });
 
         it('should convert function response with empty ID to legacy text format', () => {
@@ -526,10 +544,16 @@ describe('Claude', () => {
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
-            expect(result[0].content[0]).toEqual({
-                type: 'text',
-                text: '[Legacy Tool Result] search_vault_files\nResult: ["file1.txt","file2.txt"]'
-            });
+            expect(result[0].content[0].type).toBe('text');
+            const expected = `<!-- Historical tool result. This action was ALREADY COMPLETED. -->
+{
+  "name": "search_vault_files",
+  "response": [
+    "file1.txt",
+    "file2.txt"
+  ]
+}`;
+            expect(result[0].content[0].text).toBe(expected);
         });
 
         it('should exclude orphaned function calls without responses', () => {

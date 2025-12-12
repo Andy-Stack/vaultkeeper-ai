@@ -130,8 +130,14 @@ export abstract class BaseAIClass implements IAIClass {
      * Used when a provider doesn't have the required ID field (e.g., Gemini → Claude/OpenAI).
      */
     protected convertFunctionCallToText(parsedContent: StoredFunctionCall): string {
-        const inputJson = JSON.stringify(parsedContent.functionCall.args);
-        return `[Legacy Tool Call] ${parsedContent.functionCall.name}\nInput: ${inputJson}`;
+        const formattedJson = JSON.stringify({
+            name: parsedContent.functionCall.name,
+            args: parsedContent.functionCall.args
+        }, null, 2);
+
+        return `<!-- Historical tool call. This action was ALREADY COMPLETED.
+     Use your native function calling for any NEW operations. -->
+${formattedJson}`;
     }
 
     /**
@@ -139,7 +145,12 @@ export abstract class BaseAIClass implements IAIClass {
      * Used when a provider doesn't have the required ID field (e.g., Gemini → Claude/OpenAI).
      */
     protected convertFunctionResponseToText(parsedContent: StoredFunctionResponse): string {
-        const resultJson = JSON.stringify(parsedContent.functionResponse.response);
-        return `[Legacy Tool Result] ${parsedContent.functionResponse.name}\nResult: ${resultJson}`;
+        const formattedJson = JSON.stringify({
+            name: parsedContent.functionResponse.name,
+            response: parsedContent.functionResponse.response
+        }, null, 2);
+
+        return `<!-- Historical tool result. This action was ALREADY COMPLETED. -->
+${formattedJson}`;
     }
 }

@@ -32,7 +32,11 @@
   }
 
   export function updateChatAreaLayout(behavior: ScrollBehavior | undefined, shouldSettle: boolean = false) {
-    tick().then(() => {
+    if (layoutUpdateTimeout) {
+      clearTimeout(layoutUpdateTimeout);
+    }
+
+    const performLayoutCalculations = () => {
       if (messageElements.length <= 0 || !chatAreaPaddingElement) {
         if (chatAreaPaddingElement) {
           chatAreaPaddingElement.style.padding = "0px";
@@ -59,7 +63,7 @@
 
       let padding = chatContainer.offsetHeight - paddingTop - paddingBottom - messageSpace;
       if (!shouldSettle) {
-        padding = Math.max(padding, chatContainer.offsetHeight * 0.25);
+        padding = Math.max(padding, 25);
       }
       chatAreaPaddingElement.style.padding = `${Math.max(0, padding / 2)}px`;
 
@@ -68,7 +72,21 @@
           chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: behavior })
         }
       });
-    });
+    };
+
+    if (behavior === "instant" || shouldSettle) {
+      tick().then(() => {
+        performLayoutCalculations();
+      });
+    } else {
+      layoutUpdateTimeout = setTimeout(() => {
+        tick().then(() => {
+          requestAnimationFrame(() => {
+            performLayoutCalculations();
+          });
+        });
+      }, 50);
+    }
   }
 
   let autoScroll: boolean = true;
@@ -83,6 +101,7 @@
   let messageElements: { index: number, element: HTMLElement }[] = [];
   let lastProcessedContent: Map<string, string> = new Map<string, string>();
   let currentStreamFinalized: boolean = false;
+  let layoutUpdateTimeout: NodeJS.Timeout | null = null;
 
   function getGreetingByTime(): string {
     const hour = new Date().getHours();

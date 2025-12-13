@@ -40,18 +40,21 @@
 
   let diffOpen: boolean = false;
   
-  const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { diffOpen = true; if (!Platform.isMobile){ focusInput(); } });
-  const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { diffOpen = false; if (!Platform.isMobile){ focusInput(); } });
+  const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { diffOpen = true; focusInput(); });
+  const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { diffOpen = false; focusInput(); });
 
   onDestroy(() => {
     eventService.offref(diffOpenedRef);
     eventService.offref(diffClosedRef);
   });
 
-  export function focusInput() {
-    tick().then(() => {
-      textareaElement?.focus();
-    });
+  export function focusInput(onMobile: boolean = false) {
+    // don't focus on mobile, it's annoying
+    if (onMobile || !Platform.isMobile) {
+      tick().then(() => {
+        textareaElement?.focus();
+      });
+    }
   }
 
   $: if (userInstructionButton) {
@@ -189,7 +192,7 @@
     }
 
     e?.preventDefault();
-    focusInput();
+    focusInput(true);
   }
 
   function handleInput() {

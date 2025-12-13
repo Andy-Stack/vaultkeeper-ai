@@ -6,6 +6,7 @@ import type { EventService } from "Services/EventService";
 import type { DiffService } from "Services/DiffService";
 import { Services } from "Services/Services";
 import { VIEW_TYPE_MAIN } from "./MainView";
+import { tick } from "svelte";
 
 export const VIEW_TYPE_DIFF = 'vaultkeeper-ai-diff-view';
 
@@ -135,12 +136,15 @@ export class DiffView extends ItemView {
     }
 
     private async refocusMainView(): Promise<void> {
-        const { workspace } = this.app;
-        const leaves = workspace.getLeavesOfType(VIEW_TYPE_MAIN);
+        await tick().then(async () => {
+            const { workspace } = this.app;
+            const leaves = workspace.getLeavesOfType(VIEW_TYPE_MAIN);
 
-        if (leaves.length > 0) {
-            await workspace.revealLeaf(leaves[0]);
-        }
+            if (leaves.length > 0) {
+                await workspace.revealLeaf(leaves[0]);
+                workspace.setActiveLeaf(leaves[0], { focus: true });
+            }
+        });
     }
 
 }

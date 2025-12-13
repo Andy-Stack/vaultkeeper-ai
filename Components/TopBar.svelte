@@ -166,7 +166,7 @@
   }
 
   :global(.is-mobile) .top-bar-content {
-    grid-template-columns: var(--size-4-1) auto auto auto auto auto auto 1fr 0fr auto var(--size-4-1);
+    grid-template-columns: var(--size-4-1) auto auto auto auto auto auto auto 1fr 0fr auto var(--size-4-1);
   }
 
   .top-bar-divider {

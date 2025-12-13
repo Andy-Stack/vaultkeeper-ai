@@ -15,7 +15,6 @@
 	import type { SettingsService } from "Services/SettingsService";
 	import { Copy } from "Enums/Copy";
 	import { AbortService } from "Services/AbortService";
-	import { Platform } from "obsidian";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);

@@ -71,7 +71,7 @@
             userInstructions = [Copy.NoUserInstruction, ...userInstructions];
         }
 
-        tick().then(() => {
+        await tick().then(() => {
             if (instructionsContentDiv) {
                 instructionsContentDiv.focus();
             }

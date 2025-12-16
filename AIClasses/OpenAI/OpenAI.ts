@@ -9,8 +9,12 @@ import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFun
 import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIFunctionTool, ResponsesAPIInput } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
 import { ApiErrorType } from "Types/ApiError";
+import * as path from "path-browserify";
+import { FileType, getImageMimeType, isFileType } from "Enums/FileType";
 
 export class OpenAI extends BaseAIClass {
+
+    private readonly SUPPORTED_IMAGE_TYPES: string[] = ["image/jpeg", "image/png", "image/webp"];
 
     public constructor() {
         super(AIProvider.OpenAI);
@@ -228,7 +232,14 @@ export class OpenAI extends BaseAIClass {
                 continue;
             }
 
-            // Case 2: Function call response
+            // Case 2: Provider-specific content (e.g., binary files)
+            if (content.isProviderSpecificContent && contentToExtract.trim() !== "") {
+                const rawContent = JSON.parse(contentToExtract) as ResponsesAPIInput[];
+                results.push(...rawContent);
+                continue;
+            }
+
+            // Case 3: Function call response
             if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
                 const parsedContent = this.parseFunctionResponse(contentToExtract);
 
@@ -258,7 +269,7 @@ export class OpenAI extends BaseAIClass {
                 continue;
             }
 
-            // Case 3: Regular text message (user or assistant)
+            // Case 4: Regular text message (user or assistant)
             if (contentToExtract.trim() !== "") {
                 results.push({
                     role: content.role as "user" | "assistant",
@@ -277,5 +288,45 @@ export class OpenAI extends BaseAIClass {
             description: functionDefinition.description,
             parameters: functionDefinition.parameters
         }));
+    }
+
+    public formatBinaryFilesForUser(files: Array<{type: string, path: string, contents: string}>): string {
+        const contentBlocks: unknown[] = [];
+
+        for (const file of files) {
+            const extension = path.extname(file.path).substring(1).toLowerCase();
+
+            let mimeType: string;
+
+            if (isFileType(file.type, FileType.PDF)) {
+                mimeType = "application/pdf";
+            } else {
+                try {
+                    mimeType = getImageMimeType(extension);
+
+                    if (!this.SUPPORTED_IMAGE_TYPES.includes(mimeType)) {
+                        contentBlocks.push({
+                            type: "input_text",
+                            text: `Unsupported image format: ${path.basename(file.path)}`
+                        });
+                        continue;
+                    }
+                } catch (error) {
+                    contentBlocks.push({
+                        type: "input_text",
+                        text: Exception.messageFrom(error)
+                    });
+                    continue;
+                }
+            }
+
+            contentBlocks.push({
+                type: "input_file",
+                filename: path.basename(file.path),
+                file_data: `data:${mimeType};base64,${file.contents}`
+            });
+        }
+
+        return JSON.stringify(contentBlocks);
     }
 }

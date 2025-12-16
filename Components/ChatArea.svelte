@@ -21,6 +21,7 @@
   export let editModeActive: boolean = false;
 
   export function resetChatArea() {
+    autoScroll = true;
     cancelling = false;
     messageElements = [];
     lastProcessedContent.clear();
@@ -68,7 +69,7 @@
       chatAreaPaddingElement.style.padding = `${Math.max(0, padding / 2)}px`;
 
       tick().then(() => {
-        if (autoScroll && behavior) {
+        if (behavior && (autoScroll || shouldSettle)) {
           chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: behavior })
         }
       });
@@ -76,7 +77,9 @@
 
     if (behavior === "instant" || shouldSettle) {
       tick().then(() => {
-        performLayoutCalculations();
+        requestAnimationFrame(() => {
+          performLayoutCalculations();
+        });
       });
     } else {
       layoutUpdateTimeout = setTimeout(() => {
@@ -243,7 +246,7 @@
 
 <div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll} use:observeResize>
   {#each messages as message, index}
-    {#if !message.isFunctionCallResponse && message.content.trim() !== ""}
+    {#if !message.isFunctionCallResponse && !message.isProviderSpecificContent && message.content.trim() !== ""}
       {#if message.role === Role.User}
         <div class="message-container {Role.User}" use:trackingAction={index}>
           <div class="message-bubble {Role.User}">

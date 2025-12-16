@@ -4,13 +4,15 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 export const ReadVaultFiles: IAIFunctionDefinition = {
   name: AIFunction.ReadVaultFiles,
   description: `Reads and returns the complete content of one or more files from the vault.
-                Call this when you need to access existing note content to answer questions,
+                Call this when you need to access existing file content to answer questions,
                 provide summaries, verify information, or gather context before making updates.
                 Use proactively before updating files to understand current content and avoid
                 data loss. Essential for any operation that references or builds upon existing notes.
 
                 For multiple files: Use when comparing content, gathering related context, or
-                analyzing information across several documents.`,
+                analyzing information across several documents.
+
+                Supports text files (.md, .txt, etc.), images (.png, .jpg, .jpeg, etc), and PDFs (.pdf).`,
   parameters: {
     type: "object",
     properties: {
@@ -19,7 +21,7 @@ export const ReadVaultFiles: IAIFunctionDefinition = {
         items: {
           type: "string"
         },
-        description: "Array of full paths to files within the vault. Can contain a single file path ['folder/note.md'] or multiple paths ['folder/note1.md', 'folder/note2.md']. Each path must be exact and point to an existing file.",
+        description: "Array of full paths to files within the vault. Can contain a single file path ['folder/note.md'] or multiple paths ['folder/note1.md', 'folder/note2.pdf']. Each path must be exact and point to an existing file.",
       },
       user_message: {
         type: "string",

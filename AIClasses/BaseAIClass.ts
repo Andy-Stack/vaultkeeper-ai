@@ -43,6 +43,8 @@ export abstract class BaseAIClass implements IAIClass {
         abortSignal?: AbortSignal
     ): AsyncGenerator<IStreamChunk, void, unknown>;
 
+    public abstract formatBinaryFilesForUser(files: Array<{type: string, path: string, contents: string}>): string;
+
     protected abstract parseStreamChunk(chunk: string): IStreamChunk;
     protected abstract extractContents(conversationContent: ConversationContent[]): unknown;
     protected abstract mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): object;

@@ -8,6 +8,7 @@ import type { ISearchMatch } from "../Helpers/SearchTypes";
 import { AbortService } from "./AbortService";
 import { normalizePath, TAbstractFile, TFile } from "obsidian";
 import { Exception } from "Helpers/Exception";
+import * as path from "path-browserify";
 import { 
     SearchVaultFilesArgsSchema,
     ReadVaultFilesArgsSchema,
@@ -159,7 +160,11 @@ export class AIFunctionService {
                 if (result instanceof Error) {
                     return { path: filePath, error: result.message }
                 }
-                return { path: filePath, contents: result }
+                return {
+                    type: path.extname(filePath).substring(1).toLocaleLowerCase(),
+                    path: filePath,
+                    contents: result
+                }
             })
         );
         return { results };

@@ -1,4 +1,4 @@
-import { FileManager, TAbstractFile, TFile, TFolder, type Vault } from "obsidian";
+import { arrayBufferToBase64, FileManager, TAbstractFile, TFile, TFolder, type Vault } from "obsidian";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type VaultkeeperAIPlugin from "main";
@@ -16,6 +16,8 @@ import * as path from "path-browserify";
 import { Event } from "Enums/Event";
 import { AbortService } from "./AbortService";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
+import { extractText } from 'unpdf';
+import { FileType, isBinaryFile, isFileType } from "Enums/FileType";
 
 interface IFileEventArgs {
     oldPath: string;
@@ -37,7 +39,7 @@ export class VaultService {
 
     public constructor() {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
-        
+
         this.vault = this.plugin.app.vault;
         this.fileManager = this.plugin.app.fileManager
 
@@ -77,12 +79,18 @@ export class VaultService {
         return await this.vault.adapter.exists(filePath);
     }
 
-    public async read(file: TFile, allowAccessToPluginRoot: boolean = false): Promise<string> {
+    public async read(file: TFile, allowAccessToPluginRoot: boolean = false): Promise<string | Error> {
         const filePath = this.sanitiserService.sanitize(file.path);
         if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
             Exception.log(`Plugin attempted to read a file that is in the exclusions list: ${filePath}`);
-            return "";
+            return Exception.new(`File does not exist: ${filePath}`);
         }
+
+        if (isBinaryFile(file.extension.toLowerCase())) {
+            const arrayBuffer = await this.vault.readBinary(file);
+            return arrayBufferToBase64(arrayBuffer);
+        }
+
         return await this.vault.read(file);
     }
 
@@ -91,6 +99,10 @@ export class VaultService {
         if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
             Exception.log(`Plugin attempted to create a file that is in the exclusion list: ${filePath}`);
             return Exception.new(`Failed to create file, permission denied: ${filePath}`);
+        }
+
+        if (path.extname(filePath) === "pdf") {
+            return Exception.new("Creating PDF files is not supported");
         }
 
         const fileName = path.basename(filePath);
@@ -107,7 +119,17 @@ export class VaultService {
             return Exception.new(`File does not exist: ${filePath}`);
         }
 
-        return this.proposeChange(file.name, file.name, await this.read(file, allowAccessToPluginRoot), content, requiresConfirmation, async () => {
+        if (isFileType(file.extension.toLocaleLowerCase(), FileType.PDF)) {
+            return Exception.new("Modifying PDF files is not supported");
+        }
+
+        const currentContent = await this.read(file, allowAccessToPluginRoot);
+
+        if (currentContent instanceof Error) {
+            return currentContent;
+        }
+
+        return this.proposeChange(file.name, file.name, currentContent, content, requiresConfirmation, async () => {
             await this.vault.process(file, () => content);
             return file;
         });
@@ -120,7 +142,15 @@ export class VaultService {
             return Exception.new(`File does not exist: ${filePath}`);
         }
 
+        if (isFileType(path.extname(filePath), FileType.PDF)) {
+            return Exception.new("Creating PDF files is not supported");
+        }
+
         const currentContent = await this.read(file, allowAccessToPluginRoot);
+
+        if (currentContent instanceof Error) {
+            return currentContent;
+        }
 
         if (!currentContent.includes(oldContent)) {
             return Exception.new(`Content to replace was not found in the file. The old content must match exactly.`);
@@ -143,8 +173,18 @@ export class VaultService {
 
         // handle file deletion
         if (file instanceof TFile) {
-            return this.proposeChange(file.name, file.name, await this.read(file, allowAccessToPluginRoot), "", requiresConfirmation, async () => {
-                await this.fileManager.trashFile(file);    
+            const currentContent = await this.read(file, allowAccessToPluginRoot)
+
+            if (currentContent instanceof Error) {
+                return currentContent;
+            }
+
+            if (isFileType(path.extname(filePath), FileType.PDF)) {
+                await this.fileManager.trashFile(file);
+            }
+
+            return this.proposeChange(file.name, file.name, currentContent, "", requiresConfirmation, async () => {
+                await this.fileManager.trashFile(file);
             });
         }
 
@@ -161,7 +201,7 @@ export class VaultService {
         sourcePath = this.sanitiserService.sanitize(sourcePath);
         destinationPath = this.sanitiserService.sanitize(destinationPath);
         const file = this.getAbstractFileByPath(sourcePath, allowAccessToPluginRoot);
-        
+
         if (file === null) {
             return Exception.new(`File does not exist: ${sourcePath}`);
         }
@@ -283,7 +323,14 @@ export class VaultService {
             const batch = shuffledFiles.slice(i, i + BATCH_SIZE);
             const batchPromises = batch.map(async (file) => {
                 try {
-                    const content = await this.vault.cachedRead(file);
+                    let content;
+                    if (isFileType(file.extension.toLocaleLowerCase(), FileType.PDF)) {
+                        const arrayBuffer = await this.vault.readBinary(file);
+                        content = (await extractText(new Uint8Array(arrayBuffer), { mergePages: true })).text;
+                    } else {
+                        content = await this.vault.cachedRead(file);
+                    }
+
                     const snippets = this.extractSnippets(content, regex);
 
                     // Check filename match

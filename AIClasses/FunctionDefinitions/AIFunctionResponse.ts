@@ -1,7 +1,10 @@
 // Platform agnostic class for function responses
+
+import type { AIFunction } from "Enums/AIFunction";
+
 // Used by AI providers to format function execution results for API calls
 export class AIFunctionResponse {
-    public readonly name: string;
+    public readonly name: AIFunction;
     public readonly response: object;
     public readonly toolId?: string;
 
@@ -12,7 +15,7 @@ export class AIFunctionResponse {
                                                            
     public static readonly UserSuggestionMessage: string = "The user has rejected the change with the following suggestion: ";
 
-    constructor(name: string, response: object, toolId?: string) {
+    constructor(name: AIFunction, response: object, toolId?: string) {
         this.name = name;
         this.response = response;
         this.toolId = toolId;

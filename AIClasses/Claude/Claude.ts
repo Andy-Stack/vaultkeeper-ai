@@ -9,10 +9,13 @@ import type { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import type { RawMessageStreamEvent, ContentBlockParam, Tool } from '@anthropic-ai/sdk/resources/messages';
 import { Exception } from "Helpers/Exception";
+import * as path from "path-browserify";
+import { FileType, getImageMimeType, isFileType } from "Enums/FileType";
 
 export class Claude extends BaseAIClass {
 
     private readonly STOP_REASON_TOOL_USE: string = "tool_use";
+    private readonly SUPPORTED_IMAGE_TYPES: string[] = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
     private accumulatedFunctionName: string | null = null;
     private accumulatedFunctionArgs: string = "";
@@ -184,6 +187,12 @@ export class Claude extends BaseAIClass {
                     }
                 }
 
+                // Add provider-specific content if present (e.g., binary files)
+                if (content.isProviderSpecificContent && contentToExtract.trim() !== "") {
+                    const rawContent = JSON.parse(contentToExtract) as ContentBlockParam[];
+                    contentBlocks.push(...rawContent);
+                }
+
                 // Add function response if present
                 if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
                     const parsedContent = this.parseFunctionResponse(contentToExtract);
@@ -227,5 +236,47 @@ export class Claude extends BaseAIClass {
                 required: functionDefinition.parameters.required
             }
         }));
+    }
+
+    public formatBinaryFilesForUser(files: Array<{type: string, path: string, contents: string}>): string {
+        const contentBlocks = files.flatMap(file => {
+            const extension = path.extname(file.path).substring(1).toLowerCase();
+
+            let mimeType: string;
+            let blockType: string;
+
+            if (isFileType(file.type, FileType.PDF)) {
+                mimeType = "application/pdf";
+                blockType = "document";
+            } else {
+                try {
+                    mimeType = getImageMimeType(extension);
+                    blockType = "image";
+
+                    if (!this.SUPPORTED_IMAGE_TYPES.includes(mimeType)) {
+                        return [
+                            { type: "text", text: `Unsupported image format: ${path.basename(file.path)}` }
+                        ];
+                    }
+                } catch (error) {
+                    return [
+                        { type: "text", text: Exception.messageFrom(error) }
+                    ];
+                }
+            }
+
+            return [
+                {type: "text", text: path.basename(file.path)},
+                {
+                    type: blockType,
+                    source: {
+                        type: "base64",
+                        media_type: mimeType,
+                        data: file.contents
+                    }
+                }
+            ];
+        });
+        return JSON.stringify(contentBlocks);
     }
 }

@@ -9,10 +9,14 @@ import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFun
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
 import { FinishReason } from "@google/genai";
+import * as path from "path-browserify";
+import { FileType, getImageMimeType, isFileType } from "Enums/FileType";
+import { Exception } from "Helpers/Exception";
 
 export class Gemini extends BaseAIClass {
 
   private readonly REQUEST_WEB_SEARCH: string = "request_web_search";
+  private readonly SUPPORTED_IMAGE_TYPES: string[] = ["image/jpeg", "image/png"];
 
   private accumulatedFunctionName: string | null = null;
   private accumulatedFunctionArgs: Record<string, unknown> = {};
@@ -190,6 +194,12 @@ export class Gemini extends BaseAIClass {
           }
         }
 
+        // Add provider-specific content if present (e.g., binary files)
+        if (content.isProviderSpecificContent && contentToExtract.trim() !== "") {
+          const rawContent = JSON.parse(contentToExtract) as Part[];
+          parts.push(...rawContent);
+        }
+
         // Add function response if present
         if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
           const parsedContent = this.parseFunctionResponse(contentToExtract);
@@ -231,5 +241,45 @@ export class Gemini extends BaseAIClass {
       description: functionDefinition.description,
       parameters: functionDefinition.parameters as FunctionDeclaration['parameters']
     }));
+  }
+
+  public formatBinaryFilesForUser(files: Array<{type: string, path: string, contents: string}>): string {
+    const parts: unknown[] = [];
+
+    for (const file of files) {
+      const extension = path.extname(file.path).substring(1).toLowerCase();
+
+      let mimeType: string;
+
+      if (isFileType(file.type, FileType.PDF)) {
+        mimeType = "application/pdf";
+      } else {
+        try {
+          mimeType = getImageMimeType(extension);
+
+          if (!this.SUPPORTED_IMAGE_TYPES.includes(mimeType)) {
+            parts.push({
+              text: `Unsupported image format: ${path.basename(file.path)}`
+            });
+            continue;
+          }
+        } catch (error) {
+          parts.push({
+            text: Exception.messageFrom(error)
+          });
+          continue;
+        }
+      }
+
+      parts.push({text: path.basename(file.path)});
+      parts.push({
+        inlineData: {
+          mimeType: mimeType,
+          data: file.contents
+        }
+      });
+    }
+
+    return JSON.stringify(parts);
   }
 }

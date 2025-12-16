@@ -60,7 +60,7 @@ export class ChatService {
 	}
 
 	public async submit(conversation: Conversation, allowDestructiveActions: boolean, userRequest: string, formattedRequest: string, callbacks: IChatServiceCallbacks) {
-		if (!await this.semaphore.wait()) {
+		if (this.ai === undefined || !await this.semaphore.wait()) {
 			return;
 		}
 
@@ -86,7 +86,7 @@ export class ChatService {
 				}
 
 				// Process AI responses and function calls
-				let response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
+				let response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), allowDestructiveActions, callbacks);
 				while (response.functionCall || response.shouldContinue) {
 					if (response.functionCall) {
 						const userMessage = response.functionCall.arguments.user_message;
@@ -95,17 +95,15 @@ export class ChatService {
 						}
 
 						const functionResponse = await this.aiFunctionService.performAIFunction(response.functionCall);
-
-						const functionResponseString = functionResponse.toConversationString();
-						conversation.contents.push(new ConversationContent(
-							Role.User, functionResponseString, functionResponseString, "", new Date(), false, true, functionResponse.toolId
-						));
+						conversation.addFunctionResponse(
+							functionResponse,
+							(files) => this.ai!.formatBinaryFilesForUser(files)
+						);
 					} else {
 						callbacks.onThoughtUpdate(Copy.AIThoughtMessage);
 					}
 
-					this.ensureCorrectConversationStructure(conversation);
-					response = await this.streamRequestResponse(conversation, allowDestructiveActions, callbacks);
+					response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), allowDestructiveActions, callbacks);
 				}
 			});
 		} catch (error) {
@@ -168,7 +166,7 @@ export class ChatService {
 		}
 	}
 
-	private ensureCorrectConversationStructure(conversation: Conversation) {
+	private ensureCorrectConversationStructure(conversation: Conversation): Conversation {
 		// Check if the last message is from the assistant to prevent assistant-to-assistant structure
 		// This can happen when the assistant's last message had no function call and the user sends a new request
 		if (conversation.contents.length > 0) {
@@ -178,6 +176,7 @@ export class ChatService {
 				conversation.contents.push(ConversationContent.safeContinue());
 			}
 		}
+		return conversation;
 	}
 
 	private async streamRequestResponse(

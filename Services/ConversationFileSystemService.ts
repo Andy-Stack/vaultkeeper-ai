@@ -45,6 +45,7 @@ export class ConversationFileSystemService {
                     timestamp: content.timestamp.toISOString(),
                     isFunctionCall: content.isFunctionCall,
                     isFunctionCallResponse: content.isFunctionCallResponse,
+                    isProviderSpecificContent: content.isProviderSpecificContent,
                     toolId: content.toolId,
                     thoughtSignature: content.thoughtSignature,
                     errorType: content.errorType
@@ -110,6 +111,7 @@ export class ConversationFileSystemService {
                         new Date(content.timestamp),
                         content.isFunctionCall,
                         content.isFunctionCallResponse,
+                        content.isProviderSpecificContent,
                         content.toolId,
                         content.thoughtSignature,
                         content.errorType

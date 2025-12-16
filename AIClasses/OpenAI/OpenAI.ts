@@ -290,20 +290,23 @@ export class OpenAI extends BaseAIClass {
         }));
     }
 
-    public formatBinaryFilesForUser(files: Array<{type: string, path: string, contents: string}>): string {
+    public formatBinaryFiles(files: Array<{type: string, path: string, contents: string}>): string {
         const contentBlocks: unknown[] = [];
-
+        
         for (const file of files) {
             const extension = path.extname(file.path).substring(1).toLowerCase();
-
             let mimeType: string;
-
+            
             if (isFileType(file.type, FileType.PDF)) {
                 mimeType = "application/pdf";
+                contentBlocks.push({
+                    type: "input_file",
+                    filename: path.basename(file.path),
+                    file_data: `data:${mimeType};base64,${file.contents}`
+                });
             } else {
                 try {
                     mimeType = getImageMimeType(extension);
-
                     if (!this.SUPPORTED_IMAGE_TYPES.includes(mimeType)) {
                         contentBlocks.push({
                             type: "input_text",
@@ -311,6 +314,11 @@ export class OpenAI extends BaseAIClass {
                         });
                         continue;
                     }
+                    
+                    contentBlocks.push({
+                        type: "input_image",
+                        image_url: `data:${mimeType};base64,${file.contents}`
+                    });
                 } catch (error) {
                     contentBlocks.push({
                         type: "input_text",
@@ -319,14 +327,11 @@ export class OpenAI extends BaseAIClass {
                     continue;
                 }
             }
-
-            contentBlocks.push({
-                type: "input_file",
-                filename: path.basename(file.path),
-                file_data: `data:${mimeType};base64,${file.contents}`
-            });
         }
-
-        return JSON.stringify(contentBlocks);
+        
+        return JSON.stringify([{
+            role: "user",
+            content: contentBlocks
+        }]);
     }
 }

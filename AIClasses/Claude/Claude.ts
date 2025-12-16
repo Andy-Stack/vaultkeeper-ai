@@ -238,7 +238,7 @@ export class Claude extends BaseAIClass {
         }));
     }
 
-    public formatBinaryFilesForUser(files: Array<{type: string, path: string, contents: string}>): string {
+    public formatBinaryFiles(files: Array<{type: string, path: string, contents: string}>): string {
         const contentBlocks = files.flatMap(file => {
             const extension = path.extname(file.path).substring(1).toLowerCase();
 

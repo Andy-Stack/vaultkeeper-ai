@@ -1076,4 +1076,265 @@ describe('Gemini', () => {
             expect((gemini as any).accumulatedThoughtSignature).toBeNull();
         });
     });
+
+    describe('formatBinaryFiles', () => {
+        it('should format PDF files with inlineData', () => {
+            const files = [{
+                type: 'pdf',
+                path: '/vault/documents/report.pdf',
+                contents: 'base64encodedcontent'
+            }];
+
+            const result = gemini.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(2);
+            expect(parsed[0]).toEqual({
+                text: 'report.pdf'
+            });
+            expect(parsed[1]).toEqual({
+                inlineData: {
+                    mimeType: 'application/pdf',
+                    data: 'base64encodedcontent'
+                }
+            });
+        });
+
+        it('should format JPEG images with inlineData', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/photo.jpg',
+                contents: 'base64imagedata'
+            }];
+
+            const result = gemini.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(2);
+            expect(parsed[0]).toEqual({
+                text: 'photo.jpg'
+            });
+            expect(parsed[1]).toEqual({
+                inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: 'base64imagedata'
+                }
+            });
+        });
+
+        it('should format PNG images with inlineData', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/diagram.png',
+                contents: 'base64pngdata'
+            }];
+
+            const result = gemini.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(2);
+            expect(parsed[1]).toEqual({
+                inlineData: {
+                    mimeType: 'image/png',
+                    data: 'base64pngdata'
+                }
+            });
+        });
+
+        it('should handle unsupported image formats (GIF) with error message', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/animation.gif',
+                contents: 'base64gifdata'
+            }];
+
+            const result = gemini.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0]).toEqual({
+                text: 'Unsupported image format: animation.gif'
+            });
+        });
+
+        it('should handle unsupported image formats (BMP) with error message', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/photo.bmp',
+                contents: 'base64bmpdata'
+            }];
+
+            const result = gemini.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0]).toEqual({
+                text: 'Unsupported image format: photo.bmp'
+            });
+        });
+
+        it('should handle multiple files of different types', () => {
+            const files = [
+                {
+                    type: 'pdf',
+                    path: '/vault/doc.pdf',
+                    contents: 'pdfdata'
+                },
+                {
+                    type: 'image',
+                    path: '/vault/image.jpg',
+                    contents: 'jpegdata'
+                },
+                {
+                    type: 'image',
+                    path: '/vault/screenshot.png',
+                    contents: 'pngdata'
+                }
+            ];
+
+            const result = gemini.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(6);
+
+            // PDF file
+            expect(parsed[0]).toEqual({ text: 'doc.pdf' });
+            expect(parsed[1]).toEqual({
+                inlineData: {
+                    mimeType: 'application/pdf',
+                    data: 'pdfdata'
+                }
+            });
+
+            // JPEG image
+            expect(parsed[2]).toEqual({ text: 'image.jpg' });
+            expect(parsed[3]).toEqual({
+                inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: 'jpegdata'
+                }
+            });
+
+            // PNG image
+            expect(parsed[4]).toEqual({ text: 'screenshot.png' });
+            expect(parsed[5]).toEqual({
+                inlineData: {
+                    mimeType: 'image/png',
+                    data: 'pngdata'
+                }
+            });
+        });
+
+        it('should handle mixed supported and unsupported files', () => {
+            const files = [
+                {
+                    type: 'image',
+                    path: '/vault/good.jpg',
+                    contents: 'jpegdata'
+                },
+                {
+                    type: 'image',
+                    path: '/vault/bad.bmp',
+                    contents: 'bmpdata'
+                },
+                {
+                    type: 'pdf',
+                    path: '/vault/doc.pdf',
+                    contents: 'pdfdata'
+                }
+            ];
+
+            const result = gemini.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(5);
+
+            expect(parsed[0]).toEqual({ text: 'good.jpg' });
+            expect(parsed[1]).toHaveProperty('inlineData');
+            expect(parsed[2]).toEqual({
+                text: 'Unsupported image format: bad.bmp'
+            });
+            expect(parsed[3]).toEqual({ text: 'doc.pdf' });
+            expect(parsed[4]).toHaveProperty('inlineData');
+        });
+
+        it('should handle error when getting image mime type fails', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/image.unknown',
+                contents: 'imagedata'
+            }];
+
+            const result = gemini.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0]).toHaveProperty('text');
+            expect(parsed[0].text).toContain('Image type not supported');
+        });
+
+        it('should handle files with uppercase extensions', () => {
+            const files = [
+                {
+                    type: 'pdf',
+                    path: '/vault/document.PDF',
+                    contents: 'pdfdata'
+                },
+                {
+                    type: 'image',
+                    path: '/vault/photo.JPG',
+                    contents: 'jpegdata'
+                }
+            ];
+
+            const result = gemini.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(4);
+            expect(parsed[0].text).toBe('document.PDF');
+            expect(parsed[1]).toHaveProperty('inlineData');
+            expect(parsed[2].text).toBe('photo.JPG');
+            expect(parsed[3]).toHaveProperty('inlineData');
+        });
+
+        it('should handle empty files array', () => {
+            const files: Array<{type: string, path: string, contents: string}> = [];
+
+            const result = gemini.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(0);
+        });
+
+        it('should properly encode filenames with special characters', () => {
+            const files = [{
+                type: 'pdf',
+                path: '/vault/documents/report (final) v2.pdf',
+                contents: 'pdfdata'
+            }];
+
+            const result = gemini.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed[0].text).toBe('report (final) v2.pdf');
+        });
+
+        it('should handle JPEG files with .jpeg extension', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/photo.jpeg',
+                contents: 'jpegdata'
+            }];
+
+            const result = gemini.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed[1]).toEqual({
+                inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: 'jpegdata'
+                }
+            });
+        });
+    });
 });

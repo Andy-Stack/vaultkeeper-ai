@@ -63,6 +63,7 @@ export class ChatService {
 		if (this.ai === undefined || !await this.semaphore.wait()) {
 			return;
 		}
+		const ai = this.ai;
 
 		this.semaphoreHeld = true;
 
@@ -97,7 +98,7 @@ export class ChatService {
 						const functionResponse = await this.aiFunctionService.performAIFunction(response.functionCall);
 						conversation.addFunctionResponse(
 							functionResponse,
-							(files) => this.ai!.formatBinaryFilesForUser(files)
+							(files) => ai.formatBinaryFiles(files)
 						);
 					} else {
 						callbacks.onThoughtUpdate(Copy.AIThoughtMessage);

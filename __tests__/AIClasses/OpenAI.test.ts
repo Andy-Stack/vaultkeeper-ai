@@ -1004,4 +1004,253 @@ describe('OpenAI', () => {
             expect(webSearchTool.name).toBe(undefined);
         });
     });
+
+    describe('formatBinaryFiles', () => {
+        it('should format PDF files with input_file type', () => {
+            const files = [{
+                type: 'pdf',
+                path: '/vault/documents/report.pdf',
+                contents: 'base64encodedcontent'
+            }];
+
+            const result = openai.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].role).toBe('user');
+            expect(parsed[0].content).toHaveLength(1);
+            expect(parsed[0].content[0]).toEqual({
+                type: 'input_file',
+                filename: 'report.pdf',
+                file_data: 'data:application/pdf;base64,base64encodedcontent'
+            });
+        });
+
+        it('should format JPEG images with input_image type', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/photo.jpg',
+                contents: 'base64imagedata'
+            }];
+
+            const result = openai.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].role).toBe('user');
+            expect(parsed[0].content).toHaveLength(1);
+            expect(parsed[0].content[0]).toEqual({
+                type: 'input_image',
+                image_url: 'data:image/jpeg;base64,base64imagedata'
+            });
+        });
+
+        it('should format PNG images with input_image type', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/diagram.png',
+                contents: 'base64pngdata'
+            }];
+
+            const result = openai.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].content[0]).toEqual({
+                type: 'input_image',
+                image_url: 'data:image/png;base64,base64pngdata'
+            });
+        });
+
+        it('should format WebP images with input_image type', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/modern.webp',
+                contents: 'base64webpdata'
+            }];
+
+            const result = openai.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].content[0]).toEqual({
+                type: 'input_image',
+                image_url: 'data:image/webp;base64,base64webpdata'
+            });
+        });
+
+        it('should handle unsupported image formats with error message', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/photo.gif',
+                contents: 'base64gifdata'
+            }];
+
+            const result = openai.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].content).toHaveLength(1);
+            expect(parsed[0].content[0]).toEqual({
+                type: 'input_text',
+                text: 'Unsupported image format: photo.gif'
+            });
+        });
+
+        it('should handle multiple files of different types', () => {
+            const files = [
+                {
+                    type: 'pdf',
+                    path: '/vault/doc.pdf',
+                    contents: 'pdfdata'
+                },
+                {
+                    type: 'image',
+                    path: '/vault/image.jpg',
+                    contents: 'jpegdata'
+                },
+                {
+                    type: 'image',
+                    path: '/vault/screenshot.png',
+                    contents: 'pngdata'
+                }
+            ];
+
+            const result = openai.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].role).toBe('user');
+            expect(parsed[0].content).toHaveLength(3);
+
+            expect(parsed[0].content[0]).toEqual({
+                type: 'input_file',
+                filename: 'doc.pdf',
+                file_data: 'data:application/pdf;base64,pdfdata'
+            });
+
+            expect(parsed[0].content[1]).toEqual({
+                type: 'input_image',
+                image_url: 'data:image/jpeg;base64,jpegdata'
+            });
+
+            expect(parsed[0].content[2]).toEqual({
+                type: 'input_image',
+                image_url: 'data:image/png;base64,pngdata'
+            });
+        });
+
+        it('should handle mixed supported and unsupported files', () => {
+            const files = [
+                {
+                    type: 'image',
+                    path: '/vault/good.jpg',
+                    contents: 'jpegdata'
+                },
+                {
+                    type: 'image',
+                    path: '/vault/bad.bmp',
+                    contents: 'bmpdata'
+                },
+                {
+                    type: 'pdf',
+                    path: '/vault/doc.pdf',
+                    contents: 'pdfdata'
+                }
+            ];
+
+            const result = openai.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].content).toHaveLength(3);
+
+            expect(parsed[0].content[0].type).toBe('input_image');
+            expect(parsed[0].content[1]).toEqual({
+                type: 'input_text',
+                text: 'Unsupported image format: bad.bmp'
+            });
+            expect(parsed[0].content[2].type).toBe('input_file');
+        });
+
+        it('should handle error when getting image mime type fails', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/image.unknown',
+                contents: 'imagedata'
+            }];
+
+            const result = openai.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].content).toHaveLength(1);
+            expect(parsed[0].content[0].type).toBe('input_text');
+            expect(parsed[0].content[0].text).toContain('Image type not supported');
+        });
+
+        it('should handle files with uppercase extensions', () => {
+            const files = [
+                {
+                    type: 'pdf',
+                    path: '/vault/document.PDF',
+                    contents: 'pdfdata'
+                },
+                {
+                    type: 'image',
+                    path: '/vault/photo.JPG',
+                    contents: 'jpegdata'
+                }
+            ];
+
+            const result = openai.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].content).toHaveLength(2);
+            expect(parsed[0].content[0].type).toBe('input_file');
+            expect(parsed[0].content[0].filename).toBe('document.PDF');
+            expect(parsed[0].content[1].type).toBe('input_image');
+        });
+
+        it('should handle empty files array', () => {
+            const files: Array<{type: string, path: string, contents: string}> = [];
+
+            const result = openai.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].role).toBe('user');
+            expect(parsed[0].content).toHaveLength(0);
+        });
+
+        it('should properly encode filenames with special characters', () => {
+            const files = [{
+                type: 'pdf',
+                path: '/vault/documents/report (final) v2.pdf',
+                contents: 'pdfdata'
+            }];
+
+            const result = openai.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed[0].content[0].filename).toBe('report (final) v2.pdf');
+        });
+
+        it('should handle JPEG files with .jpeg extension', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/photo.jpeg',
+                contents: 'jpegdata'
+            }];
+
+            const result = openai.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed[0].content[0]).toEqual({
+                type: 'input_image',
+                image_url: 'data:image/jpeg;base64,jpegdata'
+            });
+        });
+    });
 });

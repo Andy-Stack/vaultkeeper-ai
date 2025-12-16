@@ -243,7 +243,7 @@ export class Gemini extends BaseAIClass {
     }));
   }
 
-  public formatBinaryFilesForUser(files: Array<{type: string, path: string, contents: string}>): string {
+  public formatBinaryFiles(files: Array<{type: string, path: string, contents: string}>): string {
     const parts: unknown[] = [];
 
     for (const file of files) {

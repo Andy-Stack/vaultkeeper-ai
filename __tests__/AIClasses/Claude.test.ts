@@ -701,7 +701,7 @@ describe('Claude', () => {
         });
 
         it('should handle provider-specific content (images/PDFs) without stringifying', () => {
-            // Simulate what formatBinaryFilesForUser returns for an image
+            // Simulate what formatBinaryFiles returns for an image
             const imageContentBlocks = [
                 { type: 'text', text: 'test-image.png' },
                 {
@@ -889,6 +889,313 @@ describe('Claude', () => {
             expect((claude as any).accumulatedFunctionName).toBeNull();
             expect((claude as any).accumulatedFunctionArgs).toBe('');
             expect((claude as any).accumulatedFunctionId).toBeNull();
+        });
+    });
+
+    describe('formatBinaryFiles', () => {
+        it('should format PDF files with document type', () => {
+            const files = [{
+                type: 'pdf',
+                path: '/vault/documents/report.pdf',
+                contents: 'base64encodedcontent'
+            }];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(2);
+            expect(parsed[0]).toEqual({
+                type: 'text',
+                text: 'report.pdf'
+            });
+            expect(parsed[1]).toEqual({
+                type: 'document',
+                source: {
+                    type: 'base64',
+                    media_type: 'application/pdf',
+                    data: 'base64encodedcontent'
+                }
+            });
+        });
+
+        it('should format JPEG images with image type', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/photo.jpg',
+                contents: 'base64imagedata'
+            }];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(2);
+            expect(parsed[0]).toEqual({
+                type: 'text',
+                text: 'photo.jpg'
+            });
+            expect(parsed[1]).toEqual({
+                type: 'image',
+                source: {
+                    type: 'base64',
+                    media_type: 'image/jpeg',
+                    data: 'base64imagedata'
+                }
+            });
+        });
+
+        it('should format PNG images with image type', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/diagram.png',
+                contents: 'base64pngdata'
+            }];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(2);
+            expect(parsed[1]).toEqual({
+                type: 'image',
+                source: {
+                    type: 'base64',
+                    media_type: 'image/png',
+                    data: 'base64pngdata'
+                }
+            });
+        });
+
+        it('should format GIF images with image type', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/animation.gif',
+                contents: 'base64gifdata'
+            }];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(2);
+            expect(parsed[1]).toEqual({
+                type: 'image',
+                source: {
+                    type: 'base64',
+                    media_type: 'image/gif',
+                    data: 'base64gifdata'
+                }
+            });
+        });
+
+        it('should format WebP images with image type', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/modern.webp',
+                contents: 'base64webpdata'
+            }];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(2);
+            expect(parsed[1]).toEqual({
+                type: 'image',
+                source: {
+                    type: 'base64',
+                    media_type: 'image/webp',
+                    data: 'base64webpdata'
+                }
+            });
+        });
+
+        it('should handle unsupported image formats with error message', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/images/photo.bmp',
+                contents: 'base64bmpdata'
+            }];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0]).toEqual({
+                type: 'text',
+                text: 'Unsupported image format: photo.bmp'
+            });
+        });
+
+        it('should handle multiple files of different types', () => {
+            const files = [
+                {
+                    type: 'pdf',
+                    path: '/vault/doc.pdf',
+                    contents: 'pdfdata'
+                },
+                {
+                    type: 'image',
+                    path: '/vault/image.jpg',
+                    contents: 'jpegdata'
+                },
+                {
+                    type: 'image',
+                    path: '/vault/screenshot.png',
+                    contents: 'pngdata'
+                }
+            ];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(6);
+
+            // PDF file
+            expect(parsed[0]).toEqual({ type: 'text', text: 'doc.pdf' });
+            expect(parsed[1]).toEqual({
+                type: 'document',
+                source: {
+                    type: 'base64',
+                    media_type: 'application/pdf',
+                    data: 'pdfdata'
+                }
+            });
+
+            // JPEG image
+            expect(parsed[2]).toEqual({ type: 'text', text: 'image.jpg' });
+            expect(parsed[3]).toEqual({
+                type: 'image',
+                source: {
+                    type: 'base64',
+                    media_type: 'image/jpeg',
+                    data: 'jpegdata'
+                }
+            });
+
+            // PNG image
+            expect(parsed[4]).toEqual({ type: 'text', text: 'screenshot.png' });
+            expect(parsed[5]).toEqual({
+                type: 'image',
+                source: {
+                    type: 'base64',
+                    media_type: 'image/png',
+                    data: 'pngdata'
+                }
+            });
+        });
+
+        it('should handle mixed supported and unsupported files', () => {
+            const files = [
+                {
+                    type: 'image',
+                    path: '/vault/good.jpg',
+                    contents: 'jpegdata'
+                },
+                {
+                    type: 'image',
+                    path: '/vault/bad.bmp',
+                    contents: 'bmpdata'
+                },
+                {
+                    type: 'pdf',
+                    path: '/vault/doc.pdf',
+                    contents: 'pdfdata'
+                }
+            ];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(5);
+
+            expect(parsed[0].type).toBe('text');
+            expect(parsed[0].text).toBe('good.jpg');
+            expect(parsed[1].type).toBe('image');
+            expect(parsed[2]).toEqual({
+                type: 'text',
+                text: 'Unsupported image format: bad.bmp'
+            });
+            expect(parsed[3].type).toBe('text');
+            expect(parsed[3].text).toBe('doc.pdf');
+            expect(parsed[4].type).toBe('document');
+        });
+
+        it('should handle error when getting image mime type fails', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/image.unknown',
+                contents: 'imagedata'
+            }];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].type).toBe('text');
+            expect(parsed[0].text).toContain('Image type not supported');
+        });
+
+        it('should handle files with uppercase extensions', () => {
+            const files = [
+                {
+                    type: 'pdf',
+                    path: '/vault/document.PDF',
+                    contents: 'pdfdata'
+                },
+                {
+                    type: 'image',
+                    path: '/vault/photo.JPG',
+                    contents: 'jpegdata'
+                }
+            ];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(4);
+            expect(parsed[0].text).toBe('document.PDF');
+            expect(parsed[1].type).toBe('document');
+            expect(parsed[2].text).toBe('photo.JPG');
+            expect(parsed[3].type).toBe('image');
+        });
+
+        it('should handle empty files array', () => {
+            const files: Array<{type: string, path: string, contents: string}> = [];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(0);
+        });
+
+        it('should properly encode filenames with special characters', () => {
+            const files = [{
+                type: 'pdf',
+                path: '/vault/documents/report (final) v2.pdf',
+                contents: 'pdfdata'
+            }];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed[0].text).toBe('report (final) v2.pdf');
+        });
+
+        it('should handle JPEG files with .jpeg extension', () => {
+            const files = [{
+                type: 'image',
+                path: '/vault/photo.jpeg',
+                contents: 'jpegdata'
+            }];
+
+            const result = claude.formatBinaryFiles(files);
+            const parsed = JSON.parse(result);
+
+            expect(parsed[1]).toEqual({
+                type: 'image',
+                source: {
+                    type: 'base64',
+                    media_type: 'image/jpeg',
+                    data: 'jpegdata'
+                }
+            });
         });
     });
 });

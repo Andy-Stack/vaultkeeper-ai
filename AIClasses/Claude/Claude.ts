@@ -153,7 +153,7 @@ export class Claude extends BaseAIClass {
                 const contentBlocks: ContentBlockParam[] = [];
                 const contentToExtract = this.getContentToExtract(content);
 
-                if (contentToExtract.trim() !== "" && !content.isFunctionCallResponse) {
+                if (contentToExtract.trim() !== "" && !content.isFunctionCallResponse && !content.isProviderSpecificContent) {
                     contentBlocks.push({
                         type: "text",
                         text: contentToExtract

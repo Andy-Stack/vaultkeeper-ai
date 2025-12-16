@@ -4,6 +4,11 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 export const ReadVaultFiles: IAIFunctionDefinition = {
   name: AIFunction.ReadVaultFiles,
   description: `Reads and returns the complete content of one or more files from the vault.
+
+                **IMPORTANT: This function gives you the ability to SEE and ANALYZE images 
+                and PDFs. When users ask about image or PDF files, USE THIS FUNCTION to 
+                read them—do not claim you cannot see images.**
+
                 Call this when you need to access existing file content to answer questions,
                 provide summaries, verify information, or gather context before making updates.
                 Use proactively before updating files to understand current content and avoid

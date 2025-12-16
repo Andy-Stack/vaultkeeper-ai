@@ -699,6 +699,89 @@ describe('Claude', () => {
             expect(result[1].content[0].text).toBe('Second message');
             expect(result[2].content[0].text).toBe('Third message');
         });
+
+        it('should handle provider-specific content (images/PDFs) without stringifying', () => {
+            // Simulate what formatBinaryFilesForUser returns for an image
+            const imageContentBlocks = [
+                { type: 'text', text: 'test-image.png' },
+                {
+                    type: 'image',
+                    source: {
+                        type: 'base64',
+                        media_type: 'image/png',
+                        data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+                    }
+                }
+            ];
+
+            const providerSpecificContent = new ConversationContent(
+                Role.User,
+                JSON.stringify(imageContentBlocks),
+                JSON.stringify(imageContentBlocks),
+                '',
+                new Date(),
+                false,
+                false,
+                true  // isProviderSpecificContent = true
+            );
+
+            const result = (claude as any).extractContents([providerSpecificContent]);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].content).toHaveLength(2);
+
+            // First block should be the filename text
+            expect(result[0].content[0]).toEqual({
+                type: 'text',
+                text: 'test-image.png'
+            });
+
+            // Second block should be the image with base64 data (NOT stringified)
+            expect(result[0].content[1]).toEqual({
+                type: 'image',
+                source: {
+                    type: 'base64',
+                    media_type: 'image/png',
+                    data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+                }
+            });
+        });
+
+        it('should not add provider-specific content as text when isProviderSpecificContent is true', () => {
+            // This test ensures the fix for the token usage issue
+            const pdfContentBlocks = [
+                { type: 'text', text: 'document.pdf' },
+                {
+                    type: 'document',
+                    source: {
+                        type: 'base64',
+                        media_type: 'application/pdf',
+                        data: 'JVBERi0xLjQKJeLjz9MK'
+                    }
+                }
+            ];
+
+            const providerSpecificContent = new ConversationContent(
+                Role.User,
+                JSON.stringify(pdfContentBlocks),
+                JSON.stringify(pdfContentBlocks),
+                '',
+                new Date(),
+                false,
+                false,
+                true  // isProviderSpecificContent = true
+            );
+
+            const result = (claude as any).extractContents([providerSpecificContent]);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].content).toHaveLength(2);
+
+            // Verify no text block with stringified JSON was added
+            const textBlocks = result[0].content.filter((block: any) => block.type === 'text');
+            expect(textBlocks).toHaveLength(1);
+            expect(textBlocks[0].text).toBe('document.pdf');  // Only the filename, not the stringified JSON
+        });
     });
 
     describe('mapFunctionDefinitions', () => {

@@ -185,6 +185,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 					new Date('2024-01-01T10:02:00Z'),
 					true,
 					false,
+					false,
 					'tool_123'
 				)
 			);
@@ -202,6 +203,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 				timestamp: '2024-01-01T10:02:00.000Z',
 				isFunctionCall: true,
 				isFunctionCallResponse: false,
+				isProviderSpecificContent: false,
 				toolId: 'tool_123'
 			});
 		});
@@ -218,6 +220,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 					new Date('2024-01-01T10:03:00Z'),
 					false,
 					true,
+					false,
 					'tool_456'
 				)
 			);
@@ -363,7 +366,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 							functionCall: '',
 							timestamp: '2024-01-01T10:00:00.000Z',
 							isFunctionCall: false,
-							isFunctionCallResponse: false
+							isFunctionCallResponse: false,
+							isProviderSpecificContent: false
 						}
 					]
 				})
@@ -379,7 +383,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 							functionCall: '',
 							timestamp: '2024-01-02T10:00:00.000Z',
 							isFunctionCall: false,
-							isFunctionCallResponse: false
+							isFunctionCallResponse: false,
+							isProviderSpecificContent: false
 						}
 					]
 				});
@@ -412,7 +417,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						functionCall: '',
 						timestamp: '2024-01-01T10:00:00.000Z',
 						isFunctionCall: false,
-						isFunctionCallResponse: false
+						isFunctionCallResponse: false,
+						isProviderSpecificContent: false
 					},
 					{
 						role: Role.Assistant,
@@ -421,7 +427,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						functionCall: '',
 						timestamp: '2024-01-01T10:01:00.000Z',
 						isFunctionCall: false,
-						isFunctionCallResponse: false
+						isFunctionCallResponse: false,
+						isProviderSpecificContent: false
 					}
 				]
 			});
@@ -488,6 +495,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						timestamp: '2024-01-01T10:00:00.000Z',
 						isFunctionCall: true,
 						isFunctionCallResponse: false,
+						isProviderSpecificContent: false,
 						toolId: 'tool_1'
 					},
 					{
@@ -498,6 +506,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						timestamp: '2024-01-01T10:01:00.000Z',
 						isFunctionCall: false,
 						isFunctionCallResponse: true,
+						isProviderSpecificContent: false,
 						toolId: 'tool_1'
 					}
 				]
@@ -636,6 +645,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 					new Date('2024-01-01T10:05:00Z'),
 					true,
 					false,
+					false,
 					'tool_xyz'
 				),
 				new ConversationContent(
@@ -646,6 +656,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 					new Date('2024-01-01T10:06:00Z'),
 					false,
 					true,
+					false,
 					'tool_xyz'
 				)
 			);

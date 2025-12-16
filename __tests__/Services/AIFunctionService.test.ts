@@ -194,9 +194,9 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			expect(result.response).toEqual({
 				results: [
-					{ path: 'file1.md', contents: 'Content of file 1' },
-					{ path: 'file2.md', contents: 'Content of file 2' },
-					{ path: 'file3.md', contents: 'Content of file 3' }
+					{ type: 'md', path: 'file1.md', contents: 'Content of file 1' },
+					{ type: 'md', path: 'file2.md', contents: 'Content of file 2' },
+					{ type: 'md', path: 'file3.md', contents: 'Content of file 3' }
 				]
 			});
 		});
@@ -218,7 +218,7 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			expect(result.response).toEqual({
 				results: [
-					{ path: 'exists.md', contents: 'Existing content' },
+					{ type: 'md', path: 'exists.md', contents: 'Existing content' },
 					{ path: 'missing1.md', error: 'File not found' },
 					{ path: 'missing2.md', error: 'File not found' }
 				]

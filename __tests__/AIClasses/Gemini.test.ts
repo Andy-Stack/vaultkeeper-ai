@@ -449,6 +449,7 @@ describe('Gemini', () => {
                 new Date(),
                 true,
                 false,
+                false,
                 undefined,
                 'geminiSignatureFromAPI=='  // Has signature from Gemini
             );
@@ -482,6 +483,7 @@ describe('Gemini', () => {
                 new Date(),
                 true,
                 false,
+                false,
                 undefined,
                 signature
             );
@@ -513,6 +515,7 @@ describe('Gemini', () => {
                 }),
                 new Date(),
                 true,
+                false,
                 false,
                 undefined,
                 undefined  // No thoughtSignature (came from Claude/OpenAI)
@@ -740,6 +743,7 @@ describe('Gemini', () => {
                     new Date(),
                     true,
                     false,
+                    false,
                     undefined,
                     'signature123=='  // Has signature
                 ),
@@ -782,6 +786,7 @@ describe('Gemini', () => {
                     }),
                     new Date(),
                     true,
+                    false,
                     false,
                     undefined,
                     'latestCallSignature=='

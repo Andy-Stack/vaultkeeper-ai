@@ -13,6 +13,7 @@ describe('ConversationContent', () => {
 				timestamp,
 				true,
 				false,
+				false,
 				'tool-123'
 			);
 
@@ -36,6 +37,7 @@ describe('ConversationContent', () => {
 				'functionCall',
 				timestamp,
 				true,
+				false,
 				false,
 				'tool-123',
 				signature
@@ -112,6 +114,7 @@ describe('ConversationContent', () => {
 				new Date(),
 				true,
 				false,
+				false,
 				'call-1'
 			);
 
@@ -131,6 +134,7 @@ describe('ConversationContent', () => {
 				new Date(),
 				false,
 				true,
+				false,
 				'call-1'
 			);
 
@@ -151,7 +155,8 @@ describe('ConversationContent', () => {
 				functionCall: '',
 				timestamp: '2024-01-01T00:00:00:00.000Z',
 				isFunctionCall: false,
-				isFunctionCallResponse: false
+				isFunctionCallResponse: false,
+				isProviderSpecificContent: false
 			};
 
 			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
@@ -166,6 +171,7 @@ describe('ConversationContent', () => {
 				timestamp: '2024-01-01T00:00:00.000Z',
 				isFunctionCall: true,
 				isFunctionCallResponse: false,
+				isProviderSpecificContent: false,
 				toolId: 'tool-123'
 			};
 
@@ -181,6 +187,7 @@ describe('ConversationContent', () => {
 				timestamp: '2024-01-01T00:00:00.000Z',
 				isFunctionCall: true,
 				isFunctionCallResponse: false,
+				isProviderSpecificContent: false,
 				thoughtSignature: 'base64Signature=='
 			};
 
@@ -196,6 +203,7 @@ describe('ConversationContent', () => {
 				timestamp: '2024-01-01T00:00:00.000Z',
 				isFunctionCall: true,
 				isFunctionCallResponse: false,
+				isProviderSpecificContent: false,
 				toolId: 'tool-123',
 				thoughtSignature: 'base64Signature=='
 			};
@@ -384,7 +392,8 @@ describe('ConversationContent', () => {
 				functionCall: '',
 				timestamp: '2024-01-01T00:00:00.000Z',
 				isFunctionCall: false,
-				isFunctionCallResponse: false
+				isFunctionCallResponse: false,
+				isProviderSpecificContent: false
 			};
 
 			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
@@ -398,7 +407,8 @@ describe('ConversationContent', () => {
 				functionCall: '',
 				timestamp: '2024-01-01T00:00:00.000Z',
 				isFunctionCall: false,
-				isFunctionCallResponse: false
+				isFunctionCallResponse: false,
+				isProviderSpecificContent: false
 			};
 
 			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
@@ -427,7 +437,8 @@ describe('ConversationContent', () => {
 				functionCall: '',
 				timestamp: '',
 				isFunctionCall: false,
-				isFunctionCallResponse: false
+				isFunctionCallResponse: false,
+				isProviderSpecificContent: false
 			};
 
 			expect(ConversationContent.isConversationContentData(validData)).toBe(true);

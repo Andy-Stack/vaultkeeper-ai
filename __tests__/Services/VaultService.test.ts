@@ -315,7 +315,8 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.read(mockFile, false);
 
-			expect(result).toBe('');
+			expect(result).toBeInstanceOf(Error);
+		expect((result as Error).message).toContain('File does not exist: Vaultkeeper AI/test.md');
 			expect(mockVault.read).not.toHaveBeenCalled();
 		});
 

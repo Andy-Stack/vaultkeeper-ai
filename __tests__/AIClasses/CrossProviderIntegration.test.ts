@@ -119,6 +119,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 new Date(),
                 true,
                 false,
+                false,
                 'call_abc123',  // Claude's toolId
                 undefined       // No thoughtSignature from Claude
             );
@@ -147,6 +148,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 }),
                 new Date(),
                 true,
+                false,
                 false,
                 'call_xyz789',  // OpenAI's toolId
                 undefined       // No thoughtSignature from OpenAI
@@ -204,6 +206,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 new Date(),
                 true,
                 false,
+                false,
                 undefined,
                 'geminiThoughtSignature=='  // Gemini's thought signature
             );
@@ -239,6 +242,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                         new Date(),
                         true,
+                        false,
                         false,
                         'call_claude_123',
                         undefined  // No signature
@@ -279,6 +283,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                         new Date(),
                         true,
+                        false,
                         false,
                         undefined,
                         'geminiSignature123=='  // Has signature
@@ -341,6 +346,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         new Date(),
                         true,
                         false,
+                        false,
                         'call_openai_456',
                         undefined
                     );
@@ -388,6 +394,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         new Date(),
                         true,
                         false,
+                        false,
                         'call-1'
                     );
                     return content;
@@ -415,6 +422,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                         new Date(),
                         true,
+                        false,
                         false,
                         undefined,
                         'sig2=='
@@ -477,6 +485,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 new Date(),
                 true,
                 false,
+                false,
                 'toolu_abc123',  // toolId from Claude
                 undefined        // No thoughtSignature
             );
@@ -528,6 +537,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 }),
                 new Date(),
                 true,
+                false,
                 false,
                 'call_xyz789',  // OpenAI's toolId
                 undefined       // No thoughtSignature
@@ -587,6 +597,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         new Date(),
                         true,
                         false,
+                        false,
                         'toolu_1'
                     );
                     return content;
@@ -624,6 +635,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                         new Date(),
                         true,
+                        false,
                         false,
                         'call_2'
                     );
@@ -678,6 +690,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 new Date(),
                 true,
                 false,
+                false,
                 '',  // Empty toolId
                 undefined
             );
@@ -711,6 +724,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 new Date(),
                 true,
                 false,
+                false,
                 '   ',  // Whitespace toolId
                 undefined
             );
@@ -741,6 +755,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 }),
                 new Date(),
                 true,
+                false,
                 false,
                 'call_openai_123',
                 undefined
@@ -777,6 +792,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 }),
                 new Date(),
                 true,
+                false,
                 false,
                 'call_abc',
                 undefined  // No thoughtSignature from OpenAI
@@ -837,6 +853,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 new Date(),
                 true,
                 false,
+                false,
                 undefined,
                 'gemini_signature_123=='  // Has thoughtSignature
             );
@@ -896,6 +913,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                         new Date(),
                         true,
+                        false,
                         false,
                         'call_xyz'
                     );
@@ -960,6 +978,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         new Date(),
                         true,
                         false,
+                        false,
                         'toolu_1'
                     );
                     return content;
@@ -993,6 +1012,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                         new Date(),
                         true,
+                        false,
                         false,
                         'call_2'
                     );
@@ -1054,6 +1074,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         new Date(),
                         true,
                         false,
+                        false,
                         undefined,
                         'gemini_signature_1=='
                     );
@@ -1089,6 +1110,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         new Date(),
                         true,
                         false,
+                        false,
                         'toolu_2'
                     );
                     return content;
@@ -1122,6 +1144,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                         new Date(),
                         true,
+                        false,
                         false,
                         'call_3'
                     );
@@ -1180,6 +1203,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                         new Date(),
                         true,
+                        false,
                         false,
                         'toolu_round'
                     );
@@ -1246,6 +1270,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         new Date(),
                         true,
                         false,
+                        false,
                         'call_round'
                     );
                     return content;
@@ -1304,6 +1329,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         new Date(),
                         true,
                         false,
+                        false,
                         'toolu_step1'
                     );
                     return content;
@@ -1337,6 +1363,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         new Date(),
                         true,
                         false,
+                        false,
                         'call_step2'
                     );
                     return content;
@@ -1368,6 +1395,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                         new Date(),
                         true,
+                        false,
                         false,
                         undefined,
                         'gemini_step3_signature=='
@@ -1436,6 +1464,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 new Date(),
                 true,
                 false,
+                false,
                 undefined,
                 ''  // Empty string should be treated as missing
             );
@@ -1457,6 +1486,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 }),
                 new Date(),
                 true,
+                false,
                 false,
                 undefined,
                 '   '  // Whitespace only - should be treated as empty after trim()
@@ -1522,6 +1552,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 new Date(),
                 true,
                 false,
+                false,
                 'tool-123',  // toolId metadata (matches JSON id)
                 'signature=='  // Also has thoughtSignature (unusual but possible)
             );
@@ -1567,6 +1598,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 new Date(),
                 true,
                 false,
+                false,
                 'tool-123',  // toolId metadata is set
                 undefined
             );
@@ -1602,6 +1634,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                         new Date(),
                         true,
+                        false,
                         false,
                         'call-123'
                     );

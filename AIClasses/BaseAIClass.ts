@@ -16,12 +16,14 @@ import { StringTools } from "Helpers/StringTools";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import type { AbortService } from "Services/AbortService";
+import type { IAIFileService } from "./IAIFileService";
 
 export abstract class BaseAIClass implements IAIClass {
 
     protected readonly apiKey: string;
     protected readonly aiPrompt: IPrompt;
     protected readonly abortService: AbortService;
+    protected readonly aiFileService: IAIFileService;
     protected readonly settingsService: SettingsService;
     protected readonly streamingService: StreamingService;
     protected readonly aiFunctionDefinitions: AIFunctionDefinitions;
@@ -29,6 +31,7 @@ export abstract class BaseAIClass implements IAIClass {
     protected constructor(provider: AIProvider) {
         this.aiPrompt = Resolve<IPrompt>(Services.IPrompt);
         this.abortService = Resolve<AbortService>(Services.AbortService);
+        this.aiFileService = Resolve<IAIFileService>(Services.IAIFileService);
         this.settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.streamingService = Resolve<StreamingService>(Services.StreamingService);
         this.aiFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);

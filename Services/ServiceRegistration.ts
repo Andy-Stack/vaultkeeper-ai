@@ -33,6 +33,10 @@ import { HelpModal } from "Modals/HelpModal";
 import { EventService } from "./EventService";
 import { DiffService } from "./DiffService";
 import { AbortService } from "./AbortService";
+import type { IAIFileService } from "AIClasses/IAIFileService";
+import { ClaudeFileService } from "AIClasses/Claude/ClaudeFileService";
+import { GeminiFileService } from "AIClasses/Gemini/GeminiFileService";
+import { OpenAIFileService } from "AIClasses/OpenAI/OpenAIFileService";
 
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
     RegisterSingleton<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin, plugin);
@@ -72,14 +76,17 @@ export function RegisterAiProvider() {
     const provider = fromModel(settingsService.settings.model);
 
     if (provider == AIProvider.Claude) {
+        RegisterSingleton<IAIFileService>(Services.IAIFileService, new ClaudeFileService());
         RegisterSingleton<IAIClass>(Services.IAIClass, new Claude());
         RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new ClaudeConversationNamingService());
     }
     else if (provider == AIProvider.Gemini) {
+        RegisterSingleton<IAIFileService>(Services.IAIFileService, new GeminiFileService());
         RegisterSingleton<IAIClass>(Services.IAIClass, new Gemini());
         RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new GeminiConversationNamingService());
     }
     else if (provider == AIProvider.OpenAI) {
+        RegisterSingleton<IAIFileService>(Services.IAIFileService, new OpenAIFileService());
         RegisterSingleton<IAIClass>(Services.IAIClass, new OpenAI());
         RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new OpenAIConversationNamingService());
     }

@@ -26,6 +26,7 @@ export class Services {
 
     // interfaces
     static IAIClass = Symbol("IAIClass");
+    static IAIFileService = Symbol("IAIFileService");
     static IPrompt = Symbol("IPrompt");
     static IConversationNamingService = Symbol("IConversationNamingService");
 

@@ -111,3 +111,33 @@ export type ResponsesAPIInput =
     | ResponsesAPIMessageInput
     | ResponsesAPIFunctionCallInput
     | ResponsesAPIFunctionCallOutputInput;
+
+/**
+ * File API Types
+ */
+
+export interface OpenAIFile {
+    id: string;
+    object: "file";
+    bytes: number;
+    created_at: number;
+    expires_at: number;
+    filename: string;
+    purpose: string;
+    status?: string;
+    status_details?: string;
+}
+
+export interface OpenAIListFilesResponse {
+    object: "list";
+    data: OpenAIFile[];
+    first_id: string;
+    last_id: string;
+    has_more: boolean;
+}
+
+export interface OpenAIDeleteResponse {
+    id: string;
+    object: "file";
+    deleted: boolean;
+}

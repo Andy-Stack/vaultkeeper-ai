@@ -82,3 +82,10 @@ export enum AIProviderURL {
     Gemini = "https://generativelanguage.googleapis.com/v1beta/models",
     OpenAI = "https://api.openai.com/v1/responses"
 }
+
+export enum AIFileServiceURL {
+    Claude = "https://api.anthropic.com/v1/files",
+    Gemini = "https://generativelanguage.googleapis.com/v1beta",
+    GeminiUpload = "https://generativelanguage.googleapis.com/upload/v1beta",
+    OpenAI = "https://api.openai.com/v1/files",
+}

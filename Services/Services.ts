@@ -3,7 +3,6 @@ export class Services {
     static SettingsService = Symbol("SettingsService");
     static EventService = Symbol("EventService");
     static AbortService = Symbol("AbortService");
-    static StatusBarService = Symbol("StatusBarService");
     static HTMLService = Symbol("HTMLService");
     static VaultService = Symbol("VaultService");
     static VaultCacheService = Symbol("VaultCacheService");
@@ -28,7 +27,6 @@ export class Services {
     // interfaces
     static IAIClass = Symbol("IAIClass");
     static IPrompt = Symbol("IPrompt");
-    static ITokenService = Symbol("ITokenService");
     static IConversationNamingService = Symbol("IConversationNamingService");
 
     // modals

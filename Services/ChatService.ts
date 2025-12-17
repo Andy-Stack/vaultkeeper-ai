@@ -5,9 +5,6 @@ import type { IAIClass } from "AIClasses/IAIClass";
 import type { ConversationFileSystemService } from "./ConversationFileSystemService";
 import type { AIFunctionService } from "./AIFunctionService";
 import type { ConversationNamingService } from "./ConversationNamingService";
-import type { ITokenService } from "AIClasses/ITokenService";
-import type { IPrompt } from "AIClasses/IPrompt";
-import type { StatusBarService } from "./StatusBarService";
 import { Conversation } from "Conversations/Conversation";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
@@ -32,9 +29,6 @@ export class ChatService {
 	private conversationService: ConversationFileSystemService;
 	private aiFunctionService: AIFunctionService;
 	private namingService: ConversationNamingService;
-	private tokenService: ITokenService | undefined;
-	private prompt: IPrompt;
-	private statusBarService: StatusBarService;
 	private eventService: EventService;
 	private abortService: AbortService;
 
@@ -45,8 +39,6 @@ export class ChatService {
 		this.conversationService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
 		this.aiFunctionService = Resolve<AIFunctionService>(Services.AIFunctionService);
 		this.namingService = Resolve<ConversationNamingService>(Services.ConversationNamingService);
-		this.prompt = Resolve<IPrompt>(Services.IPrompt);
-		this.statusBarService = Resolve<StatusBarService>(Services.StatusBarService);
 		this.eventService = Resolve<EventService>(Services.EventService);
 		this.abortService = Resolve<AbortService>(Services.AbortService);
 		this.semaphore = new Semaphore(1, false);
@@ -56,7 +48,6 @@ export class ChatService {
 
 	public resolveAIProvider() {
 		this.ai = Resolve<IAIClass>(Services.IAIClass);
-		this.tokenService = Resolve<ITokenService>(Services.ITokenService);
 	}
 
 	public async submit(conversation: Conversation, allowDestructiveActions: boolean, userRequest: string, formattedRequest: string, callbacks: IChatServiceCallbacks) {
@@ -129,35 +120,6 @@ export class ChatService {
 	public stop() {
 		this.abortService.abort("User requested cancellation");
 		this.eventService.trigger(Event.DiffClosed);
-	}
-
-	public async updateTokenDisplay(conversation: Conversation) {
-		if (this.tokenService === undefined) {
-			return;
-		}
-
-		const systemInstruction = this.prompt.systemInstruction();
-		const userInstruction = await this.prompt.userInstruction();
-
-		const inputMessages = conversation.contents
-			.filter(message => message.role === Role.User && !message.isFunctionCallResponse)
-			.map(message => message.promptContent)
-			.join("\n");
-
-		const outputMessages = conversation.contents
-			.filter(message => message.role === Role.Assistant && !message.isFunctionCall)
-			.map(message => message.content)
-			.join("\n");
-
-		const inputText = systemInstruction + "\n" + userInstruction + "\n" + inputMessages;
-		const inputTokens = await this.tokenService.countTokens(inputText);
-		const outputTokens = await this.tokenService.countTokens(outputMessages);
-
-		this.setStatusBarTokens(inputTokens, outputTokens);
-	}
-
-	public setStatusBarTokens(inputTokens: number, outputTokens: number) {
-		this.statusBarService.animateTokens(inputTokens, outputTokens);
 	}
 
 	private async saveConversation(conversation: Conversation) {

@@ -49,7 +49,6 @@
     if (chatContainer) {
       plugin.registerDomEvent(chatContainer, 'click', handleLinkClick);
     }
-    chatService.setStatusBarTokens(0, 0);
   });
 
   async function handleLinkClick(evt: MouseEvent) {
@@ -121,7 +120,6 @@
         isSubmitting = false;
         abortService.reset();
         chatArea.updateChatAreaLayout("smooth", true);
-        await chatService.updateTokenDisplay(conversation);
       },
       onCancel: () => {
         cancelling = true;
@@ -131,7 +129,6 @@
 
   $: if ($conversationStore.shouldReset) {
     conversation = new Conversation();
-    chatService.setStatusBarTokens(0, 0);
 
     isSubmitting = false;
     currentStreamingMessageId = null;
@@ -155,7 +152,6 @@
         conversation = loadedConversation;
         conversationService.setCurrentConversationPath(filePath);
         chatService.onNameChanged?.(loadedConversation.title);
-        chatService.updateTokenDisplay(loadedConversation);
         conversationStore.clearLoadFlag();
         chatArea.updateChatAreaLayout("instant", true);
       }

@@ -26,7 +26,6 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 	let mockNamingService: any;
 	let mockPrompt: any;
 	let mockStatusBarService: any;
-	let mockTokenService: any;
 	let mockEventService: any;
 	let abortService: AbortService;
 
@@ -53,10 +52,6 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			animateTokens: vi.fn()
 		};
 
-		mockTokenService = {
-			countTokens: vi.fn().mockResolvedValue(100)
-		};
-
 		// Mock EventService since it extends Obsidian's Events class
 		mockEventService = {
 			trigger: vi.fn(),
@@ -72,7 +67,6 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 		RegisterSingleton(Services.AIFunctionService, mockAIFunctionService);
 		RegisterSingleton(Services.ConversationNamingService, mockNamingService);
 		RegisterSingleton(Services.IPrompt, mockPrompt);
-		RegisterSingleton(Services.StatusBarService, mockStatusBarService);
 		RegisterSingleton(Services.EventService, mockEventService);
 		RegisterSingleton(Services.AbortService, abortService);
 
@@ -102,7 +96,6 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 		it('should resolve AI provider services', () => {
 			const mockAI = { streamRequest: vi.fn() };
 			RegisterSingleton(Services.IAIClass, mockAI as any);
-			RegisterSingleton(Services.ITokenService, mockTokenService);
 
 			service.resolveAIProvider();
 
@@ -122,90 +115,6 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			service.stop();
 
 			expect(service).toBeDefined();
-		});
-	});
-
-	describe('setStatusBarTokens', () => {
-		beforeEach(() => {
-			// Need to resolve AI provider to initialize token service
-			RegisterSingleton(Services.IAIClass, { streamRequest: vi.fn() } as any);
-			RegisterSingleton(Services.ITokenService, mockTokenService);
-			service.resolveAIProvider();
-		});
-
-		it('should call status bar service with token counts', () => {
-			service.setStatusBarTokens(100, 50);
-
-			expect(mockStatusBarService.animateTokens).toHaveBeenCalledWith(100, 50);
-		});
-
-		it('should handle zero tokens', () => {
-			service.setStatusBarTokens(0, 0);
-
-			expect(mockStatusBarService.animateTokens).toHaveBeenCalledWith(0, 0);
-		});
-
-		it('should handle large token counts', () => {
-			service.setStatusBarTokens(100000, 50000);
-
-			expect(mockStatusBarService.animateTokens).toHaveBeenCalledWith(100000, 50000);
-		});
-	});
-
-	describe('updateTokenDisplay', () => {
-		beforeEach(() => {
-			// Need to resolve AI provider to initialize token service
-			RegisterSingleton(Services.IAIClass, { streamRequest: vi.fn() } as any);
-			RegisterSingleton(Services.ITokenService, mockTokenService);
-			service.resolveAIProvider();
-		});
-
-		it('should count tokens for conversation contents', async () => {
-			const conversation = new Conversation();
-			conversation.contents.push(new ConversationContent(Role.User, 'User message'));
-			conversation.contents.push(new ConversationContent(Role.Assistant, 'Assistant response'));
-
-			await service.updateTokenDisplay(conversation);
-
-			expect(mockTokenService.countTokens).toHaveBeenCalled();
-			expect(mockStatusBarService.animateTokens).toHaveBeenCalled();
-		});
-
-		it('should include system and user instructions in token count', async () => {
-			const conversation = new Conversation();
-			conversation.contents.push(new ConversationContent(Role.User, 'Test'));
-
-			await service.updateTokenDisplay(conversation);
-
-			expect(mockPrompt.systemInstruction).toHaveBeenCalled();
-			expect(mockPrompt.userInstruction).toHaveBeenCalled();
-		});
-
-		it('should filter out function call responses from user messages', async () => {
-			const conversation = new Conversation();
-			conversation.contents.push(new ConversationContent(Role.User, 'Regular message'));
-			conversation.contents.push(
-				new ConversationContent(Role.User, 'Function result', '', '', new Date(), false, true, 'tool-id')
-			);
-
-			await service.updateTokenDisplay(conversation);
-
-			expect(mockTokenService.countTokens).toHaveBeenCalled();
-		});
-
-		it('should handle empty conversation', async () => {
-			const conversation = new Conversation();
-
-			await service.updateTokenDisplay(conversation);
-
-			expect(mockStatusBarService.animateTokens).toHaveBeenCalled();
-		});
-
-		it('should not throw if token service not initialized', async () => {
-			const newService = new ChatService();
-			const conversation = new Conversation();
-
-			await expect(newService.updateTokenDisplay(conversation)).resolves.not.toThrow();
 		});
 	});
 
@@ -327,7 +236,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			conversation.contents.push(new ConversationContent(Role.User, 'Request'));
 			conversation.contents.push(new ConversationContent(Role.Assistant, 'Making a function call', '', '{"name":"test"}', new Date(), true));
 			// Function response (already User role with isFunctionCallResponse)
-			conversation.contents.push(new ConversationContent(Role.User, 'Function result', 'Function result', '', new Date(), false, true, 'tool-1'));
+			conversation.contents.push(new ConversationContent(Role.User, 'Function result', 'Function result', '', new Date(), false, true, false, 'tool-1'));
 			// Assistant processes the function response
 			conversation.contents.push(new ConversationContent(Role.Assistant, 'Final response'));
 

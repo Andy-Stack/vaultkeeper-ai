@@ -18,11 +18,6 @@ import { WorkSpaceService } from "./WorkSpaceService";
 import { ChatService } from "./ChatService";
 import { ConversationNamingService } from "./ConversationNamingService";
 import { VaultService } from "./VaultService";
-import type { ITokenService } from "AIClasses/ITokenService";
-import { GeminiTokenService } from "AIClasses/Gemini/GeminiTokenService";
-import { StatusBarService } from "./StatusBarService";
-import { ClaudeTokenService } from "AIClasses/Claude/ClaudeTokenService";
-import { OpenAITokenService } from "AIClasses/OpenAI/OpenAITokenService";
 import { ClaudeConversationNamingService } from "AIClasses/Claude/ClaudeConversationNamingService";
 import { Claude } from "AIClasses/Claude/Claude";
 import { OpenAIConversationNamingService } from "AIClasses/OpenAI/OpenAIConversationNamingService";
@@ -47,7 +42,6 @@ export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
 export function RegisterDependencies() {
     RegisterSingleton<EventService>(Services.EventService, new EventService());
     RegisterSingleton<AbortService>(Services.AbortService, new AbortService());
-    RegisterSingleton<StatusBarService>(Services.StatusBarService, new StatusBarService());
     RegisterSingleton<HTMLService>(Services.HTMLService, new HTMLService());
     RegisterSingleton<SanitiserService>(Services.SanitiserService, new SanitiserService());
     RegisterSingleton<DiffService>(Services.DiffService, new DiffService());
@@ -79,17 +73,14 @@ export function RegisterAiProvider() {
 
     if (provider == AIProvider.Claude) {
         RegisterSingleton<IAIClass>(Services.IAIClass, new Claude());
-        RegisterSingleton<ITokenService>(Services.ITokenService, new ClaudeTokenService());
         RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new ClaudeConversationNamingService());
     }
     else if (provider == AIProvider.Gemini) {
         RegisterSingleton<IAIClass>(Services.IAIClass, new Gemini());
-        RegisterSingleton<ITokenService>(Services.ITokenService, new GeminiTokenService());
         RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new GeminiConversationNamingService());
     }
     else if (provider == AIProvider.OpenAI) {
         RegisterSingleton<IAIClass>(Services.IAIClass, new OpenAI());
-        RegisterSingleton<ITokenService>(Services.ITokenService, new OpenAITokenService());
         RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new OpenAIConversationNamingService());
     }
 

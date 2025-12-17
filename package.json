@@ -52,7 +52,6 @@
 		"diff2html": "^3.4.52",
 		"express": "^5.2.1",
 		"fuzzysort": "^3.1.0",
-		"gpt-tokenizer": "^3.4.0",
 		"highlight.js": "^11.11.1",
 		"katex": "^0.16.27",
 		"lowlight": "^3.3.0",

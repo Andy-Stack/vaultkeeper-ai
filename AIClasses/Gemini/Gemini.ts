@@ -160,8 +160,8 @@ export class Gemini extends BaseAIClass {
         const parts: Part[] = [];
         const contentToExtract = this.getContentToExtract(content);
 
-        // Add text content if not a function call response
-        if (contentToExtract.trim() !== "" && !content.isFunctionCallResponse) {
+        // Add text content if not a function call response or provider-specific content
+        if (contentToExtract.trim() !== "" && !content.isFunctionCallResponse && !content.isProviderSpecificContent) {
           parts.push({ text: contentToExtract });
         }
 

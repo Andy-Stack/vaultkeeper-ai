@@ -849,6 +849,81 @@ describe('Gemini', () => {
             expect(result[1].parts[0].text).toBe('Second message');
             expect(result[2].parts[0].text).toBe('Third message');
         });
+
+        it('should handle provider-specific content (images/PDFs) correctly', () => {
+            const imageContentParts = [
+                { text: 'test-image.png' },
+                {
+                    inlineData: {
+                        mimeType: 'image/png',
+                        data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+                    }
+                }
+            ];
+
+            const providerSpecificContent = new ConversationContent(
+                Role.User,
+                JSON.stringify(imageContentParts),
+                JSON.stringify(imageContentParts),
+                '',
+                new Date(),
+                false,
+                false,
+                true  // isProviderSpecificContent = true
+            );
+
+            const result = (gemini as any).extractContents([providerSpecificContent]);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].parts).toHaveLength(2);
+
+            // First part should be the filename text
+            expect(result[0].parts[0]).toEqual({
+                text: 'test-image.png'
+            });
+
+            // Second part should be the image with base64 data (NOT stringified)
+            expect(result[0].parts[1]).toEqual({
+                inlineData: {
+                    mimeType: 'image/png',
+                    data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+                }
+            });
+        });
+
+        it('should not add provider-specific content as text when isProviderSpecificContent is true', () => {
+            // This test ensures the fix for the token usage issue
+            const pdfContentParts = [
+                { text: 'document.pdf' },
+                {
+                    inlineData: {
+                        mimeType: 'application/pdf',
+                        data: 'JVBERi0xLjQKJeLjz9MK'
+                    }
+                }
+            ];
+
+            const providerSpecificContent = new ConversationContent(
+                Role.User,
+                JSON.stringify(pdfContentParts),
+                JSON.stringify(pdfContentParts),
+                '',
+                new Date(),
+                false,
+                false,
+                true  // isProviderSpecificContent = true
+            );
+
+            const result = (gemini as any).extractContents([providerSpecificContent]);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].parts).toHaveLength(2);
+
+            // Verify no text part with stringified JSON was added
+            const textParts = result[0].parts.filter((part: any) => part.text !== undefined);
+            expect(textParts).toHaveLength(1);
+            expect(textParts[0].text).toBe('document.pdf');  // Only the filename, not the stringified JSON
+        });
     });
 
     describe('Helper Methods', () => {

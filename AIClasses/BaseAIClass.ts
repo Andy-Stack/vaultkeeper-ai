@@ -8,10 +8,10 @@ import type { AIProvider } from "Enums/ApiProvider";
 import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
 import type { ConversationContent } from "Conversations/ConversationContent";
+import type { Attachment } from "Conversations/Attachment";
 import type { SettingsService } from "Services/SettingsService";
 import type { StreamingService } from "Services/StreamingService";
 import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
-import { Role } from "Enums/Role";
 import { StringTools } from "Helpers/StringTools";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
@@ -46,7 +46,7 @@ export abstract class BaseAIClass implements IAIClass {
         abortSignal?: AbortSignal
     ): AsyncGenerator<IStreamChunk, void, unknown>;
 
-    public abstract formatBinaryFiles(files: Array<{type: string, path: string, contents: string}>): string;
+    public abstract formatBinaryFiles(attachments: Attachment[]): string;
 
     protected abstract parseStreamChunk(chunk: string): IStreamChunk;
     protected abstract extractContents(conversationContent: ConversationContent[]): unknown;
@@ -54,23 +54,21 @@ export abstract class BaseAIClass implements IAIClass {
 
     protected filterConversationContents(conversationContent: ConversationContent[]): ConversationContent[] {
         return conversationContent.filter((content, index, array) => {
-            // Filter out empty content
-            if (content.content.trim() === "" && content.functionCall.trim() === "") return false;
+            if (!content.content && !content.functionCall && (!content.attachments || content.attachments.length === 0)) {
+                return false; // Filter out empty content
+            }
 
-            // Keep non-function-calls
-            if (!content.isFunctionCall) return true;
+            if (!content.functionCall) {
+                return true; // Keep non-function-calls
+            }
 
             // Keep if it's the last item (most recent)
             if (index === array.length - 1) return true;
 
             // Keep if next item is a function response
             const nextItem = array[index + 1];
-            return nextItem && nextItem.isFunctionCallResponse;
+            return nextItem && nextItem.functionResponse;
         });
-    }
-
-    protected getContentToExtract(content: ConversationContent): string {
-        return content.role === Role.User ? content.promptContent : content.content;
     }
 
     protected parseFunctionCall(functionCallJson: string): StoredFunctionCall | null {

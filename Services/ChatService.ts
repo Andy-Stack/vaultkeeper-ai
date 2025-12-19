@@ -51,10 +51,9 @@ export class ChatService {
 	}
 
 	public async submit(conversation: Conversation, allowDestructiveActions: boolean, userRequest: string, formattedRequest: string, callbacks: IChatServiceCallbacks) {
-		if (this.ai === undefined || !await this.semaphore.wait()) {
+		if (!await this.semaphore.wait()) {
 			return;
 		}
-		const ai = this.ai;
 
 		this.semaphoreHeld = true;
 
@@ -66,7 +65,11 @@ export class ChatService {
 			this.abortService.initialiseAbortController();
 
 			await this.abortService.abortableOperation(async () => {
-				conversation.contents.push(new ConversationContent(Role.User, userRequest, formattedRequest));
+				conversation.contents.push(new ConversationContent({
+					role: Role.User,
+					content: formattedRequest,
+					displayContent: userRequest
+				}));
 				await this.saveConversation(conversation);
 
 				callbacks.onSubmit();
@@ -87,10 +90,7 @@ export class ChatService {
 						}
 
 						const functionResponse = await this.aiFunctionService.performAIFunction(response.functionCall);
-						conversation.addFunctionResponse(
-							functionResponse,
-							(files) => ai.formatBinaryFiles(files)
-						);
+						conversation.addFunctionResponse(functionResponse);
 					} else {
 						callbacks.onThoughtUpdate(Copy.AIThoughtMessage);
 					}
@@ -149,7 +149,7 @@ export class ChatService {
 			return { functionCall: null, shouldContinue: false };;
 		}
 
-		const conversationContent = new ConversationContent(Role.Assistant);
+		const conversationContent = new ConversationContent({ role: Role.Assistant });
 		conversation.contents.push(conversationContent);
 
 		let accumulatedContent = "";
@@ -189,7 +189,6 @@ export class ChatService {
 				} else {
 					conversationContent.content = sanitizedContent;
 					if (capturedFunctionCall) {
-						conversationContent.isFunctionCall = true;
 						conversationContent.functionCall = capturedFunctionCall.toConversationString();
 						if (capturedFunctionCall.thoughtSignature) {
 							conversationContent.thoughtSignature = capturedFunctionCall.thoughtSignature;
@@ -198,7 +197,7 @@ export class ChatService {
 				}
 			}
 
-			if (conversationContent.content.trim() !== "") {
+			if (conversationContent.content?.trim() !== "") {
 				callbacks.onStreamingUpdate(conversationContent.timestamp.getTime().toString());
 			}
 		}

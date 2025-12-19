@@ -1,103 +1,90 @@
-import type { IAIFileService } from "AIClasses/IAIFileService";
-import { Resolve } from "Services/DependencyService";
-import { Services } from "Services/Services";
-import type { SettingsService } from "Services/SettingsService";
+import { BaseAIFileService } from "AIClasses/BaseAIFileService";
 import { AIFileServiceURL, AIProvider } from "Enums/ApiProvider";
-import { Exception } from "Helpers/Exception";
-import { requestUrl } from "obsidian";
 import { StringTools } from "Helpers/StringTools";
+import { ApiError } from "Types/ApiError";
 
-export class ClaudeFileService implements IAIFileService {
+export class ClaudeFileService extends BaseAIFileService {
 
-    private readonly settingsService: SettingsService;
-    private readonly apiKey: string;
     private readonly betaHeader = "files-api-2025-04-14";
 
     public constructor() {
-        this.settingsService = Resolve<SettingsService>(Services.SettingsService);
-        this.apiKey = this.settingsService.getApiKeyForProvider(AIProvider.Claude);
+        super(AIProvider.Claude);
     }
 
-    public async listFiles(): Promise<string[]> {
-        try {
-            const response = await requestUrl({
-                url: AIFileServiceURL.Claude,
+    protected async listFilesFromAPI(): Promise<string[]> {
+        return this.withRetry("List files", async () => {
+            const response = await fetch(AIFileServiceURL.Claude, {
                 method: "GET",
                 headers: {
                     "x-api-key": this.apiKey,
                     "anthropic-version": "2023-06-01",
                     "anthropic-beta": this.betaHeader
-                }
+                },
+                signal: this.abortService.signal()
             });
 
-            if (response.status !== 200) {
-                Exception.throw(`Failed to list files: ${response.status} ${response.text}`);
+            if (!response.ok) {
+                const responseBody = await response.text();
+                throw ApiError.fromResponse(response.status, response.statusText, responseBody);
             }
 
-            const data = response.json as ClaudeListFilesResponse;
+            const data = await response.json() as ClaudeListFilesResponse;
 
             if (!data.data || data.data.length === 0) {
                 return [];
             }
 
             return data.data.map(file => file.id);
-        } catch (error) {
-            Exception.log(error);
-            Exception.throw(error);
-        }
+        });
     }
 
-    public async uploadFile(data: string, mimeType: string, displayName?: string): Promise<string> {
-        try {
+    protected async uploadFileToAPI(data: string, mimeType: string, displayName?: string): Promise<string> {
+        return this.withRetry("Upload file", async () => {
             const bytes = StringTools.toBytes(data);
-            const blob = new Blob([bytes], { type: mimeType });
+            const blob = this.createBlob(bytes, mimeType);
 
             const formData = new FormData();
             formData.append("file", blob, displayName || "file");
 
-            const response = await requestUrl({
-                url: AIFileServiceURL.Claude,
+            const response = await fetch(AIFileServiceURL.Claude, {
                 method: "POST",
                 headers: {
                     "x-api-key": this.apiKey,
                     "anthropic-version": "2023-06-01",
                     "anthropic-beta": this.betaHeader
                 },
-                body: formData as unknown as string
+                body: formData,
+                signal: this.abortService.signal()
             });
 
-            if (response.status !== 200 && response.status !== 201) {
-                Exception.throw(`Failed to upload file: ${response.status} ${response.text}`);
+            if (!response.ok) {
+                const responseBody = await response.text();
+                throw ApiError.fromResponse(response.status, response.statusText, responseBody);
             }
 
-            const responseData = response.json as ClaudeFile;
+            const responseData = await response.json() as ClaudeFile;
 
             return responseData.id;
-        } catch (error) {
-            Exception.log(error);
-            Exception.throw(error);
-        }
+        });
     }
 
-    public async deleteFile(id: string): Promise<void> {
-        try {
-            const response = await requestUrl({
-                url: `${AIFileServiceURL.Claude}/${id}`,
+    protected async deleteFileFromAPI(id: string): Promise<void> {
+        return this.withRetry("Delete file", async () => {
+            const response = await fetch(`${AIFileServiceURL.Claude}/${id}`, {
                 method: "DELETE",
                 headers: {
                     "x-api-key": this.apiKey,
                     "anthropic-version": "2023-06-01",
                     "anthropic-beta": this.betaHeader
-                }
+                },
+                signal: this.abortService.signal()
             });
 
-            if (response.status !== 200 && response.status !== 204) {
-                Exception.throw(`Failed to delete file: ${response.status} ${response.text}`);
+            if (!response.ok && response.status !== 204 && response.status !== 404) {
+                const responseBody = await response.text();
+                throw ApiError.fromResponse(response.status, response.statusText, responseBody);
             }
-        } catch (error) {
-            Exception.log(error);
-            Exception.throw(error);
-        }
+        });
     }
 
 }

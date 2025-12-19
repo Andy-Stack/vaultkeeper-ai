@@ -60,7 +60,7 @@ export class StreamingService {
             return;
           }
 
-          await this.sleep(StreamingService.RETRY_DELAYS[attempt]);
+          await sleep(StreamingService.RETRY_DELAYS[attempt]);
         }
       }
 
@@ -177,7 +177,4 @@ export class StreamingService {
     return attempt < StreamingService.MAX_RETRIES;
   }
 
-  private async sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
 }

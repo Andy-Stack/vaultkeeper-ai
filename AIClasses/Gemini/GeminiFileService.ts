@@ -1,58 +1,49 @@
-import type { IAIFileService } from "AIClasses/IAIFileService";
-import { Resolve } from "Services/DependencyService";
-import { Services } from "Services/Services";
-import type { SettingsService } from "Services/SettingsService";
+import { BaseAIFileService } from "AIClasses/BaseAIFileService";
 import { AIFileServiceURL, AIProvider } from "Enums/ApiProvider";
 import { Exception } from "Helpers/Exception";
-import { requestUrl } from "obsidian";
 import { StringTools } from "Helpers/StringTools";
+import { ApiError } from "Types/ApiError";
 
-export class GeminiFileService implements IAIFileService {
-
-    private readonly settingsService: SettingsService;
-    private readonly apiKey: string;
+export class GeminiFileService extends BaseAIFileService {
 
     public constructor() {
-        this.settingsService = Resolve<SettingsService>(Services.SettingsService);
-        this.apiKey = this.settingsService.getApiKeyForProvider(AIProvider.Gemini);
+        super(AIProvider.Gemini);
     }
 
-    public async listFiles(): Promise<string[]> {
-        try {
-            const response = await requestUrl({
-                url: `${AIFileServiceURL.Gemini}/files?key=${this.apiKey}`,
+    protected async listFilesFromAPI(): Promise<string[]> {
+        return this.withRetry("List files", async () => {
+            const response = await fetch(`${AIFileServiceURL.Gemini}/files?key=${this.apiKey}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json"
-                }
+                },
+                signal: this.abortService.signal()
             });
 
-            if (response.status !== 200) {
-                Exception.throw(`Failed to list files: ${response.status} ${response.text}`);
+            if (!response.ok) {
+                const responseBody = await response.text();
+                throw ApiError.fromResponse(response.status, response.statusText, responseBody);
             }
 
-            const data = response.json as GeminiListFilesResponse;
+            const data = await response.json() as GeminiListFilesResponse;
 
             if (!data.files || data.files.length === 0) {
                 return [];
             }
 
             return data.files.map(file => file.name);
-        } catch (error) {
-            Exception.log(error);
-            Exception.throw(error);
-        }
+        });
     }
 
-    public async uploadFile(data: string, mimeType: string, displayName?: string): Promise<string> {
-        try {
+    protected async uploadFileToAPI(data: string, mimeType: string, displayName?: string): Promise<string> {
+        return this.withRetry("Upload file", async () => {
             const bytes = StringTools.toBytes(data);
             const numBytes = bytes.byteLength;
 
             const metadata = displayName ? { file: { displayName } } : {};
 
-            const initiateResponse = await requestUrl({
-                url: `${AIFileServiceURL.GeminiUpload}/files?key=${this.apiKey}`,
+            // Step 1: Initiate resumable upload
+            const initiateResponse = await fetch(`${AIFileServiceURL.GeminiUpload}/files?key=${this.apiKey}`, {
                 method: "POST",
                 headers: {
                     "X-Goog-Upload-Protocol": "resumable",
@@ -61,57 +52,56 @@ export class GeminiFileService implements IAIFileService {
                     "X-Goog-Upload-Header-Content-Type": mimeType,
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify(metadata)
+                body: JSON.stringify(metadata),
+                signal: this.abortService.signal()
             });
 
-            if (initiateResponse.status !== 200) {
-                Exception.throw(`Failed to initiate upload: ${initiateResponse.status} ${initiateResponse.text}`);
+            if (!initiateResponse.ok) {
+                const responseBody = await initiateResponse.text();
+                throw ApiError.fromResponse(initiateResponse.status, initiateResponse.statusText, responseBody);
             }
 
-            const uploadUrl = initiateResponse.headers["x-goog-upload-url"];
+            const uploadUrl = initiateResponse.headers.get("x-goog-upload-url");
             if (!uploadUrl) {
                 Exception.throw("No upload URL received from initiate request");
             }
 
-            const uploadResponse = await requestUrl({
-                url: uploadUrl,
+            // Step 2: Upload file data
+            const blob = this.createBlob(bytes, mimeType);
+            const uploadResponse = await fetch(uploadUrl, {
                 method: "POST",
                 headers: {
                     "Content-Length": numBytes.toString(),
                     "X-Goog-Upload-Offset": "0",
                     "X-Goog-Upload-Command": "upload, finalize"
                 },
-                body: bytes.buffer,
-                contentType: mimeType
+                body: blob,
+                signal: this.abortService.signal()
             });
 
-            if (uploadResponse.status !== 200) {
-                Exception.throw(`Failed to upload file: ${uploadResponse.status} ${uploadResponse.text}`);
+            if (!uploadResponse.ok) {
+                const responseBody = await uploadResponse.text();
+                throw ApiError.fromResponse(uploadResponse.status, uploadResponse.statusText, responseBody);
             }
 
-            const responseData = uploadResponse.json as GeminiUploadResponse;
+            const responseData = await uploadResponse.json() as GeminiUploadResponse;
 
             return responseData.file.uri;
-        } catch (error) {
-            Exception.log(error);
-            Exception.throw(error);
-        }
+        });
     }
 
-    public async deleteFile(name: string): Promise<void> {
-        try {
-            const response = await requestUrl({
-                url: `${AIFileServiceURL.Gemini}/${name}?key=${this.apiKey}`,
-                method: "DELETE"
+    protected async deleteFileFromAPI(name: string): Promise<void> {
+        return this.withRetry("Delete file", async () => {
+            const response = await fetch(`${AIFileServiceURL.Gemini}/${name}?key=${this.apiKey}`, {
+                method: "DELETE",
+                signal: this.abortService.signal()
             });
 
-            if (response.status !== 200 && response.status !== 204) {
-                Exception.throw(`Failed to delete file: ${response.status} ${response.text}`);
+            if (!response.ok && response.status !== 204 && response.status !== 403) {
+                const responseBody = await response.text();
+                throw ApiError.fromResponse(response.status, response.statusText, responseBody);
             }
-        } catch (error) {
-            Exception.log(error);
-            Exception.throw(error);
-        }
+        });
     }
 
 }

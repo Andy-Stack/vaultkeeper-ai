@@ -1,5 +1,8 @@
+import type { Attachment } from "Conversations/Attachment";
+
 export interface IAIFileService {
+    refreshCache(): Promise<void>;
     listFiles(): Promise<string[]>;
-    uploadFile(data: string, mimeType: string, displayName?: string): Promise<string>;
-    deleteFile(id: string): Promise<void>;
+    uploadFile(attachment: Attachment): Promise<string>;
+    deleteFile(attachment: Attachment): Promise<void>;
 }

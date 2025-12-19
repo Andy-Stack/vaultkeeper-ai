@@ -18,6 +18,13 @@ export abstract class Exception {
         }
     }
 
+    public static warn(error: unknown) {
+        if (process.env.NODE_ENV === Environment.DEV) {
+            const e: Error = this.new(error);
+            console.warn(e.message, e);
+        }
+    }
+
     public static messageFrom(error: unknown): string {
         if (error instanceof Error) {
             return error.message;

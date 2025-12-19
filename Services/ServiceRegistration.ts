@@ -93,6 +93,7 @@ export function RegisterAiProvider() {
 
     Resolve<ChatService>(Services.ChatService).resolveAIProvider();
     Resolve<ConversationNamingService>(Services.ConversationNamingService).resolveNamingProvider();
+    Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService).resolveAIFileService();
 }
 
 function RegisterModals() {

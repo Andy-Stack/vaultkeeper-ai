@@ -1,100 +1,109 @@
 import { Role } from "Enums/Role";
 import { ApiErrorType } from "Types/ApiError";
+import type { Attachment } from "./Attachment";
 
-export class ConversationContent {
+type ConversationContentInit = {
     role: Role;
-    content: string;
-    promptContent: string;
-    functionCall: string;
-    timestamp: Date;
-    isFunctionCall: boolean;
-    isFunctionCallResponse: boolean;
-    isProviderSpecificContent: boolean;
+    timestamp?: Date;
+    content?: string;
+    displayContent?: string;
+    functionCall?: string;
+    functionResponse?: string;
+    attachments?: Attachment[];
+    shouldDisplayContent?: boolean;
     toolId?: string;
     thoughtSignature?: string;
     errorType?: ApiErrorType;
+};
+
+export class ConversationContent {
+    public role: Role;
+    public timestamp: Date;
+    public content: string | undefined;
+    public displayContent: string | undefined;
+    public functionCall: string | undefined;
+    public functionResponse: string | undefined;
+    public attachments: Attachment[];
+    public shouldDisplayContent: boolean;
+    public toolId: string | undefined;
+    public thoughtSignature: string | undefined;
+    public errorType: ApiErrorType | undefined;
 
     /**
      * Creates a conversation content entry.
      *
-     * @param role - The role of the message sender (User or Assistant)
-     * @param content - The display content shown in the UI (for User messages, this is the user's input; for Assistant, it's the AI response)
-     * @param promptContent - The content sent to the AI provider (often same as content, but may differ for system-generated messages)
-     * @param functionCall - JSON string of the function call data (only set when isFunctionCall=true)
-     * @param timestamp - When this content was created
-     * @param isFunctionCall - True if this is an Assistant message containing a function/tool call
-     * @param isFunctionCallResponse - True if this is a User message containing the response to a function call (hides from UI)
-     * @param isProviderSpecificContent - True if this contains provider-specific formatted content (e.g., binary files in Claude/OpenAI/Gemini format; hides from UI)
-     * @param toolId - Unique identifier for tool calls/responses (used to match calls with their responses)
-     * @param thoughtSignature - Gemini-specific thought signature for extended thinking
-     * @param errorType - If present, indicates this message contains an error
+     * @param init - Initialization object
+     * @param init.role - The role of the message sender (User or Assistant)
+     * @param init.timestamp - Timestamp of the message (defaults to now)
+     * @param init.content - The content to be displayed and/or sent to the AI provider
+     * @param init.displayContent - Display content is used when content needs to be formatted differently when displayed versus as a prompt
+     * @param init.functionCall - JSON string of the function call data (only set for function/tool calls)
+     * @param init.functionResponse - JSON string of the function call response data (only set for function/tool responses)
+     * @param init.attachments - Array of file attachments associated with this message (defaults to empty array)
+     * @param init.shouldDisplayContent - Whether this content should be displayed in the UI (defaults to true, false for system-generated messages)
+     * @param init.toolId - Unique identifier for tool calls/responses (used to match calls with their responses)
+     * @param init.thoughtSignature - Gemini-specific thought signature for extended thinking
+     * @param init.errorType - Indicates that this contains an error of the given type
      */
-    constructor(
-        role: Role,
-        content: string = "",
-        promptContent: string = "",
-        functionCall: string = "",
-        timestamp: Date = new Date(),
-        isFunctionCall = false,
-        isFunctionCallResponse = false,
-        isProviderSpecificContent = false,
-        toolId?: string,
-        thoughtSignature?: string,
-        errorType?: ApiErrorType
-    ) {
-        this.role = role;
-        this.content = content;
-        this.promptContent = promptContent;
-        this.functionCall = functionCall;
-        this.timestamp = timestamp;
-        this.isFunctionCall = isFunctionCall;
-        this.isFunctionCallResponse = isFunctionCallResponse;
-        this.isProviderSpecificContent = isProviderSpecificContent;
-        this.toolId = toolId;
-        this.thoughtSignature = thoughtSignature;
-        this.errorType = errorType;
+    constructor(init: ConversationContentInit) {
+        this.role = init.role;
+        this.timestamp = init.timestamp ?? new Date();
+        this.content = init.content;
+        this.displayContent = init.displayContent;
+        this.functionCall = init.functionCall;
+        this.functionResponse = init.functionResponse;
+        this.attachments = init.attachments ?? [];
+        this.shouldDisplayContent = init.shouldDisplayContent ?? true;
+        this.toolId = init.toolId;
+        this.thoughtSignature = init.thoughtSignature;
+        this.errorType = init.errorType;
     }
 
-    public static isConversationContentData(this: void, data: unknown): data is {
-        role: string; content: string; promptContent: string; functionCall: string; timestamp: string, isFunctionCall: boolean,
-        isFunctionCallResponse: boolean, isProviderSpecificContent: boolean, toolId?: string, thoughtSignature?: string, errorType?: string
+    public getDisplayContent(): string {
+        return this.displayContent ?? this.content ?? "";
+    }
+
+    public static isConversationContentData(
+        this: void,
+        data: unknown
+    ): data is {
+        role: string;
+        timestamp: string;
+        content?: string;
+        displayContent?: string;
+        functionCall?: string;
+        functionResponse?: string;
+        attachments?: unknown[];
+        shouldDisplayContent?: boolean;
+        toolId?: string;
+        thoughtSignature?: string;
+        errorType?: string;
     } {
         return (
             data !== null &&
             typeof data === "object" &&
-            "role" in data &&
-            "content" in data &&
-            "promptContent" in data &&
-            "functionCall" in data &&
             "timestamp" in data &&
-            "isFunctionCall" in data &&
-            "isFunctionCallResponse" in data &&
-            "isProviderSpecificContent" in data &&
-            typeof data.role === "string" &&
-            typeof data.content === "string" &&
-            typeof data.promptContent === "string" &&
-            typeof data.functionCall === "string" &&
+            "role" in data &&
             typeof data.timestamp === "string" &&
-            typeof data.isFunctionCall === "boolean" &&
-            typeof data.isFunctionCallResponse === "boolean" &&
-            typeof data.isProviderSpecificContent === "boolean" &&
+            typeof data.role === "string" &&
 
-            // optional conversation data fields
+            (!("content" in data) || typeof data.content === "string") &&
+            (!("displayContent" in data) || typeof data.displayContent === "string") &&
+            (!("functionCall" in data) || typeof data.functionCall === "string") &&
+            (!("functionResponse" in data) || typeof data.functionResponse === "string") &&
+            (!("attachments" in data) || Array.isArray(data.attachments)) &&
+            (!("shouldDisplayContent" in data) || typeof data.shouldDisplayContent === "boolean") &&
             (!("toolId" in data) || typeof data.toolId === "string") &&
             (!("thoughtSignature" in data) || typeof data.thoughtSignature === "string") &&
             (!("errorType" in data) || typeof data.errorType === "string")
         );
     }
 
-    public static safeContinue() {
-        return new ConversationContent(
-            Role.User,
-            "Continue",
-            "Continue",
-            "",
-            new Date(),
-            false,
-            true  // isFunctionCallResponse = true (hides from UI)
-        );
+    public static safeContinue(): ConversationContent {
+        return new ConversationContent({
+            role: Role.User,
+            content: "Continue",
+            shouldDisplayContent: false
+        });
     }
 }

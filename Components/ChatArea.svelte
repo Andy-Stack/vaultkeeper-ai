@@ -127,12 +127,12 @@
     }
   }
 
-  function updateMessageContent(message: {id: string, content: string, role: string, isCurrentlyStreaming: boolean}) {
-    if (message.isCurrentlyStreaming) {
-      streamingMarkdownService.streamChunk(message.id, message.content);
+  function updateMessageContent(messageId: string, content: string, isCurrentlyStreaming: boolean) {
+    if (isCurrentlyStreaming) {
+      streamingMarkdownService.streamChunk(messageId, content);
       currentStreamFinalized = false;
     } else if (!currentStreamFinalized) {
-      streamingMarkdownService.finalizeStream(message.id, message.content);
+      streamingMarkdownService.finalizeStream(messageId, content);
       currentStreamFinalized = true;
     }
   }
@@ -149,15 +149,16 @@
 
     // For assistant messages that aren't streaming, use traditional parsing
     if (!isCurrentlyStreaming) {
+      const content = message.getDisplayContent();
       if (message.errorType) {
-        return `<div class="${Selector.ErrorSelector}">${message.content}</div>`;
+        return `<div class="${Selector.ErrorSelector}">${content}</div>`;
       }
 
       try {
-        return streamingMarkdownService.formatText(message.content) || `<div>${message.content}</div>`;
+        return streamingMarkdownService.formatText(content) || `<div>${content}</div>`;
       } catch (error) {
         Exception.log(error);
-        return `<div>${message.content}</div>`;
+        return `<div>${content}</div>`;
       }
     }
 
@@ -227,11 +228,12 @@
           // Check if this specific message is currently streaming
           const isCurrentlyStreaming = currentStreamingMessageId === messageId;
 
+          const content = message.getDisplayContent();
           // Only process through streaming service if actively streaming
           if (isCurrentlyStreaming) {
-            updateMessageContent({ ...message, id: messageId, isCurrentlyStreaming });
+            updateMessageContent(messageId, content, isCurrentlyStreaming);
           }
-          lastProcessedContent.set(messageId, message.content);
+          lastProcessedContent.set(messageId, content);
         }
       }
     });
@@ -246,11 +248,14 @@
 
 <div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll} use:observeResize>
   {#each messages as message, index}
-    {#if !message.isFunctionCallResponse && !message.isProviderSpecificContent && message.content.trim() !== ""}
+    {@const content = message.getDisplayContent()}
+    {#if message.shouldDisplayContent && content.trim() !== ""}
       {#if message.role === Role.User}
         <div class="message-container {Role.User}" use:trackingAction={index}>
           <div class="message-bubble {Role.User}">
-            <div class="message-text-user fade-in-fast" contenteditable="false" bind:innerHTML={message.content}></div>
+            <div class="message-text-user fade-in-fast" contenteditable="false">
+              {@html content}
+            </div>
           </div>
         </div>
       {:else}

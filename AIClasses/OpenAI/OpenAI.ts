@@ -2,6 +2,7 @@ import { BaseAIClass } from "AIClasses/BaseAIClass";
 import type { IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import type { ConversationContent } from "Conversations/ConversationContent";
+import type { Attachment } from "Conversations/Attachment";
 import { AIProvider, AIProviderURL, toProviderModel } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { fromString as aiFunctionFromString } from "Enums/AIFunction";
@@ -9,8 +10,6 @@ import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFun
 import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIFunctionTool, ResponsesAPIInput } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
 import { ApiErrorType } from "Types/ApiError";
-import * as path from "path-browserify";
-import { FileType, getImageMimeType, isFileType } from "Enums/FileType";
 
 export class OpenAI extends BaseAIClass {
 
@@ -184,21 +183,20 @@ export class OpenAI extends BaseAIClass {
         const results: ResponsesAPIInput[] = [];
 
         for (const content of this.filterConversationContents(conversationContent)) {
-            const contentToExtract = this.getContentToExtract(content);
+            const contentToExtract = content.content ?? "";
 
             // Case 1: Assistant message with function call
-            if (content.isFunctionCall && content.functionCall.trim() !== "") {
+            if (content.functionCall) {
                 const parsedContent = this.parseFunctionCall(content.functionCall);
 
                 if (parsedContent) {
                     // Check if function call has required id field (for OpenAI Responses API)
                     if (parsedContent.functionCall.id && parsedContent.functionCall.id.trim() !== "") {
                         // Add assistant text message if present
-                        const messageContent = contentToExtract.trim();
-                        if (messageContent !== "") {
+                        if (contentToExtract.trim() !== "") {
                             results.push({
                                 role: content.role as "user" | "assistant",
-                                content: messageContent
+                                content: contentToExtract
                             });
                         }
 
@@ -210,7 +208,7 @@ export class OpenAI extends BaseAIClass {
                             arguments: JSON.stringify(parsedContent.functionCall.args)
                         });
                     } else {
-                        // No id (from Gemini or legacy) - convert to text message
+                        // No id (from other provider or legacy) - convert to text message
                         const legacyText = this.convertFunctionCallToText(parsedContent);
                         const messageContent = contentToExtract.trim();
                         const combinedContent = messageContent !== ""
@@ -232,16 +230,17 @@ export class OpenAI extends BaseAIClass {
                 continue;
             }
 
-            // Case 2: Provider-specific content (e.g., binary files)
-            if (content.isProviderSpecificContent && contentToExtract.trim() !== "") {
-                const rawContent = JSON.parse(contentToExtract) as ResponsesAPIInput[];
+            // Case 2: Binary file attachments
+            if (content.attachments && content.attachments.length > 0) {
+                const formattedContent = this.formatBinaryFiles(content.attachments);
+                const rawContent = JSON.parse(formattedContent) as ResponsesAPIInput[];
                 results.push(...rawContent);
                 continue;
             }
 
             // Case 3: Function call response
-            if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
-                const parsedContent = this.parseFunctionResponse(contentToExtract);
+            if (content.functionResponse) {
+                const parsedContent = this.parseFunctionResponse(content.functionResponse);
 
                 if (parsedContent) {
                     // Check if response has required id field (for OpenAI Responses API)
@@ -263,7 +262,7 @@ export class OpenAI extends BaseAIClass {
                     // Fall back to regular user message if parsing fails
                     results.push({
                         role: content.role as "user" | "assistant",
-                        content: contentToExtract
+                        content: content.functionResponse
                     });
                 }
                 continue;
@@ -290,45 +289,33 @@ export class OpenAI extends BaseAIClass {
         }));
     }
 
-    public formatBinaryFiles(files: Array<{type: string, path: string, contents: string}>): string {
+    public formatBinaryFiles(attachments: Attachment[]): string {
         const contentBlocks: unknown[] = [];
-        
-        for (const file of files) {
-            const extension = path.extname(file.path).substring(1).toLowerCase();
-            let mimeType: string;
-            
-            if (isFileType(file.type, FileType.PDF)) {
-                mimeType = "application/pdf";
+
+        for (const attachment of attachments) {
+            if (attachment.mimeType === "application/pdf") {
                 contentBlocks.push({
                     type: "input_file",
-                    filename: path.basename(file.path),
-                    file_data: `data:${mimeType};base64,${file.contents}`
+                    filename: attachment.fileName,
+                    file_data: `data:${attachment.mimeType};base64,${attachment.base64}`
                 });
             } else {
-                try {
-                    mimeType = getImageMimeType(extension);
-                    if (!this.SUPPORTED_IMAGE_TYPES.includes(mimeType)) {
-                        contentBlocks.push({
-                            type: "input_text",
-                            text: `Unsupported image format: ${path.basename(file.path)}`
-                        });
-                        continue;
-                    }
-                    
-                    contentBlocks.push({
-                        type: "input_image",
-                        image_url: `data:${mimeType};base64,${file.contents}`
-                    });
-                } catch (error) {
+                // Image handling - validate supported types
+                if (!this.SUPPORTED_IMAGE_TYPES.includes(attachment.mimeType)) {
                     contentBlocks.push({
                         type: "input_text",
-                        text: Exception.messageFrom(error)
+                        text: `Unsupported image format: ${attachment.fileName}`
                     });
                     continue;
                 }
+
+                contentBlocks.push({
+                    type: "input_image",
+                    image_url: `data:${attachment.mimeType};base64,${attachment.base64}`
+                });
             }
         }
-        
+
         return JSON.stringify([{
             role: "user",
             content: contentBlocks

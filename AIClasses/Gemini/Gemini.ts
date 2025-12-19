@@ -1,6 +1,7 @@
 import { BaseAIClass } from "AIClasses/BaseAIClass";
 import type { IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
+import type { Attachment } from "Conversations/Attachment";
 import { Role } from "Enums/Role";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
@@ -9,9 +10,6 @@ import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFun
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
 import { FinishReason } from "@google/genai";
-import * as path from "path-browserify";
-import { FileType, getImageMimeType, isFileType } from "Enums/FileType";
-import { Exception } from "Helpers/Exception";
 
 export class Gemini extends BaseAIClass {
 
@@ -158,15 +156,15 @@ export class Gemini extends BaseAIClass {
     return this.filterConversationContents(conversationContent)
       .map(content => {
         const parts: Part[] = [];
-        const contentToExtract = this.getContentToExtract(content);
+        const contentToExtract = content.content ?? "";
 
-        // Add text content if not a function call response or provider-specific content
-        if (contentToExtract.trim() !== "" && !content.isFunctionCallResponse && !content.isProviderSpecificContent) {
+        // Add text content if not a function call response or attachment
+        if (contentToExtract.trim() !== "" && !content.functionResponse && (!content.attachments || content.attachments.length === 0)) {
           parts.push({ text: contentToExtract });
         }
 
         // Add function call if present
-        if (content.isFunctionCall && content.functionCall.trim() !== "") {
+        if (content.functionCall) {
           const parsedContent = this.parseFunctionCall(content.functionCall);
 
           if (parsedContent) {
@@ -186,23 +184,23 @@ export class Gemini extends BaseAIClass {
                 text: this.convertFunctionCallToText(parsedContent)
               });
             }
-          } else if (contentToExtract.trim() === "") {
-            // Fall back to treating as text
+          } else {
             parts.push({
               text: "Error parsing function call"
             });
           }
         }
 
-        // Add provider-specific content if present (e.g., binary files)
-        if (content.isProviderSpecificContent && contentToExtract.trim() !== "") {
-          const rawContent = JSON.parse(contentToExtract) as Part[];
+        // Add binary file attachments if present
+        if (content.attachments && content.attachments.length > 0) {
+          const formattedContent = this.formatBinaryFiles(content.attachments);
+          const rawContent = JSON.parse(formattedContent) as Part[];
           parts.push(...rawContent);
         }
 
         // Add function response if present
-        if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
-          const parsedContent = this.parseFunctionResponse(contentToExtract);
+        if (content.functionResponse) {
+          const parsedContent = this.parseFunctionResponse(content.functionResponse);
 
           if (parsedContent) {
             if (parsedContent.id && parsedContent.id.trim() !== "") {
@@ -222,7 +220,7 @@ export class Gemini extends BaseAIClass {
           } else {
             // Fall back to text content
             parts.push({
-              text: contentToExtract
+              text: content.functionResponse
             });
           }
         }
@@ -243,39 +241,26 @@ export class Gemini extends BaseAIClass {
     }));
   }
 
-  public formatBinaryFiles(files: Array<{type: string, path: string, contents: string}>): string {
+  public formatBinaryFiles(attachments: Attachment[]): string {
     const parts: unknown[] = [];
 
-    for (const file of files) {
-      const extension = path.extname(file.path).substring(1).toLowerCase();
-
-      let mimeType: string;
-
-      if (isFileType(file.type, FileType.PDF)) {
-        mimeType = "application/pdf";
-      } else {
-        try {
-          mimeType = getImageMimeType(extension);
-
-          if (!this.SUPPORTED_IMAGE_TYPES.includes(mimeType)) {
-            parts.push({
-              text: `Unsupported image format: ${path.basename(file.path)}`
-            });
-            continue;
-          }
-        } catch (error) {
+    for (const attachment of attachments) {
+      // Validate image types (Gemini only supports JPEG and PNG)
+      if (attachment.mimeType.startsWith('image/')) {
+        if (!this.SUPPORTED_IMAGE_TYPES.includes(attachment.mimeType)) {
           parts.push({
-            text: Exception.messageFrom(error)
+            text: `Unsupported image format: ${attachment.fileName}`
           });
           continue;
         }
       }
 
-      parts.push({text: path.basename(file.path)});
+      // Add filename text block, then binary data
+      parts.push({text: attachment.fileName});
       parts.push({
         inlineData: {
-          mimeType: mimeType,
-          data: file.contents
+          mimeType: attachment.mimeType,
+          data: attachment.base64
         }
       });
     }

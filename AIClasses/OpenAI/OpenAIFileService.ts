@@ -1,98 +1,87 @@
-import type { IAIFileService } from "AIClasses/IAIFileService";
-import { Resolve } from "Services/DependencyService";
-import { Services } from "Services/Services";
-import type { SettingsService } from "Services/SettingsService";
+import { BaseAIFileService } from "AIClasses/BaseAIFileService";
 import { AIFileServiceURL, AIProvider } from "Enums/ApiProvider";
-import { Exception } from "Helpers/Exception";
-import { requestUrl } from "obsidian";
 import type { OpenAIFile, OpenAIListFilesResponse } from "./OpenAITypes";
 import { StringTools } from "Helpers/StringTools";
+import { ApiError } from "Types/ApiError";
 
-export class OpenAIFileService implements IAIFileService {
-
-    private readonly settingsService: SettingsService;
-    private readonly apiKey: string;
+export class OpenAIFileService extends BaseAIFileService {
 
     public constructor() {
-        this.settingsService = Resolve<SettingsService>(Services.SettingsService);
-        this.apiKey = this.settingsService.getApiKeyForProvider(AIProvider.OpenAI);
+        super(AIProvider.OpenAI);
     }
 
-    public async listFiles(): Promise<string[]> {
-        try {
-            const response = await requestUrl({
-                url: AIFileServiceURL.OpenAI,
+    protected async listFilesFromAPI(): Promise<string[]> {
+        return this.withRetry("List files", async () => {
+            const response = await fetch(AIFileServiceURL.OpenAI, {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${this.apiKey}`
-                }
+                },
+                signal: this.abortService.signal()
             });
 
-            if (response.status !== 200) {
-                Exception.throw(`Failed to list files: ${response.status} ${response.text}`);
+            if (!response.ok) {
+                const responseBody = await response.text();
+                throw ApiError.fromResponse(response.status, response.statusText, responseBody);
             }
 
-            const data = response.json as OpenAIListFilesResponse;
+            const data = await response.json() as OpenAIListFilesResponse;
 
             if (!data.data || data.data.length === 0) {
                 return [];
             }
 
             return data.data.map(file => file.id);
-        } catch (error) {
-            Exception.log(error);
-            Exception.throw(error);
-        }
+        });
     }
 
-    public async uploadFile(data: string, mimeType: string, displayName?: string): Promise<string> {
-        try {
+    protected async uploadFileToAPI(data: string, mimeType: string, displayName?: string): Promise<string> {
+        return this.withRetry("Upload file", async () => {
             const bytes = StringTools.toBytes(data);
-            const blob = new Blob([bytes], { type: mimeType });
+            const blob = this.createBlob(bytes, mimeType);
 
             const formData = new FormData();
             formData.append("file", blob, displayName || "file");
-            formData.append("purpose", "assistants"); // Default purpose for general use
 
-            const response = await requestUrl({
-                url: AIFileServiceURL.OpenAI,
+            // Use 'vision' for images, 'user_data' for other files
+            const purpose = mimeType.startsWith('image/') ? 'vision' : 'user_data';
+            formData.append("purpose", purpose);
+
+            const response = await fetch(AIFileServiceURL.OpenAI, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${this.apiKey}`
                 },
-                body: formData as unknown as string
+                body: formData,
+                signal: this.abortService.signal()
             });
 
-            if (response.status !== 200 && response.status !== 201) {
-                Exception.throw(`Failed to upload file: ${response.status} ${response.text}`);
+            if (!response.ok) {
+                const responseBody = await response.text();
+                throw ApiError.fromResponse(response.status, response.statusText, responseBody);
             }
 
-            const responseData = response.json as OpenAIFile;
+            const responseData = await response.json() as OpenAIFile;
 
             return responseData.id;
-        } catch (error) {
-            Exception.log(error);
-            Exception.throw(error);
-        }
+        });
     }
 
-    public async deleteFile(id: string): Promise<void> {
-        try {
-            const response = await requestUrl({
-                url: `${AIFileServiceURL.OpenAI}/${id}`,
+    protected async deleteFileFromAPI(id: string): Promise<void> {
+        return this.withRetry("Delete file", async () => {
+            const response = await fetch(`${AIFileServiceURL.OpenAI}/${id}`, {
                 method: "DELETE",
                 headers: {
                     "Authorization": `Bearer ${this.apiKey}`
-                }
+                },
+                signal: this.abortService.signal()
             });
 
-            if (response.status !== 200 && response.status !== 204) {
-                Exception.throw(`Failed to delete file: ${response.status} ${response.text}`);
+            if (!response.ok && response.status !== 204 && response.status !== 404) {
+                const responseBody = await response.text();
+                throw ApiError.fromResponse(response.status, response.statusText, responseBody);
             }
-        } catch (error) {
-            Exception.log(error);
-            Exception.throw(error);
-        }
+        });
     }
 
 }

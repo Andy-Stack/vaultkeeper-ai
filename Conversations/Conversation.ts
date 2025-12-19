@@ -1,9 +1,11 @@
 import { StringTools } from "Helpers/StringTools";
 import { ConversationContent } from "./ConversationContent";
+import { Attachment } from "./Attachment";
 import type { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import { Role } from "Enums/Role";
 import { AIFunction } from "Enums/AIFunction";
-import { isTextFile } from "Enums/FileType";
+import { isTextFile, FileType, getImageMimeType, isFileType } from "Enums/FileType";
+import { Exception } from "Helpers/Exception";
 
 export class Conversation {
 
@@ -20,23 +22,15 @@ export class Conversation {
         this.title = `${StringTools.dateToString(this.created)}`;
     }
 
-    public addFunctionResponse(
-        functionResponse: AIFunctionResponse,
-        formatBinaryFiles?: (files: Array<{type: string, path: string, contents: string}>) => string
-    ): void {
+    public addFunctionResponse(functionResponse: AIFunctionResponse): void {
         if (functionResponse.name !== AIFunction.ReadVaultFiles) {
             const functionResponseString = functionResponse.toConversationString();
-            this.contents.push(new ConversationContent(
-                Role.User,
-                functionResponseString,
-                functionResponseString,
-                "",
-                new Date(),
-                false,
-                true,
-                false,
-                functionResponse.toolId
-            ));
+            this.contents.push(new ConversationContent({
+                role: Role.User,
+                functionResponse: functionResponseString,
+                shouldDisplayContent: false,
+                toolId: functionResponse.toolId
+            }));
             return;
         }
 
@@ -74,32 +68,47 @@ export class Conversation {
             };
         }
 
-        this.contents.push(new ConversationContent(
-            Role.User,
-            JSON.stringify(functionResponseData),
-            JSON.stringify(functionResponseData),
-            "",
-            new Date(),
-            false,
-            true,
-            false,
-            functionResponse.toolId
-        ));
+        this.contents.push(new ConversationContent({
+            role: Role.User,
+            functionResponse: JSON.stringify(functionResponseData),
+            shouldDisplayContent: false,
+            toolId: functionResponse.toolId
+        }));
 
-        // 2. If there are non-text files, add follow-up user message
-        if (binaryResults.length > 0 && formatBinaryFiles) {
-            const providerContent = formatBinaryFiles(binaryResults);
+        // 2. If there are binary files, create Attachments and add to conversation
+        if (binaryResults.length > 0) {
+            const attachments = binaryResults.map(file => {
+                // Extract filename from path
+                const fileName = file.path.split('/').pop() || file.path;
 
-            this.contents.push(new ConversationContent(
-                Role.User,
-                providerContent,
-                providerContent,
-                "",
-                new Date(),
-                false,
-                false,
-                true
-            ));
+                // Determine mimeType based on file.type
+                let mimeType: string;
+                if (isFileType(file.type, FileType.PDF)) {
+                    mimeType = "application/pdf";
+                } else {
+                    // For images, derive from extension
+                    const extension = fileName.split('.').pop()?.toLowerCase() || '';
+                    try {
+                        mimeType = getImageMimeType(extension);
+                    } catch (error) {
+                        Exception.log(error);
+                        Exception.throw(error);
+                    }
+                }
+
+                return new Attachment(
+                    fileName,
+                    mimeType,
+                    file.contents,  // base64 string
+                    {}              // empty fileID map (phase 2 feature)
+                );
+            });
+
+            this.contents.push(new ConversationContent({
+                role: Role.User,
+                attachments: attachments,
+                shouldDisplayContent: false
+            }));
         }
     }
     

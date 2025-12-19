@@ -4,15 +4,23 @@ import { FileSystemService } from "./FileSystemService";
 import { Services } from "./Services";
 import { Conversation } from "Conversations/Conversation";
 import { ConversationContent } from "Conversations/ConversationContent";
+import { Attachment } from "Conversations/Attachment";
 import { Exception } from "Helpers/Exception";
+import type { IAIFileService } from "AIClasses/IAIFileService";
 
 export class ConversationFileSystemService {
 
     private fileSystemService: FileSystemService;
+    private aiFileService: IAIFileService | undefined;
+
     private currentConversationPath: string | null = null;
 
     public constructor() {
         this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
+    }
+
+    public resolveAIFileService() {
+        this.aiFileService = Resolve<IAIFileService>(Services.IAIFileService);
     }
 
     public generateConversationPath(conversation: Conversation): string {
@@ -39,13 +47,13 @@ export class ConversationFileSystemService {
             contents: conversation.contents
                 .map(content => ({
                     role: content.role,
-                    content: content.content,
-                    promptContent: content.promptContent,
-                    functionCall: content.functionCall,
                     timestamp: content.timestamp.toISOString(),
-                    isFunctionCall: content.isFunctionCall,
-                    isFunctionCallResponse: content.isFunctionCallResponse,
-                    isProviderSpecificContent: content.isProviderSpecificContent,
+                    content: content.content,
+                    displayContent: content.displayContent,
+                    functionCall: content.functionCall,
+                    functionResponse: content.functionResponse,
+                    attachments: content.attachments,
+                    shouldDisplayContent: content.shouldDisplayContent,
                     toolId: content.toolId,
                     thoughtSignature: content.thoughtSignature,
                     errorType: content.errorType
@@ -78,10 +86,18 @@ export class ConversationFileSystemService {
             return;
         }
 
-        const result = await this.fileSystemService.deleteFile(this.currentConversationPath, true, false);
+        const readResult = await this.readConversation(this.currentConversationPath);
 
-        if (result instanceof Error) {
-            return result;
+        if (readResult instanceof Error) {
+            return readResult;
+        }
+
+        await this.attemptAIFileDeletion(readResult);
+        
+        const deleteResult = await this.fileSystemService.deleteFile(this.currentConversationPath, true, false);
+
+        if (deleteResult instanceof Error) {
+            return deleteResult;
         }
 
         this.resetCurrentConversation();
@@ -92,32 +108,9 @@ export class ConversationFileSystemService {
         const conversations: Conversation[] = [];
 
         for (const file of files) {
-            const result = await this.fileSystemService.readObjectFromFile(file.path, true);
-            if (result instanceof Error) {
-                Exception.log(`Failed to load conversation: ${file.path}`);
-                continue;
-            }
-            if (Conversation.isConversationData(result)) {
-                const conversation: Conversation = new Conversation();
-                conversation.title = result.title;
-                conversation.created = new Date(result.created);
-                conversation.updated = new Date(result.updated);
-                conversation.contents = result.contents.map(content => {
-                    return new ConversationContent(
-                        content.role,
-                        content.content,
-                        content.promptContent,
-                        content.functionCall,
-                        new Date(content.timestamp),
-                        content.isFunctionCall,
-                        content.isFunctionCallResponse,
-                        content.isProviderSpecificContent,
-                        content.toolId,
-                        content.thoughtSignature,
-                        content.errorType
-                    );
-                });
-                conversations.push(conversation);
+            const result = await this.readConversation(file.path);
+            if (result instanceof Conversation) {
+                conversations.push(result);
             }
         }
 
@@ -135,6 +128,75 @@ export class ConversationFileSystemService {
 
         if (this.currentConversationPath === oldPath) {
             this.currentConversationPath = newPath;
+        }
+    }
+
+    private async readConversation(path: string): Promise<Conversation | Error> {
+        const result = await this.fileSystemService.readObjectFromFile(path, true);
+        
+        if (result instanceof Error) {
+            Exception.log(result);
+            return result;
+        }
+        
+        const conversation: Conversation = new Conversation();
+
+        if (Conversation.isConversationData(result)) {
+            conversation.title = result.title;
+            conversation.created = new Date(result.created);
+            conversation.updated = new Date(result.updated);
+            conversation.contents = result.contents.map(content => {
+                // Reconstruct Attachment instances from plain objects
+                const attachments = this.deserializeAttachments(content.attachments);
+
+                return new ConversationContent({
+                    role: content.role,
+                    timestamp: new Date(content.timestamp),
+                    content: content.content,
+                    displayContent: content.displayContent,
+                    functionCall: content.functionCall,
+                    functionResponse: content.functionResponse,
+                    attachments: attachments,
+                    shouldDisplayContent: content.shouldDisplayContent,
+                    toolId: content.toolId,
+                    thoughtSignature: content.thoughtSignature,
+                    errorType: content.errorType
+                });
+            });
+        }
+        
+        return conversation;
+    }
+
+    private deserializeAttachments(attachmentsData: unknown): Attachment[] {
+        if (!Array.isArray(attachmentsData)) {
+            return [];
+        }
+
+        return attachmentsData
+            .filter(Attachment.isAttachmentData)
+            .map(attachmentData => new Attachment(
+                attachmentData.fileName,
+                attachmentData.mimeType,
+                attachmentData.base64,
+                attachmentData.fileID || {}
+            ));
+    }
+
+    private async attemptAIFileDeletion(conversation: Conversation) {
+        try {
+            await this.aiFileService?.refreshCache();
+        } catch (error) {
+            Exception.log(error);
+        }
+
+        const attachments = conversation.contents.map(c => c.attachments).flat();
+        for (const attachment of attachments) {
+            try {
+                await this.aiFileService?.deleteFile(attachment);
+            } catch (error) {
+                Exception.log(error);
+            }
         }
     }
 

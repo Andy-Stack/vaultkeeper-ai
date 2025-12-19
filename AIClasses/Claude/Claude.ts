@@ -1,6 +1,7 @@
 import { BaseAIClass } from "AIClasses/BaseAIClass";
 import type { IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
+import type { Attachment } from "Conversations/Attachment";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { fromString as aiFunctionFromString } from "Enums/AIFunction";
@@ -9,8 +10,6 @@ import type { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import type { RawMessageStreamEvent, ContentBlockParam, Tool } from '@anthropic-ai/sdk/resources/messages';
 import { Exception } from "Helpers/Exception";
-import * as path from "path-browserify";
-import { FileType, getImageMimeType, isFileType } from "Enums/FileType";
 
 export class Claude extends BaseAIClass {
 
@@ -151,9 +150,9 @@ export class Claude extends BaseAIClass {
         return this.filterConversationContents(conversationContent)
             .map(content => {
                 const contentBlocks: ContentBlockParam[] = [];
-                const contentToExtract = this.getContentToExtract(content);
+                const contentToExtract = content.content ?? "";
 
-                if (contentToExtract.trim() !== "" && !content.isFunctionCallResponse && !content.isProviderSpecificContent) {
+                if (contentToExtract.trim() !== "" && !content.functionResponse && (!content.attachments || content.attachments.length === 0)) {
                     contentBlocks.push({
                         type: "text",
                         text: contentToExtract
@@ -161,7 +160,7 @@ export class Claude extends BaseAIClass {
                 }
 
                 // Add function call if present
-                if (content.isFunctionCall && content.functionCall.trim() !== "") {
+                if (content.functionCall) {
                     const parsedContent = this.parseFunctionCall(content.functionCall);
 
                     if (parsedContent) {
@@ -178,8 +177,7 @@ export class Claude extends BaseAIClass {
                                 text: this.convertFunctionCallToText(parsedContent)
                             });
                         }
-                    } else if (contentToExtract.trim() === "") {
-                        // Fall back to treating as text
+                    } else {
                         contentBlocks.push({
                             type: "text",
                             text: "Error parsing function call"
@@ -187,15 +185,16 @@ export class Claude extends BaseAIClass {
                     }
                 }
 
-                // Add provider-specific content if present (e.g., binary files)
-                if (content.isProviderSpecificContent && contentToExtract.trim() !== "") {
-                    const rawContent = JSON.parse(contentToExtract) as ContentBlockParam[];
+                // Add binary file attachments if present
+                if (content.attachments && content.attachments.length > 0) {
+                    const formattedContent = this.formatBinaryFiles(content.attachments);
+                    const rawContent = JSON.parse(formattedContent) as ContentBlockParam[];
                     contentBlocks.push(...rawContent);
                 }
 
                 // Add function response if present
-                if (content.isFunctionCallResponse && contentToExtract.trim() !== "") {
-                    const parsedContent = this.parseFunctionResponse(contentToExtract);
+                if (content.functionResponse) {
+                    const parsedContent = this.parseFunctionResponse(content.functionResponse);
 
                     if (parsedContent) {
                         if (parsedContent.id && parsedContent.id.trim() !== "") {
@@ -213,7 +212,7 @@ export class Claude extends BaseAIClass {
                     } else {
                         contentBlocks.push({
                             type: "text",
-                            text: contentToExtract
+                            text: content.functionResponse
                         });
                     }
                 }
@@ -238,41 +237,32 @@ export class Claude extends BaseAIClass {
         }));
     }
 
-    public formatBinaryFiles(files: Array<{type: string, path: string, contents: string}>): string {
-        const contentBlocks = files.flatMap(file => {
-            const extension = path.extname(file.path).substring(1).toLowerCase();
-
-            let mimeType: string;
+    public formatBinaryFiles(attachments: Attachment[]): string {
+        const contentBlocks = attachments.flatMap(attachment => {
             let blockType: string;
 
-            if (isFileType(file.type, FileType.PDF)) {
-                mimeType = "application/pdf";
+            if (attachment.mimeType === "application/pdf") {
                 blockType = "document";
             } else {
-                try {
-                    mimeType = getImageMimeType(extension);
-                    blockType = "image";
+                // Image handling
+                blockType = "image";
 
-                    if (!this.SUPPORTED_IMAGE_TYPES.includes(mimeType)) {
-                        return [
-                            { type: "text", text: `Unsupported image format: ${path.basename(file.path)}` }
-                        ];
-                    }
-                } catch (error) {
+                // Validate supported image types
+                if (!this.SUPPORTED_IMAGE_TYPES.includes(attachment.mimeType)) {
                     return [
-                        { type: "text", text: Exception.messageFrom(error) }
+                        { type: "text", text: `Unsupported image format: ${attachment.fileName}` }
                     ];
                 }
             }
 
             return [
-                {type: "text", text: path.basename(file.path)},
+                {type: "text", text: attachment.fileName},
                 {
                     type: blockType,
                     source: {
                         type: "base64",
-                        media_type: mimeType,
-                        data: file.contents
+                        media_type: attachment.mimeType,
+                        data: attachment.base64
                     }
                 }
             ];

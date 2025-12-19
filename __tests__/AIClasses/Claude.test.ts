@@ -82,6 +82,16 @@ describe('Claude', () => {
         };
         RegisterSingleton(Services.AIFunctionDefinitions, mockFunctionDefinitions);
 
+        // Mock IAIFileService
+        const mockFileService = {
+            refreshCache: vi.fn().mockResolvedValue(undefined),
+            listFiles: vi.fn().mockReturnValue([]),
+            uploadFile: vi.fn().mockResolvedValue(undefined),
+            deleteFile: vi.fn().mockResolvedValue(undefined),
+            deleteFiles: vi.fn().mockResolvedValue(undefined)
+        };
+        RegisterSingleton(Services.IAIFileService, mockFileService);
+
         claude = new Claude();
     });
 
@@ -275,13 +285,13 @@ describe('Claude', () => {
     });
 
     describe('extractContents', () => {
-        it('should convert simple text content to Claude message format', () => {
+        it('should convert simple text content to Claude message format', async () => {
             const contents = [
-                new ConversationContent(Role.User, 'Hello', 'Hello'),  // content, promptContent
-                new ConversationContent(Role.Assistant, 'Hi there')
+                new ConversationContent({ role: Role.User, content: 'Hello', displayContent: 'Hello' }),
+                new ConversationContent({ role: Role.Assistant, content: 'Hi there' })
             ];
 
-            const result = (claude as any).extractContents(contents);
+            const result = await (claude as any).extractContents(contents);
 
             expect(result).toHaveLength(2);
             expect(result[0]).toEqual({
@@ -294,23 +304,23 @@ describe('Claude', () => {
             });
         });
 
-        it('should convert function call to tool_use format', () => {
-            const functionCallContent = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+        it('should convert function call to tool_use format', async () => {
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
-                new Date(),
-                true
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: false
+            });
 
-            const result = (claude as any).extractContents([functionCallContent]);
+            const result = await (claude as any).extractContents([functionCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
@@ -322,21 +332,21 @@ describe('Claude', () => {
             });
         });
 
-        it('should convert function response to tool_result format', () => {
+        it('should convert function response to tool_result format', async () => {
             const responseContent = JSON.stringify({
                 id: 'call_123',
                 functionResponse: {
                     response: ['file1.txt', 'file2.txt']
                 }
             });
-            const functionResponseContent = new ConversationContent(
-                Role.User,
-                responseContent,
-                responseContent  // promptContent should also be set for User role
-            );
-            functionResponseContent.isFunctionCallResponse = true;
+            const functionResponseContent = new ConversationContent({
+                role: Role.User,
+                content: responseContent,
+                displayContent: responseContent,
+                functionResponse: responseContent
+            });
 
-            const result = (claude as any).extractContents([functionResponseContent]);
+            const result = await (claude as any).extractContents([functionResponseContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
@@ -347,19 +357,19 @@ describe('Claude', () => {
             });
         });
 
-        it('should handle invalid JSON in function call gracefully', () => {
+        it('should handle invalid JSON in function call gracefully', async () => {
             const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
-            const invalidContent = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                'invalid json {',
-                new Date(),
-                true
-            );
+            const invalidContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: 'invalid json {',
+                timestamp: new Date(),
+                shouldDisplayContent: false
+            });
 
-            const result = (claude as any).extractContents([invalidContent]);
+            const result = await (claude as any).extractContents([invalidContent]);
 
             // Should have fallback text block
             expect(result).toHaveLength(1);
@@ -370,17 +380,17 @@ describe('Claude', () => {
             exceptionSpy.mockRestore();
         });
 
-        it('should handle invalid JSON in function response gracefully', () => {
+        it('should handle invalid JSON in function response gracefully', async () => {
             const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
-            const invalidContent = new ConversationContent(
-                Role.User,
-                'invalid json {',
-                'invalid json {'  // promptContent for User role
-            );
-            invalidContent.isFunctionCallResponse = true;
+            const invalidContent = new ConversationContent({
+                role: Role.User,
+                content: 'invalid json {',
+                displayContent: 'invalid json {',
+                functionResponse: 'invalid json {'
+            });
 
-            const result = (claude as any).extractContents([invalidContent]);
+            const result = await (claude as any).extractContents([invalidContent]);
 
             // Should fallback to text
             expect(result).toHaveLength(1);
@@ -392,37 +402,37 @@ describe('Claude', () => {
             exceptionSpy.mockRestore();
         });
 
-        it('should filter out empty content', () => {
+        it('should filter out empty content', async () => {
             const contents = [
-                new ConversationContent(Role.User, 'Hello', 'Hello'),
-                new ConversationContent(Role.Assistant, ''), // Empty
-                new ConversationContent(Role.User, 'World', 'World')
+                new ConversationContent({ role: Role.User, content: 'Hello', displayContent: 'Hello' }),
+                new ConversationContent({ role: Role.Assistant, content: '' }), // Empty
+                new ConversationContent({ role: Role.User, content: 'World', displayContent: 'World' })
             ];
 
-            const result = (claude as any).extractContents(contents);
+            const result = await (claude as any).extractContents(contents);
 
             expect(result).toHaveLength(2);
             expect(result[0].content[0].text).toBe('Hello');
             expect(result[1].content[0].text).toBe('World');
         });
 
-        it('should handle mixed content with text and function call', () => {
-            const mixedContent = new ConversationContent(
-                Role.Assistant,
-                'Let me search for that',
-                '',
-                JSON.stringify({
+        it('should handle mixed content with text and function call', async () => {
+            const mixedContent = new ConversationContent({
+                role: Role.Assistant,
+                content: 'Let me search for that',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'call_456',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
-                new Date(),
-                true
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: false
+            });
 
-            const result = (claude as any).extractContents([mixedContent]);
+            const result = await (claude as any).extractContents([mixedContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(2);
@@ -430,23 +440,23 @@ describe('Claude', () => {
             expect(result[0].content[1].type).toBe('tool_use');
         });
 
-        it('should convert function call without ID to legacy text format', () => {
-            const functionCallContent = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+        it('should convert function call without ID to legacy text format', async () => {
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                         // No ID field
                     }
                 }),
-                new Date(),
-                true
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: false
+            });
 
-            const result = (claude as any).extractContents([functionCallContent]);
+            const result = await (claude as any).extractContents([functionCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
@@ -462,23 +472,23 @@ describe('Claude', () => {
             expect(result[0].content[0].text).toBe(expected);
         });
 
-        it('should convert function call with empty ID to legacy text format', () => {
-            const functionCallContent = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+        it('should convert function call with empty ID to legacy text format', async () => {
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: '',  // Empty ID
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
-                new Date(),
-                true
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: false
+            });
 
-            const result = (claude as any).extractContents([functionCallContent]);
+            const result = await (claude as any).extractContents([functionCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
@@ -494,7 +504,7 @@ describe('Claude', () => {
             expect(result[0].content[0].text).toBe(expected);
         });
 
-        it('should convert function response without ID to legacy text format', () => {
+        it('should convert function response without ID to legacy text format', async () => {
             const responseContent = JSON.stringify({
                 functionResponse: {
                     name: 'search_vault_files',
@@ -502,14 +512,14 @@ describe('Claude', () => {
                 }
                 // No ID field
             });
-            const functionResponseContent = new ConversationContent(
-                Role.User,
-                responseContent,
-                responseContent
-            );
-            functionResponseContent.isFunctionCallResponse = true;
+            const functionResponseContent = new ConversationContent({
+                role: Role.User,
+                content: responseContent,
+                displayContent: responseContent,
+                functionResponse: responseContent
+            });
 
-            const result = (claude as any).extractContents([functionResponseContent]);
+            const result = await (claude as any).extractContents([functionResponseContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
@@ -525,7 +535,7 @@ describe('Claude', () => {
             expect(result[0].content[0].text).toBe(expected);
         });
 
-        it('should convert function response with empty ID to legacy text format', () => {
+        it('should convert function response with empty ID to legacy text format', async () => {
             const responseContent = JSON.stringify({
                 id: '',  // Empty ID
                 functionResponse: {
@@ -533,14 +543,14 @@ describe('Claude', () => {
                     response: ['file1.txt', 'file2.txt']
                 }
             });
-            const functionResponseContent = new ConversationContent(
-                Role.User,
-                responseContent,
-                responseContent
-            );
-            functionResponseContent.isFunctionCallResponse = true;
+            const functionResponseContent = new ConversationContent({
+                role: Role.User,
+                content: responseContent,
+                displayContent: responseContent,
+                functionResponse: responseContent
+            });
 
-            const result = (claude as any).extractContents([functionResponseContent]);
+            const result = await (claude as any).extractContents([functionResponseContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
@@ -556,28 +566,28 @@ describe('Claude', () => {
             expect(result[0].content[0].text).toBe(expected);
         });
 
-        it('should exclude orphaned function calls without responses', () => {
+        it('should exclude orphaned function calls without responses', async () => {
             const contents = [
-                new ConversationContent(Role.User, 'Search for files', 'Search for files'),
+                new ConversationContent({ role: Role.User, content: 'Search for files', displayContent: 'Search for files' }),
                 // Function call without response (orphaned)
-                new ConversationContent(
-                    Role.Assistant,
-                    '',
-                    '',
-                    JSON.stringify({
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
                         functionCall: {
                             id: 'call_orphaned',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
                     }),
-                    new Date(),
-                    true
-                ),
-                new ConversationContent(Role.User, 'What about this?', 'What about this?')
+                    timestamp: new Date(),
+                    shouldDisplayContent: false
+                }),
+                new ConversationContent({ role: Role.User, content: 'What about this?', displayContent: 'What about this?' })
             ];
 
-            const result = (claude as any).extractContents(contents);
+            const result = await (claude as any).extractContents(contents);
 
             // Should only have 2 messages (orphaned function call excluded)
             expect(result).toHaveLength(2);
@@ -585,24 +595,24 @@ describe('Claude', () => {
             expect(result[1].content[0].text).toBe('What about this?');
         });
 
-        it('should include function call when it has a corresponding response', () => {
+        it('should include function call when it has a corresponding response', async () => {
             const contents = [
-                new ConversationContent(Role.User, 'Search for files', 'Search for files'),
+                new ConversationContent({ role: Role.User, content: 'Search for files', displayContent: 'Search for files' }),
                 // Function call with response (not orphaned)
-                new ConversationContent(
-                    Role.Assistant,
-                    '',
-                    '',
-                    JSON.stringify({
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
                         functionCall: {
                             id: 'call_123',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
                     }),
-                    new Date(),
-                    true
-                ),
+                    timestamp: new Date(),
+                    shouldDisplayContent: false
+                }),
                 // Corresponding function response
                 (() => {
                     const responseContent = JSON.stringify({
@@ -612,13 +622,16 @@ describe('Claude', () => {
                             response: ['file1.txt']
                         }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
-                    return content;
+                    return new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                 })()
             ];
 
-            const result = (claude as any).extractContents(contents);
+            const result = await (claude as any).extractContents(contents);
 
             // Should have all 3 items (function call has response)
             expect(result).toHaveLength(3);
@@ -626,27 +639,27 @@ describe('Claude', () => {
             expect(result[2].content[0].type).toBe('tool_result');
         });
 
-        it('should include function call when it is the most recent item', () => {
+        it('should include function call when it is the most recent item', async () => {
             const contents = [
-                new ConversationContent(Role.User, 'Search for files', 'Search for files'),
+                new ConversationContent({ role: Role.User, content: 'Search for files', displayContent: 'Search for files' }),
                 // Function call as most recent item (should be included)
-                new ConversationContent(
-                    Role.Assistant,
-                    '',
-                    '',
-                    JSON.stringify({
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
                         functionCall: {
                             id: 'call_latest',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
                     }),
-                    new Date(),
-                    true
-                )
+                    timestamp: new Date(),
+                    shouldDisplayContent: false
+                })
             ];
 
-            const result = (claude as any).extractContents(contents);
+            const result = await (claude as any).extractContents(contents);
 
             // Should have both items (most recent function call is included)
             expect(result).toHaveLength(2);
@@ -654,44 +667,44 @@ describe('Claude', () => {
             expect(result[1].content[0].id).toBe('call_latest');
         });
 
-        it('should handle multiple orphaned function calls correctly', () => {
+        it('should handle multiple orphaned function calls correctly', async () => {
             const contents = [
-                new ConversationContent(Role.User, 'First message', 'First message'),
+                new ConversationContent({ role: Role.User, content: 'First message', displayContent: 'First message' }),
                 // Orphaned function call #1
-                new ConversationContent(
-                    Role.Assistant,
-                    '',
-                    '',
-                    JSON.stringify({
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
                         functionCall: {
                             id: 'call_orphan1',
                             name: 'search_vault_files',
                             args: { query: 'test1' }
                         }
                     }),
-                    new Date(),
-                    true
-                ),
-                new ConversationContent(Role.User, 'Second message', 'Second message'),
+                    timestamp: new Date(),
+                    shouldDisplayContent: false
+                }),
+                new ConversationContent({ role: Role.User, content: 'Second message', displayContent: 'Second message' }),
                 // Orphaned function call #2
-                new ConversationContent(
-                    Role.Assistant,
-                    '',
-                    '',
-                    JSON.stringify({
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
                         functionCall: {
                             id: 'call_orphan2',
                             name: 'read_file',
                             args: { path: 'test.md' }
                         }
                     }),
-                    new Date(),
-                    true
-                ),
-                new ConversationContent(Role.User, 'Third message', 'Third message')
+                    timestamp: new Date(),
+                    shouldDisplayContent: false
+                }),
+                new ConversationContent({ role: Role.User, content: 'Third message', displayContent: 'Third message' })
             ];
 
-            const result = (claude as any).extractContents(contents);
+            const result = await (claude as any).extractContents(contents);
 
             // Should only have the 3 user messages (both orphaned calls excluded)
             expect(result).toHaveLength(3);
@@ -700,87 +713,68 @@ describe('Claude', () => {
             expect(result[2].content[0].text).toBe('Third message');
         });
 
-        it('should handle provider-specific content (images/PDFs) without stringifying', () => {
-            // Simulate what formatBinaryFiles returns for an image
-            const imageContentBlocks = [
-                { type: 'text', text: 'test-image.png' },
-                {
-                    type: 'image',
-                    source: {
-                        type: 'base64',
-                        media_type: 'image/png',
-                        data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-                    }
-                }
-            ];
+        it('should handle attachments with images correctly', async () => {
+            // Test with an image attachment
+            const attachment = {
+                fileName: 'test-image.png',
+                mimeType: 'image/png',
+                base64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+                getFileID: () => undefined, // No file ID, will use base64
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const providerSpecificContent = new ConversationContent(
-                Role.User,
-                JSON.stringify(imageContentBlocks),
-                JSON.stringify(imageContentBlocks),
-                '',
-                new Date(),
-                false,
-                false,
-                true  // isProviderSpecificContent = true
-            );
+            const content = new ConversationContent({
+                role: Role.User,
+                content: 'Please analyze this image',
+                displayContent: 'Please analyze this image',
+                attachments: [attachment as any]
+            });
 
-            const result = (claude as any).extractContents([providerSpecificContent]);
+            const result = await (claude as any).extractContents([content]);
 
             expect(result).toHaveLength(1);
-            expect(result[0].content).toHaveLength(2);
+            expect(result[0].content.length).toBeGreaterThan(1);
 
-            // First block should be the filename text
-            expect(result[0].content[0]).toEqual({
-                type: 'text',
-                text: 'test-image.png'
-            });
+            // Should have text content
+            const textBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === 'Please analyze this image');
+            expect(textBlock).toBeDefined();
 
-            // Second block should be the image with base64 data (NOT stringified)
-            expect(result[0].content[1]).toEqual({
-                type: 'image',
-                source: {
-                    type: 'base64',
-                    media_type: 'image/png',
-                    data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-                }
-            });
+            // Should have image content blocks from formatBinaryFiles
+            const imageBlocks = result[0].content.filter((block: any) => block.type === 'image');
+            expect(imageBlocks.length).toBeGreaterThan(0);
         });
 
-        it('should not add provider-specific content as text when isProviderSpecificContent is true', () => {
-            // This test ensures the fix for the token usage issue
-            const pdfContentBlocks = [
-                { type: 'text', text: 'document.pdf' },
-                {
-                    type: 'document',
-                    source: {
-                        type: 'base64',
-                        media_type: 'application/pdf',
-                        data: 'JVBERi0xLjQKJeLjz9MK'
-                    }
-                }
-            ];
+        it('should handle attachments with PDFs correctly', async () => {
+            // Test with a PDF attachment
+            const attachment = {
+                fileName: 'document.pdf',
+                mimeType: 'application/pdf',
+                base64: 'JVBERi0xLjQKJeLjz9MK',
+                getFileID: () => undefined, // No file ID, will use base64
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const providerSpecificContent = new ConversationContent(
-                Role.User,
-                JSON.stringify(pdfContentBlocks),
-                JSON.stringify(pdfContentBlocks),
-                '',
-                new Date(),
-                false,
-                false,
-                true  // isProviderSpecificContent = true
-            );
+            const content = new ConversationContent({
+                role: Role.User,
+                content: 'Review this document',
+                displayContent: 'Review this document',
+                attachments: [attachment as any]
+            });
 
-            const result = (claude as any).extractContents([providerSpecificContent]);
+            const result = await (claude as any).extractContents([content]);
 
             expect(result).toHaveLength(1);
-            expect(result[0].content).toHaveLength(2);
+            expect(result[0].content.length).toBeGreaterThan(1);
 
-            // Verify no text block with stringified JSON was added
-            const textBlocks = result[0].content.filter((block: any) => block.type === 'text');
-            expect(textBlocks).toHaveLength(1);
-            expect(textBlocks[0].text).toBe('document.pdf');  // Only the filename, not the stringified JSON
+            // Should have text content
+            const textBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === 'Review this document');
+            expect(textBlock).toBeDefined();
+
+            // Should have document content blocks from formatBinaryFiles
+            const documentBlocks = result[0].content.filter((block: any) => block.type === 'document');
+            expect(documentBlocks.length).toBeGreaterThan(0);
         });
     });
 
@@ -835,7 +829,7 @@ describe('Claude', () => {
     describe('streamRequest', () => {
         it('should call streamingService with correct parameters', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Test message'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test message' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'response', isComplete: true };
@@ -874,7 +868,7 @@ describe('Claude', () => {
             (claude as any).accumulatedFunctionId = 'old_id';
 
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Test'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
@@ -894,13 +888,16 @@ describe('Claude', () => {
 
     describe('formatBinaryFiles', () => {
         it('should format PDF files with document type', () => {
-            const files = [{
-                type: 'pdf',
-                path: '/vault/documents/report.pdf',
-                contents: 'base64encodedcontent'
-            }];
+            const attachment = {
+                fileName: 'report.pdf',
+                mimeType: 'application/pdf',
+                base64: 'base64encodedcontent',
+                getFileID: () => undefined,
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -919,13 +916,16 @@ describe('Claude', () => {
         });
 
         it('should format JPEG images with image type', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/photo.jpg',
-                contents: 'base64imagedata'
-            }];
+            const attachment = {
+                fileName: 'photo.jpg',
+                mimeType: 'image/jpeg',
+                base64: 'base64imagedata',
+                getFileID: () => undefined,
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -944,13 +944,16 @@ describe('Claude', () => {
         });
 
         it('should format PNG images with image type', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/diagram.png',
-                contents: 'base64pngdata'
-            }];
+            const attachment = {
+                fileName: 'diagram.png',
+                mimeType: 'image/png',
+                base64: 'base64pngdata',
+                getFileID: () => undefined,
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -965,13 +968,16 @@ describe('Claude', () => {
         });
 
         it('should format GIF images with image type', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/animation.gif',
-                contents: 'base64gifdata'
-            }];
+            const attachment = {
+                fileName: 'animation.gif',
+                mimeType: 'image/gif',
+                base64: 'base64gifdata',
+                getFileID: () => undefined,
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -986,13 +992,16 @@ describe('Claude', () => {
         });
 
         it('should format WebP images with image type', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/modern.webp',
-                contents: 'base64webpdata'
-            }];
+            const attachment = {
+                fileName: 'modern.webp',
+                mimeType: 'image/webp',
+                base64: 'base64webpdata',
+                getFileID: () => undefined,
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);

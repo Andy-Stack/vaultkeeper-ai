@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
+import { Role } from '../../Enums/Role';
 
 describe('Conversation', () => {
 	describe('constructor', () => {
@@ -210,7 +211,7 @@ describe('Conversation', () => {
 	describe('content manipulation', () => {
 		it('should update content of most recent conversation content', () => {
 			const conversation = new Conversation();
-			const content = new ConversationContent('user', 'initial');
+			const content = new ConversationContent({ role: Role.User, content: 'initial' });
 			conversation.contents.push(content);
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
@@ -221,9 +222,9 @@ describe('Conversation', () => {
 
 		it('should only update the last content when multiple contents exist', () => {
 			const conversation = new Conversation();
-			conversation.contents.push(new ConversationContent('user', 'first'));
-			conversation.contents.push(new ConversationContent('assistant', 'second'));
-			conversation.contents.push(new ConversationContent('user', 'third'));
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'first' }));
+			conversation.contents.push(new ConversationContent({ role: Role.Assistant, content: 'second' }));
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'third' }));
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
 			mostRecent.content = 'modified';
@@ -248,7 +249,7 @@ describe('Conversation', () => {
 
 		it('should handle empty string as new content', () => {
 			const conversation = new Conversation();
-			conversation.contents.push(new ConversationContent('user', 'initial'));
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'initial' }));
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
 			mostRecent.content = '';
@@ -258,7 +259,7 @@ describe('Conversation', () => {
 
 		it('should handle multiline content', () => {
 			const conversation = new Conversation();
-			conversation.contents.push(new ConversationContent('user', 'initial'));
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'initial' }));
 
 			const multilineContent = 'Line 1\nLine 2\nLine 3';
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
@@ -271,44 +272,38 @@ describe('Conversation', () => {
 	describe('function call manipulation', () => {
 		it('should set function call on most recent content', () => {
 			const conversation = new Conversation();
-			const content = new ConversationContent('assistant');
+			const content = new ConversationContent({ role: Role.Assistant });
 			conversation.contents.push(content);
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
 			mostRecent.functionCall = 'readFile';
-			mostRecent.isFunctionCall = true;
 
 			expect(conversation.contents[0].functionCall).toBe('readFile');
 		});
 
 		it('should mark most recent content as function call', () => {
 			const conversation = new Conversation();
-			const content = new ConversationContent('assistant');
+			const content = new ConversationContent({ role: Role.Assistant });
 			conversation.contents.push(content);
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
 			mostRecent.functionCall = 'readFile';
-			mostRecent.isFunctionCall = true;
 
-			expect(conversation.contents[0].isFunctionCall).toBe(true);
+			expect(conversation.contents[0].functionCall).toBe('readFile');
 		});
 
 		it('should only update the last content when multiple contents exist', () => {
 			const conversation = new Conversation();
-			conversation.contents.push(new ConversationContent('user'));
-			conversation.contents.push(new ConversationContent('assistant'));
-			conversation.contents.push(new ConversationContent('assistant'));
+			conversation.contents.push(new ConversationContent({ role: Role.User }));
+			conversation.contents.push(new ConversationContent({ role: Role.Assistant }));
+			conversation.contents.push(new ConversationContent({ role: Role.Assistant }));
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
 			mostRecent.functionCall = 'searchFiles';
-			mostRecent.isFunctionCall = true;
 
-			expect(conversation.contents[0].functionCall).toBe('');
-			expect(conversation.contents[0].isFunctionCall).toBe(false);
-			expect(conversation.contents[1].functionCall).toBe('');
-			expect(conversation.contents[1].isFunctionCall).toBe(false);
+			expect(conversation.contents[0].functionCall).toBeUndefined();
+			expect(conversation.contents[1].functionCall).toBeUndefined();
 			expect(conversation.contents[2].functionCall).toBe('searchFiles');
-			expect(conversation.contents[2].isFunctionCall).toBe(true);
 		});
 
 		it('should do nothing when contents array is empty', () => {
@@ -327,27 +322,23 @@ describe('Conversation', () => {
 
 		it('should handle empty string as function call', () => {
 			const conversation = new Conversation();
-			conversation.contents.push(new ConversationContent('assistant'));
+			conversation.contents.push(new ConversationContent({ role: Role.Assistant }));
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
 			mostRecent.functionCall = '';
-			mostRecent.isFunctionCall = true;
 
 			expect(conversation.contents[0].functionCall).toBe('');
-			expect(conversation.contents[0].isFunctionCall).toBe(true);
 		});
 
 		it('should overwrite existing function call', () => {
 			const conversation = new Conversation();
-			const content = new ConversationContent('assistant', '', '', 'oldFunction', new Date(), true);
+			const content = new ConversationContent({ role: Role.Assistant, functionCall: 'oldFunction' });
 			conversation.contents.push(content);
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
 			mostRecent.functionCall = 'newFunction';
-			mostRecent.isFunctionCall = true;
 
 			expect(conversation.contents[0].functionCall).toBe('newFunction');
-			expect(conversation.contents[0].isFunctionCall).toBe(true);
 		});
 	});
 
@@ -356,11 +347,11 @@ describe('Conversation', () => {
 			const conversation = new Conversation();
 
 			// Add user message
-			const userMessage = new ConversationContent('user', 'Hello');
+			const userMessage = new ConversationContent({ role: Role.User, content: 'Hello' });
 			conversation.contents.push(userMessage);
 
 			// Add assistant response
-			const assistantMessage = new ConversationContent('assistant');
+			const assistantMessage = new ConversationContent({ role: Role.Assistant });
 			conversation.contents.push(assistantMessage);
 
 			// Stream in assistant response
@@ -370,15 +361,13 @@ describe('Conversation', () => {
 
 			// Assistant makes a function call
 			mostRecent.functionCall = 'readFile';
-			mostRecent.isFunctionCall = true;
 
 			expect(conversation.contents).toHaveLength(2);
-			expect(conversation.contents[0].role).toBe('user');
+			expect(conversation.contents[0].role).toBe(Role.User);
 			expect(conversation.contents[0].content).toBe('Hello');
-			expect(conversation.contents[1].role).toBe('assistant');
+			expect(conversation.contents[1].role).toBe(Role.Assistant);
 			expect(conversation.contents[1].content).toBe('Hi there, how can I help you?');
 			expect(conversation.contents[1].functionCall).toBe('readFile');
-			expect(conversation.contents[1].isFunctionCall).toBe(true);
 		});
 
 		it('should maintain conversation metadata', () => {

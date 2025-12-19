@@ -82,6 +82,16 @@ describe('Gemini', () => {
         };
         RegisterSingleton(Services.AIFunctionDefinitions, mockFunctionDefinitions);
 
+        // Mock IAIFileService
+        const mockFileService = {
+            refreshCache: vi.fn().mockResolvedValue(undefined),
+            listFiles: vi.fn().mockReturnValue([]),
+            uploadFile: vi.fn().mockResolvedValue(undefined),
+            deleteFile: vi.fn().mockResolvedValue(undefined),
+            deleteFiles: vi.fn().mockResolvedValue(undefined)
+        };
+        RegisterSingleton(Services.IAIFileService, mockFileService);
+
         gemini = new Gemini();
     });
 
@@ -349,7 +359,7 @@ describe('Gemini', () => {
     describe('Web Search Toggle', () => {
         it('should use custom tools by default', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Test'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
@@ -377,7 +387,7 @@ describe('Gemini', () => {
             (gemini as any).accumulatedFunctionName = 'request_web_search';
 
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'What is the weather today?'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'What is the weather today?' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
@@ -397,8 +407,8 @@ describe('Gemini', () => {
     describe('Message Format Conversion', () => {
         it('should convert roles to User/Model', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Hello', 'Hello'));
-            conversation.contents.push(new ConversationContent(Role.Assistant, 'Hi there'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Hello', displayContent: 'Hello' }));
+            conversation.contents.push(new ConversationContent({ role: Role.Assistant, content: 'Hi there' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
@@ -416,7 +426,7 @@ describe('Gemini', () => {
 
         it('should format system instruction as parts array', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Test', 'Test'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test', displayContent: 'Test' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
@@ -435,26 +445,23 @@ describe('Gemini', () => {
             expect(requestBody.system_instruction.parts[2].text).toBe('User instruction');
         });
 
-        it('should convert function call to Gemini format (with signature from Gemini)', () => {
-            const functionCallContent = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+        it('should convert function call to Gemini format (with signature from Gemini)', async () => {
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                undefined,
-                'geminiSignatureFromAPI=='  // Has signature from Gemini
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: false,
+                thoughtSignature: 'geminiSignatureFromAPI=='  // Has signature from Gemini
+            });
 
-            const result = (gemini as any).extractContents([functionCallContent]);
+            const result = await (gemini as any).extractContents([functionCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].role).toBe(Role.Model);
@@ -468,27 +475,24 @@ describe('Gemini', () => {
             });
         });
 
-        it('should convert function call with thoughtSignature to Gemini format with signature', () => {
+        it('should convert function call with thoughtSignature to Gemini format with signature', async () => {
             const signature = 'geminiSignature==';
-            const functionCallContent = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                undefined,
-                signature
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: false,
+                thoughtSignature: signature
+            });
 
-            const result = (gemini as any).extractContents([functionCallContent]);
+            const result = await (gemini as any).extractContents([functionCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].role).toBe(Role.Model);
@@ -502,26 +506,23 @@ describe('Gemini', () => {
             });
         });
 
-        it('should fall back to legacy text format for function call without thoughtSignature (cross-provider)', () => {
-            const functionCallContent = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+        it('should fall back to legacy text format for function call without thoughtSignature (cross-provider)', async () => {
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                undefined,
-                undefined  // No thoughtSignature (came from Claude/OpenAI)
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: false
+                // No thoughtSignature (came from Claude/OpenAI)
+            });
 
-            const result = (gemini as any).extractContents([functionCallContent]);
+            const result = await (gemini as any).extractContents([functionCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].role).toBe(Role.Model);
@@ -533,25 +534,23 @@ describe('Gemini', () => {
             expect(result[0].parts[0].text).toContain('  "query": "test"');
         });
 
-        it('should fall back to legacy text format for function call with empty thoughtSignature', () => {
-            const functionCallContent = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+        it('should fall back to legacy text format for function call with empty thoughtSignature', async () => {
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         name: 'read_file',
                         args: { path: 'note.md' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                undefined,
-                ''  // Empty thoughtSignature
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: false,
+                thoughtSignature: ''  // Empty thoughtSignature
+            });
 
-            const result = (gemini as any).extractContents([functionCallContent]);
+            const result = await (gemini as any).extractContents([functionCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].parts[0]).toHaveProperty('text');
@@ -561,7 +560,7 @@ describe('Gemini', () => {
             expect(result[0].parts[0].text).toContain('  "path": "note.md"');
         });
 
-        it('should convert function response to Gemini format', () => {
+        it('should convert function response to Gemini format', async () => {
             const responseContent = JSON.stringify({
                 id: 'call-123',
                 functionResponse: {
@@ -569,14 +568,14 @@ describe('Gemini', () => {
                     response: ['file1.txt', 'file2.txt']
                 }
             });
-            const functionResponseContent = new ConversationContent(
-                Role.User,
-                responseContent,
-                responseContent  // promptContent for User role
-            );
-            functionResponseContent.isFunctionCallResponse = true;
+            const functionResponseContent = new ConversationContent({
+                role: Role.User,
+                content: responseContent,
+                displayContent: responseContent,  // displayContent for User role
+                functionResponse: responseContent
+            });
 
-            const result = (gemini as any).extractContents([functionResponseContent]);
+            const result = await (gemini as any).extractContents([functionResponseContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].parts).toHaveLength(1);
@@ -589,21 +588,21 @@ describe('Gemini', () => {
             });
         });
 
-        it('should fall back to legacy text format for function response without id (cross-provider)', () => {
+        it('should fall back to legacy text format for function response without id (cross-provider)', async () => {
             const responseContent = JSON.stringify({
                 functionResponse: {
                     name: 'search_vault_files',
                     response: ['file1.txt', 'file2.txt']
                 }
             });
-            const functionResponseContent = new ConversationContent(
-                Role.User,
-                responseContent,
-                responseContent
-            );
-            functionResponseContent.isFunctionCallResponse = true;
+            const functionResponseContent = new ConversationContent({
+                role: Role.User,
+                content: responseContent,
+                displayContent: responseContent,
+                functionResponse: responseContent
+            });
 
-            const result = (gemini as any).extractContents([functionResponseContent]);
+            const result = await (gemini as any).extractContents([functionResponseContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].parts).toHaveLength(1);
@@ -615,7 +614,7 @@ describe('Gemini', () => {
             expect(result[0].parts[0].text).toContain('  "file2.txt"');
         });
 
-        it('should fall back to legacy text format for function response with empty id', () => {
+        it('should fall back to legacy text format for function response with empty id', async () => {
             const responseContent = JSON.stringify({
                 id: '',
                 functionResponse: {
@@ -623,14 +622,14 @@ describe('Gemini', () => {
                     response: { content: 'file contents' }
                 }
             });
-            const functionResponseContent = new ConversationContent(
-                Role.User,
-                responseContent,
-                responseContent
-            );
-            functionResponseContent.isFunctionCallResponse = true;
+            const functionResponseContent = new ConversationContent({
+                role: Role.User,
+                content: responseContent,
+                displayContent: responseContent,
+                functionResponse: responseContent
+            });
 
-            const result = (gemini as any).extractContents([functionResponseContent]);
+            const result = await (gemini as any).extractContents([functionResponseContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].parts[0]).toHaveProperty('text');
@@ -640,19 +639,19 @@ describe('Gemini', () => {
             expect(result[0].parts[0].text).toContain('  "content": "file contents"');
         });
 
-        it('should handle invalid JSON in function call gracefully', () => {
+        it('should handle invalid JSON in function call gracefully', async () => {
             const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
-            const invalidContent = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                'invalid json {',
-                new Date(),
-                true
-            );
+            const invalidContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: 'invalid json {',
+                timestamp: new Date(),
+                shouldDisplayContent: false
+            });
 
-            const result = (gemini as any).extractContents([invalidContent]);
+            const result = await (gemini as any).extractContents([invalidContent]);
 
             // Should fallback to error message as text (since content is empty and function call is invalid)
             // The implementation includes an error message as text when parsing fails
@@ -663,17 +662,17 @@ describe('Gemini', () => {
             exceptionSpy.mockRestore();
         });
 
-        it('should handle invalid JSON in function response gracefully', () => {
+        it('should handle invalid JSON in function response gracefully', async () => {
             const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
-            const invalidContent = new ConversationContent(
-                Role.User,
-                'invalid json {',
-                'invalid json {'  // promptContent for User role
-            );
-            invalidContent.isFunctionCallResponse = true;
+            const invalidContent = new ConversationContent({
+                role: Role.User,
+                content: 'invalid json {',
+                displayContent: 'invalid json {',  // displayContent for User role
+                functionResponse: 'invalid json {'
+            });
 
-            const result = (gemini as any).extractContents([invalidContent]);
+            const result = await (gemini as any).extractContents([invalidContent]);
 
             // Should fallback to text
             expect(result).toHaveLength(1);
@@ -684,41 +683,41 @@ describe('Gemini', () => {
             exceptionSpy.mockRestore();
         });
 
-        it('should filter out empty content', () => {
+        it('should filter out empty content', async () => {
             const contents = [
-                new ConversationContent(Role.User, 'Hello', 'Hello'),
-                new ConversationContent(Role.Assistant, ''), // Empty
-                new ConversationContent(Role.User, 'World', 'World')
+                new ConversationContent({ role: Role.User, content: 'Hello', displayContent: 'Hello' }),
+                new ConversationContent({ role: Role.Assistant, content: '' }), // Empty
+                new ConversationContent({ role: Role.User, content: 'World', displayContent: 'World' })
             ];
 
-            const result = (gemini as any).extractContents(contents);
+            const result = await (gemini as any).extractContents(contents);
 
             expect(result).toHaveLength(2);
             expect(result[0].parts[0].text).toBe('Hello');
             expect(result[1].parts[0].text).toBe('World');
         });
 
-        it('should exclude orphaned function calls without responses', () => {
+        it('should exclude orphaned function calls without responses', async () => {
             const contents = [
-                new ConversationContent(Role.User, 'Search for files', 'Search for files'),
+                new ConversationContent({ role: Role.User, content: 'Search for files', displayContent: 'Search for files' }),
                 // Function call without response (orphaned)
-                new ConversationContent(
-                    Role.Assistant,
-                    '',
-                    '',
-                    JSON.stringify({
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
                         functionCall: {
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
                     }),
-                    new Date(),
-                    true
-                ),
-                new ConversationContent(Role.User, 'What about this?', 'What about this?')
+                    timestamp: new Date(),
+                    shouldDisplayContent: false
+                }),
+                new ConversationContent({ role: Role.User, content: 'What about this?', displayContent: 'What about this?' })
             ];
 
-            const result = (gemini as any).extractContents(contents);
+            const result = await (gemini as any).extractContents(contents);
 
             // Should only have 2 messages (orphaned function call excluded)
             expect(result).toHaveLength(2);
@@ -726,27 +725,24 @@ describe('Gemini', () => {
             expect(result[1].parts[0].text).toBe('What about this?');
         });
 
-        it('should include function call when it has a corresponding response', () => {
+        it('should include function call when it has a corresponding response', async () => {
             const contents = [
-                new ConversationContent(Role.User, 'Search for files', 'Search for files'),
+                new ConversationContent({ role: Role.User, content: 'Search for files', displayContent: 'Search for files' }),
                 // Function call with response (not orphaned) - with thoughtSignature
-                new ConversationContent(
-                    Role.Assistant,
-                    '',
-                    '',
-                    JSON.stringify({
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
                         functionCall: {
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
                     }),
-                    new Date(),
-                    true,
-                    false,
-                    false,
-                    undefined,
-                    'signature123=='  // Has signature
-                ),
+                    timestamp: new Date(),
+                    shouldDisplayContent: false,
+                    thoughtSignature: 'signature123=='  // Has signature
+                }),
                 // Corresponding function response
                 (() => {
                     const responseContent = JSON.stringify({
@@ -756,13 +752,16 @@ describe('Gemini', () => {
                             response: ['file1.txt']
                         }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
-                    return content;
+                    return new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                 })()
             ];
 
-            const result = (gemini as any).extractContents(contents);
+            const result = await (gemini as any).extractContents(contents);
 
             // Should have all 3 items (function call has response)
             expect(result).toHaveLength(3);
@@ -770,30 +769,27 @@ describe('Gemini', () => {
             expect(result[2].parts[0]).toHaveProperty('functionResponse');
         });
 
-        it('should include function call when it is the most recent item', () => {
+        it('should include function call when it is the most recent item', async () => {
             const contents = [
-                new ConversationContent(Role.User, 'Search for files', 'Search for files'),
+                new ConversationContent({ role: Role.User, content: 'Search for files', displayContent: 'Search for files' }),
                 // Function call as most recent item (should be included) - with signature
-                new ConversationContent(
-                    Role.Assistant,
-                    '',
-                    '',
-                    JSON.stringify({
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
                         functionCall: {
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
                     }),
-                    new Date(),
-                    true,
-                    false,
-                    false,
-                    undefined,
-                    'latestCallSignature=='
-                )
+                    timestamp: new Date(),
+                    shouldDisplayContent: false,
+                    thoughtSignature: 'latestCallSignature=='
+                })
             ];
 
-            const result = (gemini as any).extractContents(contents);
+            const result = await (gemini as any).extractContents(contents);
 
             // Should have both items (most recent function call is included)
             expect(result).toHaveLength(2);
@@ -806,42 +802,42 @@ describe('Gemini', () => {
             });
         });
 
-        it('should handle multiple orphaned function calls correctly', () => {
+        it('should handle multiple orphaned function calls correctly', async () => {
             const contents = [
-                new ConversationContent(Role.User, 'First message', 'First message'),
+                new ConversationContent({ role: Role.User, content: 'First message', displayContent: 'First message' }),
                 // Orphaned function call #1
-                new ConversationContent(
-                    Role.Assistant,
-                    '',
-                    '',
-                    JSON.stringify({
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
                         functionCall: {
                             name: 'search_vault_files',
                             args: { query: 'test1' }
                         }
                     }),
-                    new Date(),
-                    true
-                ),
-                new ConversationContent(Role.User, 'Second message', 'Second message'),
+                    timestamp: new Date(),
+                    shouldDisplayContent: false
+                }),
+                new ConversationContent({ role: Role.User, content: 'Second message', displayContent: 'Second message' }),
                 // Orphaned function call #2
-                new ConversationContent(
-                    Role.Assistant,
-                    '',
-                    '',
-                    JSON.stringify({
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
                         functionCall: {
                             name: 'read_file',
                             args: { path: 'test.md' }
                         }
                     }),
-                    new Date(),
-                    true
-                ),
-                new ConversationContent(Role.User, 'Third message', 'Third message')
+                    timestamp: new Date(),
+                    shouldDisplayContent: false
+                }),
+                new ConversationContent({ role: Role.User, content: 'Third message', displayContent: 'Third message' })
             ];
 
-            const result = (gemini as any).extractContents(contents);
+            const result = await (gemini as any).extractContents(contents);
 
             // Should only have the 3 user messages (both orphaned calls excluded)
             expect(result).toHaveLength(3);
@@ -850,85 +846,11 @@ describe('Gemini', () => {
             expect(result[2].parts[0].text).toBe('Third message');
         });
 
-        it('should handle provider-specific content (images/PDFs) correctly', () => {
-            const imageContentParts = [
-                { text: 'test-image.png' },
-                {
-                    inlineData: {
-                        mimeType: 'image/png',
-                        data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-                    }
-                }
-            ];
-
-            const providerSpecificContent = new ConversationContent(
-                Role.User,
-                JSON.stringify(imageContentParts),
-                JSON.stringify(imageContentParts),
-                '',
-                new Date(),
-                false,
-                false,
-                true  // isProviderSpecificContent = true
-            );
-
-            const result = (gemini as any).extractContents([providerSpecificContent]);
-
-            expect(result).toHaveLength(1);
-            expect(result[0].parts).toHaveLength(2);
-
-            // First part should be the filename text
-            expect(result[0].parts[0]).toEqual({
-                text: 'test-image.png'
-            });
-
-            // Second part should be the image with base64 data (NOT stringified)
-            expect(result[0].parts[1]).toEqual({
-                inlineData: {
-                    mimeType: 'image/png',
-                    data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-                }
-            });
-        });
-
-        it('should not add provider-specific content as text when isProviderSpecificContent is true', () => {
-            // This test ensures the fix for the token usage issue
-            const pdfContentParts = [
-                { text: 'document.pdf' },
-                {
-                    inlineData: {
-                        mimeType: 'application/pdf',
-                        data: 'JVBERi0xLjQKJeLjz9MK'
-                    }
-                }
-            ];
-
-            const providerSpecificContent = new ConversationContent(
-                Role.User,
-                JSON.stringify(pdfContentParts),
-                JSON.stringify(pdfContentParts),
-                '',
-                new Date(),
-                false,
-                false,
-                true  // isProviderSpecificContent = true
-            );
-
-            const result = (gemini as any).extractContents([providerSpecificContent]);
-
-            expect(result).toHaveLength(1);
-            expect(result[0].parts).toHaveLength(2);
-
-            // Verify no text part with stringified JSON was added
-            const textParts = result[0].parts.filter((part: any) => part.text !== undefined);
-            expect(textParts).toHaveLength(1);
-            expect(textParts[0].text).toBe('document.pdf');  // Only the filename, not the stringified JSON
-        });
     });
 
     describe('Helper Methods', () => {
         describe('convertFunctionCallToText', () => {
-            it('should convert function call to legacy text format', () => {
+            it('should convert function call to legacy text format', async () => {
                 const parsedContent = {
                     functionCall: {
                         name: 'search_vault_files',
@@ -1104,14 +1026,13 @@ describe('Gemini', () => {
     describe('streamRequest', () => {
         it('should call streamingService with correct URL and parameters', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Test'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
             });
 
-            const abortSignal = new AbortController().signal;
-            const generator = gemini.streamRequest(conversation, true, abortSignal);
+            const generator = gemini.streamRequest(conversation, true);
 
             for await (const chunk of generator) {}
 
@@ -1136,7 +1057,7 @@ describe('Gemini', () => {
             (gemini as any).accumulatedThoughtSignature = 'oldSignature';
 
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Test'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
@@ -1153,14 +1074,17 @@ describe('Gemini', () => {
     });
 
     describe('formatBinaryFiles', () => {
-        it('should format PDF files with inlineData', () => {
-            const files = [{
-                type: 'pdf',
-                path: '/vault/documents/report.pdf',
-                contents: 'base64encodedcontent'
-            }];
+        it('should format PDF files with fileData', () => {
+            const attachment = {
+                fileName: 'report.pdf',
+                mimeType: 'application/pdf',
+                base64: 'base64encodedcontent',
+                getFileID: () => 'file-123',
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = gemini.formatBinaryFiles(files);
+            const result = gemini.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1168,21 +1092,24 @@ describe('Gemini', () => {
                 text: 'report.pdf'
             });
             expect(parsed[1]).toEqual({
-                inlineData: {
+                fileData: {
                     mimeType: 'application/pdf',
-                    data: 'base64encodedcontent'
+                    fileUri: 'file-123'
                 }
             });
         });
 
-        it('should format JPEG images with inlineData', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/photo.jpg',
-                contents: 'base64imagedata'
-            }];
+        it('should format JPEG images with fileData', () => {
+            const attachment = {
+                fileName: 'photo.jpg',
+                mimeType: 'image/jpeg',
+                base64: 'base64imagedata',
+                getFileID: () => 'file-456',
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = gemini.formatBinaryFiles(files);
+            const result = gemini.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1190,40 +1117,46 @@ describe('Gemini', () => {
                 text: 'photo.jpg'
             });
             expect(parsed[1]).toEqual({
-                inlineData: {
+                fileData: {
                     mimeType: 'image/jpeg',
-                    data: 'base64imagedata'
+                    fileUri: 'file-456'
                 }
             });
         });
 
-        it('should format PNG images with inlineData', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/diagram.png',
-                contents: 'base64pngdata'
-            }];
+        it('should format PNG images with fileData', () => {
+            const attachment = {
+                fileName: 'diagram.png',
+                mimeType: 'image/png',
+                base64: 'base64pngdata',
+                getFileID: () => 'file-789',
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = gemini.formatBinaryFiles(files);
+            const result = gemini.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
             expect(parsed[1]).toEqual({
-                inlineData: {
+                fileData: {
                     mimeType: 'image/png',
-                    data: 'base64pngdata'
+                    fileUri: 'file-789'
                 }
             });
         });
 
         it('should handle unsupported image formats (GIF) with error message', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/animation.gif',
-                contents: 'base64gifdata'
-            }];
+            const attachment = {
+                fileName: 'animation.gif',
+                mimeType: 'image/gif',
+                base64: 'base64gifdata',
+                getFileID: () => 'file-gif',
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = gemini.formatBinaryFiles(files);
+            const result = gemini.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1233,13 +1166,16 @@ describe('Gemini', () => {
         });
 
         it('should handle unsupported image formats (BMP) with error message', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/photo.bmp',
-                contents: 'base64bmpdata'
-            }];
+            const attachment = {
+                fileName: 'photo.bmp',
+                mimeType: 'image/bmp',
+                base64: 'base64bmpdata',
+                getFileID: () => 'file-bmp',
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = gemini.formatBinaryFiles(files);
+            const result = gemini.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1249,25 +1185,34 @@ describe('Gemini', () => {
         });
 
         it('should handle multiple files of different types', () => {
-            const files = [
+            const attachments = [
                 {
-                    type: 'pdf',
-                    path: '/vault/doc.pdf',
-                    contents: 'pdfdata'
+                    fileName: 'doc.pdf',
+                    mimeType: 'application/pdf',
+                    base64: 'pdfdata',
+                    getFileID: () => 'file-pdf',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'image',
-                    path: '/vault/image.jpg',
-                    contents: 'jpegdata'
+                    fileName: 'image.jpg',
+                    mimeType: 'image/jpeg',
+                    base64: 'jpegdata',
+                    getFileID: () => 'file-jpg',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'image',
-                    path: '/vault/screenshot.png',
-                    contents: 'pngdata'
+                    fileName: 'screenshot.png',
+                    mimeType: 'image/png',
+                    base64: 'pngdata',
+                    getFileID: () => 'file-png',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 }
             ];
 
-            const result = gemini.formatBinaryFiles(files);
+            const result = gemini.formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(6);
@@ -1275,139 +1220,146 @@ describe('Gemini', () => {
             // PDF file
             expect(parsed[0]).toEqual({ text: 'doc.pdf' });
             expect(parsed[1]).toEqual({
-                inlineData: {
+                fileData: {
                     mimeType: 'application/pdf',
-                    data: 'pdfdata'
+                    fileUri: 'file-pdf'
                 }
             });
 
             // JPEG image
             expect(parsed[2]).toEqual({ text: 'image.jpg' });
             expect(parsed[3]).toEqual({
-                inlineData: {
+                fileData: {
                     mimeType: 'image/jpeg',
-                    data: 'jpegdata'
+                    fileUri: 'file-jpg'
                 }
             });
 
             // PNG image
             expect(parsed[4]).toEqual({ text: 'screenshot.png' });
             expect(parsed[5]).toEqual({
-                inlineData: {
+                fileData: {
                     mimeType: 'image/png',
-                    data: 'pngdata'
+                    fileUri: 'file-png'
                 }
             });
         });
 
         it('should handle mixed supported and unsupported files', () => {
-            const files = [
+            const attachments = [
                 {
-                    type: 'image',
-                    path: '/vault/good.jpg',
-                    contents: 'jpegdata'
+                    fileName: 'good.jpg',
+                    mimeType: 'image/jpeg',
+                    base64: 'jpegdata',
+                    getFileID: () => 'file-jpg',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'image',
-                    path: '/vault/bad.bmp',
-                    contents: 'bmpdata'
+                    fileName: 'bad.bmp',
+                    mimeType: 'image/bmp',
+                    base64: 'bmpdata',
+                    getFileID: () => 'file-bmp',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'pdf',
-                    path: '/vault/doc.pdf',
-                    contents: 'pdfdata'
+                    fileName: 'doc.pdf',
+                    mimeType: 'application/pdf',
+                    base64: 'pdfdata',
+                    getFileID: () => 'file-pdf',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 }
             ];
 
-            const result = gemini.formatBinaryFiles(files);
+            const result = gemini.formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(5);
 
             expect(parsed[0]).toEqual({ text: 'good.jpg' });
-            expect(parsed[1]).toHaveProperty('inlineData');
+            expect(parsed[1]).toHaveProperty('fileData');
             expect(parsed[2]).toEqual({
                 text: 'Unsupported image format: bad.bmp'
             });
             expect(parsed[3]).toEqual({ text: 'doc.pdf' });
-            expect(parsed[4]).toHaveProperty('inlineData');
+            expect(parsed[4]).toHaveProperty('fileData');
         });
 
-        it('should handle error when getting image mime type fails', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/image.unknown',
-                contents: 'imagedata'
-            }];
-
-            const result = gemini.formatBinaryFiles(files);
-            const parsed = JSON.parse(result);
-
-            expect(parsed).toHaveLength(1);
-            expect(parsed[0]).toHaveProperty('text');
-            expect(parsed[0].text).toContain('Image type not supported');
-        });
-
-        it('should handle files with uppercase extensions', () => {
-            const files = [
+        it('should skip files without file IDs (failed uploads)', () => {
+            const attachments = [
                 {
-                    type: 'pdf',
-                    path: '/vault/document.PDF',
-                    contents: 'pdfdata'
+                    fileName: 'success.pdf',
+                    mimeType: 'application/pdf',
+                    base64: 'pdfdata',
+                    getFileID: () => 'file-success',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'image',
-                    path: '/vault/photo.JPG',
-                    contents: 'jpegdata'
+                    fileName: 'failed.jpg',
+                    mimeType: 'image/jpeg',
+                    base64: 'jpegdata',
+                    getFileID: () => undefined, // Upload failed
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 }
             ];
 
-            const result = gemini.formatBinaryFiles(files);
+            const result = gemini.formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
-            expect(parsed).toHaveLength(4);
-            expect(parsed[0].text).toBe('document.PDF');
-            expect(parsed[1]).toHaveProperty('inlineData');
-            expect(parsed[2].text).toBe('photo.JPG');
-            expect(parsed[3]).toHaveProperty('inlineData');
+            expect(parsed).toHaveLength(2); // Only successful upload
+            expect(parsed[0]).toEqual({ text: 'success.pdf' });
+            expect(parsed[1]).toEqual({
+                fileData: {
+                    mimeType: 'application/pdf',
+                    fileUri: 'file-success'
+                }
+            });
         });
 
-        it('should handle empty files array', () => {
-            const files: Array<{type: string, path: string, contents: string}> = [];
-
-            const result = gemini.formatBinaryFiles(files);
+        it('should handle empty attachments array', () => {
+            const result = gemini.formatBinaryFiles([]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(0);
         });
 
         it('should properly encode filenames with special characters', () => {
-            const files = [{
-                type: 'pdf',
-                path: '/vault/documents/report (final) v2.pdf',
-                contents: 'pdfdata'
-            }];
+            const attachment = {
+                fileName: 'report (final) v2.pdf',
+                mimeType: 'application/pdf',
+                base64: 'pdfdata',
+                getFileID: () => 'file-123',
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = gemini.formatBinaryFiles(files);
+            const result = gemini.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed[0].text).toBe('report (final) v2.pdf');
         });
 
         it('should handle JPEG files with .jpeg extension', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/photo.jpeg',
-                contents: 'jpegdata'
-            }];
+            const attachment = {
+                fileName: 'photo.jpeg',
+                mimeType: 'image/jpeg',
+                base64: 'jpegdata',
+                getFileID: () => 'file-jpeg',
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = gemini.formatBinaryFiles(files);
+            const result = gemini.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed[1]).toEqual({
-                inlineData: {
+                fileData: {
                     mimeType: 'image/jpeg',
-                    data: 'jpegdata'
+                    fileUri: 'file-jpeg'
                 }
             });
         });

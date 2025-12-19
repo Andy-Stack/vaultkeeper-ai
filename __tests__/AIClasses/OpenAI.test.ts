@@ -85,6 +85,16 @@ describe('OpenAI', () => {
         };
         RegisterSingleton(Services.AIFunctionDefinitions, mockFunctionDefinitions);
 
+        // Mock IAIFileService
+        const mockFileService = {
+            refreshCache: vi.fn().mockResolvedValue(undefined),
+            listFiles: vi.fn().mockReturnValue([]),
+            uploadFile: vi.fn().mockResolvedValue(undefined),
+            deleteFile: vi.fn().mockResolvedValue(undefined),
+            deleteFiles: vi.fn().mockResolvedValue(undefined)
+        };
+        RegisterSingleton(Services.IAIFileService, mockFileService);
+
         openai = new OpenAI();
     });
 
@@ -317,7 +327,7 @@ describe('OpenAI', () => {
     describe('Message Format Conversion', () => {
         it('should include system prompt in instructions field', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Hello'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Hello' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'response', isComplete: true };
@@ -340,20 +350,17 @@ describe('OpenAI', () => {
 
         it('should convert function call to Responses API format', async () => {
             const conversation = new Conversation();
-            const functionCallContent = new ConversationContent(
-                Role.Assistant,
-                'Let me search',
-                '',
-                JSON.stringify({
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: 'Let me search',
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
-                new Date(),
-                true
-            );
+                })
+            });
             conversation.contents.push(functionCallContent);
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
@@ -393,12 +400,10 @@ describe('OpenAI', () => {
                     response: ['file1.txt', 'file2.txt']
                 }
             });
-            const functionResponseContent = new ConversationContent(
-                Role.User,
-                responseContent,
-                responseContent  // promptContent for User role
-            );
-            functionResponseContent.isFunctionCallResponse = true;
+            const functionResponseContent = new ConversationContent({
+                role: Role.User,
+                functionResponse: responseContent
+            });
             conversation.contents.push(functionResponseContent);
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
@@ -424,14 +429,10 @@ describe('OpenAI', () => {
             const exceptionSpy = vi.spyOn(Exception, 'log');
 
             const conversation = new Conversation();
-            const invalidContent = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                'invalid json {',
-                new Date(),
-                true
-            );
+            const invalidContent = new ConversationContent({
+                role: Role.Assistant,
+                functionCall: 'invalid json {'
+            });
             conversation.contents.push(invalidContent);
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
@@ -454,13 +455,10 @@ describe('OpenAI', () => {
             const exceptionSpy = vi.spyOn(Exception, 'log');
 
             const conversation = new Conversation();
-            const invalidContent = new ConversationContent(
-                Role.User,
-                'invalid json {',
-                'invalid json {',  // promptContent for User role
-                ''
-            );
-            invalidContent.isFunctionCallResponse = true;
+            const invalidContent = new ConversationContent({
+                role: Role.User,
+                functionResponse: 'invalid json {'
+            });
             conversation.contents.push(invalidContent);
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
@@ -481,9 +479,9 @@ describe('OpenAI', () => {
 
         it('should filter out empty content', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Hello', 'Hello'));
-            conversation.contents.push(new ConversationContent(Role.Assistant, '', '', ''));
-            conversation.contents.push(new ConversationContent(Role.User, 'World', 'World'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Hello' }));
+            conversation.contents.push(new ConversationContent({ role: Role.Assistant, content: '' }));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'World' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
@@ -501,24 +499,20 @@ describe('OpenAI', () => {
 
         it('should exclude orphaned function calls without responses', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Search for files', 'Search for files'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Search for files' }));
             // Function call without response (orphaned)
-            const orphanedCall = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const orphanedCall = new ConversationContent({
+                role: Role.Assistant,
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'call_orphaned',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
-                new Date(),
-                true
-            );
+                })
+            });
             conversation.contents.push(orphanedCall);
-            conversation.contents.push(new ConversationContent(Role.User, 'What about this?', 'What about this?'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'What about this?' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
@@ -538,22 +532,18 @@ describe('OpenAI', () => {
 
         it('should include function call when it has a corresponding response', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Search for files', 'Search for files'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Search for files' }));
             // Function call with response (not orphaned)
-            const functionCall = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const functionCall = new ConversationContent({
+                role: Role.Assistant,
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
-                new Date(),
-                true
-            );
+                })
+            });
             conversation.contents.push(functionCall);
             // Corresponding function response
             const responseContent = JSON.stringify({
@@ -563,8 +553,10 @@ describe('OpenAI', () => {
                     response: ['file1.txt']
                 }
             });
-            const functionResponse = new ConversationContent(Role.User, responseContent, responseContent);
-            functionResponse.isFunctionCallResponse = true;
+            const functionResponse = new ConversationContent({
+                role: Role.User,
+                functionResponse: responseContent
+            });
             conversation.contents.push(functionResponse);
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
@@ -598,22 +590,18 @@ describe('OpenAI', () => {
 
         it('should include function call when it is the most recent item', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Search for files', 'Search for files'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Search for files' }));
             // Function call as most recent item (should be included)
-            const latestCall = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const latestCall = new ConversationContent({
+                role: Role.Assistant,
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'call_latest',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
-                new Date(),
-                true
-            );
+                })
+            });
             conversation.contents.push(latestCall);
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
@@ -642,41 +630,33 @@ describe('OpenAI', () => {
 
         it('should handle multiple orphaned function calls correctly', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'First message', 'First message'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'First message' }));
             // Orphaned function call #1
-            const orphan1 = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const orphan1 = new ConversationContent({
+                role: Role.Assistant,
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'call_orphan1',
                         name: 'search_vault_files',
                         args: { query: 'test1' }
                     }
-                }),
-                new Date(),
-                true
-            );
+                })
+            });
             conversation.contents.push(orphan1);
-            conversation.contents.push(new ConversationContent(Role.User, 'Second message', 'Second message'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Second message' }));
             // Orphaned function call #2
-            const orphan2 = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const orphan2 = new ConversationContent({
+                role: Role.Assistant,
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'call_orphan2',
                         name: 'read_file',
                         args: { path: 'test.md' }
                     }
-                }),
-                new Date(),
-                true
-            );
+                })
+            });
             conversation.contents.push(orphan2);
-            conversation.contents.push(new ConversationContent(Role.User, 'Third message', 'Third message'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Third message' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
@@ -698,20 +678,17 @@ describe('OpenAI', () => {
         describe('Responses API Format Edge Cases', () => {
             it('should handle assistant message with both text and function call', async () => {
                 const conversation = new Conversation();
-                const functionCallContent = new ConversationContent(
-                    Role.Assistant,
-                    'I will search for that.',
-                    '',
-                    JSON.stringify({
+                const functionCallContent = new ConversationContent({
+                    role: Role.Assistant,
+                    content: 'I will search for that.',
+                    functionCall: JSON.stringify({
                         functionCall: {
                             id: 'call_123',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
-                    new Date(),
-                    true
-                );
+                    })
+                });
                 conversation.contents.push(functionCallContent);
 
                 mockStreamingService.streamRequest.mockImplementation(async function* () {
@@ -735,20 +712,16 @@ describe('OpenAI', () => {
 
             it('should handle function call with empty text content', async () => {
                 const conversation = new Conversation();
-                const functionCallContent = new ConversationContent(
-                    Role.Assistant,
-                    '',
-                    '',
-                    JSON.stringify({
+                const functionCallContent = new ConversationContent({
+                    role: Role.Assistant,
+                    functionCall: JSON.stringify({
                         functionCall: {
                             id: 'call_123',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
-                    new Date(),
-                    true
-                );
+                    })
+                });
                 conversation.contents.push(functionCallContent);
 
                 mockStreamingService.streamRequest.mockImplementation(async function* () {
@@ -785,12 +758,10 @@ describe('OpenAI', () => {
                         response: complexResponse
                     }
                 });
-                const functionResponseContent = new ConversationContent(
-                    Role.User,
-                    responseContent,
-                    responseContent
-                );
-                functionResponseContent.isFunctionCallResponse = true;
+                const functionResponseContent = new ConversationContent({
+                    role: Role.User,
+                    functionResponse: responseContent
+                });
                 conversation.contents.push(functionResponseContent);
 
                 mockStreamingService.streamRequest.mockImplementation(async function* () {
@@ -815,65 +786,48 @@ describe('OpenAI', () => {
                 const conversation = new Conversation();
 
                 // First function call
-                conversation.contents.push(new ConversationContent(
-                    Role.Assistant,
-                    '',
-                    '',
-                    JSON.stringify({
+                conversation.contents.push(new ConversationContent({
+                    role: Role.Assistant,
+                    functionCall: JSON.stringify({
                         functionCall: {
                             id: 'call_1',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
-                    new Date(),
-                    true
-                ));
+                    })
+                }));
 
                 // First response
-                const response1 = new ConversationContent(
-                    Role.User,
-                    JSON.stringify({
-                        id: 'call_1',
-                        functionResponse: { name: 'search_vault_files', response: ['file1.txt'] }
-                    }),
-                    JSON.stringify({
+                const response1 = new ConversationContent({
+                    role: Role.User,
+                    functionResponse: JSON.stringify({
                         id: 'call_1',
                         functionResponse: { name: 'search_vault_files', response: ['file1.txt'] }
                     })
-                );
-                response1.isFunctionCallResponse = true;
+                });
                 conversation.contents.push(response1);
 
                 // Second function call
-                conversation.contents.push(new ConversationContent(
-                    Role.Assistant,
-                    'Let me read that file',
-                    '',
-                    JSON.stringify({
+                conversation.contents.push(new ConversationContent({
+                    role: Role.Assistant,
+                    content: 'Let me read that file',
+                    functionCall: JSON.stringify({
                         functionCall: {
                             id: 'call_2',
                             name: 'read_file',
                             args: { path: 'file1.txt' }
                         }
-                    }),
-                    new Date(),
-                    true
-                ));
+                    })
+                }));
 
                 // Second response
-                const response2 = new ConversationContent(
-                    Role.User,
-                    JSON.stringify({
-                        id: 'call_2',
-                        functionResponse: { name: 'read_file', response: 'file content' }
-                    }),
-                    JSON.stringify({
+                const response2 = new ConversationContent({
+                    role: Role.User,
+                    functionResponse: JSON.stringify({
                         id: 'call_2',
                         functionResponse: { name: 'read_file', response: 'file content' }
                     })
-                );
-                response2.isFunctionCallResponse = true;
+                });
                 conversation.contents.push(response2);
 
                 mockStreamingService.streamRequest.mockImplementation(async function* () {
@@ -955,7 +909,7 @@ describe('OpenAI', () => {
     describe('streamRequest', () => {
         it('should call streamingService with correct parameters', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Test message'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test message' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'response', isComplete: true };
@@ -986,7 +940,7 @@ describe('OpenAI', () => {
 
         it('should include name field in web_search tool', async () => {
             const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent(Role.User, 'Test'));
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test message' }));
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
@@ -1006,14 +960,17 @@ describe('OpenAI', () => {
     });
 
     describe('formatBinaryFiles', () => {
-        it('should format PDF files with input_file type', () => {
-            const files = [{
-                type: 'pdf',
-                path: '/vault/documents/report.pdf',
-                contents: 'base64encodedcontent'
-            }];
+        it('should format PDF files with file_id reference', () => {
+            const attachment = {
+                fileName: 'report.pdf',
+                mimeType: 'application/pdf',
+                base64: 'base64encodedcontent',
+                getFileID: () => 'file-123',
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = openai.formatBinaryFiles(files);
+            const result = openai.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1021,19 +978,21 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(1);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_file',
-                filename: 'report.pdf',
-                file_data: 'data:application/pdf;base64,base64encodedcontent'
+                file_id: 'file-123'
             });
         });
 
-        it('should format JPEG images with input_image type', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/photo.jpg',
-                contents: 'base64imagedata'
-            }];
+        it('should format JPEG images with file_id reference', () => {
+            const attachment = {
+                fileName: 'photo.jpg',
+                mimeType: 'image/jpeg',
+                base64: 'base64imagedata',
+                getFileID: () => 'file-456',
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = openai.formatBinaryFiles(files);
+            const result = openai.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1041,52 +1000,61 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(1);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_image',
-                image_url: 'data:image/jpeg;base64,base64imagedata'
+                file_id: 'file-456'
             });
         });
 
-        it('should format PNG images with input_image type', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/diagram.png',
-                contents: 'base64pngdata'
-            }];
+        it('should format PNG images with file_id reference', () => {
+            const attachment = {
+                fileName: 'diagram.png',
+                mimeType: 'image/png',
+                base64: 'base64pngdata',
+                getFileID: () => 'file-789',
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = openai.formatBinaryFiles(files);
+            const result = openai.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_image',
-                image_url: 'data:image/png;base64,base64pngdata'
+                file_id: 'file-789'
             });
         });
 
-        it('should format WebP images with input_image type', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/modern.webp',
-                contents: 'base64webpdata'
-            }];
+        it('should format WebP images with file_id reference', () => {
+            const attachment = {
+                fileName: 'modern.webp',
+                mimeType: 'image/webp',
+                base64: 'base64webpdata',
+                getFileID: () => 'file-webp',
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = openai.formatBinaryFiles(files);
+            const result = openai.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_image',
-                image_url: 'data:image/webp;base64,base64webpdata'
+                file_id: 'file-webp'
             });
         });
 
         it('should handle unsupported image formats with error message', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/photo.gif',
-                contents: 'base64gifdata'
-            }];
+            const attachment = {
+                fileName: 'photo.gif',
+                mimeType: 'image/gif',
+                base64: 'base64gifdata',
+                getFileID: () => 'file-gif',
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = openai.formatBinaryFiles(files);
+            const result = openai.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1097,26 +1065,53 @@ describe('OpenAI', () => {
             });
         });
 
+        it('should skip files without file IDs (failed uploads)', () => {
+            const attachment = {
+                fileName: 'failed.pdf',
+                mimeType: 'application/pdf',
+                base64: 'base64data',
+                getFileID: () => undefined, // Upload failed
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
+
+            const result = openai.formatBinaryFiles([attachment as any]);
+            const parsed = JSON.parse(result);
+
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].role).toBe('user');
+            expect(parsed[0].content).toHaveLength(0); // No content blocks
+        });
+
         it('should handle multiple files of different types', () => {
-            const files = [
+            const attachments = [
                 {
-                    type: 'pdf',
-                    path: '/vault/doc.pdf',
-                    contents: 'pdfdata'
+                    fileName: 'doc.pdf',
+                    mimeType: 'application/pdf',
+                    base64: 'pdfdata',
+                    getFileID: () => 'file-pdf',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'image',
-                    path: '/vault/image.jpg',
-                    contents: 'jpegdata'
+                    fileName: 'image.jpg',
+                    mimeType: 'image/jpeg',
+                    base64: 'jpegdata',
+                    getFileID: () => 'file-jpg',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'image',
-                    path: '/vault/screenshot.png',
-                    contents: 'pngdata'
+                    fileName: 'screenshot.png',
+                    mimeType: 'image/png',
+                    base64: 'pngdata',
+                    getFileID: () => 'file-png',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 }
             ];
 
-            const result = openai.formatBinaryFiles(files);
+            const result = openai.formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1125,41 +1120,49 @@ describe('OpenAI', () => {
 
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_file',
-                filename: 'doc.pdf',
-                file_data: 'data:application/pdf;base64,pdfdata'
+                file_id: 'file-pdf'
             });
 
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_image',
-                image_url: 'data:image/jpeg;base64,jpegdata'
+                file_id: 'file-jpg'
             });
 
             expect(parsed[0].content[2]).toEqual({
                 type: 'input_image',
-                image_url: 'data:image/png;base64,pngdata'
+                file_id: 'file-png'
             });
         });
 
         it('should handle mixed supported and unsupported files', () => {
-            const files = [
+            const attachments = [
                 {
-                    type: 'image',
-                    path: '/vault/good.jpg',
-                    contents: 'jpegdata'
+                    fileName: 'good.jpg',
+                    mimeType: 'image/jpeg',
+                    base64: 'jpegdata',
+                    getFileID: () => 'file-jpg',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'image',
-                    path: '/vault/bad.bmp',
-                    contents: 'bmpdata'
+                    fileName: 'bad.bmp',
+                    mimeType: 'image/bmp',
+                    base64: 'bmpdata',
+                    getFileID: () => 'file-bmp',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'pdf',
-                    path: '/vault/doc.pdf',
-                    contents: 'pdfdata'
+                    fileName: 'doc.pdf',
+                    mimeType: 'application/pdf',
+                    base64: 'pdfdata',
+                    getFileID: () => 'file-pdf',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 }
             ];
 
-            const result = openai.formatBinaryFiles(files);
+            const result = openai.formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1173,50 +1176,39 @@ describe('OpenAI', () => {
             expect(parsed[0].content[2].type).toBe('input_file');
         });
 
-        it('should handle error when getting image mime type fails', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/image.unknown',
-                contents: 'imagedata'
-            }];
-
-            const result = openai.formatBinaryFiles(files);
-            const parsed = JSON.parse(result);
-
-            expect(parsed).toHaveLength(1);
-            expect(parsed[0].content).toHaveLength(1);
-            expect(parsed[0].content[0].type).toBe('input_text');
-            expect(parsed[0].content[0].text).toContain('Image type not supported');
-        });
-
-        it('should handle files with uppercase extensions', () => {
-            const files = [
+        it('should handle mixed successful and failed uploads', () => {
+            const attachments = [
                 {
-                    type: 'pdf',
-                    path: '/vault/document.PDF',
-                    contents: 'pdfdata'
+                    fileName: 'success.pdf',
+                    mimeType: 'application/pdf',
+                    base64: 'pdfdata',
+                    getFileID: () => 'file-success',
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'image',
-                    path: '/vault/photo.JPG',
-                    contents: 'jpegdata'
+                    fileName: 'failed.jpg',
+                    mimeType: 'image/jpeg',
+                    base64: 'jpegdata',
+                    getFileID: () => undefined, // Upload failed
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 }
             ];
 
-            const result = openai.formatBinaryFiles(files);
+            const result = openai.formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
-            expect(parsed[0].content).toHaveLength(2);
-            expect(parsed[0].content[0].type).toBe('input_file');
-            expect(parsed[0].content[0].filename).toBe('document.PDF');
-            expect(parsed[0].content[1].type).toBe('input_image');
+            expect(parsed[0].content).toHaveLength(1); // Only successful upload
+            expect(parsed[0].content[0]).toEqual({
+                type: 'input_file',
+                file_id: 'file-success'
+            });
         });
 
-        it('should handle empty files array', () => {
-            const files: Array<{type: string, path: string, contents: string}> = [];
-
-            const result = openai.formatBinaryFiles(files);
+        it('should handle empty attachments array', () => {
+            const result = openai.formatBinaryFiles([]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1224,33 +1216,32 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(0);
         });
 
-        it('should properly encode filenames with special characters', () => {
-            const files = [{
-                type: 'pdf',
-                path: '/vault/documents/report (final) v2.pdf',
-                contents: 'pdfdata'
-            }];
+        it('should handle all files with failed uploads', () => {
+            const attachments = [
+                {
+                    fileName: 'failed1.pdf',
+                    mimeType: 'application/pdf',
+                    base64: 'data1',
+                    getFileID: () => undefined,
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
+                },
+                {
+                    fileName: 'failed2.jpg',
+                    mimeType: 'image/jpeg',
+                    base64: 'data2',
+                    getFileID: () => undefined,
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
+                }
+            ];
 
-            const result = openai.formatBinaryFiles(files);
+            const result = openai.formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
-            expect(parsed[0].content[0].filename).toBe('report (final) v2.pdf');
-        });
-
-        it('should handle JPEG files with .jpeg extension', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/photo.jpeg',
-                contents: 'jpegdata'
-            }];
-
-            const result = openai.formatBinaryFiles(files);
-            const parsed = JSON.parse(result);
-
-            expect(parsed[0].content[0]).toEqual({
-                type: 'input_image',
-                image_url: 'data:image/jpeg;base64,jpegdata'
-            });
+            expect(parsed).toHaveLength(1);
+            expect(parsed[0].role).toBe('user');
+            expect(parsed[0].content).toHaveLength(0); // All uploads failed, no content
         });
     });
 });

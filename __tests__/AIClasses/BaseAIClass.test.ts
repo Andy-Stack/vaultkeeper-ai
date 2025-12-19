@@ -70,6 +70,16 @@ describe('BaseAIClass Shared Methods', () => {
         };
         RegisterSingleton(Services.AIFunctionDefinitions, mockFunctionDefinitions);
 
+        // Mock IAIFileService
+        const mockFileService = {
+            refreshCache: vi.fn().mockResolvedValue(undefined),
+            listFiles: vi.fn().mockReturnValue([]),
+            uploadFile: vi.fn().mockResolvedValue(undefined),
+            deleteFile: vi.fn().mockResolvedValue(undefined),
+            deleteFiles: vi.fn().mockResolvedValue(undefined)
+        };
+        RegisterSingleton(Services.IAIFileService, mockFileService);
+
         claude = new Claude();
         openai = new OpenAI();
         gemini = new Gemini();
@@ -276,10 +286,10 @@ describe('BaseAIClass Shared Methods', () => {
     describe('filterConversationContents', () => {
         it('should filter out empty content', () => {
             const contents = [
-                new ConversationContent(Role.User, 'Hello', 'Hello'),
-                new ConversationContent(Role.Assistant, ''),  // Empty
-                new ConversationContent(Role.Assistant, '   '),  // Whitespace only
-                new ConversationContent(Role.User, 'World', 'World')
+                new ConversationContent({ role: Role.User, content: 'Hello', displayContent: 'Hello' }),
+                new ConversationContent({ role: Role.Assistant, content: '' }),  // Empty - will be filtered
+                new ConversationContent({ role: Role.Assistant }),  // No content - will be filtered
+                new ConversationContent({ role: Role.User, content: 'World', displayContent: 'World' })
             ];
 
             const result = (claude as any).filterConversationContents(contents);
@@ -291,30 +301,24 @@ describe('BaseAIClass Shared Methods', () => {
 
         it('should filter orphaned calls from different providers', () => {
             const contents = [
-                new ConversationContent(Role.User, 'Test', 'Test'),
+                new ConversationContent({ role: Role.User, content: 'Test', displayContent: 'Test' }),
 
                 // Orphaned Claude function call (no response)
-                (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
-                            functionCall: {
-                                id: 'toolu_orphan',
-                                name: 'search',
-                                args: {}
-                            }
-                        }),
-                        new Date(),
-                        true,
-                        false,
-                        'toolu_orphan'
-                    );
-                    return content;
-                })(),
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
+                        functionCall: {
+                            id: 'toolu_orphan',
+                            name: 'search',
+                            args: {}
+                        }
+                    }),
+                    toolId: 'toolu_orphan'
+                }),
 
-                new ConversationContent(Role.User, 'Next question', 'Next question')
+                new ConversationContent({ role: Role.User, content: 'Next question', displayContent: 'Next question' })
             ];
 
             const result = (claude as any).filterConversationContents(contents);
@@ -327,72 +331,62 @@ describe('BaseAIClass Shared Methods', () => {
 
         it('should preserve most recent call regardless of provider', () => {
             const contents = [
-                new ConversationContent(Role.User, 'Test', 'Test'),
+                new ConversationContent({ role: Role.User, content: 'Test', displayContent: 'Test' }),
 
                 // Most recent function call (at end, so kept even without response)
-                (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
-                            functionCall: {
-                                id: 'call_recent',
-                                name: 'search',
-                                args: {}
-                            }
-                        }),
-                        new Date(),
-                        true,
-                        false,
-                        'call_recent'
-                    );
-                    return content;
-                })()
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
+                        functionCall: {
+                            id: 'call_recent',
+                            name: 'search',
+                            args: {}
+                        }
+                    }),
+                    toolId: 'call_recent'
+                })
             ];
 
             const result = (openai as any).filterConversationContents(contents);
 
             // Most recent call should be included
             expect(result).toHaveLength(2);
-            expect(result[1].isFunctionCall).toBe(true);
+            expect(result[1].functionCall).toBeDefined();
         });
 
         it('should handle function call with response correctly', () => {
             const contents = [
-                new ConversationContent(Role.User, 'Search', 'Search'),
+                new ConversationContent({ role: Role.User, content: 'Search', displayContent: 'Search' }),
 
                 // Function call with response (should be kept)
-                (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
-                            functionCall: {
-                                id: 'call_with_response',
-                                name: 'search',
-                                args: { query: 'test' }
-                            }
-                        }),
-                        new Date(),
-                        true,
-                        false,
-                        'call_with_response'
-                    );
-                    return content;
-                })(),
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
+                        functionCall: {
+                            id: 'call_with_response',
+                            name: 'search',
+                            args: { query: 'test' }
+                        }
+                    }),
+                    toolId: 'call_with_response'
+                }),
 
                 // Corresponding response
-                (() => {
-                    const responseContent = JSON.stringify({
+                new ConversationContent({
+                    role: Role.User,
+                    content: JSON.stringify({
                         id: 'call_with_response',
                         functionResponse: { name: 'search', response: [] }
-                    });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
-                    return content;
-                })()
+                    }),
+                    functionResponse: JSON.stringify({
+                        id: 'call_with_response',
+                        functionResponse: { name: 'search', response: [] }
+                    })
+                })
             ];
 
             const result = (gemini as any).filterConversationContents(contents);
@@ -403,55 +397,45 @@ describe('BaseAIClass Shared Methods', () => {
 
         it('should handle mixed orphaned and complete calls', () => {
             const contents = [
-                new ConversationContent(Role.User, 'Start', 'Start'),
+                new ConversationContent({ role: Role.User, content: 'Start', displayContent: 'Start' }),
 
                 // Orphaned call 1
-                (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
-                            functionCall: { id: 'orphan1', name: 'search', args: {} }
-                        }),
-                        new Date(),
-                        true,
-                        false,
-                        'orphan1'
-                    );
-                    return content;
-                })(),
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
+                        functionCall: { id: 'orphan1', name: 'search', args: {} }
+                    }),
+                    toolId: 'orphan1'
+                }),
 
-                new ConversationContent(Role.User, 'Middle', 'Middle'),
+                new ConversationContent({ role: Role.User, content: 'Middle', displayContent: 'Middle' }),
 
                 // Complete call with response
-                (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
-                            functionCall: { id: 'complete1', name: 'read', args: {} }
-                        }),
-                        new Date(),
-                        true,
-                        false,
-                        'complete1'
-                    );
-                    return content;
-                })(),
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
+                        functionCall: { id: 'complete1', name: 'read', args: {} }
+                    }),
+                    toolId: 'complete1'
+                }),
 
-                (() => {
-                    const responseContent = JSON.stringify({
+                new ConversationContent({
+                    role: Role.User,
+                    content: JSON.stringify({
                         id: 'complete1',
                         functionResponse: { name: 'read', response: 'data' }
-                    });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
-                    return content;
-                })(),
+                    }),
+                    functionResponse: JSON.stringify({
+                        id: 'complete1',
+                        functionResponse: { name: 'read', response: 'data' }
+                    })
+                }),
 
-                new ConversationContent(Role.User, 'End', 'End')
+                new ConversationContent({ role: Role.User, content: 'End', displayContent: 'End' })
             ];
 
             const result = (claude as any).filterConversationContents(contents);
@@ -460,8 +444,8 @@ describe('BaseAIClass Shared Methods', () => {
             expect(result).toHaveLength(5);
             expect(result[0].content).toBe('Start');
             expect(result[1].content).toBe('Middle');
-            expect(result[2].isFunctionCall).toBe(true);
-            expect(result[3].isFunctionCallResponse).toBe(true);
+            expect(result[2].functionCall).toBeDefined();
+            expect(result[3].functionResponse).toBeDefined();
             expect(result[4].content).toBe('End');
         });
     });
@@ -489,9 +473,9 @@ describe('BaseAIClass Shared Methods', () => {
 
         it('should filter conversations consistently across providers', () => {
             const sharedConversation = [
-                new ConversationContent(Role.User, 'Test', 'Test'),
-                new ConversationContent(Role.Assistant, ''),  // Empty
-                new ConversationContent(Role.User, 'More', 'More')
+                new ConversationContent({ role: Role.User, content: 'Test', displayContent: 'Test' }),
+                new ConversationContent({ role: Role.Assistant, content: '' }),  // Empty
+                new ConversationContent({ role: Role.User, content: 'More', displayContent: 'More' })
             ];
 
             const claudeFiltered = (claude as any).filterConversationContents(sharedConversation);

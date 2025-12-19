@@ -4,6 +4,7 @@ import { ApiError, ApiErrorType } from "Types/ApiError";
 import { AbortService } from "./AbortService";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
+import { sleep } from "Helpers/Helpers";
 
 export interface IStreamChunk {
   content: string;

@@ -38,3 +38,7 @@ export function shuffleArray<T>(array: T[]): T[] {
     }
     return shuffled;
 }
+
+export async function sleep(ms: number): Promise<void> {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}

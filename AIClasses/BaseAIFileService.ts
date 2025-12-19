@@ -7,6 +7,7 @@ import { Exception } from "Helpers/Exception";
 import { ApiError } from "Types/ApiError";
 import { AbortService } from "Services/AbortService";
 import type { Attachment } from "Conversations/Attachment";
+import { sleep } from "Helpers/Helpers";
 
 export abstract class BaseAIFileService implements IAIFileService {
 

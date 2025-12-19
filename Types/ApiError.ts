@@ -23,7 +23,7 @@ export class ApiError extends Error {
         this.name = "ApiError";
     }
 
-    static isApiError(error: unknown): boolean {
+    static isApiError(error: unknown): error is ApiError {
         return error instanceof ApiError;
     }
 

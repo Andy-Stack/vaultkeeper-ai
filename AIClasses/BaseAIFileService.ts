@@ -35,7 +35,7 @@ export abstract class BaseAIFileService implements IAIFileService {
 		this.fileIDs = await this.listFilesFromAPI();
 	}
 
-	public async listFiles(): Promise<string[]> {
+	public listFiles(): string[] {
 		return [...this.fileIDs];
 	}
 
@@ -78,7 +78,7 @@ export abstract class BaseAIFileService implements IAIFileService {
 
 	// Retries operation on retryable errors (500, 502, 503, 504) with exponential backoff
 	protected async withRetry<T>(operationName: string, operation: () => Promise<T>): Promise<T> {
-		let lastError: ApiError | unknown;
+		let lastError: unknown;
 
 		for (let attempt = 1; attempt <= BaseAIFileService.MAX_RETRIES; attempt++) {
 			try {

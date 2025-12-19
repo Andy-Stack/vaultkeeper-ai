@@ -10,6 +10,7 @@ import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFun
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
 import { FinishReason } from "@google/genai";
+import { Exception } from "Helpers/Exception";
 
 export class Gemini extends BaseAIClass {
 
@@ -34,7 +35,12 @@ export class Gemini extends BaseAIClass {
     this.accumulatedFunctionArgs = {};
     this.accumulatedThoughtSignature = null;
 
-    const contents = this.extractContents(conversation.contents);
+    // Refresh file cache only if conversation has attachments
+    if (conversation.hasAttachments()) {
+      await this.aiFileService.refreshCache();
+    }
+
+    const contents = await this.extractContents(conversation.contents);
 
     const tools = requestWebSearch ? { google_search: {} } :
       {
@@ -152,9 +158,10 @@ export class Gemini extends BaseAIClass {
     }
   }
 
-  protected extractContents(conversationContent: ConversationContent[]): { role: Role, parts: Part[] }[] {
-    return this.filterConversationContents(conversationContent)
-      .map(content => {
+  protected async extractContents(conversationContent: ConversationContent[]): Promise<{ role: Role, parts: Part[] }[]> {
+    const results = [];
+
+    for (const content of this.filterConversationContents(conversationContent)) {
         const parts: Part[] = [];
         const contentToExtract = content.content ?? "";
 
@@ -193,9 +200,29 @@ export class Gemini extends BaseAIClass {
 
         // Add binary file attachments if present
         if (content.attachments && content.attachments.length > 0) {
+          // Upload all attachments and track failures
+          const failedUploads: string[] = [];
+
+          for (const attachment of content.attachments) {
+            try {
+              await this.aiFileService.uploadFile(attachment);
+            } catch (error) {
+              Exception.log(`Failed to upload ${attachment.fileName}: ${Exception.messageFrom(error)}`);
+              failedUploads.push(attachment.fileName);
+            }
+          }
+
+          // Format successfully uploaded files
           const formattedContent = this.formatBinaryFiles(content.attachments);
           const rawContent = JSON.parse(formattedContent) as Part[];
           parts.push(...rawContent);
+
+          // Add error messages for failed uploads
+          if (failedUploads.length > 0) {
+            parts.push({
+              text: `[Upload failed for: ${failedUploads.join(', ')}.]`
+            });
+          }
         }
 
         // Add function response if present
@@ -225,12 +252,13 @@ export class Gemini extends BaseAIClass {
           }
         }
 
-        return {
-          role: content.role === Role.User ? Role.User : Role.Model,
-          parts: parts
-        };
-      })
-      .filter(message => message.parts.length > 0);
+      results.push({
+        role: content.role === Role.User ? Role.User : Role.Model,
+        parts: parts
+      });
+    }
+
+    return results.filter(message => message.parts.length > 0);
   }
 
   protected mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): FunctionDeclaration[] {
@@ -245,22 +273,27 @@ export class Gemini extends BaseAIClass {
     const parts: unknown[] = [];
 
     for (const attachment of attachments) {
+      // Check for uploaded file ID
+      const fileID = attachment.getFileID(this.provider);
+      if (!fileID) {
+        // Skip - upload failed, error message added in extractContents()
+        continue;
+      }
+
       // Validate image types (Gemini only supports JPEG and PNG)
       if (attachment.mimeType.startsWith('image/')) {
         if (!this.SUPPORTED_IMAGE_TYPES.includes(attachment.mimeType)) {
-          parts.push({
-            text: `Unsupported image format: ${attachment.fileName}`
-          });
+          parts.push({ text: `Unsupported image format: ${attachment.fileName}` });
           continue;
         }
       }
 
-      // Add filename text block, then binary data
+      // Add filename and file data
       parts.push({text: attachment.fileName});
       parts.push({
-        inlineData: {
+        fileData: {
           mimeType: attachment.mimeType,
-          data: attachment.base64
+          fileUri: fileID  // Format: "files/abc123"
         }
       });
     }

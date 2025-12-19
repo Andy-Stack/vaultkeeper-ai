@@ -23,9 +23,14 @@ export class OpenAI extends BaseAIClass {
         conversation: Conversation, allowDestructiveActions: boolean
     ): AsyncGenerator<IStreamChunk, void, unknown> {
 
+        // Refresh file cache only if conversation has attachments
+        if (conversation.hasAttachments()) {
+            await this.aiFileService.refreshCache();
+        }
+
         const systemPrompt = await this.buildSystemPrompt();
 
-        const input = this.extractContents(conversation.contents);
+        const input = await this.extractContents(conversation.contents);
 
         const tools = [{
             type: "web_search"
@@ -179,7 +184,7 @@ export class OpenAI extends BaseAIClass {
         }
     }
 
-    protected extractContents(conversationContent: ConversationContent[]): ResponsesAPIInput[] {
+    protected async extractContents(conversationContent: ConversationContent[]): Promise<ResponsesAPIInput[]> {
         const results: ResponsesAPIInput[] = [];
 
         for (const content of this.filterConversationContents(conversationContent)) {
@@ -232,9 +237,31 @@ export class OpenAI extends BaseAIClass {
 
             // Case 2: Binary file attachments
             if (content.attachments && content.attachments.length > 0) {
+                // Upload all attachments and track failures
+                const failedUploads: string[] = [];
+
+                for (const attachment of content.attachments) {
+                    try {
+                        await this.aiFileService.uploadFile(attachment);
+                    } catch (error) {
+                        Exception.log(`Failed to upload ${attachment.fileName}: ${Exception.messageFrom(error)}`);
+                        failedUploads.push(attachment.fileName);
+                    }
+                }
+
+                // Format successfully uploaded files
                 const formattedContent = this.formatBinaryFiles(content.attachments);
                 const rawContent = JSON.parse(formattedContent) as ResponsesAPIInput[];
                 results.push(...rawContent);
+
+                // Add error messages for failed uploads
+                if (failedUploads.length > 0) {
+                    // OpenAI formatBinaryFiles returns array with role wrapper, so add as separate message
+                    results.push({
+                        role: "user",
+                        content: `[Upload failed for: ${failedUploads.join(', ')}.]`
+                    });
+                }
                 continue;
             }
 
@@ -293,14 +320,21 @@ export class OpenAI extends BaseAIClass {
         const contentBlocks: unknown[] = [];
 
         for (const attachment of attachments) {
+            // Check for uploaded file ID
+            const fileID = attachment.getFileID(this.provider);
+            if (!fileID) {
+                // Skip - upload failed, error message added in extractContents()
+                continue;
+            }
+
             if (attachment.mimeType === "application/pdf") {
+                // Use file ID format for PDFs
                 contentBlocks.push({
                     type: "input_file",
-                    filename: attachment.fileName,
-                    file_data: `data:${attachment.mimeType};base64,${attachment.base64}`
+                    file_id: fileID
                 });
             } else {
-                // Image handling - validate supported types
+                // Images
                 if (!this.SUPPORTED_IMAGE_TYPES.includes(attachment.mimeType)) {
                     contentBlocks.push({
                         type: "input_text",
@@ -309,9 +343,10 @@ export class OpenAI extends BaseAIClass {
                     continue;
                 }
 
+                // Use file ID format for images
                 contentBlocks.push({
                     type: "input_image",
-                    image_url: `data:${attachment.mimeType};base64,${attachment.base64}`
+                    file_id: fileID
                 });
             }
         }

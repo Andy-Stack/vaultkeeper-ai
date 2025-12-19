@@ -1,4 +1,4 @@
-interface ClaudeFile {
+export interface ClaudeFile {
     id: string;
     type: "file";
     filename: string;
@@ -8,15 +8,9 @@ interface ClaudeFile {
     downloadable: boolean;
 }
 
-interface ClaudeListFilesResponse {
+export interface ClaudeListFilesResponse {
     data: ClaudeFile[];
     has_more: boolean;
     first_id?: string;
     last_id?: string;
-}
-
-interface ClaudeDeleteResponse {
-    id: string;
-    type: "file";
-    deleted: boolean;
 }

@@ -31,9 +31,14 @@ export class Claude extends BaseAIClass {
         this.accumulatedFunctionArgs = "";
         this.accumulatedFunctionId = null;
 
+        // Refresh file cache only if conversation has attachments
+        if (conversation.hasAttachments()) {
+            await this.aiFileService.refreshCache();
+        }
+
         const systemPrompt = await this.buildSystemPrompt();
 
-        const messages = this.extractContents(conversation.contents);
+        const messages = await this.extractContents(conversation.contents);
 
         const tools = [{
             type: "web_search_20250305",
@@ -56,6 +61,7 @@ export class Claude extends BaseAIClass {
         const headers = {
             "x-api-key": this.apiKey,
             "anthropic-version": "2023-06-01",
+            "anthropic-beta": "files-api-2025-04-14",
             "anthropic-dangerous-direct-browser-access": "true"
         };
 
@@ -146,83 +152,106 @@ export class Claude extends BaseAIClass {
         }
     }
 
-    protected extractContents(conversationContent: ConversationContent[]): { role: Role; content: ContentBlockParam[]; }[] {
-        return this.filterConversationContents(conversationContent)
-            .map(content => {
-                const contentBlocks: ContentBlockParam[] = [];
-                const contentToExtract = content.content ?? "";
+    protected async extractContents(conversationContent: ConversationContent[]): Promise<{ role: Role; content: ContentBlockParam[]; }[]> {
+        const results = [];
 
-                if (contentToExtract.trim() !== "" && !content.functionResponse && (!content.attachments || content.attachments.length === 0)) {
+        for (const content of this.filterConversationContents(conversationContent)) {
+            const contentBlocks: ContentBlockParam[] = [];
+            const contentToExtract = content.content ?? "";
+
+            if (contentToExtract.trim() !== "" && !content.functionResponse && (!content.attachments || content.attachments.length === 0)) {
+                contentBlocks.push({
+                    type: "text",
+                    text: contentToExtract
+                });
+            }
+
+            // Add function call if present
+            if (content.functionCall) {
+                const parsedContent = this.parseFunctionCall(content.functionCall);
+
+                if (parsedContent) {
+                    if (parsedContent.functionCall.id && parsedContent.functionCall.id.trim() !== "") {
+                        contentBlocks.push({
+                            type: "tool_use",
+                            id: parsedContent.functionCall.id,
+                            name: parsedContent.functionCall.name,
+                            input: parsedContent.functionCall.args
+                        });
+                    } else {
+                        contentBlocks.push({
+                            type: "text",
+                            text: this.convertFunctionCallToText(parsedContent)
+                        });
+                    }
+                } else {
                     contentBlocks.push({
                         type: "text",
-                        text: contentToExtract
+                        text: "Error parsing function call"
                     });
                 }
+            }
 
-                // Add function call if present
-                if (content.functionCall) {
-                    const parsedContent = this.parseFunctionCall(content.functionCall);
+            // Add binary file attachments if present
+            if (content.attachments && content.attachments.length > 0) {
+                // Upload all attachments and track failures
+                const failedUploads: string[] = [];
 
-                    if (parsedContent) {
-                        if (parsedContent.functionCall.id && parsedContent.functionCall.id.trim() !== "") {
-                            contentBlocks.push({
-                                type: "tool_use",
-                                id: parsedContent.functionCall.id,
-                                name: parsedContent.functionCall.name,
-                                input: parsedContent.functionCall.args
-                            });
-                        } else {
-                            contentBlocks.push({
-                                type: "text",
-                                text: this.convertFunctionCallToText(parsedContent)
-                            });
-                        }
-                    } else {
-                        contentBlocks.push({
-                            type: "text",
-                            text: "Error parsing function call"
-                        });
+                for (const attachment of content.attachments) {
+                    try {
+                        await this.aiFileService.uploadFile(attachment);
+                    } catch (error) {
+                        Exception.log(`Failed to upload ${attachment.fileName}: ${Exception.messageFrom(error)}`);
+                        failedUploads.push(attachment.fileName);
                     }
                 }
 
-                // Add binary file attachments if present
-                if (content.attachments && content.attachments.length > 0) {
-                    const formattedContent = this.formatBinaryFiles(content.attachments);
-                    const rawContent = JSON.parse(formattedContent) as ContentBlockParam[];
-                    contentBlocks.push(...rawContent);
+                // Format successfully uploaded files
+                const formattedContent = this.formatBinaryFiles(content.attachments);
+                const rawContent = JSON.parse(formattedContent) as ContentBlockParam[];
+                contentBlocks.push(...rawContent);
+
+                // Add error messages for failed uploads
+                if (failedUploads.length > 0) {
+                    contentBlocks.push({
+                        type: "text",
+                        text: `[Upload failed for: ${failedUploads.join(', ')}.]`
+                    });
                 }
+            }
 
-                // Add function response if present
-                if (content.functionResponse) {
-                    const parsedContent = this.parseFunctionResponse(content.functionResponse);
+            // Add function response if present
+            if (content.functionResponse) {
+                const parsedContent = this.parseFunctionResponse(content.functionResponse);
 
-                    if (parsedContent) {
-                        if (parsedContent.id && parsedContent.id.trim() !== "") {
-                            contentBlocks.push({
-                                type: "tool_result",
-                                tool_use_id: parsedContent.id,
-                                content: JSON.stringify(parsedContent.functionResponse.response)
-                            });
-                        } else {
-                            contentBlocks.push({
-                                type: "text",
-                                text: this.convertFunctionResponseToText(parsedContent)
-                            });
-                        }
+                if (parsedContent) {
+                    if (parsedContent.id && parsedContent.id.trim() !== "") {
+                        contentBlocks.push({
+                            type: "tool_result",
+                            tool_use_id: parsedContent.id,
+                            content: JSON.stringify(parsedContent.functionResponse.response)
+                        });
                     } else {
                         contentBlocks.push({
                             type: "text",
-                            text: content.functionResponse
+                            text: this.convertFunctionResponseToText(parsedContent)
                         });
                     }
+                } else {
+                    contentBlocks.push({
+                        type: "text",
+                        text: content.functionResponse
+                    });
                 }
+            }
 
-                return {
-                    role: content.role,
-                    content: contentBlocks
-                };
-            })
-            .filter(message => message.content.length > 0);
+            results.push({
+                role: content.role,
+                content: contentBlocks
+            });
+        }
+
+        return results.filter(message => message.content.length > 0);
     }
 
     protected mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): Tool[] {
@@ -239,19 +268,20 @@ export class Claude extends BaseAIClass {
 
     public formatBinaryFiles(attachments: Attachment[]): string {
         const contentBlocks = attachments.flatMap(attachment => {
-            let blockType: string;
+            // Check for uploaded file ID
+            const fileID = attachment.getFileID(this.provider);
+            if (!fileID) {
+                // Skip - upload failed, error message added in extractContents()
+                return [];
+            }
 
+            let blockType: string;
             if (attachment.mimeType === "application/pdf") {
                 blockType = "document";
             } else {
-                // Image handling
                 blockType = "image";
-
-                // Validate supported image types
                 if (!this.SUPPORTED_IMAGE_TYPES.includes(attachment.mimeType)) {
-                    return [
-                        { type: "text", text: `Unsupported image format: ${attachment.fileName}` }
-                    ];
+                    return [{ type: "text", text: `Unsupported image format: ${attachment.fileName}` }];
                 }
             }
 
@@ -260,9 +290,8 @@ export class Claude extends BaseAIClass {
                 {
                     type: blockType,
                     source: {
-                        type: "base64",
-                        media_type: attachment.mimeType,
-                        data: attachment.base64
+                        type: "file",
+                        file_id: fileID
                     }
                 }
             ];

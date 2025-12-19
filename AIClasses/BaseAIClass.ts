@@ -20,6 +20,7 @@ import type { IAIFileService } from "./IAIFileService";
 
 export abstract class BaseAIClass implements IAIClass {
 
+    protected readonly provider: AIProvider;
     protected readonly apiKey: string;
     protected readonly aiPrompt: IPrompt;
     protected readonly abortService: AbortService;
@@ -29,6 +30,7 @@ export abstract class BaseAIClass implements IAIClass {
     protected readonly aiFunctionDefinitions: AIFunctionDefinitions;
 
     protected constructor(provider: AIProvider) {
+        this.provider = provider;
         this.aiPrompt = Resolve<IPrompt>(Services.IPrompt);
         this.abortService = Resolve<AbortService>(Services.AbortService);
         this.aiFileService = Resolve<IAIFileService>(Services.IAIFileService);
@@ -54,7 +56,7 @@ export abstract class BaseAIClass implements IAIClass {
 
     protected filterConversationContents(conversationContent: ConversationContent[]): ConversationContent[] {
         return conversationContent.filter((content, index, array) => {
-            if (!content.content && !content.functionCall && (!content.attachments || content.attachments.length === 0)) {
+            if (!content.content && !content.functionCall && !content.functionResponse && (!content.attachments || content.attachments.length === 0)) {
                 return false; // Filter out empty content
             }
 

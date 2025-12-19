@@ -1,4 +1,4 @@
-interface GeminiFile {
+export interface GeminiFile {
     name: string;
     displayName?: string;
     mimeType: string;
@@ -14,11 +14,11 @@ interface GeminiFile {
     };
 }
 
-interface GeminiListFilesResponse {
+export interface GeminiListFilesResponse {
     files?: GeminiFile[];
     nextPageToken?: string;
 }
 
-interface GeminiUploadResponse {
+export interface GeminiUploadResponse {
     file: GeminiFile;
 }

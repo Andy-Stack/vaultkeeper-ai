@@ -22,6 +22,10 @@ export class Conversation {
         this.title = `${StringTools.dateToString(this.created)}`;
     }
 
+    public hasAttachments(): boolean {
+        return this.contents.some(c => c.attachments.length > 0);
+    }
+
     public addFunctionResponse(functionResponse: AIFunctionResponse): void {
         if (functionResponse.name !== AIFunction.ReadVaultFiles) {
             const functionResponseString = functionResponse.toConversationString();
@@ -96,12 +100,7 @@ export class Conversation {
                     }
                 }
 
-                return new Attachment(
-                    fileName,
-                    mimeType,
-                    file.contents,  // base64 string
-                    {}              // empty fileID map (phase 2 feature)
-                );
+                return new Attachment(fileName, mimeType, file.contents);
             });
 
             this.contents.push(new ConversationContent({

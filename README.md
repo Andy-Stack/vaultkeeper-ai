@@ -20,7 +20,7 @@
 - **Custom System Instructions** - Create and switch between personalized AI behaviors
 - **Conversation Management** - Persistent chat history with automatic conversation naming
 - **Privacy Controls** - Exclude sensitive files and directories from AI access with glob patterns
-- **Token Tracking** - Real-time monitoring of API usage with configurable search limits
+- **Files Support (PDF, Image, etc)** - Search through PDF documents and allow AI to read binary files directly (PDFs, images, etc)
 - **Mobile Compatible** - Full functionality on mobile devices with touch-friendly controls
 - **Streaming Responses** - See AI responses as they're generated
 - **Local & Private** - API keys stored locally, no data sent to third parties
@@ -86,8 +86,8 @@ Switch models anytime in the settings without losing your conversation context.
 
 **Read-Only Mode (Default)** 🔍
 
-- AI can search vault content
-- AI can read file contents
+- AI can search vault content (text based files and PDF documents)
+- AI can read file contents (including binary files like PDFs and images)
 - AI can list directory structures
 - **Cannot** modify your notes
 
@@ -181,17 +181,17 @@ See `EXAMPLE_INSTRUCTIONS.md` in your vault for a template.
 
 **Search Configuration**
 
-Fine-tune the balance between token usage and agent performance:
+Fine-tune the balance between request size and agent performance:
 
 - **Search Results Limit** (default: 15)
   - Controls the maximum number of files returned in search operations
-  - Lower values (5-10): Conserve tokens and reduce API costs
+  - Lower values (5-10): Faster searches and reduced API costs
   - Higher values (20-30): Provide more context, potentially improving agent performance
   - Adjust based on your vault size and typical query complexity
 
 - **Snippet Size Limit** (default: 300 characters)
   - Sets the character limit for contextual snippets in search results
-  - Lower values (100-200): Minimize token usage for cost-conscious users
+  - Lower values (100-200): Reduce request size for cost-conscious users
   - Higher values (400-600): Give the AI more context to understand file relevance
   - Balance between providing enough context and controlling costs
 
@@ -326,7 +326,7 @@ This plugin is built on the shoulders of many excellent projects:
 
 **Utilities**
 - [fuzzysort](https://github.com/farzher/fuzzysort) - Fuzzy search for reference autocomplete
-- [gpt-tokenizer](https://github.com/niieani/gpt-tokenizer) - Token counting and usage tracking
+- [pdf-parse](https://github.com/modesty/pdf-parse) - PDF parsing and text extraction
 - [Zod](https://github.com/colinhacks/zod) - TypeScript-first schema validation
 - [regex-parser](https://github.com/IonicaBizau/regex-parser.js) - Parses a string as regular expression
 
@@ -342,4 +342,4 @@ This plugin is built on the shoulders of many excellent projects:
 
 ---
 
-**Note**: This plugin requires API keys from AI providers. API usage is billed by the respective providers according to their pricing. Monitor your usage through the token counter and provider dashboards.
+**Note**: This plugin requires API keys from AI providers. API usage is billed by the respective providers according to their pricing. Monitor your usage through provider dashboards.

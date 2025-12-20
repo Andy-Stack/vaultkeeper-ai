@@ -46,8 +46,8 @@ export enum Copy {
     SettingModelDesc = "Select the AI model to use.",
     SettingApiKeyDesc = "Enter your API key here.",
     SettingFileExclusionsDesc = "Set which directories and files the AI should ignore. Enter one path per line - supports glob patterns like folder/**, *.md",
-    SettingSearchResultsLimitDesc = "Set the maximum number of results provided to the AI when it searches through files in your vault. Higher values use more tokens and increase search time.",
-    SettingSnippetSizeLimitDesc = "Set the character limit of search previews provided to the AI when it searches through files in your vault. Higher values use more tokens.",
+    SettingSearchResultsLimitDesc = "Set the maximum number of results provided to the AI when it searches through files in your vault. Higher values provide more context but increase search time.",
+    SettingSnippetSizeLimitDesc = "Set the character limit of search previews provided to the AI when it searches through files in your vault. Higher values provide more context per result.",
 
     // Settings Placeholders
     PlaceholderEnterApiKey = "Enter your API key",
@@ -78,8 +78,8 @@ If you find any issues or have a feature request, please feel free to raise them
 ##### Operating Modes
 
 **Read-Only Mode (Default)** - The AI can safely explore your vault:
-- Search through your notes
-- Read file contents
+- Search through your notes (including PDF documents)
+- Read file contents (including binary files like PDFs and images)
 - List directory structures
 - Cannot modify anything
 
@@ -129,7 +129,7 @@ This error means you've made too many API requests in a given time period. This 
 
 **How to resolve:**
 - Wait for your rate limit to reset (see provider-specific details below)
-- Lower the context settings in the plugin settings to reduce request frequency
+- Lower the search result and snippet size limits in the plugin settings to reduce request size
 - Understand that rate limits typically increase automatically as you use the API more
 
 ###### Claude
@@ -182,7 +182,7 @@ This error indicates a temporary issue with the AI provider's servers.
 - **OpenAI**: OpenAI's API
 
 **What gets sent**:
-- Your messages and referenced file contents
+- Your messages and referenced file contents (including binary files like PDFs and images)
 - Conversation context (for continuity)
 - File names and directory structures (when AI searches)
 

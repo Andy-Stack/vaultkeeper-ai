@@ -129,6 +129,8 @@ export class ConversationHistoryModal extends Modal {
         const { contentEl } = this;
         contentEl.empty();
 
-        this.onModalClose?.();
+        if (this.conversationFileSystemService.getCurrentConversationPath() === null) {
+            this.onModalClose?.();
+        }
     }
 }

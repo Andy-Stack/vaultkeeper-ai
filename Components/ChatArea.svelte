@@ -11,6 +11,7 @@
 	import { tick } from "svelte";
 	import { Selector } from "Enums/Selector";
 	import { Exception } from "Helpers/Exception";
+	import { getOuterHeight } from "Helpers/ElementHelper";
 
   export let cancelling: boolean = false;
   export let messages: ConversationContent[] = [];
@@ -45,20 +46,19 @@
         return;
       }
 
+      const gap = parseFloat(getComputedStyle(chatContainer).gap) || 0;
       const paddingTop = parseFloat(getComputedStyle(chatContainer).paddingTop) || 0;
       const paddingBottom = parseFloat(getComputedStyle(chatContainer).paddingBottom) || 0;
 
       const messageElement = messageElements.sort((a, b) => a.index - b.index)[messageElements.length - 1];
-      let messageSpace = messageElement.element.offsetHeight;
+      let messageSpace = getOuterHeight(messageElement.element);
 
       if (!shouldSettle) {
-        const gap = parseFloat(getComputedStyle(chatContainer).gap) || 0;
-
         if (thoughtIndicatorElement) {
-          messageSpace += thoughtIndicatorElement.offsetHeight + gap + gap;
+          messageSpace += getOuterHeight(thoughtIndicatorElement) + gap;
         }
         if (streamingIndicatorElement) {
-          messageSpace += streamingIndicatorElement.offsetHeight + gap + gap;
+          messageSpace += getOuterHeight(streamingIndicatorElement) + gap;
         }
       }
 
@@ -247,6 +247,7 @@
 </script>
 
 <div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll} use:observeResize>
+  <div class="top-fade"></div>
   {#each messages as message, index}
     {@const content = message.getDisplayContent()}
     {#if message.shouldDisplayContent && content.trim() !== ""}
@@ -294,12 +295,22 @@
 </div>
 
 <style>
+  .top-fade {
+    position: absolute;
+    width: 100%;
+    height: var(--size-4-4);
+    background-image: linear-gradient(to bottom, var(--background-secondary), transparent);
+    margin-top: calc(var(--size-4-4) * -1);
+    margin-left: calc(var(--size-4-3) * -1);
+    z-index: 1;
+  }
+
   .chat-area {
     display: flex;
     flex-direction: column;
     height: 100%;
     overflow: auto;
-    padding: var(--size-4-3);
+    padding: var(--size-4-4) var(--size-4-3) var(--size-4-3) var(--size-4-3);
     gap: var(--size-4-2);
     scroll-behavior: smooth;
   }

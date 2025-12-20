@@ -14,6 +14,7 @@ export class ConversationFileSystemService {
     private aiFileService: IAIFileService | undefined;
 
     private currentConversationPath: string | null = null;
+    private deletionQueue: Promise<void> = Promise.resolve();
 
     public constructor() {
         this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
@@ -92,8 +93,9 @@ export class ConversationFileSystemService {
             return readResult;
         }
 
-        await this.attemptAIFileDeletion(readResult);
-        
+        // Queue this to execute silently in the background - it's just a best effort
+        this.deletionQueue = this.deletionQueue.then(() => this.attemptAIFileDeletion(readResult));
+
         const deleteResult = await this.fileSystemService.deleteFile(this.currentConversationPath, true, false);
 
         if (deleteResult instanceof Error) {

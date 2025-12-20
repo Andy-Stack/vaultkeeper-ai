@@ -43,7 +43,7 @@ export abstract class BaseAIFileService implements IAIFileService {
 	public async uploadFile(attachment: Attachment): Promise<void> {
 		const existingFileID = attachment.getFileID(this.provider);
 
-		if (existingFileID && this.fileIDs.contains(existingFileID)) {
+		if (existingFileID && this.fileIDs.includes(existingFileID)) {
 			return;
 		}
 
@@ -55,7 +55,7 @@ export abstract class BaseAIFileService implements IAIFileService {
 
 		attachment.setFileID(this.provider, fileID);
 
-		if (!this.fileIDs.contains(fileID)) {
+		if (!this.fileIDs.includes(fileID)) {
 			this.fileIDs.push(fileID);
 		}
 	}
@@ -67,10 +67,13 @@ export abstract class BaseAIFileService implements IAIFileService {
 			return;
 		}
 
-		if (this.fileIDs.contains(id)) {
+		if (this.fileIDs.includes(id)) {
 			await this.deleteFileFromAPI(id);
 			attachment.deleteFileID(this.provider);
-			this.fileIDs.remove(id);
+			const index = this.fileIDs.indexOf(id);
+			if (index > -1) {
+				this.fileIDs.splice(index, 1);
+			}
 		}
 	}
 

@@ -144,6 +144,7 @@ export class AIFunctionService {
                     path: match.file.path,
                     snippets: match.snippets.map((snippet) => ({
                         text: snippet.text,
+                        pageNumber: snippet.pageNumber,
                         matchPosition: snippet.matchIndex
                     }))
                 }))

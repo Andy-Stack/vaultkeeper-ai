@@ -5,7 +5,7 @@ import type VaultkeeperAIPlugin from "main";
 import { Path } from "Enums/Path";
 import { randomSample, shuffleArray } from "Helpers/Helpers";
 import { StringTools } from "Helpers/StringTools";
-import type { ISearchMatch, ISearchSnippet } from "../Helpers/SearchTypes";
+import type { IPageText, ISearchMatch, ISearchSnippet } from "../Helpers/SearchTypes";
 import type { SanitiserService } from "./SanitiserService";
 import { FileEvent } from "Enums/FileEvent";
 import type { SettingsService } from "./SettingsService";
@@ -16,8 +16,8 @@ import * as path from "path-browserify";
 import { Event } from "Enums/Event";
 import { AbortService } from "./AbortService";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
-import { extractText } from 'unpdf';
 import { FileType, isBinaryFile, isFileType } from "Enums/FileType";
+import { readPDF } from "Helpers/PDFHelper";
 
 interface IFileEventArgs {
     oldPath: string;
@@ -326,9 +326,9 @@ export class VaultService {
                     let content;
                     if (isFileType(file.extension.toLocaleLowerCase(), FileType.PDF)) {
                         const arrayBuffer = await this.vault.readBinary(file);
-                        content = (await extractText(new Uint8Array(arrayBuffer), { mergePages: true })).text;
+                        content = await readPDF(arrayBuffer);
                     } else {
-                        content = await this.vault.cachedRead(file);
+                        content = [{ text: await this.vault.cachedRead(file), pageNumber: 1 }] as IPageText[];
                     }
 
                     const snippets = this.extractSnippets(content, regex);
@@ -423,32 +423,34 @@ export class VaultService {
         }
     }
 
-    private extractSnippets(content: string, regex: RegExp): ISearchSnippet[] {
-        const matchPositions: { matchIndex: number; matchLength: number }[] = [];
+    private extractSnippets(pages: IPageText[], regex: RegExp): ISearchSnippet[] {
+        const allSnippets: ISearchSnippet[] = [];
 
-        let match: RegExpExecArray | null;
+        for (const page of pages) {
+            const matchPositions: { matchIndex: number; matchLength: number }[] = [];
+            let match: RegExpExecArray | null;
 
-        // First pass: collect all match positions without extracting text
-        while ((match = regex.exec(content)) !== null) {
-            matchPositions.push({
-                matchIndex: match.index,
-                matchLength: match[0].length
-            });
+            // First pass: collect all match positions without extracting text
+            while ((match = regex.exec(page.text)) !== null) {
+                matchPositions.push({
+                    matchIndex: match.index,
+                    matchLength: match[0].length
+                });
+            }
+
+            regex.lastIndex = 0;
+
+            if (matchPositions.length > 0) {
+                // Second pass: merge overlapping positions and extract text only once per snippet
+                const pageSnippets = this.mergeOverlappingSnippets(matchPositions, page.text, page.pageNumber);
+                allSnippets.push(...pageSnippets);
+            }
         }
 
-        regex.lastIndex = 0;
-
-        if (matchPositions.length === 0) {
-            return [];
-        }
-
-        // Second pass: merge overlapping positions and extract text only once per snippet
-        return this.mergeOverlappingSnippets(matchPositions, content);
+        return allSnippets;
     }
 
-    private mergeOverlappingSnippets(
-        matchPositions: { matchIndex: number; matchLength: number }[],
-        content: string
+    private mergeOverlappingSnippets(matchPositions: { matchIndex: number; matchLength: number }[], content: string, pageNumber: number
     ): ISearchSnippet[] {
         if (matchPositions.length === 0) return [];
 
@@ -479,7 +481,8 @@ export class VaultService {
                 merged.push({
                     text: content.substring(snippetStart, snippetEnd),
                     matchIndex: current.matchIndex,
-                    matchLength: current.matchLength
+                    matchLength: current.matchLength,
+                    pageNumber: pageNumber
                 });
 
                 current = next;
@@ -493,7 +496,8 @@ export class VaultService {
         merged.push({
             text: content.substring(snippetStart, snippetEnd),
             matchIndex: current.matchIndex,
-            matchLength: current.matchLength
+            matchLength: current.matchLength,
+            pageNumber: pageNumber
         });
 
         return merged;

@@ -931,6 +931,7 @@ describe('VaultService - Integration Tests', () => {
 			const match = results.find(r => r.file.path === 'note1.md');
 			expect(match).toBeDefined();
 			expect(match!.snippets.length).toBeGreaterThan(0);
+			expect(match!.snippets[0].pageNumber).toBe(1);
 		});
 
 		it('should find filename matches', async () => {
@@ -974,6 +975,7 @@ describe('VaultService - Integration Tests', () => {
 			const match = results[0];
 			expect(match.snippets[0].text.length).toBeGreaterThan('MATCH'.length);
 			expect(match.snippets[0].text).toContain('MATCH');
+			expect(match.snippets[0].pageNumber).toBe(1);
 		});
 
 		it('should merge overlapping snippets', async () => {
@@ -1049,6 +1051,7 @@ describe('VaultService - Integration Tests', () => {
 			// Snippet should be approximately snippetSizeLimit characters (10 before + 5 for MATCH + 10 after)
 			// Allow some margin for the match itself
 			expect(match.snippets[0].text.length).toBeLessThanOrEqual(settingsService.settings.snippetSizeLimit + 10);
+			expect(match.snippets[0].pageNumber).toBe(1);
 		});
 
 		it('should perform case-insensitive search', async () => {
@@ -1080,6 +1083,7 @@ describe('VaultService - Integration Tests', () => {
 			expect(match).toBeDefined();
 			expect(match!.snippets.length).toBeGreaterThan(0);
 			expect(match!.snippets[0].text).toContain('MAUI');
+			expect(match!.snippets[0].pageNumber).toBe(1);
 		});
 
 		it('should parse regex with word boundary patterns', async () => {

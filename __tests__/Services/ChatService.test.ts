@@ -138,9 +138,9 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 		it('should insert Continue message when last message is from assistant', () => {
 			const conversation = new Conversation();
 			// Add an initial user message
-			conversation.contents.push(new ConversationContent(Role.User, 'First message'));
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'First message' }));
 			// Add an assistant response
-			conversation.contents.push(new ConversationContent(Role.Assistant, 'Assistant response'));
+			conversation.contents.push(new ConversationContent({ role: Role.Assistant, content: 'Assistant response' }));
 
 			// Verify the last message is from assistant
 			expect(conversation.contents[conversation.contents.length - 1].role).toBe(Role.Assistant);
@@ -160,13 +160,13 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			const continueMessage = conversation.contents[2];
 			expect(continueMessage.role).toBe(Role.User);
 			expect(continueMessage.content).toBe('Continue');
-			expect(continueMessage.isFunctionCallResponse).toBe(true);
+			expect(continueMessage.shouldDisplayContent).toBe(false);
 		});
 
 		it('should NOT insert Continue message when last message is from user', () => {
 			const conversation = new Conversation();
 			// Add a user message
-			conversation.contents.push(new ConversationContent(Role.User, 'User message'));
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'User message' }));
 
 			// Verify the last message is from user
 			expect(conversation.contents[conversation.contents.length - 1].role).toBe(Role.User);
@@ -204,8 +204,8 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should maintain proper structure after Continue message insertion', () => {
 			const conversation = new Conversation();
-			conversation.contents.push(new ConversationContent(Role.User, 'First'));
-			conversation.contents.push(new ConversationContent(Role.Assistant, 'Response'));
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'First' }));
+			conversation.contents.push(new ConversationContent({ role: Role.Assistant, content: 'Response' }));
 
 			// Simulate the fix
 			if (conversation.contents.length > 0) {
@@ -216,7 +216,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			}
 
 			// Add the actual user message
-			conversation.contents.push(new ConversationContent(Role.User, 'Second message'));
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Second message' }));
 
 			// Verify the structure: User -> Assistant -> User(Continue) -> User
 			expect(conversation.contents.length).toBe(4);
@@ -226,19 +226,31 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			expect(conversation.contents[1].content).toBe('Response');
 			expect(conversation.contents[2].role).toBe(Role.User);
 			expect(conversation.contents[2].content).toBe('Continue');
-			expect(conversation.contents[2].isFunctionCallResponse).toBe(true);
+			expect(conversation.contents[2].shouldDisplayContent).toBe(false);
 			expect(conversation.contents[3].role).toBe(Role.User);
 			expect(conversation.contents[3].content).toBe('Second message');
 		});
 
 		it('should work with function call responses in conversation', () => {
 			const conversation = new Conversation();
-			conversation.contents.push(new ConversationContent(Role.User, 'Request'));
-			conversation.contents.push(new ConversationContent(Role.Assistant, 'Making a function call', '', '{"name":"test"}', new Date(), true));
-			// Function response (already User role with isFunctionCallResponse)
-			conversation.contents.push(new ConversationContent(Role.User, 'Function result', 'Function result', '', new Date(), false, true, false, 'tool-1'));
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Request' }));
+			conversation.contents.push(new ConversationContent({
+				role: Role.Assistant,
+				content: 'Making a function call',
+				functionCall: '{"name":"test"}',
+				timestamp: new Date()
+			}));
+			// Function response (already User role with functionResponse)
+			conversation.contents.push(new ConversationContent({
+				role: Role.User,
+				content: 'Function result',
+				displayContent: 'Function result',
+				functionResponse: '',
+				timestamp: new Date(),
+				toolId: 'tool-1'
+			}));
 			// Assistant processes the function response
-			conversation.contents.push(new ConversationContent(Role.Assistant, 'Final response'));
+			conversation.contents.push(new ConversationContent({ role: Role.Assistant, content: 'Final response' }));
 
 			// Now the last message is Assistant, so Continue should be inserted
 			expect(conversation.contents[conversation.contents.length - 1].role).toBe(Role.Assistant);
@@ -254,7 +266,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			// Verify Continue was inserted
 			expect(conversation.contents.length).toBe(5);
 			expect(conversation.contents[4].content).toBe('Continue');
-			expect(conversation.contents[4].isFunctionCallResponse).toBe(true);
+			expect(conversation.contents[4].shouldDisplayContent).toBe(false);
 		});
 	});
 

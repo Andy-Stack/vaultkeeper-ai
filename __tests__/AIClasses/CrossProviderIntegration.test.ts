@@ -96,6 +96,16 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
         };
         RegisterSingleton(Services.AIFunctionDefinitions, mockFunctionDefinitions);
 
+        // Mock IAIFileService
+        const mockFileService = {
+            refreshCache: vi.fn().mockResolvedValue(undefined),
+            listFiles: vi.fn().mockReturnValue([]),
+            uploadFile: vi.fn().mockResolvedValue(undefined),
+            deleteFile: vi.fn().mockResolvedValue(undefined),
+            deleteFiles: vi.fn().mockResolvedValue(undefined)
+        };
+        RegisterSingleton(Services.IAIFileService, mockFileService);
+
         gemini = new Gemini();
     });
 
@@ -104,27 +114,24 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
     });
 
     describe('Claude/OpenAI → Gemini Switching', () => {
-        it('should convert Claude function call (no thoughtSignature) to legacy text format', () => {
+        it('should convert Claude function call (no thoughtSignature) to legacy text format', async () => {
             // Simulate a conversation started with Claude that made a function call
-            const claudeFunctionCall = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const claudeFunctionCall = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         name: 'search_vault_files',
                         args: { query: 'meeting notes' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                'call_abc123',  // Claude's toolId
-                undefined       // No thoughtSignature from Claude
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_abc123'
+            });
 
-            const result = (gemini as any).extractContents([claudeFunctionCall]);
+            const result = await (gemini as any).extractContents([claudeFunctionCall]);
 
             expect(result).toHaveLength(1);
             expect(result[0].parts[0]).toHaveProperty('text');
@@ -134,27 +141,24 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(result[0].parts[0].text).toContain('  "query": "meeting notes"');
         });
 
-        it('should convert OpenAI function call (no thoughtSignature) to legacy text format', () => {
+        it('should convert OpenAI function call (no thoughtSignature) to legacy text format', async () => {
             // Simulate a conversation started with OpenAI
-            const openaiFunctionCall = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const openaiFunctionCall = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         name: 'read_file',
                         args: { path: 'project.md' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                'call_xyz789',  // OpenAI's toolId
-                undefined       // No thoughtSignature from OpenAI
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_xyz789'
+            });
 
-            const result = (gemini as any).extractContents([openaiFunctionCall]);
+            const result = await (gemini as any).extractContents([openaiFunctionCall]);
 
             expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
             expect(result[0].parts[0].text).toContain('"name": "read_file"');
@@ -162,7 +166,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(result[0].parts[0].text).toContain('  "path": "project.md"');
         });
 
-        it('should convert function response without id to legacy text format', () => {
+        it('should convert function response without id to legacy text format', async () => {
             // Function responses from Claude/OpenAI may not have the id field in content
             const responseContent = JSON.stringify({
                 functionResponse: {
@@ -171,14 +175,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 }
             });
 
-            const claudeResponse = new ConversationContent(
-                Role.User,
-                responseContent,
-                responseContent
-            );
-            claudeResponse.isFunctionCallResponse = true;
-
-            const result = (gemini as any).extractContents([claudeResponse]);
+            const claudeResponse = new ConversationContent({
+                role: Role.User,
+                content: responseContent,
+                displayContent: responseContent,
+                functionResponse: responseContent
+            });
+            const result = await (gemini as any).extractContents([claudeResponse]);
 
             expect(result[0].parts[0]).toHaveProperty('text');
             expect(result[0].parts[0].text).toContain('<!-- Historical tool result');
@@ -190,63 +193,57 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
     });
 
     describe('Gemini → Claude/OpenAI Switching', () => {
-        it('should handle Gemini function call with thoughtSignature when switching providers', () => {
+        it('should handle Gemini function call with thoughtSignature when switching providers', async () => {
             // This test verifies the data structure is preserved
             // In actual usage, Claude/OpenAI would ignore the thoughtSignature field
-            const geminiFunctionCall = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const geminiFunctionCall = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                undefined,
-                'geminiThoughtSignature=='  // Gemini's thought signature
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                thoughtSignature: 'geminiThoughtSignature=='
+            });
 
             // Verify the signature is stored in ConversationContent
             expect(geminiFunctionCall.thoughtSignature).toBe('geminiThoughtSignature==');
 
             // When this conversation is sent to Claude/OpenAI, they'll see the function call
             // but ignore the thoughtSignature field (which is fine)
-            const functionCallData = JSON.parse(geminiFunctionCall.functionCall);
+            const functionCallData = JSON.parse(geminiFunctionCall.functionCall!);
             expect(functionCallData.functionCall.name).toBe('search_vault_files');
             expect(functionCallData.functionCall.args).toEqual({ query: 'test' });
         });
     });
 
     describe('Mixed Conversation History', () => {
-        it('should handle conversation with function calls from multiple providers', () => {
+        it('should handle conversation with function calls from multiple providers', async () => {
             const conversation = [
                 // User starts conversation
-                new ConversationContent(Role.User, 'Search for notes about the project', 'Search for notes about the project'),
+                new ConversationContent({ role: Role.User, content: 'Search for notes about the project', displayContent: 'Search for notes about the project' }),
 
                 // Claude makes a function call (no signature)
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 name: 'search_vault_files',
                                 args: { query: 'project' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'call_claude_123',
-                        undefined  // No signature
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_claude_123'
+            });
                     return content;
                 })(),
 
@@ -258,36 +255,37 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                             response: ['project.md']
                         }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
                 // Claude responds
-                new ConversationContent(Role.Assistant, 'I found project.md'),
+                new ConversationContent({ role: Role.Assistant, content: 'I found project.md' }),
 
                 // User asks follow-up
-                new ConversationContent(Role.User, 'Read that file', 'Read that file'),
+                new ConversationContent({ role: Role.User, content: 'Read that file', displayContent: 'Read that file' }),
 
                 // Now Gemini makes a function call (with signature)
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 name: 'read_file',
                                 args: { path: 'project.md' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        undefined,
-                        'geminiSignature123=='  // Has signature
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                thoughtSignature: 'geminiSignature123=='
+            });
                     return content;
                 })(),
 
@@ -300,13 +298,17 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                             response: { content: 'File contents' }
                         }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })()
             ];
 
-            const result = (gemini as any).extractContents(conversation);
+            const result = await (gemini as any).extractContents(conversation);
 
             // Should have all messages, with appropriate formatting
             expect(result.length).toBeGreaterThan(0);
@@ -326,30 +328,27 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(geminiFunctionCall).toBeDefined();
         });
 
-        it('should handle conversation switching from provider without signatures to Gemini', () => {
+        it('should handle conversation switching from provider without signatures to Gemini', async () => {
             // Start with OpenAI conversation
             const conversation = [
-                new ConversationContent(Role.User, 'List files', 'List files'),
+                new ConversationContent({ role: Role.User, content: 'List files', displayContent: 'List files' }),
 
                 // OpenAI function call (no signature)
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 name: 'list_files',
                                 args: {}
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'call_openai_456',
-                        undefined
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_openai_456'
+            });
                     return content;
                 })(),
 
@@ -361,13 +360,17 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                             response: ['file1.md', 'file2.md']
                         }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })()
             ];
 
-            const result = (gemini as any).extractContents(conversation);
+            const result = await (gemini as any).extractContents(conversation);
 
             // Verify OpenAI function call was converted to legacy format
             expect(result).toHaveLength(3);
@@ -377,26 +380,24 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(result[2].parts[0].text).toContain('"name": "list_files"');
         });
 
-        it('should preserve context when alternating between providers with function calls', () => {
+        it('should preserve context when alternating between providers with function calls', async () => {
             // Simulate a conversation that switches providers multiple times
             const conversation = [
-                new ConversationContent(Role.User, 'Initial query', 'Initial query'),
+                new ConversationContent({ role: Role.User, content: 'Initial query', displayContent: 'Initial query' }),
 
                 // Provider 1 (no signature) - function call + response
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: { name: 'func1', args: { a: 1 } }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'call-1'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call-1'
+            });
                     return content;
                 })(),
 
@@ -404,29 +405,30 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     const responseContent = JSON.stringify({
                         functionResponse: { name: 'func1', response: 'result1' }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
-                new ConversationContent(Role.Assistant, 'Response 1'),
+                new ConversationContent({ role: Role.Assistant, content: 'Response 1' }),
 
                 // Provider 2 (with signature) - function call + response
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: { name: 'func2', args: { b: 2 } }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        undefined,
-                        'sig2=='
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                thoughtSignature: 'sig2=='
+            });
                     return content;
                 })(),
 
@@ -435,15 +437,19 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'resp-2',
                         functionResponse: { name: 'func2', response: 'result2' }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
-                new ConversationContent(Role.Assistant, 'Response 2')
+                new ConversationContent({ role: Role.Assistant, content: 'Response 2' })
             ];
 
-            const result = (gemini as any).extractContents(conversation);
+            const result = await (gemini as any).extractContents(conversation);
 
             // All content should be present
             expect(result.length).toBe(7);
@@ -469,26 +475,23 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
     });
 
     describe('Claude ↔ OpenAI Switching', () => {
-        it('should handle Claude function call when switching to OpenAI', () => {
+        it('should handle Claude function call when switching to OpenAI', async () => {
             // Simulate a conversation started with Claude that made a function call
-            const claudeFunctionCall = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const claudeFunctionCall = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'toolu_abc123',  // Claude's tool_use ID
                         name: 'search_vault_files',
                         args: { query: 'meeting notes' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                'toolu_abc123',  // toolId from Claude
-                undefined        // No thoughtSignature
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'toolu_abc123'
+            });
 
             const claudeResponse = (() => {
                 const responseContent = JSON.stringify({
@@ -498,14 +501,18 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         response: ['meeting1.md', 'meeting2.md']
                     }
                 });
-                const content = new ConversationContent(Role.User, responseContent, responseContent);
-                content.isFunctionCallResponse = true;
+                const content = new ConversationContent({
+                    role: Role.User,
+                    content: responseContent,
+                    displayContent: responseContent,
+                    functionResponse: responseContent
+                });
                 return content;
             })();
 
             // Now switch to OpenAI - it should read Claude's function call
             const openai = new OpenAI();
-            const result = (openai as any).extractContents([claudeFunctionCall, claudeResponse]);
+            const result = await (openai as any).extractContents([claudeFunctionCall, claudeResponse]);
 
             // OpenAI should convert Claude's function call to its Responses API format
             expect(result).toHaveLength(2);
@@ -522,26 +529,23 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             });
         });
 
-        it('should handle OpenAI function call when switching to Claude', () => {
+        it('should handle OpenAI function call when switching to Claude', async () => {
             // Simulate a conversation started with OpenAI
-            const openaiFunctionCall = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const openaiFunctionCall = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'call_xyz789',  // OpenAI's call_id
                         name: 'read_file',
                         args: { path: 'project.md' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                'call_xyz789',  // OpenAI's toolId
-                undefined       // No thoughtSignature
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_xyz789'
+            });
 
             const openaiResponse = (() => {
                 const responseContent = JSON.stringify({
@@ -551,14 +555,18 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         response: { content: 'Project details here' }
                     }
                 });
-                const content = new ConversationContent(Role.User, responseContent, responseContent);
-                content.isFunctionCallResponse = true;
+                const content = new ConversationContent({
+                    role: Role.User,
+                    content: responseContent,
+                    displayContent: responseContent,
+                    functionResponse: responseContent
+                });
                 return content;
             })();
 
             // Now switch to Claude - it should read OpenAI's function call
             const claude = new Claude();
-            const result = (claude as any).extractContents([openaiFunctionCall, openaiResponse]);
+            const result = await (claude as any).extractContents([openaiFunctionCall, openaiResponse]);
 
             // Claude should convert OpenAI's function call to its tool_use format
             expect(result).toHaveLength(2);
@@ -575,31 +583,29 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             });
         });
 
-        it('should handle conversation alternating between Claude and OpenAI', () => {
+        it('should handle conversation alternating between Claude and OpenAI', async () => {
             // Complex scenario: Claude → OpenAI → Claude → OpenAI
             const conversation = [
                 // User starts
-                new ConversationContent(Role.User, 'Search for files', 'Search for files'),
+                new ConversationContent({ role: Role.User, content: 'Search for files', displayContent: 'Search for files' }),
 
                 // Claude makes a function call
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 id: 'toolu_1',
                                 name: 'search_vault_files',
                                 args: { query: 'test' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'toolu_1'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'toolu_1'
+            });
                     return content;
                 })(),
 
@@ -609,36 +615,38 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'toolu_1',
                         functionResponse: { name: 'search_vault_files', response: ['file1.md'] }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
                 // Claude responds
-                new ConversationContent(Role.Assistant, 'Found file1.md'),
+                new ConversationContent({ role: Role.Assistant, content: 'Found file1.md' }),
 
                 // User continues
-                new ConversationContent(Role.User, 'Read it', 'Read it'),
+                new ConversationContent({ role: Role.User, content: 'Read it', displayContent: 'Read it' }),
 
                 // OpenAI makes a function call
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 id: 'call_2',
                                 name: 'read_file',
                                 args: { path: 'file1.md' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'call_2'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_2'
+            });
                     return content;
                 })(),
 
@@ -648,15 +656,19 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'call_2',
                         functionResponse: { name: 'read_file', response: { content: 'File contents' } }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })()
             ];
 
             // Test that both Claude and OpenAI can read this mixed conversation
             const claude = new Claude();
-            const claudeResult = (claude as any).extractContents(conversation);
+            const claudeResult = await (claude as any).extractContents(conversation);
 
             expect(claudeResult.length).toBeGreaterThan(0);
             // Both function calls should be present with their tool_use format
@@ -666,7 +678,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(claudeToolUses).toHaveLength(2);
 
             const openai = new OpenAI();
-            const openaiResult = (openai as any).extractContents(conversation);
+            const openaiResult = await (openai as any).extractContents(conversation);
 
             expect(openaiResult.length).toBeGreaterThan(0);
             // Both function calls should be present in Responses API format
@@ -674,64 +686,58 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(openaiFunctionCalls).toHaveLength(2);
         });
 
-        it('should handle function call with toolId but empty string', () => {
+        it('should handle function call with toolId but empty string', async () => {
             // Both Claude and OpenAI should treat empty string toolId as missing
-            const emptyToolIdCall = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const emptyToolIdCall = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: '',  // Empty string
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                '',  // Empty toolId
-                undefined
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: ''
+            });
 
             // Claude should convert to legacy text format
             const claude = new Claude();
-            const claudeResult = (claude as any).extractContents([emptyToolIdCall]);
+            const claudeResult = await (claude as any).extractContents([emptyToolIdCall]);
             expect(claudeResult[0].content[0].type).toBe('text');
             expect(claudeResult[0].content[0].text).toContain('<!-- Historical tool call');
             expect(claudeResult[0].content[0].text).toContain('"name": "search_vault_files"');
 
             // OpenAI should also handle it gracefully (fall back to regular message)
             const openai = new OpenAI();
-            const openaiResult = (openai as any).extractContents([emptyToolIdCall]);
+            const openaiResult = await (openai as any).extractContents([emptyToolIdCall]);
             // Should either convert to text or handle the empty ID
             expect(openaiResult).toHaveLength(1);
         });
 
-        it('should handle whitespace-only toolId same as empty string', () => {
-            const whitespaceToolIdCall = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+        it('should handle whitespace-only toolId same as empty string', async () => {
+            const whitespaceToolIdCall = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: '   ',  // Whitespace only
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                '   ',  // Whitespace toolId
-                undefined
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: '   '
+            });
 
             // Claude should trim and treat as empty → legacy format
             const claude = new Claude();
-            const claudeResult = (claude as any).extractContents([whitespaceToolIdCall]);
+            const claudeResult = await (claude as any).extractContents([whitespaceToolIdCall]);
             expect(claudeResult[0].content[0].type).toBe('text');
             expect(claudeResult[0].content[0].text).toContain('<!-- Historical tool call');
             expect(claudeResult[0].content[0].text).toContain('"name": "search_vault_files"');
@@ -739,30 +745,27 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
     });
 
     describe('OpenAI → Claude/Gemini Switching', () => {
-        it('should handle OpenAI function call when switching to Claude', () => {
+        it('should handle OpenAI function call when switching to Claude', async () => {
             // Detailed test already covered in "Claude ↔ OpenAI Switching"
             // This test focuses on verifying Claude properly interprets OpenAI's call_id
-            const openaiFunctionCall = new ConversationContent(
-                Role.Assistant,
-                'Let me read that file for you',
-                '',
-                JSON.stringify({
+            const openaiFunctionCall = new ConversationContent({
+                role: Role.Assistant,
+                content: 'Let me read that file for you',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'call_openai_123',
                         name: 'read_file',
                         args: { path: 'notes.md' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                'call_openai_123',
-                undefined
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_openai_123'
+            });
 
             const claude = new Claude();
-            const result = (claude as any).extractContents([openaiFunctionCall]);
+            const result = await (claude as any).extractContents([openaiFunctionCall]);
 
             // Claude should preserve the OpenAI call_id in its tool_use format
             expect(result).toHaveLength(1);
@@ -777,28 +780,25 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             });
         });
 
-        it('should convert OpenAI function call (no thoughtSignature) to Gemini legacy format', () => {
+        it('should convert OpenAI function call (no thoughtSignature) to Gemini legacy format', async () => {
             // OpenAI function call should be converted to legacy text when sent to Gemini
-            const openaiFunctionCall = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const openaiFunctionCall = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'call_abc',
                         name: 'search_vault_files',
                         args: { query: 'project notes' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                'call_abc',
-                undefined  // No thoughtSignature from OpenAI
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_abc'
+            });
 
-            const result = (gemini as any).extractContents([openaiFunctionCall]);
+            const result = await (gemini as any).extractContents([openaiFunctionCall]);
 
             // Gemini should convert to legacy format since there's no thoughtSignature
             expect(result).toHaveLength(1);
@@ -809,7 +809,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(result[0].parts[0].text).toContain('  "query": "project notes"');
         });
 
-        it('should handle OpenAI function response when switching to Gemini', () => {
+        it('should handle OpenAI function response when switching to Gemini', async () => {
             // OpenAI response with ID should work with Gemini
             const openaiResponse = (() => {
                 const responseContent = JSON.stringify({
@@ -819,12 +819,16 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         response: ['file1.md', 'file2.md']
                     }
                 });
-                const content = new ConversationContent(Role.User, responseContent, responseContent);
-                content.isFunctionCallResponse = true;
+                const content = new ConversationContent({
+                    role: Role.User,
+                    content: responseContent,
+                    displayContent: responseContent,
+                    functionResponse: responseContent
+                });
                 return content;
             })();
 
-            const result = (gemini as any).extractContents([openaiResponse]);
+            const result = await (gemini as any).extractContents([openaiResponse]);
 
             // Gemini should accept the response with ID
             expect(result).toHaveLength(1);
@@ -836,27 +840,24 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             });
         });
 
-        it('should convert Gemini function call (no id) to OpenAI legacy format - REGRESSION', () => {
+        it('should convert Gemini function call (no id) to OpenAI legacy format - REGRESSION', async () => {
             // REGRESSION TEST: Bug discovered where Gemini → OpenAI switching failed
             // because OpenAI tried to use undefined call_id
             // Gemini function call with thoughtSignature but no id
-            const geminiFunctionCall = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const geminiFunctionCall = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                undefined,
-                'gemini_signature_123=='  // Has thoughtSignature
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                thoughtSignature: 'gemini_signature_123=='
+            });
 
             const geminiResponse = (() => {
                 const responseContent = JSON.stringify({
@@ -866,14 +867,18 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         response: ['file1.md', 'file2.md']
                     }
                 });
-                const content = new ConversationContent(Role.User, responseContent, responseContent);
-                content.isFunctionCallResponse = true;
+                const content = new ConversationContent({
+                    role: Role.User,
+                    content: responseContent,
+                    displayContent: responseContent,
+                    functionResponse: responseContent
+                });
                 return content;
             })();
 
             // OpenAI should convert to legacy text format (not try to use undefined call_id)
             const openai = new OpenAI();
-            const result = (openai as any).extractContents([geminiFunctionCall, geminiResponse]);
+            const result = await (openai as any).extractContents([geminiFunctionCall, geminiResponse]);
 
             // Should have 2 items (both converted to messages)
             expect(result).toHaveLength(2);
@@ -893,30 +898,28 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(result[1].content).toContain('"name": "search_vault_files"');
         });
 
-        it('should handle OpenAI → Gemini → Claude round-trip', () => {
+        it('should handle OpenAI → Gemini → Claude round-trip', async () => {
             // Test that function call survives multiple provider switches
             const conversation = [
-                new ConversationContent(Role.User, 'Search files', 'Search files'),
+                new ConversationContent({ role: Role.User, content: 'Search files', displayContent: 'Search files' }),
 
                 // OpenAI creates function call
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 id: 'call_xyz',
                                 name: 'search_vault_files',
                                 args: { query: 'test' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'call_xyz'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_xyz'
+            });
                     return content;
                 })(),
 
@@ -926,16 +929,20 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'call_xyz',
                         functionResponse: { name: 'search_vault_files', response: ['file.md'] }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
-                new ConversationContent(Role.Assistant, 'Found file.md')
+                new ConversationContent({ role: Role.Assistant, content: 'Found file.md' })
             ];
 
             // Gemini reads OpenAI conversation - function call becomes legacy
-            const geminiResult = (gemini as any).extractContents(conversation);
+            const geminiResult = await (gemini as any).extractContents(conversation);
             const geminiLegacyCall = geminiResult.find((r: any) =>
                 r.parts[0]?.text?.includes('<!-- Historical tool call')
             );
@@ -943,12 +950,12 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             // Claude reads the same conversation - should work
             const claude = new Claude();
-            const claudeResult = (claude as any).extractContents(conversation);
+            const claudeResult = await (claude as any).extractContents(conversation);
             expect(claudeResult.length).toBeGreaterThan(0);
 
             // OpenAI can re-read its own conversation
             const openai = new OpenAI();
-            const openaiResult = (openai as any).extractContents(conversation);
+            const openaiResult = await (openai as any).extractContents(conversation);
             expect(openaiResult.length).toBeGreaterThan(0);
             const functionCall = openaiResult.find((r: any) => r.type === 'function_call');
             expect(functionCall).toBeDefined();
@@ -957,30 +964,28 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
     });
 
     describe('Three-Way Provider Switching', () => {
-        it('should handle Claude → OpenAI → Gemini conversation', () => {
+        it('should handle Claude → OpenAI → Gemini conversation', async () => {
             // Complex three-way conversation: toolId → toolId → thoughtSignature transition
             const conversation = [
-                new ConversationContent(Role.User, 'Start search', 'Start search'),
+                new ConversationContent({ role: Role.User, content: 'Start search', displayContent: 'Start search' }),
 
                 // Claude makes a function call
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 id: 'toolu_1',
                                 name: 'search_vault_files',
                                 args: { query: 'notes' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'toolu_1'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'toolu_1'
+            });
                     return content;
                 })(),
 
@@ -989,33 +994,35 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'toolu_1',
                         functionResponse: { name: 'search_vault_files', response: ['note1.md'] }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
-                new ConversationContent(Role.Assistant, 'Found note1.md'),
-                new ConversationContent(Role.User, 'Read it', 'Read it'),
+                new ConversationContent({ role: Role.Assistant, content: 'Found note1.md' }),
+                new ConversationContent({ role: Role.User, content: 'Read it', displayContent: 'Read it' }),
 
                 // OpenAI makes a function call
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 id: 'call_2',
                                 name: 'read_file',
                                 args: { path: 'note1.md' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'call_2'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_2'
+            });
                     return content;
                 })(),
 
@@ -1024,18 +1031,22 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'call_2',
                         functionResponse: { name: 'read_file', response: { content: 'File contents' } }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
-                new ConversationContent(Role.Assistant, 'Here is the content'),
-                new ConversationContent(Role.User, 'Summarize it', 'Summarize it')
+                new ConversationContent({ role: Role.Assistant, content: 'Here is the content' }),
+                new ConversationContent({ role: Role.User, content: 'Summarize it', displayContent: 'Summarize it' })
             ];
 
             // Gemini should be able to read this conversation
             // Both Claude and OpenAI calls should convert to legacy format (no thoughtSignature)
-            const geminiResult = (gemini as any).extractContents(conversation);
+            const geminiResult = await (gemini as any).extractContents(conversation);
             expect(geminiResult.length).toBeGreaterThan(0);
 
             const legacyCalls = geminiResult.filter((r: any) =>
@@ -1045,39 +1056,36 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             // Claude should be able to read the full conversation
             const claude = new Claude();
-            const claudeResult = (claude as any).extractContents(conversation);
+            const claudeResult = await (claude as any).extractContents(conversation);
             expect(claudeResult.length).toBeGreaterThan(0);
 
             // OpenAI should be able to read the full conversation
             const openai = new OpenAI();
-            const openaiResult = (openai as any).extractContents(conversation);
+            const openaiResult = await (openai as any).extractContents(conversation);
             expect(openaiResult.length).toBeGreaterThan(0);
         });
 
-        it('should handle Gemini → Claude → OpenAI conversation', () => {
+        it('should handle Gemini → Claude → OpenAI conversation', async () => {
             // Three-way: thoughtSignature → toolId → toolId transition
             const conversation = [
-                new ConversationContent(Role.User, 'Search files', 'Search files'),
+                new ConversationContent({ role: Role.User, content: 'Search files', displayContent: 'Search files' }),
 
                 // Gemini makes a function call WITH thoughtSignature
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 name: 'search_vault_files',
                                 args: { query: 'project' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        undefined,
-                        'gemini_signature_1=='
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                thoughtSignature: 'gemini_signature_1=='
+            });
                     return content;
                 })(),
 
@@ -1086,33 +1094,35 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'resp_1',
                         functionResponse: { name: 'search_vault_files', response: ['project.md'] }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
-                new ConversationContent(Role.Assistant, 'Found project.md'),
-                new ConversationContent(Role.User, 'Read it', 'Read it'),
+                new ConversationContent({ role: Role.Assistant, content: 'Found project.md' }),
+                new ConversationContent({ role: Role.User, content: 'Read it', displayContent: 'Read it' }),
 
                 // Claude makes a function call
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 id: 'toolu_2',
                                 name: 'read_file',
                                 args: { path: 'project.md' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'toolu_2'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'toolu_2'
+            });
                     return content;
                 })(),
 
@@ -1121,33 +1131,35 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'toolu_2',
                         functionResponse: { name: 'read_file', response: { content: 'Project info' } }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
-                new ConversationContent(Role.Assistant, 'Project details...'),
-                new ConversationContent(Role.User, 'Write summary', 'Write summary'),
+                new ConversationContent({ role: Role.Assistant, content: 'Project details...' }),
+                new ConversationContent({ role: Role.User, content: 'Write summary', displayContent: 'Write summary' }),
 
                 // OpenAI makes a function call
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 id: 'call_3',
                                 name: 'write_file',
                                 args: { path: 'summary.md', content: 'Summary here' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'call_3'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_3'
+            });
                     return content;
                 })(),
 
@@ -1156,20 +1168,24 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'call_3',
                         functionResponse: { name: 'write_file', response: { success: true } }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })()
             ];
 
             // All three providers should be able to read this conversation
-            const geminiResult = (gemini as any).extractContents(conversation);
+            const geminiResult = await (gemini as any).extractContents(conversation);
             expect(geminiResult.length).toBeGreaterThan(0);
 
-            const claudeResult = (new Claude() as any).extractContents(conversation);
+            const claudeResult = await (new Claude() as any).extractContents(conversation);
             expect(claudeResult.length).toBeGreaterThan(0);
 
-            const openaiResult = (new OpenAI() as any).extractContents(conversation);
+            const openaiResult = await (new OpenAI() as any).extractContents(conversation);
             expect(openaiResult.length).toBeGreaterThan(0);
 
             // Verify all three function calls are present in each provider's view
@@ -1184,29 +1200,27 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(claudeToolUses.length).toBeGreaterThan(0);
         });
 
-        it('should handle round-trip: Claude → Gemini → Claude', () => {
+        it('should handle round-trip: Claude → Gemini → Claude', async () => {
             // Ensure conversation data survives round trip through different provider
             const conversation = [
-                new ConversationContent(Role.User, 'Test', 'Test'),
+                new ConversationContent({ role: Role.User, content: 'Test', displayContent: 'Test' }),
 
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 id: 'toolu_round',
                                 name: 'search_vault_files',
                                 args: { query: 'test', limit: 5 }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'toolu_round'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'toolu_round'
+            });
                     return content;
                 })(),
 
@@ -1215,17 +1229,21 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'toolu_round',
                         functionResponse: { name: 'search_vault_files', response: ['a.md', 'b.md'] }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
-                new ConversationContent(Role.Assistant, 'Found 2 files')
+                new ConversationContent({ role: Role.Assistant, content: 'Found 2 files' })
             ];
 
             // Claude reads it initially
             const claude1 = new Claude();
-            const claudeResult1 = (claude1 as any).extractContents(conversation);
+            const claudeResult1 = await (claude1 as any).extractContents(conversation);
             expect(claudeResult1.length).toBeGreaterThan(0);
 
             // Verify function call is preserved
@@ -1237,7 +1255,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(claudeCall1.content[0].input).toEqual({ query: 'test', limit: 5 });
 
             // Gemini reads it (converts to legacy)
-            const geminiResult = (gemini as any).extractContents(conversation);
+            const geminiResult = await (gemini as any).extractContents(conversation);
             const geminiLegacy = geminiResult.find((r: any) =>
                 r.parts[0]?.text?.includes('<!-- Historical tool call')
             );
@@ -1247,32 +1265,30 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             // Claude reads it again (should work the same way)
             const claude2 = new Claude();
-            const claudeResult2 = (claude2 as any).extractContents(conversation);
+            const claudeResult2 = await (claude2 as any).extractContents(conversation);
             expect(claudeResult2).toEqual(claudeResult1); // Should be identical
         });
 
-        it('should handle round-trip: OpenAI → Gemini → OpenAI', () => {
+        it('should handle round-trip: OpenAI → Gemini → OpenAI', async () => {
             const conversation = [
-                new ConversationContent(Role.User, 'Search', 'Search'),
+                new ConversationContent({ role: Role.User, content: 'Search', displayContent: 'Search' }),
 
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 id: 'call_round',
                                 name: 'search_vault_files',
                                 args: { query: 'openai test' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'call_round'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_round'
+            });
                     return content;
                 })(),
 
@@ -1281,17 +1297,21 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'call_round',
                         functionResponse: { name: 'search_vault_files', response: ['file.md'] }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
-                new ConversationContent(Role.Assistant, 'Found file')
+                new ConversationContent({ role: Role.Assistant, content: 'Found file' })
             ];
 
             // OpenAI reads initially
             const openai1 = new OpenAI();
-            const openaiResult1 = (openai1 as any).extractContents(conversation);
+            const openaiResult1 = await (openai1 as any).extractContents(conversation);
             expect(openaiResult1.length).toBeGreaterThan(0);
 
             const openaiCall1 = openaiResult1.find((r: any) => r.type === 'function_call');
@@ -1299,39 +1319,37 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(openaiCall1.call_id).toBe('call_round');
 
             // Gemini reads (converts to legacy)
-            const geminiResult = (gemini as any).extractContents(conversation);
+            const geminiResult = await (gemini as any).extractContents(conversation);
             expect(geminiResult.length).toBeGreaterThan(0);
 
             // OpenAI reads again (should be consistent)
             const openai2 = new OpenAI();
-            const openaiResult2 = (openai2 as any).extractContents(conversation);
+            const openaiResult2 = await (openai2 as any).extractContents(conversation);
             expect(openaiResult2).toEqual(openaiResult1);
         });
 
-        it('should handle complex multi-switch with function calls at each step', () => {
+        it('should handle complex multi-switch with function calls at each step', async () => {
             // Ultimate test: Each provider makes a function call in sequence
             const conversation = [
-                new ConversationContent(Role.User, 'Complex workflow', 'Complex workflow'),
+                new ConversationContent({ role: Role.User, content: 'Complex workflow', displayContent: 'Complex workflow' }),
 
                 // Step 1: Claude
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        'Searching...',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: 'Searching...',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 id: 'toolu_step1',
                                 name: 'search_vault_files',
                                 args: { query: 'workflow' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'toolu_step1'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'toolu_step1'
+            });
                     return content;
                 })(),
 
@@ -1340,32 +1358,34 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'toolu_step1',
                         functionResponse: { name: 'search_vault_files', response: ['workflow.md'] }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
-                new ConversationContent(Role.User, 'Read it', 'Read it'),
+                new ConversationContent({ role: Role.User, content: 'Read it', displayContent: 'Read it' }),
 
                 // Step 2: OpenAI
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        'Reading file...',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: 'Reading file...',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 id: 'call_step2',
                                 name: 'read_file',
                                 args: { path: 'workflow.md' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'call_step2'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call_step2'
+            });
                     return content;
                 })(),
 
@@ -1374,32 +1394,33 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'call_step2',
                         functionResponse: { name: 'read_file', response: { content: 'Workflow steps...' } }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
-                new ConversationContent(Role.User, 'List all files', 'List all files'),
+                new ConversationContent({ role: Role.User, content: 'List all files', displayContent: 'List all files' }),
 
                 // Step 3: Gemini (with thoughtSignature)
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 name: 'list_files',
                                 args: { path: '/' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        undefined,
-                        'gemini_step3_signature=='
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                thoughtSignature: 'gemini_step3_signature=='
+            });
                     return content;
                 })(),
 
@@ -1408,22 +1429,26 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         id: 'resp_step3',
                         functionResponse: { name: 'list_files', response: ['file1.md', 'file2.md'] }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })(),
 
-                new ConversationContent(Role.Assistant, 'Complete!')
+                new ConversationContent({ role: Role.Assistant, content: 'Complete!' })
             ];
 
             // All providers should handle this complex conversation
-            const claudeResult = (new Claude() as any).extractContents(conversation);
+            const claudeResult = await (new Claude() as any).extractContents(conversation);
             expect(claudeResult.length).toBeGreaterThan(5);
 
-            const openaiResult = (new OpenAI() as any).extractContents(conversation);
+            const openaiResult = await (new OpenAI() as any).extractContents(conversation);
             expect(openaiResult.length).toBeGreaterThan(5);
 
-            const geminiResult = (gemini as any).extractContents(conversation);
+            const geminiResult = await (gemini as any).extractContents(conversation);
             expect(geminiResult.length).toBeGreaterThan(5);
 
             // Each provider should see all 3 function calls (in their own format or legacy)
@@ -1453,46 +1478,40 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
     });
 
     describe('Edge Cases', () => {
-        it('should handle empty thoughtSignature as missing signature (legacy format)', () => {
-            const content = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+        it('should handle empty thoughtSignature as missing signature (legacy format)', async () => {
+            const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: { name: 'test_func', args: {} }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                undefined,
-                ''  // Empty string should be treated as missing
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                thoughtSignature: ''
+            });
 
-            const result = (gemini as any).extractContents([content]);
+            const result = await (gemini as any).extractContents([content]);
 
             expect(result[0].parts[0]).toHaveProperty('text');
             expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
             expect(result[0].parts[0].text).toContain('"name": "test_func"');
         });
 
-        it('should handle whitespace-only thoughtSignature as missing signature (legacy format)', () => {
-            const content = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+        it('should handle whitespace-only thoughtSignature as missing signature (legacy format)', async () => {
+            const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: { name: 'test_func', args: {} }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                undefined,
-                '   '  // Whitespace only - should be treated as empty after trim()
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                thoughtSignature: '   '
+            });
 
-            const result = (gemini as any).extractContents([content]);
+            const result = await (gemini as any).extractContents([content]);
 
             // Whitespace-only signature is trimmed and treated as missing
             // Should fall back to legacy text format
@@ -1501,32 +1520,36 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(result[0].parts[0].text).toContain('"name": "test_func"');
         });
 
-        it('should gracefully handle conversation with only legacy format calls', () => {
+        it('should gracefully handle conversation with only legacy format calls', async () => {
             // Entire conversation from Claude - no signatures anywhere
             const conversation = [
-                new ConversationContent(Role.User, 'Test', 'Test'),
+                new ConversationContent({ role: Role.User, content: 'Test', displayContent: 'Test' }),
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({ functionCall: { name: 'func1', args: {} } }),
-                        new Date(),
-                        true
-                    );
+                    const content = new ConversationContent({
+                        role: Role.Assistant,
+                        content: '',
+                        displayContent: '',
+                        functionCall: JSON.stringify({ functionCall: { name: 'func1', args: {} } }),
+                        timestamp: new Date(),
+                        shouldDisplayContent: true
+                    });
                     return content;
                 })(),
                 (() => {
                     const responseContent = JSON.stringify({
                         functionResponse: { name: 'func1', response: 'ok' }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })()
             ];
 
-            const result = (gemini as any).extractContents(conversation);
+            const result = await (gemini as any).extractContents(conversation);
 
             // All function calls/responses should be in legacy format
             expect(result[1].parts[0].text).toContain('<!-- Historical tool call');
@@ -1535,37 +1558,35 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(result[2].parts[0].text).toContain('"name": "func1"');
         });
 
-        it('should handle both toolId and thoughtSignature present (defensive)', () => {
+        it('should handle both toolId and thoughtSignature present (defensive)', async () => {
             // This tests the unusual scenario where both provider-specific fields are set
             // In production, AIFunctionCall.toConversationString() ensures the id is in the JSON
-            const content = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: {
                         id: 'tool-123',  // ID in the JSON (as AIFunctionCall does)
                         name: 'test_func',
                         args: { query: 'test' }
                     }
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                'tool-123',  // toolId metadata (matches JSON id)
-                'signature=='  // Also has thoughtSignature (unusual but possible)
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'tool-123',  // toolId metadata (matches JSON id)
+                thoughtSignature: 'signature=='  // Also has thoughtSignature (unusual but possible)
+            });
 
             // Gemini should use thoughtSignature (its provider-specific field)
-            const geminiResult = (gemini as any).extractContents([content]);
+            const geminiResult = await (gemini as any).extractContents([content]);
             expect(geminiResult[0].parts[0]).toHaveProperty('functionCall');
             expect(geminiResult[0].parts[0]).toHaveProperty('thoughtSignature');
             expect(geminiResult[0].parts[0].thoughtSignature).toBe('signature==');
 
             // Claude reads from the JSON id field (not the metadata toolId field)
             const claude = new Claude();
-            const claudeResult = (claude as any).extractContents([content]);
+            const claudeResult = await (claude as any).extractContents([content]);
             expect(claudeResult[0].content[0]).toEqual({
                 type: 'tool_use',
                 id: 'tool-123',
@@ -1575,7 +1596,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             // OpenAI also reads from the JSON id field
             const openai = new OpenAI();
-            const openaiResult = (openai as any).extractContents([content]);
+            const openaiResult = await (openai as any).extractContents([content]);
             expect(openaiResult[0]).toEqual({
                 type: 'function_call',
                 call_id: 'tool-123',
@@ -1584,60 +1605,55 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             });
         });
 
-        it('should handle inconsistent state: toolId set but id missing from JSON (data corruption)', () => {
+        it('should handle inconsistent state: toolId set but id missing from JSON (data corruption)', async () => {
             // Edge case: metadata field has toolId but the serialized JSON doesn't have id
             // This should never happen in production (AIFunctionCall prevents this)
             // but tests defensive behavior
-            const content = new ConversationContent(
-                Role.Assistant,
-                '',
-                '',
-                JSON.stringify({
+            const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                     functionCall: { name: 'test_func', args: { query: 'test' } }  // No id field!
                 }),
-                new Date(),
-                true,
-                false,
-                false,
-                'tool-123',  // toolId metadata is set
-                undefined
-            );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'tool-123'
+            });
 
             // Claude should convert to legacy format (defensive: no id in JSON)
             const claude = new Claude();
-            const claudeResult = (claude as any).extractContents([content]);
+            const claudeResult = await (claude as any).extractContents([content]);
             expect(claudeResult[0].content[0].type).toBe('text');
             expect(claudeResult[0].content[0].text).toContain('<!-- Historical tool call');
             expect(claudeResult[0].content[0].text).toContain('"name": "test_func"');
 
             // OpenAI should also fall back gracefully
             const openai = new OpenAI();
-            const openaiResult = (openai as any).extractContents([content]);
+            const openaiResult = await (openai as any).extractContents([content]);
             // OpenAI should handle this - either legacy conversion or error message
             expect(openaiResult).toHaveLength(1);
         });
 
-        it('should handle function response ID mismatch gracefully', () => {
+        it('should handle function response ID mismatch gracefully', async () => {
             // Function call with one ID, response with different ID
             const conversation = [
                 (() => {
-                    const content = new ConversationContent(
-                        Role.Assistant,
-                        '',
-                        '',
-                        JSON.stringify({
+                    const content = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
                             functionCall: {
                                 id: 'call-123',
                                 name: 'search_vault_files',
                                 args: { query: 'test' }
                             }
                         }),
-                        new Date(),
-                        true,
-                        false,
-                        false,
-                        'call-123'
-                    );
+                timestamp: new Date(),
+                shouldDisplayContent: true,
+                toolId: 'call-123'
+            });
                     return content;
                 })(),
                 (() => {
@@ -1648,21 +1664,25 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                             response: ['file.md']
                         }
                     });
-                    const content = new ConversationContent(Role.User, responseContent, responseContent);
-                    content.isFunctionCallResponse = true;
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent
+                    });
                     return content;
                 })()
             ];
 
             // Providers should still parse this (even if IDs don't match)
             const claude = new Claude();
-            const claudeResult = (claude as any).extractContents(conversation);
+            const claudeResult = await (claude as any).extractContents(conversation);
             expect(claudeResult).toHaveLength(2);
             expect(claudeResult[0].content[0].id).toBe('call-123');
             expect(claudeResult[1].content[0].tool_use_id).toBe('call-456');
 
             const openai = new OpenAI();
-            const openaiResult = (openai as any).extractContents(conversation);
+            const openaiResult = await (openai as any).extractContents(conversation);
             expect(openaiResult).toHaveLength(2);
             expect(openaiResult[0].call_id).toBe('call-123');
             expect(openaiResult[1].call_id).toBe('call-456');

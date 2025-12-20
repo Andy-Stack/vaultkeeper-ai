@@ -714,12 +714,12 @@ describe('Claude', () => {
         });
 
         it('should handle attachments with images correctly', async () => {
-            // Test with an image attachment
+            // Test with an image attachment that has a file ID
             const attachment = {
                 fileName: 'test-image.png',
                 mimeType: 'image/png',
                 base64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-                getFileID: () => undefined, // No file ID, will use base64
+                getFileID: vi.fn(() => 'file_123'), // Mock file ID
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
             };
@@ -736,9 +736,9 @@ describe('Claude', () => {
             expect(result).toHaveLength(1);
             expect(result[0].content.length).toBeGreaterThan(1);
 
-            // Should have text content
-            const textBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === 'Please analyze this image');
-            expect(textBlock).toBeDefined();
+            // Should have filename text block from formatBinaryFiles
+            const filenameBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === 'test-image.png');
+            expect(filenameBlock).toBeDefined();
 
             // Should have image content blocks from formatBinaryFiles
             const imageBlocks = result[0].content.filter((block: any) => block.type === 'image');
@@ -746,12 +746,12 @@ describe('Claude', () => {
         });
 
         it('should handle attachments with PDFs correctly', async () => {
-            // Test with a PDF attachment
+            // Test with a PDF attachment that has a file ID
             const attachment = {
                 fileName: 'document.pdf',
                 mimeType: 'application/pdf',
                 base64: 'JVBERi0xLjQKJeLjz9MK',
-                getFileID: () => undefined, // No file ID, will use base64
+                getFileID: vi.fn(() => 'file_456'), // Mock file ID
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
             };
@@ -768,9 +768,9 @@ describe('Claude', () => {
             expect(result).toHaveLength(1);
             expect(result[0].content.length).toBeGreaterThan(1);
 
-            // Should have text content
-            const textBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === 'Review this document');
-            expect(textBlock).toBeDefined();
+            // Should have filename text block from formatBinaryFiles
+            const filenameBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === 'document.pdf');
+            expect(filenameBlock).toBeDefined();
 
             // Should have document content blocks from formatBinaryFiles
             const documentBlocks = result[0].content.filter((block: any) => block.type === 'document');
@@ -892,7 +892,7 @@ describe('Claude', () => {
                 fileName: 'report.pdf',
                 mimeType: 'application/pdf',
                 base64: 'base64encodedcontent',
-                getFileID: () => undefined,
+                getFileID: vi.fn(() => 'file_pdf_123'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
             };
@@ -908,9 +908,8 @@ describe('Claude', () => {
             expect(parsed[1]).toEqual({
                 type: 'document',
                 source: {
-                    type: 'base64',
-                    media_type: 'application/pdf',
-                    data: 'base64encodedcontent'
+                    type: 'file',
+                    file_id: 'file_pdf_123'
                 }
             });
         });
@@ -920,7 +919,7 @@ describe('Claude', () => {
                 fileName: 'photo.jpg',
                 mimeType: 'image/jpeg',
                 base64: 'base64imagedata',
-                getFileID: () => undefined,
+                getFileID: vi.fn(() => 'file_img_jpeg'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
             };
@@ -936,9 +935,8 @@ describe('Claude', () => {
             expect(parsed[1]).toEqual({
                 type: 'image',
                 source: {
-                    type: 'base64',
-                    media_type: 'image/jpeg',
-                    data: 'base64imagedata'
+                    type: 'file',
+                    file_id: 'file_img_jpeg'
                 }
             });
         });
@@ -948,7 +946,7 @@ describe('Claude', () => {
                 fileName: 'diagram.png',
                 mimeType: 'image/png',
                 base64: 'base64pngdata',
-                getFileID: () => undefined,
+                getFileID: vi.fn(() => 'file_img_png'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
             };
@@ -960,9 +958,8 @@ describe('Claude', () => {
             expect(parsed[1]).toEqual({
                 type: 'image',
                 source: {
-                    type: 'base64',
-                    media_type: 'image/png',
-                    data: 'base64pngdata'
+                    type: 'file',
+                    file_id: 'file_img_png'
                 }
             });
         });
@@ -972,7 +969,7 @@ describe('Claude', () => {
                 fileName: 'animation.gif',
                 mimeType: 'image/gif',
                 base64: 'base64gifdata',
-                getFileID: () => undefined,
+                getFileID: vi.fn(() => 'file_img_gif'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
             };
@@ -984,9 +981,8 @@ describe('Claude', () => {
             expect(parsed[1]).toEqual({
                 type: 'image',
                 source: {
-                    type: 'base64',
-                    media_type: 'image/gif',
-                    data: 'base64gifdata'
+                    type: 'file',
+                    file_id: 'file_img_gif'
                 }
             });
         });
@@ -996,7 +992,7 @@ describe('Claude', () => {
                 fileName: 'modern.webp',
                 mimeType: 'image/webp',
                 base64: 'base64webpdata',
-                getFileID: () => undefined,
+                getFileID: vi.fn(() => 'file_img_webp'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
             };
@@ -1008,21 +1004,23 @@ describe('Claude', () => {
             expect(parsed[1]).toEqual({
                 type: 'image',
                 source: {
-                    type: 'base64',
-                    media_type: 'image/webp',
-                    data: 'base64webpdata'
+                    type: 'file',
+                    file_id: 'file_img_webp'
                 }
             });
         });
 
         it('should handle unsupported image formats with error message', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/images/photo.bmp',
-                contents: 'base64bmpdata'
-            }];
+            const attachment = {
+                fileName: 'photo.bmp',
+                mimeType: 'image/bmp',
+                base64: 'base64bmpdata',
+                getFileID: vi.fn(() => 'file_img_bmp'),
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1033,25 +1031,34 @@ describe('Claude', () => {
         });
 
         it('should handle multiple files of different types', () => {
-            const files = [
+            const attachments = [
                 {
-                    type: 'pdf',
-                    path: '/vault/doc.pdf',
-                    contents: 'pdfdata'
+                    fileName: 'doc.pdf',
+                    mimeType: 'application/pdf',
+                    base64: 'pdfdata',
+                    getFileID: vi.fn(() => 'file_1'),
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'image',
-                    path: '/vault/image.jpg',
-                    contents: 'jpegdata'
+                    fileName: 'image.jpg',
+                    mimeType: 'image/jpeg',
+                    base64: 'jpegdata',
+                    getFileID: vi.fn(() => 'file_2'),
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'image',
-                    path: '/vault/screenshot.png',
-                    contents: 'pngdata'
+                    fileName: 'screenshot.png',
+                    mimeType: 'image/png',
+                    base64: 'pngdata',
+                    getFileID: vi.fn(() => 'file_3'),
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 }
             ];
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(6);
@@ -1061,9 +1068,8 @@ describe('Claude', () => {
             expect(parsed[1]).toEqual({
                 type: 'document',
                 source: {
-                    type: 'base64',
-                    media_type: 'application/pdf',
-                    data: 'pdfdata'
+                    type: 'file',
+                    file_id: 'file_1'
                 }
             });
 
@@ -1072,9 +1078,8 @@ describe('Claude', () => {
             expect(parsed[3]).toEqual({
                 type: 'image',
                 source: {
-                    type: 'base64',
-                    media_type: 'image/jpeg',
-                    data: 'jpegdata'
+                    type: 'file',
+                    file_id: 'file_2'
                 }
             });
 
@@ -1083,33 +1088,41 @@ describe('Claude', () => {
             expect(parsed[5]).toEqual({
                 type: 'image',
                 source: {
-                    type: 'base64',
-                    media_type: 'image/png',
-                    data: 'pngdata'
+                    type: 'file',
+                    file_id: 'file_3'
                 }
             });
         });
 
         it('should handle mixed supported and unsupported files', () => {
-            const files = [
+            const attachments = [
                 {
-                    type: 'image',
-                    path: '/vault/good.jpg',
-                    contents: 'jpegdata'
+                    fileName: 'good.jpg',
+                    mimeType: 'image/jpeg',
+                    base64: 'jpegdata',
+                    getFileID: vi.fn(() => 'file_good'),
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'image',
-                    path: '/vault/bad.bmp',
-                    contents: 'bmpdata'
+                    fileName: 'bad.bmp',
+                    mimeType: 'image/bmp',
+                    base64: 'bmpdata',
+                    getFileID: vi.fn(() => 'file_bad'),
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'pdf',
-                    path: '/vault/doc.pdf',
-                    contents: 'pdfdata'
+                    fileName: 'doc.pdf',
+                    mimeType: 'application/pdf',
+                    base64: 'pdfdata',
+                    getFileID: vi.fn(() => 'file_pdf'),
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 }
             ];
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(5);
@@ -1126,36 +1139,44 @@ describe('Claude', () => {
             expect(parsed[4].type).toBe('document');
         });
 
-        it('should handle error when getting image mime type fails', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/image.unknown',
-                contents: 'imagedata'
-            }];
+        it('should skip files without file IDs', () => {
+            const attachment = {
+                fileName: 'image.png',
+                mimeType: 'image/png',
+                base64: 'imagedata',
+                getFileID: vi.fn(() => undefined), // No file ID
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
-            expect(parsed).toHaveLength(1);
-            expect(parsed[0].type).toBe('text');
-            expect(parsed[0].text).toContain('Image type not supported');
+            // Should return empty array when no file ID is available
+            expect(parsed).toHaveLength(0);
         });
 
         it('should handle files with uppercase extensions', () => {
-            const files = [
+            const attachments = [
                 {
-                    type: 'pdf',
-                    path: '/vault/document.PDF',
-                    contents: 'pdfdata'
+                    fileName: 'document.PDF',
+                    mimeType: 'application/pdf',
+                    base64: 'pdfdata',
+                    getFileID: vi.fn(() => 'file_pdf_upper'),
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 },
                 {
-                    type: 'image',
-                    path: '/vault/photo.JPG',
-                    contents: 'jpegdata'
+                    fileName: 'photo.JPG',
+                    mimeType: 'image/jpeg',
+                    base64: 'jpegdata',
+                    getFileID: vi.fn(() => 'file_jpg_upper'),
+                    setFileID: vi.fn(),
+                    deleteFileID: vi.fn()
                 }
             ];
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(4);
@@ -1166,43 +1187,48 @@ describe('Claude', () => {
         });
 
         it('should handle empty files array', () => {
-            const files: Array<{type: string, path: string, contents: string}> = [];
+            const attachments: any[] = [];
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles(attachments);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(0);
         });
 
         it('should properly encode filenames with special characters', () => {
-            const files = [{
-                type: 'pdf',
-                path: '/vault/documents/report (final) v2.pdf',
-                contents: 'pdfdata'
-            }];
+            const attachment = {
+                fileName: 'report (final) v2.pdf',
+                mimeType: 'application/pdf',
+                base64: 'pdfdata',
+                getFileID: vi.fn(() => 'file_special'),
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed[0].text).toBe('report (final) v2.pdf');
         });
 
         it('should handle JPEG files with .jpeg extension', () => {
-            const files = [{
-                type: 'image',
-                path: '/vault/photo.jpeg',
-                contents: 'jpegdata'
-            }];
+            const attachment = {
+                fileName: 'photo.jpeg',
+                mimeType: 'image/jpeg',
+                base64: 'jpegdata',
+                getFileID: vi.fn(() => 'file_jpeg_ext'),
+                setFileID: vi.fn(),
+                deleteFileID: vi.fn()
+            };
 
-            const result = claude.formatBinaryFiles(files);
+            const result = claude.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed[1]).toEqual({
                 type: 'image',
                 source: {
-                    type: 'base64',
-                    media_type: 'image/jpeg',
-                    data: 'jpegdata'
+                    type: 'file',
+                    file_id: 'file_jpeg_ext'
                 }
             });
         });

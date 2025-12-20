@@ -33,7 +33,7 @@
     chatContainer.scroll({ top: 0, behavior: "instant" });
   }
 
-  export function updateChatAreaLayout(behavior: ScrollBehavior | undefined, shouldSettle: boolean = false) {
+  export function updateChatAreaLayout(behavior: ScrollBehavior | undefined, shouldSettle: boolean = false, isObserver: boolean = false) {
     if (layoutUpdateTimeout) {
       clearTimeout(layoutUpdateTimeout);
     }
@@ -75,7 +75,9 @@
       });
     };
 
-    if (behavior === "instant" || shouldSettle) {
+    if (isObserver) { // instant updates for observers
+      performLayoutCalculations();
+    } else if (behavior === "instant" || shouldSettle) {
       tick().then(() => {
         requestAnimationFrame(() => {
           performLayoutCalculations();
@@ -175,7 +177,7 @@
 
   function observeResize(element: HTMLElement) {
     const observer = new ResizeObserver(() => {
-      updateChatAreaLayout("smooth", false);
+      updateChatAreaLayout("smooth", false, true);
     });
 
     observer.observe(element);
@@ -246,66 +248,93 @@
   }
 </script>
 
-<div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll} use:observeResize>
+<div class="chat-area-wrapper">
+  {#if messages.length > 0}
   <div class="top-fade"></div>
-  {#each messages as message, index}
-    {@const content = message.getDisplayContent()}
-    {#if message.shouldDisplayContent && content.trim() !== ""}
-      {#if message.role === Role.User}
-        <div class="message-container {Role.User}" use:trackingAction={index}>
-          <div class="message-bubble {Role.User}">
-            <div class="message-text-user fade-in-fast" contenteditable="false">
-              {@html content}
+  {/if}
+  <div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll} use:observeResize>
+    {#each messages as message, index}
+      {@const content = message.getDisplayContent()}
+      {#if message.shouldDisplayContent && content.trim() !== ""}
+        {#if message.role === Role.User}
+          <div class="message-container {Role.User}" use:trackingAction={index}>
+            <div class="message-bubble {Role.User}">
+              <div class="message-text-user fade-in-fast" contenteditable="false">
+                {@html content}
+              </div>
             </div>
           </div>
-        </div>
-      {:else}
-        {@const messageId = message.timestamp.getTime().toString()}
-        <div class="message-container {Role.Assistant}" use:trackingAction={index}>
-          <div class="message-bubble {Role.Assistant}">
-            <div class="markdown-content fade-in-fast {currentStreamingMessageId === messageId ? "streaming" : ""}">
-              {#if currentStreamingMessageId === messageId}
-                <div use:streamingAction={messageId} class="streaming-content"></div>
-              {:else}
-                {@html getStaticHTML(message)}
-              {/if}
+        {:else}
+          {@const messageId = message.timestamp.getTime().toString()}
+          <div class="message-container {Role.Assistant}" use:trackingAction={index}>
+            <div class="message-bubble {Role.Assistant}">
+              <div class="markdown-content fade-in-fast {currentStreamingMessageId === messageId ? "streaming" : ""}">
+                {#if currentStreamingMessageId === messageId}
+                  <div use:streamingAction={messageId} class="streaming-content"></div>
+                {:else}
+                  {@html getStaticHTML(message)}
+                {/if}
+              </div>
             </div>
           </div>
-        </div>
+        {/if}
       {/if}
+    {/each}
+
+    <ThoughtIndicator thought={currentThought} bind:thoughtIndicatorElement={thoughtIndicatorElement}/>
+    {#if isSubmitting}
+      <StreamingIndicator editModeActive={editModeActive} bind:streamingIndicatorElement={streamingIndicatorElement}/>
     {/if}
-  {/each}
-  
-  <ThoughtIndicator thought={currentThought} bind:thoughtIndicatorElement={thoughtIndicatorElement}/>
-  {#if isSubmitting}
-    <StreamingIndicator editModeActive={editModeActive} bind:streamingIndicatorElement={streamingIndicatorElement}/>
-  {/if}
 
-  {#if cancelling}
-    <CancellationIndicator/>
-  {/if}
+    {#if cancelling}
+      <CancellationIndicator/>
+    {/if}
 
-  <div bind:this={chatAreaPaddingElement}></div>
+    <div bind:this={chatAreaPaddingElement}></div>
+
+    {#if messages.length === 0}
+      <div class="conversation-empty-state">
+        <div class="typing-in">{getGreetingByTime()}</div>
+      </div>
+    {/if}
+  </div>
   
-  {#if messages.length === 0}
-    <div class="conversation-empty-state">
-      <div class="typing-in">{getGreetingByTime()}</div>
-    </div>
+  {#if messages.length > 0}
+  <div class="bottom-fade"></div>
   {/if}
 </div>
 
 <style>
+  .chat-area-wrapper {
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
+
   .top-fade {
     position: absolute;
-    width: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
     height: var(--size-4-4);
     background-image: linear-gradient(to bottom, var(--background-secondary), transparent);
-    margin-top: calc(var(--size-4-4) * -1);
-    margin-left: calc(var(--size-4-3) * -1);
-    z-index: 1;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .bottom-fade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--size-4-4);
+    background-image: linear-gradient(to top, var(--background-secondary), transparent);
+    z-index: 10;
+    pointer-events: none;
   }
 
   .chat-area {
+    position: relative;
     display: flex;
     flex-direction: column;
     height: 100%;

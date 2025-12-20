@@ -237,29 +237,18 @@ export class OpenAI extends BaseAIClass {
 
             // Case 2: Binary file attachments
             if (content.attachments && content.attachments.length > 0) {
-                // Upload all attachments and track failures
-                const failedUploads: string[] = [];
+                const { formattedParts, errorMessage } = await this.processAttachments<ResponsesAPIInput>(
+                    content.attachments,
+                    (attachments) => this.formatBinaryFiles(attachments)
+                );
 
-                for (const attachment of content.attachments) {
-                    try {
-                        await this.aiFileService.uploadFile(attachment);
-                    } catch (error) {
-                        Exception.log(`Failed to upload ${attachment.fileName}: ${Exception.messageFrom(error)}`);
-                        failedUploads.push(attachment.fileName);
-                    }
-                }
+                results.push(...formattedParts);
 
-                // Format successfully uploaded files
-                const formattedContent = this.formatBinaryFiles(content.attachments);
-                const rawContent = JSON.parse(formattedContent) as ResponsesAPIInput[];
-                results.push(...rawContent);
-
-                // Add error messages for failed uploads
-                if (failedUploads.length > 0) {
+                if (errorMessage) {
                     // OpenAI formatBinaryFiles returns array with role wrapper, so add as separate message
                     results.push({
                         role: "user",
-                        content: `[Upload failed for: ${failedUploads.join(', ')}.]`
+                        content: errorMessage
                     });
                 }
                 continue;

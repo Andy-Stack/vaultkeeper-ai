@@ -194,28 +194,17 @@ export class Claude extends BaseAIClass {
 
             // Add binary file attachments if present
             if (content.attachments && content.attachments.length > 0) {
-                // Upload all attachments and track failures
-                const failedUploads: string[] = [];
+                const { formattedParts, errorMessage } = await this.processAttachments<ContentBlockParam>(
+                    content.attachments,
+                    (attachments) => this.formatBinaryFiles(attachments)
+                );
 
-                for (const attachment of content.attachments) {
-                    try {
-                        await this.aiFileService.uploadFile(attachment);
-                    } catch (error) {
-                        Exception.log(`Failed to upload ${attachment.fileName}: ${Exception.messageFrom(error)}`);
-                        failedUploads.push(attachment.fileName);
-                    }
-                }
+                contentBlocks.push(...formattedParts);
 
-                // Format successfully uploaded files
-                const formattedContent = this.formatBinaryFiles(content.attachments);
-                const rawContent = JSON.parse(formattedContent) as ContentBlockParam[];
-                contentBlocks.push(...rawContent);
-
-                // Add error messages for failed uploads
-                if (failedUploads.length > 0) {
+                if (errorMessage) {
                     contentBlocks.push({
                         type: "text",
-                        text: `[Upload failed for: ${failedUploads.join(', ')}.]`
+                        text: errorMessage
                     });
                 }
             }

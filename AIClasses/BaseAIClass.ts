@@ -130,6 +130,32 @@ export abstract class BaseAIClass implements IAIClass {
         ].filter(s => s).join("\n\n");
     }
 
+    protected async processAttachments<T>(
+        attachments: Attachment[],
+        formatBinaryFiles: (attachments: Attachment[]) => string
+    ): Promise<{ formattedParts: T[], errorMessage?: string }> {
+        const failedUploads: string[] = [];
+
+        for (const attachment of attachments) {
+            try {
+                await this.aiFileService.uploadFile(attachment);
+            } catch (error) {
+                Exception.log(`Failed to upload ${attachment.fileName}: ${Exception.messageFrom(error)}`);
+                failedUploads.push(attachment.fileName);
+            }
+        }
+
+        const formattedContent = formatBinaryFiles(attachments);
+        const formattedParts = JSON.parse(formattedContent) as T[];
+
+        return {
+            formattedParts,
+            errorMessage: failedUploads.length > 0
+                ? `[Upload failed for: ${failedUploads.join(', ')}.]`
+                : undefined
+        };
+    }
+
     /**
      * Converts a function call to legacy text format for cross-provider compatibility.
      * Used when a provider doesn't have the required ID field (e.g., Gemini → Claude/OpenAI).

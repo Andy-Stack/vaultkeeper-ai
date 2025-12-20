@@ -10,7 +10,6 @@ import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFun
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
 import { FinishReason } from "@google/genai";
-import { Exception } from "Helpers/Exception";
 
 export class Gemini extends BaseAIClass {
 
@@ -200,27 +199,16 @@ export class Gemini extends BaseAIClass {
 
         // Add binary file attachments if present
         if (content.attachments && content.attachments.length > 0) {
-          // Upload all attachments and track failures
-          const failedUploads: string[] = [];
+          const { formattedParts, errorMessage } = await this.processAttachments<Part>(
+            content.attachments,
+            (attachments) => this.formatBinaryFiles(attachments)
+          );
 
-          for (const attachment of content.attachments) {
-            try {
-              await this.aiFileService.uploadFile(attachment);
-            } catch (error) {
-              Exception.log(`Failed to upload ${attachment.fileName}: ${Exception.messageFrom(error)}`);
-              failedUploads.push(attachment.fileName);
-            }
-          }
+          parts.push(...formattedParts);
 
-          // Format successfully uploaded files
-          const formattedContent = this.formatBinaryFiles(content.attachments);
-          const rawContent = JSON.parse(formattedContent) as Part[];
-          parts.push(...rawContent);
-
-          // Add error messages for failed uploads
-          if (failedUploads.length > 0) {
+          if (errorMessage) {
             parts.push({
-              text: `[Upload failed for: ${failedUploads.join(', ')}.]`
+              text: errorMessage
             });
           }
         }

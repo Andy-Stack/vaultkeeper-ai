@@ -85,44 +85,28 @@ export abstract class BaseAIFileService implements IAIFileService {
 
 	// Retries operation on retryable errors (500, 502, 503, 504) with exponential backoff
 	protected async withRetry<T>(operationName: string, operation: () => Promise<T>, defaultValue: T): Promise<T> {
-		return await this.abortService.abortableOperation(async () => {
-			for (let attempt = 1; attempt <= BaseAIFileService.MAX_RETRIES; attempt++) {
-				try {
-					return await operation();
-				} catch (error) {
-
-					// Don't retry on abort errors - throw immediately
-					if (AbortService.isAbortError(error)) {
-						throw error;
-					}
-
-					if (ApiError.isApiError(error) && error.info.isRetryable) {
-						if (attempt === BaseAIFileService.MAX_RETRIES) {
-							Exception.log(`${operationName}: Max retries (${BaseAIFileService.MAX_RETRIES}) exhausted. Returning default value.`);
-							return defaultValue;
-						}
-
-						const delay = BaseAIFileService.RETRY_DELAYS[attempt];
-						Exception.warn(`${operationName}: Attempt ${attempt}/${BaseAIFileService.MAX_RETRIES} failed with ${error.info.type} (status ${error.info.statusCode}). Retrying in ${delay}ms...`);
-
-						if (this.abortService.signal().aborted) {
-							this.abortService.throw();
-						}
-
-						await sleep(delay);
-
-						if (this.abortService.signal().aborted) {
-							this.abortService.throw();
-						}
-					} else {
-						// Non-retryable error - return default value
-						Exception.log(`${operationName}: Non-retryable error. Returning default value.`);
+		for (let attempt = 1; attempt <= BaseAIFileService.MAX_RETRIES; attempt++) {
+			try {
+				return await operation();
+			} catch (error) {
+				if (ApiError.isApiError(error) && error.info.isRetryable) {
+					if (attempt === BaseAIFileService.MAX_RETRIES) {
+						Exception.log(`${operationName}: Max retries (${BaseAIFileService.MAX_RETRIES}) exhausted. Returning default value.`);
 						return defaultValue;
 					}
+
+					const delay = BaseAIFileService.RETRY_DELAYS[attempt];
+					Exception.warn(`${operationName}: Attempt ${attempt}/${BaseAIFileService.MAX_RETRIES} failed with ${error.info.type} (status ${error.info.statusCode}). Retrying in ${delay}ms...`);
+
+					await sleep(delay);
+				} else {
+					// Non-retryable error - return default value
+					Exception.log(`${operationName}: Non-retryable error. Returning default value.`);
+					return defaultValue;
 				}
 			}
-			return defaultValue;
-		});
+		}
+		return defaultValue;
 	}
 
 	protected createBoundary(): string {

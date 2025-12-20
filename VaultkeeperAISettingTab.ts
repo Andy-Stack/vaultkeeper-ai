@@ -1,7 +1,8 @@
-import { AIProviderModel, fromModel } from "Enums/ApiProvider";
+import { AIProvider, AIProviderModel, fromModel } from "Enums/ApiProvider";
 import { Copy } from "Enums/Copy";
 import { Selector } from "Enums/Selector";
 import type VaultkeeperAIPlugin from "main";
+import { HelpModal } from "Modals/HelpModal";
 import { PluginSettingTab, Setting, setIcon, setTooltip } from "obsidian";
 import { Resolve } from "Services/DependencyService";
 import type { SettingsService } from "Services/SettingsService";
@@ -13,6 +14,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 
 	private apiKeySetting: Setting | null = null;
 	private apiKeyInputEl: HTMLInputElement | null = null;
+	private fileDisclaimerSetting: Setting | null = null;
 
 	constructor() {
 		const plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
@@ -129,6 +131,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 						this.apiKeyInputEl.value = this.settingsService.getApiKeyForCurrentModel();
 						this.highlightApiKey();
 					}
+					this.updateFileDisclaimer();
 				});
 			});
 
@@ -214,6 +217,25 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 						await this.settingsService.saveSettings();
 					});
 			});
+
+		/* File Monitoring Guidelines */
+		new Setting(containerEl)
+			.setHeading()
+			.setName(Copy.SettingFileMonitoringHeading);
+
+		this.fileDisclaimerSetting = new Setting(containerEl)
+			.setDesc(Copy.SettingFileMonitoringClaude)
+			.addExtraButton(button => {
+				button
+					.setTooltip(Copy.TooltipLearnMoreFileMonitoring)
+					.onClick(() => {
+						const modal = Resolve<HelpModal>(Services.HelpModal);
+						modal.open(2); // Opens HelpModal to "Plugin Guide" (topic 2)
+					});
+				setIcon(button.extraSettingsEl, "help-circle");
+			});
+
+		this.updateFileDisclaimer();
 	}
 
 	private highlightApiKey() {
@@ -226,6 +248,27 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				this.apiKeySetting.settingEl.removeClass(Selector.ApiKeySettingError);
 				this.apiKeySetting.settingEl.addClass(Selector.ApiKeySettingOk);
 			}
+		}
+	}
+
+	private updateFileDisclaimer() {
+		if (this.fileDisclaimerSetting) {
+			const provider = fromModel(this.settingsService.settings.model);
+			let disclaimerText;
+
+			switch(provider) {
+				case AIProvider.Gemini:
+					disclaimerText = Copy.SettingFileMonitoringGemini;
+					break;
+				case AIProvider.Claude:
+					disclaimerText = Copy.SettingFileMonitoringClaude;
+					break;
+				case AIProvider.OpenAI:
+					disclaimerText = Copy.SettingFileMonitoringOpenAI;
+					break;
+			}
+
+			this.fileDisclaimerSetting.setDesc(disclaimerText);
 		}
 	}
 }

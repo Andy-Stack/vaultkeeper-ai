@@ -41,6 +41,7 @@ export enum Copy {
     SettingContext = "Context",
     SettingSearchResultsLimit = "Search Results Limit",
     SettingSnippetSizeLimit = "Snippet Size Limit",
+    SettingFileMonitoringHeading = "File Monitoring Guidelines",
 
     // Settings Descriptions
     SettingModelDesc = "Select the AI model to use.",
@@ -48,6 +49,9 @@ export enum Copy {
     SettingFileExclusionsDesc = "Set which directories and files the AI should ignore. Enter one path per line - supports glob patterns like folder/**, *.md",
     SettingSearchResultsLimitDesc = "Set the maximum number of results provided to the AI when it searches through files in your vault. Higher values provide more context but increase search time.",
     SettingSnippetSizeLimitDesc = "Set the character limit of search previews provided to the AI when it searches through files in your vault. Higher values provide more context per result.",
+    SettingFileMonitoringGemini = "Files uploaded to Gemini are automatically deleted after 48 hours and will be re-uploaded during conversations as needed. No manual cleanup is typically required.",
+    SettingFileMonitoringClaude = "Files uploaded to Claude remain stored indefinitely. Periodically check the Anthropic Console (https://console.anthropic.com/) to review and remove old files that are no longer needed.",
+    SettingFileMonitoringOpenAI = "Files uploaded to OpenAI remain stored indefinitely. Periodically check the OpenAI Platform (https://platform.openai.com/) to review and remove old files that are no longer needed.",
 
     // Settings Placeholders
     PlaceholderEnterApiKey = "Enter your API key",
@@ -56,6 +60,7 @@ export enum Copy {
     // Settings Tooltips
     TooltipShowApiKey = "Show API Key",
     TooltipHideApiKey = "Hide API Key",
+    TooltipLearnMoreFileMonitoring = "Learn more in Plugin Guide",
 
     AIThoughtMessage = "Thinking...",
 
@@ -108,7 +113,21 @@ Customize AI behavior for specific workflows:
 3. Select your instruction set
 4. The AI follows these instructions for all interactions
 
-See [Example Template](#/page/Vault%20AI%2FUser%20Instructions%2FEXAMPLE_INSTRUCTIONS) for help getting started.`,
+See [Example Template](#/page/Vaultkeeper%20AI%2FUser%20Instructions%2FEXAMPLE_INSTRUCTIONS) for help getting started.
+
+##### File Monitoring
+
+When you upload files (PDFs, images) to conversations, they are stored by your AI provider. The plugin automatically attempts to delete these files when you delete conversations, but this may occasionally fail due to network issues or API rate limits.
+
+**What to do:**
+- Periodically check your provider's dashboard for uploaded files
+- Remove any old files that are no longer needed
+- Provider-specific details can be found in the plugin settings
+
+**Provider Dashboards:**
+- Claude: [Anthropic Console](https://console.anthropic.com/)
+- Gemini: [Google AI Studio](https://aistudio.google.com/)
+- OpenAI: [OpenAI Platform](https://platform.openai.com/)`,
 
     HelpModalTroubleshootTitle = "Troubleshooting",
     HelpModalTroubleshootContent = `#### Common Issues & Solutions

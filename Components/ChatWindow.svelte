@@ -15,6 +15,7 @@
 	import type { SettingsService } from "Services/SettingsService";
 	import { Copy } from "Enums/Copy";
 	import { AbortService } from "Services/AbortService";
+	import type { Attachment } from "Conversations/Attachment";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
@@ -34,6 +35,7 @@
   let currentStreamingMessageId: string | null = null;
 
   let conversation: Conversation = new Conversation();
+  let attachments: Attachment[] = [];
 
   let currentThought: string | null = null;
 
@@ -97,10 +99,11 @@
 
     const currentRequest = userRequest;
 
-    await chatService.submit(conversation, editModeActive, currentRequest, formattedRequest, {
+    await chatService.submit(conversation, editModeActive, currentRequest, formattedRequest, attachments, {
       onSubmit: () => {
         chatArea.updateChatAreaLayout("smooth");
         isSubmitting = true;
+        attachments = [];
       },
       onStreamingUpdate: (streamingId) => {
         conversation = conversation;
@@ -172,6 +175,7 @@
 
   <ChatInput
     bind:this={chatInput}
+    bind:attachments={attachments}
     {hasNoApiKey}
     {isSubmitting}
     {editModeActive}

@@ -45,7 +45,7 @@
             case SearchTrigger.Tag:
                 return "tag";
             default:
-                return "file-question-mark";
+                return "file";
         }
     }
 
@@ -121,7 +121,6 @@
         padding: var(--size-2-2) var(--size-4-2);
         cursor: pointer;
         position: relative;
-        z-index: 10;
     }
 
     .input-search-result-icon {

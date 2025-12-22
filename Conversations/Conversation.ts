@@ -4,8 +4,8 @@ import { Attachment } from "./Attachment";
 import type { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import { Role } from "Enums/Role";
 import { AIFunction } from "Enums/AIFunction";
-import { isTextFile, FileType, getImageMimeType, isFileType } from "Enums/FileType";
-import { Exception } from "Helpers/Exception";
+import { isTextFile, toFileType } from "Enums/FileType";
+import { FileTypeToMimeType } from "Enums/MimeType";
 
 export class Conversation {
 
@@ -17,8 +17,9 @@ export class Conversation {
     contents: ConversationContent[] = [];
 
     constructor() {
-        this.created = new Date();
-        this.updated = new Date();
+        const timestamp = new Date();
+        this.created = timestamp;
+        this.updated = timestamp;
         this.title = `${StringTools.dateToString(this.created)}`;
     }
 
@@ -82,24 +83,9 @@ export class Conversation {
         // 2. If there are binary files, create Attachments and add to conversation
         if (binaryResults.length > 0) {
             const attachments = binaryResults.map(file => {
-                // Extract filename from path
                 const fileName = file.path.split('/').pop() || file.path;
-
-                // Determine mimeType based on file.type
-                let mimeType: string;
-                if (isFileType(file.type, FileType.PDF)) {
-                    mimeType = "application/pdf";
-                } else {
-                    // For images, derive from extension
-                    const extension = fileName.split('.').pop()?.toLowerCase() || '';
-                    try {
-                        mimeType = getImageMimeType(extension);
-                    } catch (error) {
-                        Exception.log(error);
-                        Exception.throw(error);
-                    }
-                }
-
+                const mimeType = FileTypeToMimeType[toFileType(file.type)];
+                
                 return new Attachment(fileName, mimeType, file.contents);
             });
 

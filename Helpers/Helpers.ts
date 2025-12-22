@@ -1,4 +1,5 @@
 import type VaultkeeperAIPlugin from "main";
+import * as path from "path-browserify";
 
 export function openPluginSettings(plugin: VaultkeeperAIPlugin) {
     if (!("setting" in plugin.app) || typeof plugin.app.setting !== "object" || plugin.app.setting === null) {
@@ -37,6 +38,10 @@ export function shuffleArray<T>(array: T[]): T[] {
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled;
+}
+
+export function pathExtname(filePath: string) {
+    return path.extname(filePath).substring(1).toLocaleLowerCase();
 }
 
 export async function sleep(ms: number): Promise<void> {

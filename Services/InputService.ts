@@ -1,13 +1,85 @@
 import { Exception } from "Helpers/Exception";
 import { isSearchTriggerElement } from "../Enums/SearchTrigger";
+import { Attachment } from "Conversations/Attachment";
+import { arrayBufferToBase64 } from "obsidian";
+import { FileTypeToMimeType } from "Enums/MimeType";
+import * as path from "path-browserify";
+import { pathExtname } from "Helpers/Helpers";
+import { FileType, toFileType } from "Enums/FileType";
+import type { FileSystemService } from "./FileSystemService";
+import { Resolve } from "./DependencyService";
+import { Services } from "./Services";
 
 export class InputService {
 
-    public getPlainTextFromClipboard(clipboardData: DataTransfer | null): string {
-        if (!clipboardData) {
+    private readonly fileSystemService: FileSystemService;
+
+    public constructor() {
+        this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
+    }
+
+    public getTextFromDataTransfer(dataTransfer: DataTransfer | null): string {
+        if (!dataTransfer) {
             return "";
         }
-        return clipboardData.getData("text/plain") || "";
+        return dataTransfer.getData("text/plain") || "";
+    }
+
+    public async getFilesFromDataTransfer(dataTransfer: DataTransfer | null): Promise<Attachment[]> {
+        const attachments: Attachment[] = [];
+
+        if (!dataTransfer) {
+            return attachments;
+        }
+
+        // files from external source (dragged from outside Obsidian)
+        const files = dataTransfer.files;
+        if (files) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                attachments.push(new Attachment(
+                    file.name,
+                    FileTypeToMimeType[toFileType(pathExtname(file.name))],
+                    arrayBufferToBase64(await file.arrayBuffer())
+                ));
+            }
+        }
+
+        const uriList = dataTransfer.getData("text/uri-list");
+        const uris = uriList.split("\n").map(uri => uri.trim())
+            .filter(uri => uri.length > 0 && !uri.startsWith("#"));
+
+        for (const uri of uris) {
+            try {
+                const url = new URL(uri);
+                const fileParam = url.searchParams.get("file");
+                
+                if (fileParam) {
+                    let filePath = decodeURIComponent(fileParam);
+
+                    let extension = pathExtname(filePath);
+                    // Obsidian doesn't include extension for markdown files 
+                    if (extension.trim() === "") {
+                        extension = FileType.MD;
+                        filePath = `${filePath}.${extension}`;
+                    }
+
+                    const arrayBuffer = await this.fileSystemService.readBinaryFile(filePath);
+
+                    if (arrayBuffer instanceof ArrayBuffer) {
+                        attachments.push(new Attachment(
+                            path.basename(filePath),
+                            FileTypeToMimeType[toFileType(extension)],
+                            arrayBufferToBase64(arrayBuffer)
+                        ));
+                    }
+                }
+            } catch (error) {
+                Exception.log(error);
+            }
+        }
+
+        return attachments;
     }
 
     public sanitizeToPlainText(element: HTMLElement) {

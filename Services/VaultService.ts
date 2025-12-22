@@ -3,7 +3,7 @@ import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type VaultkeeperAIPlugin from "main";
 import { Path } from "Enums/Path";
-import { randomSample, shuffleArray } from "Helpers/Helpers";
+import { pathExtname, randomSample, shuffleArray } from "Helpers/Helpers";
 import { StringTools } from "Helpers/StringTools";
 import type { IPageText, ISearchMatch, ISearchSnippet } from "../Helpers/SearchTypes";
 import type { SanitiserService } from "./SanitiserService";
@@ -87,11 +87,22 @@ export class VaultService {
         }
 
         if (isBinaryFile(file.extension.toLowerCase())) {
-            const arrayBuffer = await this.vault.readBinary(file);
-            return arrayBufferToBase64(arrayBuffer);
+            const arrayBuffer = await this.readBinaryData(file, allowAccessToPluginRoot);
+            if (arrayBuffer) {
+                return arrayBufferToBase64(arrayBuffer);
+            }
         }
 
         return await this.vault.read(file);
+    }
+
+    public async readBinaryData(file: TFile, allowAccessToPluginRoot: boolean = false): Promise<ArrayBuffer | null> {
+        const filePath = this.sanitiserService.sanitize(file.path);
+        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
+            Exception.log(`Plugin attempted to read a file that is in the exclusions list: ${filePath}`);
+            return null;
+        }
+        return await this.vault.readBinary(file);
     }
 
     public async create(filePath: string, content: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
@@ -101,7 +112,7 @@ export class VaultService {
             return Exception.new(`Failed to create file, permission denied: ${filePath}`);
         }
 
-        if (path.extname(filePath) === "pdf") {
+        if (isFileType(pathExtname(filePath), FileType.PDF)) {
             return Exception.new("Creating PDF files is not supported");
         }
 
@@ -142,7 +153,7 @@ export class VaultService {
             return Exception.new(`File does not exist: ${filePath}`);
         }
 
-        if (isFileType(path.extname(filePath), FileType.PDF)) {
+        if (isFileType(pathExtname(filePath), FileType.PDF)) {
             return Exception.new("Creating PDF files is not supported");
         }
 
@@ -179,7 +190,7 @@ export class VaultService {
                 return currentContent;
             }
 
-            if (isFileType(path.extname(filePath), FileType.PDF)) {
+            if (isFileType(pathExtname(filePath), FileType.PDF)) {
                 await this.fileManager.trashFile(file);
             }
 

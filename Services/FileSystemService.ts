@@ -28,6 +28,21 @@ export class FileSystemService {
         return Exception.new(`Path is a folder, not a file: ${filePath}`);
     }
 
+    public async readBinaryFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<ArrayBuffer | Error> {
+        const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
+        if (file == null) {
+            return Exception.new(`File does not exist: ${filePath}`);    
+        }
+        if (file instanceof TFile) {
+            const arrayBuffer = await this.vaultService.readBinaryData(file, allowAccessToPluginRoot);
+            if (!arrayBuffer) {
+                return Exception.new(`Failed to read binary dta for: ${filePath}`);
+            }
+            return arrayBuffer;
+        }
+        return Exception.new(`Path is a folder, not a file: ${filePath}`);
+    }
+
     public async writeFile(filePath: string, content: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
         if (file == null || !(file instanceof TFile)) {

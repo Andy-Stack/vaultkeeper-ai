@@ -14,6 +14,10 @@
 	import type { EventService } from "Services/EventService";
 	import { Event } from "Enums/Event";
 	import type { DiffService } from "Services/DiffService";
+	import type { Attachment } from "Conversations/Attachment";
+	import ChatAttachments from "./ChatAttachments.svelte";
+
+  export let attachments: Attachment[] = [];
 
   export let hasNoApiKey: boolean;
   export let isSubmitting: boolean;
@@ -35,8 +39,9 @@
   let submitButton: HTMLButtonElement;
   let editModeButton: HTMLButtonElement;
 
-  let userInstructionActive = false;
-  let userRequest = "";
+  let userInstructionActive: boolean = false;
+
+  let userRequest: string = "";
 
   let diffOpen: boolean = false;
   
@@ -227,19 +232,6 @@
     }
   }
 
-  function handlePaste(e: ClipboardEvent) {
-    e.preventDefault();
-
-    const plainText = inputService.getPlainTextFromClipboard(e.clipboardData);
-
-    if (!plainText) {
-      return;
-    }
-
-    inputService.insertTextAtCursor(plainText);
-    handleInput();
-  }
-
   function handleCopy(e: ClipboardEvent) {
     e.preventDefault();
 
@@ -253,10 +245,17 @@
     e.clipboardData?.setData("text/plain", selectedText);
   }
 
-  function handleDrop(e: DragEvent) {
+  async function handleDataTransfer(e: ClipboardEvent | DragEvent) {
     e.preventDefault();
+    e.stopPropagation();
 
-    const plainText = e.dataTransfer?.getData("text/plain") || "";
+    const dataTransfer = e instanceof ClipboardEvent ? e.clipboardData : e.dataTransfer;
+
+    const files = await inputService.getFilesFromDataTransfer(dataTransfer);
+    const plainText = inputService.getTextFromDataTransfer(dataTransfer);
+
+    const newAttachments = files.filter(file => !attachments.some(attachment => attachment.base64 === file.base64));
+    attachments = [...attachments, ...newAttachments];
 
     if (!plainText) {
       return;
@@ -264,6 +263,25 @@
 
     inputService.insertTextAtCursor(plainText);
     handleInput();
+  }
+
+  function handleDragOver(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = "copy";
+      e.dataTransfer.effectAllowed = "copy";
+    }
+  }
+
+  function handleDragEnter(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function handleDragLeave(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
   }
 
   function handleCursorPositionChange() {
@@ -284,6 +302,10 @@
 </script>
 
 <div id="input-container" class:edit-mode={editModeActive}>
+  <div id="input-attachments-container" style:padding-top={attachments.length > 0 ? "var(--size-4-2)" : 0}>
+    <ChatAttachments bind:attachments={attachments}/>
+  </div>
+
   <div id="diff-controls-container" style:padding-top={diffOpen ? "var(--size-4-2)" : 0} style:display={diffOpen ? "inline" : "none"}>
     <DiffControls/>
   </div>
@@ -313,9 +335,12 @@
     on:keydown={handleKeydown}
     on:beforeinput={handleBeforeInput}
     on:input={handleInput}
-    on:paste={handlePaste}
     on:copy={handleCopy}
-    on:drop={handleDrop}
+    on:paste={handleDataTransfer}
+    on:drop={handleDataTransfer}
+    on:dragover={handleDragOver}
+    on:dragenter={handleDragEnter}
+    on:dragleave={handleDragLeave}
     on:click={handleCursorPositionChange}
     on:keyup={handleCursorPositionChange}
     on:focusout={handleFocusOut}
@@ -355,7 +380,7 @@
     grid-row: 2;
     grid-column: 1;
     display: grid;
-    grid-template-rows: auto auto var(--size-4-3) 1fr var(--size-4-3);
+    grid-template-rows: auto auto auto var(--size-4-3) 1fr var(--size-4-3);
     grid-template-columns: var(--size-4-3) auto var(--size-4-2) 1fr var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
     border-radius: var(--modal-radius);
     background-color: var(--background-primary);
@@ -366,23 +391,28 @@
     transition: border-color 0.5s ease-out;
   }
 
-  #diff-controls-container {
+  #input-attachments-container {
     grid-row: 1;
     grid-column: 2 / 9;
   }
 
-  #input-search-results-container {
+  #diff-controls-container {
     grid-row: 2;
+    grid-column: 2 / 9;
+  }
+
+  #input-search-results-container {
+    grid-row: 3;
     grid-column: 2 / 9;
   }
 
   #user-instruction-container {
-    grid-row: 2;
+    grid-row: 3;
     grid-column: 2 / 9;
   }
 
   #user-instruction-button {
-    grid-row: 4;
+    grid-row: 5;
     grid-column: 2;
     border-radius: var(--button-radius);
     align-self: end;
@@ -398,7 +428,7 @@
   }
 
   #input-field {
-    grid-row: 4;
+    grid-row: 5;
     grid-column: 4;
     height: 100%;
     max-height: 30vh;
@@ -459,7 +489,7 @@
   }
 
   #edit-mode-button {
-    grid-row: 4;
+    grid-row: 5;
     grid-column: 6;
     border-radius: var(--button-radius);
     align-self: end;
@@ -471,7 +501,7 @@
   }
 
   #submit-button {
-    grid-row: 4;
+    grid-row: 5;
     grid-column: 8;
     border-radius: var(--button-radius);
     padding-left: var(--size-4-5);

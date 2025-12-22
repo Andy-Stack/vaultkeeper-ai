@@ -61,6 +61,13 @@
 /* CSS Variables for Common Components */
 /* ============================== */
 
+.transparent-button {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
 .search-trigger {
   color: var(--interactive-accent);
   cursor: default;

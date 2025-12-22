@@ -314,7 +314,6 @@ describe('Conversation', () => {
 				const mostRecent = conversation.contents[conversation.contents.length - 1];
 				if (mostRecent) {
 					mostRecent.functionCall = 'test';
-					mostRecent.isFunctionCall = true;
 				}
 			}).not.toThrow();
 			expect(conversation.contents).toHaveLength(0);

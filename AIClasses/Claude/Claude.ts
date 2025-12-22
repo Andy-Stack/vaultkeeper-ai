@@ -10,11 +10,21 @@ import type { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import type { RawMessageStreamEvent, ContentBlockParam, Tool } from '@anthropic-ai/sdk/resources/messages';
 import { Exception } from "Helpers/Exception";
+import { MimeType, toMimeType } from "Enums/MimeType";
+import { isTextFile, MimeTypeToFileTypes } from "Enums/FileType";
 
 export class Claude extends BaseAIClass {
 
     private readonly STOP_REASON_TOOL_USE: string = "tool_use";
-    private readonly SUPPORTED_IMAGE_TYPES: string[] = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    
+    private readonly SUPPORTED_MIMETYPES = [
+        MimeType.TEXT_PLAIN,
+        MimeType.APPLICATION_PDF,
+        MimeType.IMAGE_JPEG,
+        MimeType.IMAGE_PNG,
+        MimeType.IMAGE_GIF,
+        MimeType.IMAGE_WEBP
+    ];
 
     private accumulatedFunctionName: string | null = null;
     private accumulatedFunctionArgs: string = "";
@@ -257,27 +267,28 @@ export class Claude extends BaseAIClass {
 
     public formatBinaryFiles(attachments: Attachment[]): string {
         const contentBlocks = attachments.flatMap(attachment => {
-            // Check for uploaded file ID
             const fileID = attachment.getFileID(this.provider);
             if (!fileID) {
-                // Skip - upload failed, error message added in extractContents()
-                return [];
+                return []; // Skip - upload failed, error message added in extractContents()
             }
 
-            let blockType: string;
-            if (attachment.mimeType === "application/pdf") {
-                blockType = "document";
-            } else {
-                blockType = "image";
-                if (!this.SUPPORTED_IMAGE_TYPES.includes(attachment.mimeType)) {
-                    return [{ type: "text", text: `Unsupported image format: ${attachment.fileName}` }];
-                }
+            const mimeType = toMimeType(attachment.mimeType);
+
+            let isPlainText = false;
+
+            // This content can be sent up with the 'MimeType.TEXT_PLAIN' mime type
+            if (MimeTypeToFileTypes[mimeType].some(fileType => isTextFile(fileType))) {
+                isPlainText = true;
+            }
+
+            if (!isPlainText && !this.isSupportedMimeType(mimeType)) {
+                return [{ type: "text", text: `Unsupported mime type '${mimeType}': ${attachment.fileName}` }];
             }
 
             return [
                 {type: "text", text: attachment.fileName},
                 {
-                    type: blockType,
+                    type: isPlainText || mimeType === MimeType.APPLICATION_PDF ? "document" : "image",
                     source: {
                         type: "file",
                         file_id: fileID
@@ -286,5 +297,9 @@ export class Claude extends BaseAIClass {
             ];
         });
         return JSON.stringify(contentBlocks);
+    }
+
+    private isSupportedMimeType(mimeType: MimeType): boolean {
+        return this.SUPPORTED_MIMETYPES.includes(mimeType);
     }
 }

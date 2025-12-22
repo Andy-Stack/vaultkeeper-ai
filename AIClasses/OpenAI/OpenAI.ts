@@ -10,10 +10,18 @@ import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFun
 import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIFunctionTool, ResponsesAPIInput } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
 import { ApiErrorType } from "Types/ApiError";
+import { MimeType, toMimeType } from "Enums/MimeType";
+import { isTextFile, MimeTypeToFileTypes } from "Enums/FileType";
 
 export class OpenAI extends BaseAIClass {
 
-    private readonly SUPPORTED_IMAGE_TYPES: string[] = ["image/jpeg", "image/png", "image/webp"];
+    private readonly SUPPORTED_MIMETYPES = [
+        MimeType.TEXT_PLAIN,
+        MimeType.APPLICATION_PDF,
+        MimeType.IMAGE_JPEG,
+        MimeType.IMAGE_PNG,
+        MimeType.IMAGE_WEBP
+    ];
 
     public constructor() {
         super(AIProvider.OpenAI);
@@ -309,40 +317,38 @@ export class OpenAI extends BaseAIClass {
         const contentBlocks: unknown[] = [];
 
         for (const attachment of attachments) {
-            // Check for uploaded file ID
             const fileID = attachment.getFileID(this.provider);
             if (!fileID) {
-                // Skip - upload failed, error message added in extractContents()
+                continue; // Skip - upload failed, error message added in extractContents()
+            }
+
+            const mimeType = toMimeType(attachment.mimeType);
+
+            let isPlainText = false;
+
+            //This content can be sent up with the 'MimeType.TEXT_PLAIN' mime type
+            if (MimeTypeToFileTypes[mimeType].some(fileType => isTextFile(fileType))) {
+                isPlainText = true;
+            }
+
+            if (!isPlainText && !this.isSupportedMimeType(mimeType)) {
+                contentBlocks.push([{ type: "input_text", text: `Unsupported mime type '${mimeType}': ${attachment.fileName}` }]);
                 continue;
             }
 
-            if (attachment.mimeType === "application/pdf") {
-                // Use file ID format for PDFs
-                contentBlocks.push({
-                    type: "input_file",
-                    file_id: fileID
-                });
-            } else {
-                // Images
-                if (!this.SUPPORTED_IMAGE_TYPES.includes(attachment.mimeType)) {
-                    contentBlocks.push({
-                        type: "input_text",
-                        text: `Unsupported image format: ${attachment.fileName}`
-                    });
-                    continue;
-                }
-
-                // Use file ID format for images
-                contentBlocks.push({
-                    type: "input_image",
-                    file_id: fileID
-                });
-            }
+            contentBlocks.push({
+                type: isPlainText || mimeType === MimeType.APPLICATION_PDF ? "input_file" : "input_image",
+                file_id: fileID
+            });
         }
 
         return JSON.stringify([{
             role: "user",
             content: contentBlocks
         }]);
+    }
+
+    private isSupportedMimeType(mimeType: MimeType): boolean {
+        return this.SUPPORTED_MIMETYPES.includes(mimeType);
     }
 }

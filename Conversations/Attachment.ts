@@ -34,6 +34,14 @@ export class Attachment {
         return false;
     }
 
+    public approximateFileSizeMB() {
+        // get the approximate MB size of the base64 string rounded to 2 decimal places
+        const paddingBytes = this.base64.endsWith("==") ? 2 : this.base64.endsWith("=") ? 1 : 0;
+        const byteSize = (this.base64.length * 3 / 4) - paddingBytes;
+        const megaByteSize = byteSize / 1000000;
+        return Math.round((megaByteSize + Number.EPSILON) * 100) / 100;
+    }
+
     public static isAttachmentData(this: void, data: unknown): data is {
         fileName: string;
         mimeType: string;

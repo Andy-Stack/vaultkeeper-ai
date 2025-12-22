@@ -10,11 +10,59 @@ import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFun
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
 import { FinishReason } from "@google/genai";
+import { MimeType, toMimeType } from "Enums/MimeType";
+import { isTextFile, MimeTypeToFileTypes } from "Enums/FileType";
 
 export class Gemini extends BaseAIClass {
 
   private readonly REQUEST_WEB_SEARCH: string = "request_web_search";
-  private readonly SUPPORTED_IMAGE_TYPES: string[] = ["image/jpeg", "image/png"];
+
+  private readonly SUPPORTED_MIMETYPES = [
+    // Common Text
+    MimeType.TEXT_PLAIN,
+    MimeType.TEXT_HTML,
+    MimeType.TEXT_CSS,
+    MimeType.TEXT_CSV,
+    MimeType.TEXT_MD,
+    MimeType.TEXT_MARKDOWN,
+    MimeType.TEXT_XML,
+    MimeType.APPLICATION_RTF,
+    // Images
+    MimeType.IMAGE_JPEG,
+    MimeType.IMAGE_PNG,
+    // Data Formats
+    MimeType.APPLICATION_JSON,
+    MimeType.APPLICATION_XML,
+    // Scripting
+    MimeType.TEXT_PYTHON,
+    MimeType.APPLICATION_PYTHON_CODE,
+    MimeType.TEXT_JAVASCRIPT,
+    MimeType.APPLICATION_JAVASCRIPT,
+    MimeType.TEXT_TYPESCRIPT,
+    MimeType.APPLICATION_TYPESCRIPT,
+    MimeType.TEXT_SH,
+    MimeType.APPLICATION_SH,
+    // C-Family
+    MimeType.TEXT_C,
+    MimeType.TEXT_CPP,
+    MimeType.TEXT_CSRC,
+    MimeType.TEXT_CPPSRC,
+    MimeType.TEXT_CHDR,
+    MimeType.TEXT_CPPHDR,
+    // Java/JVM
+    MimeType.TEXT_JAVA,
+    MimeType.TEXT_JAVA_SOURCE,
+    MimeType.TEXT_KOTLIN,
+    MimeType.TEXT_SCALA,
+    // Others
+    MimeType.TEXT_GO,
+    MimeType.TEXT_RUST,
+    MimeType.TEXT_SWIFT,
+    MimeType.TEXT_RUBY,
+    MimeType.TEXT_PHP,
+    MimeType.TEXT_YAML,
+    MimeType.APPLICATION_YAML
+  ];
 
   private accumulatedFunctionName: string | null = null;
   private accumulatedFunctionArgs: Record<string, unknown> = {};
@@ -261,31 +309,38 @@ export class Gemini extends BaseAIClass {
     const parts: unknown[] = [];
 
     for (const attachment of attachments) {
-      // Check for uploaded file ID
       const fileID = attachment.getFileID(this.provider);
       if (!fileID) {
-        // Skip - upload failed, error message added in extractContents()
+        continue; // Skip - upload failed, error message added in extractContents()
+      }
+
+      const mimeType = toMimeType(attachment.mimeType);
+
+      let isPlainText = false;
+
+      // This content can be sent up with the 'MimeType.TEXT_PLAIN' mime type
+      if (MimeTypeToFileTypes[mimeType].some(fileType => isTextFile(fileType))) {
+        isPlainText = true;
+      }
+
+      if (!isPlainText && !this.isSupportedMimeType(mimeType)) {
+        parts.push({ text: `Unsupported mime type '${mimeType}': ${attachment.fileName}` });
         continue;
       }
 
-      // Validate image types (Gemini only supports JPEG and PNG)
-      if (attachment.mimeType.startsWith('image/')) {
-        if (!this.SUPPORTED_IMAGE_TYPES.includes(attachment.mimeType)) {
-          parts.push({ text: `Unsupported image format: ${attachment.fileName}` });
-          continue;
-        }
-      }
-
-      // Add filename and file data
       parts.push({text: attachment.fileName});
       parts.push({
         fileData: {
-          mimeType: attachment.mimeType,
-          fileUri: fileID  // Format: "files/abc123"
+          mimeType: mimeType,
+          fileUri: fileID
         }
       });
     }
 
     return JSON.stringify(parts);
+  }
+
+  private isSupportedMimeType(mimeType: MimeType): boolean {
+    return this.SUPPORTED_MIMETYPES.includes(mimeType);
   }
 }

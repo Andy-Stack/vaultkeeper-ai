@@ -250,7 +250,7 @@
 
 <div class="chat-area-wrapper">
   {#if messages.length > 0}
-  <div class="top-fade"></div>
+    <div class="top-fade"></div>
   {/if}
   <div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll} use:observeResize>
     {#each messages as message, index}
@@ -300,7 +300,7 @@
   </div>
   
   {#if messages.length > 0}
-  <div class="bottom-fade"></div>
+    <div class="bottom-fade"></div>
   {/if}
 </div>
 
@@ -390,6 +390,7 @@
     font-size: var(--font-ui-medium);
     color: var(--text-muted);
     pointer-events: none;
+    user-select: none;
   }
 
   .streaming-content {

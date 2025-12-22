@@ -15,6 +15,7 @@ import { Event } from "Enums/Event";
 import { AbortService } from "./AbortService";
 import { Exception } from "Helpers/Exception";
 import { Copy } from "Enums/Copy";
+import type { Attachment } from "Conversations/Attachment";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
@@ -50,7 +51,7 @@ export class ChatService {
 		this.ai = Resolve<IAIClass>(Services.IAIClass);
 	}
 
-	public async submit(conversation: Conversation, allowDestructiveActions: boolean, userRequest: string, formattedRequest: string, callbacks: IChatServiceCallbacks) {
+	public async submit(conversation: Conversation, allowDestructiveActions: boolean, userRequest: string, formattedRequest: string, attachments: Attachment[], callbacks: IChatServiceCallbacks) {
 		if (!await this.semaphore.wait()) {
 			return;
 		}
@@ -65,6 +66,8 @@ export class ChatService {
 			this.abortService.initialiseAbortController();
 
 			await this.abortService.abortableOperation(async () => {
+				const firstMessage = conversation.contents.length === 0;
+
 				conversation.contents.push(new ConversationContent({
 					role: Role.User,
 					content: formattedRequest,
@@ -72,10 +75,19 @@ export class ChatService {
 				}));
 				await this.saveConversation(conversation);
 
+				if (attachments.length > 0) {
+					// Add any attachments that came from paste / drop
+					conversation.contents.push(new ConversationContent({
+						role: Role.User,
+						attachments: attachments,
+						shouldDisplayContent: false
+					}));
+				}
+
 				callbacks.onSubmit();
 				callbacks.onStreamingUpdate(null);
 
-				if (conversation.contents.length === 1) {
+				if (firstMessage) {
 					this.onNameChanged?.(conversation.title); // on change for initial conversation name
 					await this.namingService.requestName(conversation, formattedRequest, this.onNameChanged);
 				}

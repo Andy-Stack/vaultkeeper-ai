@@ -6,9 +6,6 @@ import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import { StreamingService } from '../../Services/StreamingService';
-import { SettingsService } from '../../Services/SettingsService';
-import { AIFunctionDefinitions } from '../../AIClasses/FunctionDefinitions/AIFunctionDefinitions';
 import { AbortService } from '../../Services/AbortService';
 import { AIProvider } from '../../Enums/ApiProvider';
 

@@ -2,17 +2,30 @@
 	import type { Attachment } from "Conversations/Attachment";
 	import { setElementIcon } from "Helpers/ElementHelper";
 	import { setIcon } from "obsidian";
+	import { tick } from "svelte";
 
 	export let attachments: Attachment[] = [];
 
 	let removeAttachmentButtons: (HTMLButtonElement | null)[] = [];
 	let attachmentElements: (HTMLDivElement | null)[] = [];
 	let selectedElement: HTMLDivElement | null = null;
+	let contentDiv: HTMLDivElement;
+	let height = 0;
+
+	$: attachments, updateHeight();
 
 	$: if (removeAttachmentButtons.length > 0) {
 		removeAttachmentButtons.forEach((button) => {
 			if (button) {
 				setIcon(button, "circle-x");
+			}
+		});
+	}
+
+	function updateHeight() {
+		tick().then(() => {
+			if (contentDiv) {
+				height = contentDiv.scrollHeight;
 			}
 		});
 	}
@@ -37,41 +50,48 @@
 	}
 </script>
 
-<div id="chat-attachments-container">
-	{#each attachments as attachment, index}
-		<div class="chat-attachmanet"
-            class:selected={attachmentElements[index] === selectedElement}
-            role="option"
-            tabindex="0"
-            aria-selected={attachmentElements[index] === selectedElement ? "true" : "false"}
-            on:keydown={(e) => handleKeydown(e, attachment)}
-            on:mouseover={handleFocus}
-            on:mouseleave={handleBlur}
-            on:focus={handleFocus}
-            on:blur={handleBlur}
-            bind:this={attachmentElements[index]}>
-			<div
-				class="chat-attachment-icon"
-				use:setElementIcon={attachment.getIconName()}
-			></div>
-			<div class="chat-attachment-info">
-                <div class="chat-attachment-name" aria-label="{attachment.fileName}">{attachment.fileName}</div>
-                <div class="chat-attachment-size">{attachment.approximateFileSizeMB()}MB</div>
-            </div>
-			<button
-				class="chat-attachment-remove transparent-button"
-				bind:this={removeAttachmentButtons[index]}
-				on:click={() => {
-					removeAttachment(attachment);
-				}}
-				aria-label="Remove Attachment"
-			>
-			</button>
-		</div>
-	{/each}
+<div id="chat-attachments-wrapper" style:height="{height}px">
+	<div id="chat-attachments-container" bind:this={contentDiv}>
+		{#each attachments as attachment, index}
+			<div class="chat-attachmanet"
+	            class:selected={attachmentElements[index] === selectedElement}
+	            role="option"
+	            tabindex="0"
+	            aria-selected={attachmentElements[index] === selectedElement ? "true" : "false"}
+	            on:keydown={(e) => handleKeydown(e, attachment)}
+	            on:mouseover={handleFocus}
+	            on:mouseleave={handleBlur}
+	            on:focus={handleFocus}
+	            on:blur={handleBlur}
+	            bind:this={attachmentElements[index]}>
+				<div
+					class="chat-attachment-icon"
+					use:setElementIcon={attachment.getIconName()}
+				></div>
+				<div class="chat-attachment-info">
+	                <div class="chat-attachment-name" aria-label="{attachment.fileName}">{attachment.fileName}</div>
+	                <div class="chat-attachment-size">{attachment.approximateFileSizeMB()}MB</div>
+	            </div>
+				<button
+					class="chat-attachment-remove transparent-button"
+					bind:this={removeAttachmentButtons[index]}
+					on:click={() => {
+						removeAttachment(attachment);
+					}}
+					aria-label="Remove Attachment"
+				>
+				</button>
+			</div>
+		{/each}
+	</div>
 </div>
 
 <style>
+	#chat-attachments-wrapper {
+		transition: height 0.2s ease-out;
+		overflow: hidden;
+	}
+
 	#chat-attachments-container {
 		display: flex;
 		overflow-x: auto;

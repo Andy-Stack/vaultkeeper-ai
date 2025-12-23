@@ -565,7 +565,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			const result = requestWithContext(request);
 
 			expect(result).toBe(request);
-			expect(mockWorkSpaceService.getActiveFile).toHaveBeenCalled();
+			expect(mockWorkSpaceService.getActiveFile).toHaveBeenCalledWith();
 		});
 
 		it('should append active file path when active file exists', () => {
@@ -581,7 +581,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			const result = requestWithContext(request);
 
 			expect(result).toBe('Please help me with this task\nUser current active file: "notes/my-note.md"');
-			expect(mockWorkSpaceService.getActiveFile).toHaveBeenCalled();
+			expect(mockWorkSpaceService.getActiveFile).toHaveBeenCalledWith();
 		});
 
 		it('should handle empty request with active file', () => {
@@ -595,6 +595,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			const result = requestWithContext(request);
 
 			expect(result).toBe('\nUser current active file: "test.md"');
+			expect(mockWorkSpaceService.getActiveFile).toHaveBeenCalledWith();
 		});
 
 		it('should handle request with special characters in file path', () => {
@@ -608,6 +609,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			const result = requestWithContext(request);
 
 			expect(result).toBe('Update this file\nUser current active file: "folder/my file (v2).md"');
+			expect(mockWorkSpaceService.getActiveFile).toHaveBeenCalledWith();
 		});
 
 		it('should handle multiline requests with active file', () => {
@@ -621,6 +623,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			const result = requestWithContext(request);
 
 			expect(result).toBe('Please help me:\n1. First task\n2. Second task\nUser current active file: "docs/readme.md"');
+			expect(mockWorkSpaceService.getActiveFile).toHaveBeenCalledWith();
 		});
 	});
 });

@@ -1161,7 +1161,7 @@ describe('Gemini', () => {
 
             expect(parsed).toHaveLength(1);
             expect(parsed[0]).toEqual({
-                text: 'Unsupported image format: animation.gif'
+                text: 'Unsupported mime type \'image/gif\': animation.gif'
             });
         });
 
@@ -1180,7 +1180,7 @@ describe('Gemini', () => {
 
             expect(parsed).toHaveLength(1);
             expect(parsed[0]).toEqual({
-                text: 'Unsupported image format: photo.bmp'
+                text: 'Unsupported mime type \'image/bmp\': photo.bmp'
             });
         });
 
@@ -1281,7 +1281,7 @@ describe('Gemini', () => {
             expect(parsed[0]).toEqual({ text: 'good.jpg' });
             expect(parsed[1]).toHaveProperty('fileData');
             expect(parsed[2]).toEqual({
-                text: 'Unsupported image format: bad.bmp'
+                text: 'Unsupported mime type \'image/bmp\': bad.bmp'
             });
             expect(parsed[3]).toEqual({ text: 'doc.pdf' });
             expect(parsed[4]).toHaveProperty('fileData');

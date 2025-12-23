@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Attachment } from "Conversations/Attachment";
+	import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 	import { toMimeType } from "Enums/MimeType";
 	import { setIcon } from "obsidian";
     import {
@@ -8,7 +9,6 @@
 		isKnownFileType,
 		isTextFile,
 		isVideoFile,
-		MimeTypeToFileTypes,
 	} from "Enums/FileType";
 
 	export let attachments: Attachment[] = [];
@@ -133,7 +133,9 @@
 		grid-template-columns: var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2);
 		border: var(--border-width) solid var(--background-modifier-border);
 		border-radius: var(--radius-m);
-        max-width: 15vw;
+        max-width: 33%;
+        min-width: 110px;
+		flex-shrink: 0;
 	}
 
     .chat-attachmanet.selected {

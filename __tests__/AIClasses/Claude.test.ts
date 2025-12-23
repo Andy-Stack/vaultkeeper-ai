@@ -1026,7 +1026,7 @@ describe('Claude', () => {
             expect(parsed).toHaveLength(1);
             expect(parsed[0]).toEqual({
                 type: 'text',
-                text: 'Unsupported image format: photo.bmp'
+                text: 'Unsupported mime type \'image/bmp\': photo.bmp'
             });
         });
 
@@ -1132,7 +1132,7 @@ describe('Claude', () => {
             expect(parsed[1].type).toBe('image');
             expect(parsed[2]).toEqual({
                 type: 'text',
-                text: 'Unsupported image format: bad.bmp'
+                text: 'Unsupported mime type \'image/bmp\': bad.bmp'
             });
             expect(parsed[3].type).toBe('text');
             expect(parsed[3].text).toBe('doc.pdf');

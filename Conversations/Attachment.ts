@@ -1,6 +1,7 @@
 import type { AIProvider } from "Enums/ApiProvider";
 
 export class Attachment {
+    
     public fileName: string;
     public mimeType: string;
     public base64: string;

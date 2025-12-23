@@ -11,7 +11,8 @@ import { Role } from "Enums/Role";
 import type { RawMessageStreamEvent, ContentBlockParam, Tool } from '@anthropic-ai/sdk/resources/messages';
 import { Exception } from "Helpers/Exception";
 import { MimeType, toMimeType } from "Enums/MimeType";
-import { isTextFile, MimeTypeToFileTypes } from "Enums/FileType";
+import { isTextFile } from "Enums/FileType";
+import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 
 export class Claude extends BaseAIClass {
 
@@ -286,7 +287,7 @@ export class Claude extends BaseAIClass {
             }
 
             return [
-                {type: "text", text: attachment.fileName},
+                {type: "text", text: `Binary data for ${attachment.fileName} follows in next message` },
                 {
                     type: isPlainText || mimeType === MimeType.APPLICATION_PDF ? "document" : "image",
                     source: {

@@ -5,7 +5,7 @@ import type { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctio
 import { Role } from "Enums/Role";
 import { AIFunction } from "Enums/AIFunction";
 import { isTextFile, toFileType } from "Enums/FileType";
-import { FileTypeToMimeType } from "Enums/MimeType";
+import { FileTypeToMimeType } from "Enums/FileTypeMimeTypeMapping";
 
 export class Conversation {
 

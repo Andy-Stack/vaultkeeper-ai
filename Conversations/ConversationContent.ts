@@ -1,6 +1,7 @@
 import { Role } from "Enums/Role";
 import { ApiErrorType } from "Types/ApiError";
 import type { Attachment } from "./Attachment";
+import type { Reference } from "./Reference";
 
 type ConversationContentInit = {
     role: Role;
@@ -10,6 +11,7 @@ type ConversationContentInit = {
     functionCall?: string;
     functionResponse?: string;
     attachments?: Attachment[];
+    references?: Reference[];
     shouldDisplayContent?: boolean;
     toolId?: string;
     thoughtSignature?: string;
@@ -24,6 +26,7 @@ export class ConversationContent {
     public functionCall: string | undefined;
     public functionResponse: string | undefined;
     public attachments: Attachment[];
+    public references: Reference[];
     public shouldDisplayContent: boolean;
     public toolId: string | undefined;
     public thoughtSignature: string | undefined;
@@ -40,6 +43,7 @@ export class ConversationContent {
      * @param init.functionCall - JSON string of the function call data (only set for function/tool calls)
      * @param init.functionResponse - JSON string of the function call response data (only set for function/tool responses)
      * @param init.attachments - Array of file attachments associated with this message (defaults to empty array)
+     * @param init.references - Array of file references, used to display attachment's to the user associated with attachments
      * @param init.shouldDisplayContent - Whether this content should be displayed in the UI (defaults to true, false for system-generated messages)
      * @param init.toolId - Unique identifier for tool calls/responses (used to match calls with their responses)
      * @param init.thoughtSignature - Gemini-specific thought signature for extended thinking
@@ -53,6 +57,7 @@ export class ConversationContent {
         this.functionCall = init.functionCall;
         this.functionResponse = init.functionResponse;
         this.attachments = init.attachments ?? [];
+        this.references = init.references ?? [];
         this.shouldDisplayContent = init.shouldDisplayContent ?? true;
         this.toolId = init.toolId;
         this.thoughtSignature = init.thoughtSignature;
@@ -74,6 +79,7 @@ export class ConversationContent {
         functionCall?: string;
         functionResponse?: string;
         attachments?: unknown[];
+        references?: unknown[];
         shouldDisplayContent?: boolean;
         toolId?: string;
         thoughtSignature?: string;
@@ -92,6 +98,7 @@ export class ConversationContent {
             (!("functionCall" in data) || typeof data.functionCall === "string") &&
             (!("functionResponse" in data) || typeof data.functionResponse === "string") &&
             (!("attachments" in data) || Array.isArray(data.attachments)) &&
+            (!("references" in data) || Array.isArray(data.references)) &&
             (!("shouldDisplayContent" in data) || typeof data.shouldDisplayContent === "boolean") &&
             (!("toolId" in data) || typeof data.toolId === "string") &&
             (!("thoughtSignature" in data) || typeof data.thoughtSignature === "string") &&

@@ -2,7 +2,7 @@ import { Exception } from "Helpers/Exception";
 import { isSearchTriggerElement } from "../Enums/SearchTrigger";
 import { Attachment } from "Conversations/Attachment";
 import { arrayBufferToBase64 } from "obsidian";
-import { FileTypeToMimeType } from "Enums/MimeType";
+import { FileTypeToMimeType } from "Enums/FileTypeMimeTypeMapping";
 import * as path from "path-browserify";
 import { pathExtname } from "Helpers/Helpers";
 import { FileType, toFileType } from "Enums/FileType";
@@ -45,8 +45,10 @@ export class InputService {
             }
         }
 
+        // get text as sometimes uri's come through as plain text
+        const textUriList = this.getTextFromDataTransfer(dataTransfer);
         const uriList = dataTransfer.getData("text/uri-list");
-        const uris = uriList.split("\n").map(uri => uri.trim())
+        const uris = `${uriList}\n${textUriList}`.split("\n").unique().map(uri => uri.trim())
             .filter(uri => uri.length > 0 && !uri.startsWith("#"));
 
         for (const uri of uris) {

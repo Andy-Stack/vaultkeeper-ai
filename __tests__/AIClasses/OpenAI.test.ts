@@ -1061,7 +1061,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(1);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: 'Unsupported image format: photo.gif'
+                text: 'Unsupported mime type \'image/gif\': photo.gif'
             });
         });
 
@@ -1171,7 +1171,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content[0].type).toBe('input_image');
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_text',
-                text: 'Unsupported image format: bad.bmp'
+                text: 'Unsupported mime type \'image/bmp\': bad.bmp'
             });
             expect(parsed[0].content[2].type).toBe('input_file');
         });

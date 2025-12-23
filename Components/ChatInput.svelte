@@ -257,7 +257,7 @@
     const newAttachments = files.filter(file => !attachments.some(attachment => attachment.base64 === file.base64));
     attachments = [...attachments, ...newAttachments];
 
-    if (!plainText) {
+    if (!plainText || plainText.includes("obsidian:")) {
       return;
     }
 

@@ -7,6 +7,7 @@ import { ConversationContent } from "Conversations/ConversationContent";
 import { Attachment } from "Conversations/Attachment";
 import { Exception } from "Helpers/Exception";
 import type { IAIFileService } from "AIClasses/IAIFileService";
+import { Reference } from "Conversations/Reference";
 
 export class ConversationFileSystemService {
 
@@ -54,6 +55,7 @@ export class ConversationFileSystemService {
                     functionCall: content.functionCall,
                     functionResponse: content.functionResponse,
                     attachments: content.attachments,
+                    references: content.references,
                     shouldDisplayContent: content.shouldDisplayContent,
                     toolId: content.toolId,
                     thoughtSignature: content.thoughtSignature,
@@ -150,6 +152,7 @@ export class ConversationFileSystemService {
             conversation.contents = result.contents.map(content => {
                 // Reconstruct Attachment instances from plain objects
                 const attachments = this.deserializeAttachments(content.attachments);
+                const references = this.deserializeReferences(content.references);
 
                 return new ConversationContent({
                     role: content.role,
@@ -159,6 +162,7 @@ export class ConversationFileSystemService {
                     functionCall: content.functionCall,
                     functionResponse: content.functionResponse,
                     attachments: attachments,
+                    references: references,
                     shouldDisplayContent: content.shouldDisplayContent,
                     toolId: content.toolId,
                     thoughtSignature: content.thoughtSignature,
@@ -182,6 +186,19 @@ export class ConversationFileSystemService {
                 attachmentData.mimeType,
                 attachmentData.base64,
                 attachmentData.fileID || {}
+            ));
+    }
+
+    private deserializeReferences(referencesData: unknown): Reference[] {
+        if (!Array.isArray(referencesData)) {
+            return [];
+        }
+
+        return referencesData
+            .filter(Reference.isReferenceData)
+            .map(referenceData => new Reference(
+                referenceData.fileName,
+                referenceData.size
             ));
     }
 

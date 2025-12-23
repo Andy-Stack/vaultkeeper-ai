@@ -11,7 +11,8 @@ import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
 import { FinishReason } from "@google/genai";
 import { MimeType, toMimeType } from "Enums/MimeType";
-import { isTextFile, MimeTypeToFileTypes } from "Enums/FileType";
+import { isTextFile } from "Enums/FileType";
+import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 
 export class Gemini extends BaseAIClass {
 
@@ -30,6 +31,8 @@ export class Gemini extends BaseAIClass {
     // Images
     MimeType.IMAGE_JPEG,
     MimeType.IMAGE_PNG,
+    // PDF
+    MimeType.APPLICATION_PDF,
     // Data Formats
     MimeType.APPLICATION_JSON,
     MimeType.APPLICATION_XML,
@@ -328,7 +331,7 @@ export class Gemini extends BaseAIClass {
         continue;
       }
 
-      parts.push({text: attachment.fileName});
+      parts.push({ text: `Binary data for ${attachment.fileName} follows in next message` });
       parts.push({
         fileData: {
           mimeType: mimeType,

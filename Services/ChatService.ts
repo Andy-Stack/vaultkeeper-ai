@@ -16,6 +16,7 @@ import { AbortService } from "./AbortService";
 import { Exception } from "Helpers/Exception";
 import { Copy } from "Enums/Copy";
 import type { Attachment } from "Conversations/Attachment";
+import { Reference } from "Conversations/Reference";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
@@ -68,11 +69,12 @@ export class ChatService {
 			await this.abortService.abortableOperation(async () => {
 				const firstMessage = conversation.contents.length === 0;
 
-				conversation.contents.push(new ConversationContent({
+				const conversationContent = new ConversationContent({
 					role: Role.User,
 					content: formattedRequest,
 					displayContent: userRequest
-				}));
+				});
+				conversation.contents.push(conversationContent);
 				await this.saveConversation(conversation);
 
 				if (attachments.length > 0) {
@@ -82,6 +84,9 @@ export class ChatService {
 						attachments: attachments,
 						shouldDisplayContent: false
 					}));
+
+					conversationContent.references = attachments.map(attachment => 
+						new Reference(attachment.fileName, attachment.approximateFileSizeMB()));
 				}
 
 				callbacks.onSubmit();

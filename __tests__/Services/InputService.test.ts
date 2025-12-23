@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { InputService } from '../../Services/InputService';
+import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
+import { Services } from '../../Services/Services';
 
 /**
  * UNIT TESTS
@@ -10,9 +12,26 @@ import { InputService } from '../../Services/InputService';
 
 describe('InputService', () => {
 	let service: InputService;
+	let mockFileSystemService: any;
 
 	beforeEach(() => {
+		// Setup minimal mock for FileSystemService
+		mockFileSystemService = {
+			getFile: vi.fn(),
+			readFile: vi.fn(),
+			fileExists: vi.fn()
+		};
+
+		// Register dependency
+		RegisterSingleton(Services.FileSystemService, mockFileSystemService);
+
 		service = new InputService();
+	});
+
+	afterEach(() => {
+		// Clear singleton registry to prevent memory leaks
+		DeregisterAllServices();
+		vi.restoreAllMocks();
 	});
 
 	describe('isPrintableKey', () => {
@@ -132,7 +151,7 @@ describe('InputService', () => {
 	});
 
 
-	describe('getPlainTextFromClipboard', () => {
+	describe('getTextFromDataTransfer', () => {
 		it('should extract text/plain from DataTransfer', () => {
 			const mockClipboardData = {
 				getData: vi.fn((type: string) => {
@@ -141,13 +160,13 @@ describe('InputService', () => {
 				})
 			} as unknown as DataTransfer;
 
-			const result = service.getPlainTextFromClipboard(mockClipboardData);
+			const result = service.getTextFromDataTransfer(mockClipboardData);
 			expect(result).toBe('Plain text content');
 			expect(mockClipboardData.getData).toHaveBeenCalledWith('text/plain');
 		});
 
 		it('should return empty string for null clipboard', () => {
-			const result = service.getPlainTextFromClipboard(null);
+			const result = service.getTextFromDataTransfer(null);
 			expect(result).toBe('');
 		});
 
@@ -156,7 +175,7 @@ describe('InputService', () => {
 				getData: vi.fn(() => '')
 			} as unknown as DataTransfer;
 
-			const result = service.getPlainTextFromClipboard(mockClipboardData);
+			const result = service.getTextFromDataTransfer(mockClipboardData);
 			expect(result).toBe('');
 		});
 
@@ -165,7 +184,7 @@ describe('InputService', () => {
 				getData: vi.fn(() => null)
 			} as unknown as DataTransfer;
 
-			const result = service.getPlainTextFromClipboard(mockClipboardData);
+			const result = service.getTextFromDataTransfer(mockClipboardData);
 			expect(result).toBe('');
 		});
 	});

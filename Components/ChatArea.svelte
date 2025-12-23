@@ -66,7 +66,7 @@
       if (!shouldSettle) {
         padding = Math.max(padding, 25);
       }
-      chatAreaPaddingElement.style.padding = `${Math.max(0, padding / 2)}px`;
+      chatAreaPaddingElement.style.paddingBottom = `${Math.max(0, padding)}px`;
 
       tick().then(() => {
         if (behavior && (autoScroll || shouldSettle)) {
@@ -259,16 +259,32 @@
         {#if message.role === Role.User}
           <div class="message-container {Role.User}" use:trackingAction={index}>
             <div class="message-bubble {Role.User}">
-              <div class="message-text-user fade-in-fast" contenteditable="false">
+              <div class="message-text-user content-fade-in" contenteditable="false">
                 {@html content}
               </div>
+              {#if message.references.length > 0}
+                <div class="message-attachments-container">
+                  {#each message.references as reference}
+                    <div class="message-attachmanet" aria-label="{reference.fileName}">
+                      <div
+                        class="message-attachment-icon"
+                        
+                      ></div>
+                      <div class="message-attachment-info">
+                        <div class="message-attachment-name">{reference.fileName}</div>
+                        <div class="message-attachment-size">{reference.size}MB</div>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
             </div>
           </div>
         {:else}
           {@const messageId = message.timestamp.getTime().toString()}
           <div class="message-container {Role.Assistant}" use:trackingAction={index}>
             <div class="message-bubble {Role.Assistant}">
-              <div class="markdown-content fade-in-fast {currentStreamingMessageId === messageId ? "streaming" : ""}">
+              <div class="markdown-content content-fade-in {currentStreamingMessageId === messageId ? "streaming" : ""}">
                 {#if currentStreamingMessageId === messageId}
                   <div use:streamingAction={messageId} class="streaming-content"></div>
                 {:else}
@@ -290,7 +306,7 @@
       <CancellationIndicator/>
     {/if}
 
-    <div bind:this={chatAreaPaddingElement}></div>
+    <div bind:this={chatAreaPaddingElement} style:user-select=none></div>
 
     {#if messages.length === 0}
       <div class="conversation-empty-state">
@@ -372,7 +388,6 @@
     border: var(--border-width) solid var(--background-modifier-border);
     border-radius: var(--radius-m);
     padding: 0px var(--size-4-2);
-    white-space: pre-wrap;
   }
 
   .message-bubble.assistant {
@@ -382,6 +397,7 @@
 
   .message-text-user {
     margin: var(--size-4-2);
+    white-space: pre-wrap;
   }
   
   .conversation-empty-state {
@@ -390,7 +406,6 @@
     font-size: var(--font-ui-medium);
     color: var(--text-muted);
     pointer-events: none;
-    user-select: none;
   }
 
   .streaming-content {
@@ -399,7 +414,7 @@
   }
 
   /* Streaming message styles */
-  .fade-in-fast {
+  .content-fade-in {
     animation: reveal-fade 0.5s ease-in-out forwards;
   }
 
@@ -412,5 +427,55 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  /* Message attachments styles */
+  .message-attachments-container {
+		display: flex;
+		overflow-x: auto;
+		overflow-y: hidden;
+		scroll-behavior: smooth;
+		gap: var(--size-4-1);
+    margin-bottom: var(--size-4-2);
+	}
+
+  .message-attachments-container::-webkit-scrollbar {
+		display: none;
+	}
+
+	.message-attachmanet {
+		display: grid;
+		grid-template-rows: var(--size-4-1) auto var(--size-4-1);
+		grid-template-columns: var(--size-4-1) auto var(--size-4-1) auto var(--size-4-1);
+		border: var(--border-width) solid var(--background-modifier-border);
+		border-radius: var(--radius-m);
+		flex-shrink: 0;
+	}
+
+  .message-attachment-icon {
+		grid-row: 2;
+		grid-column: 2;
+		align-content: center;
+	}
+
+  .message-attachment-info {
+		grid-row: 2;
+		grid-column: 4;
+		min-width: 40px;
+		overflow: hidden;
+	}
+
+  .message-attachment-name {
+      display: inline-block;
+      white-space: nowrap;
+      width: 100%;
+      padding: 0;
+      font-size: var(--font-smaller);
+  }
+
+  .message-attachment-size {
+      padding: 0;
+      font-size: var(--font-smallest);
+      color: var(--text-muted);
   }
 </style>

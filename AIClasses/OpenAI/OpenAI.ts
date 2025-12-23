@@ -11,7 +11,8 @@ import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemDone, Re
 import { Exception } from "Helpers/Exception";
 import { ApiErrorType } from "Types/ApiError";
 import { MimeType, toMimeType } from "Enums/MimeType";
-import { isTextFile, MimeTypeToFileTypes } from "Enums/FileType";
+import { isTextFile } from "Enums/FileType";
+import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 
 export class OpenAI extends BaseAIClass {
 
@@ -332,14 +333,17 @@ export class OpenAI extends BaseAIClass {
             }
 
             if (!isPlainText && !this.isSupportedMimeType(mimeType)) {
-                contentBlocks.push([{ type: "input_text", text: `Unsupported mime type '${mimeType}': ${attachment.fileName}` }]);
+                contentBlocks.push({ type: "input_text", text: `Unsupported mime type '${mimeType}': ${attachment.fileName}` });
                 continue;
             }
 
-            contentBlocks.push({
-                type: isPlainText || mimeType === MimeType.APPLICATION_PDF ? "input_file" : "input_image",
-                file_id: fileID
-            });
+            contentBlocks.push(
+                { type: "input_text", text: `Binary data for ${attachment.fileName} follows in next message` },
+                {
+                    type: isPlainText || mimeType === MimeType.APPLICATION_PDF ? "input_file" : "input_image",
+                    file_id: fileID
+                }
+            );
         }
 
         return JSON.stringify([{

@@ -138,6 +138,9 @@ export abstract class BaseAIClass implements IAIClass {
 
         for (const attachment of attachments) {
             try {
+                if (attachment.base64.trim() === "") {
+                    Exception.throw("File has no content!");
+                }
                 await this.aiFileService.uploadFile(attachment);
             } catch (error) {
                 Exception.log(`Failed to upload ${attachment.fileName}: ${Exception.messageFrom(error)}`);

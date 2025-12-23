@@ -11,7 +11,7 @@
 	import { tick } from "svelte";
 	import { Selector } from "Enums/Selector";
 	import { Exception } from "Helpers/Exception";
-	import { getOuterHeight } from "Helpers/ElementHelper";
+	import { getOuterHeight, setElementIcon } from "Helpers/ElementHelper";
 
   export let cancelling: boolean = false;
   export let messages: ConversationContent[] = [];
@@ -263,12 +263,13 @@
                 {@html content}
               </div>
               {#if message.references.length > 0}
+                <hr class="message-attachment-break"/>
                 <div class="message-attachments-container">
                   {#each message.references as reference}
                     <div class="message-attachmanet" aria-label="{reference.fileName}">
                       <div
                         class="message-attachment-icon"
-                        
+                        use:setElementIcon={reference.getIconName()}
                       ></div>
                       <div class="message-attachment-info">
                         <div class="message-attachment-name">{reference.fileName}</div>
@@ -430,12 +431,18 @@
   }
 
   /* Message attachments styles */
+  .message-attachment-break {
+    color: var(--background-secondary-alt);
+    margin: 0 0 var(--size-4-2) 0;
+    opacity: 0.5;
+  }
+
   .message-attachments-container {
 		display: flex;
 		overflow-x: auto;
 		overflow-y: hidden;
 		scroll-behavior: smooth;
-		gap: var(--size-4-1);
+		gap: var(--size-4-2);
     margin-bottom: var(--size-4-2);
 	}
 
@@ -445,8 +452,9 @@
 
 	.message-attachmanet {
 		display: grid;
-		grid-template-rows: var(--size-4-1) auto var(--size-4-1);
-		grid-template-columns: var(--size-4-1) auto var(--size-4-1) auto var(--size-4-1);
+		grid-template-rows: var(--size-4-2) auto var(--size-4-2);
+		grid-template-columns: var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2);
+    background-color: var(--background-secondary-alt);
 		border: var(--border-width) solid var(--background-modifier-border);
 		border-radius: var(--radius-m);
 		flex-shrink: 0;
@@ -455,7 +463,9 @@
   .message-attachment-icon {
 		grid-row: 2;
 		grid-column: 2;
-		align-content: center;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
   .message-attachment-info {

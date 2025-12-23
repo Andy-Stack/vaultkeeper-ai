@@ -1,4 +1,7 @@
 import type { AIProvider } from "Enums/ApiProvider";
+import { isAudioFile, isImageFile, isKnownFileType, isTextFile, isVideoFile } from "Enums/FileType";
+import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
+import { toMimeType } from "Enums/MimeType";
 
 export class Attachment {
     
@@ -42,6 +45,27 @@ export class Attachment {
         const megaByteSize = byteSize / 1000000;
         return Math.round((megaByteSize + Number.EPSILON) * 100) / 100;
     }
+
+    public getIconName(): string {
+		const fileTypes = MimeTypeToFileTypes[toMimeType(this.mimeType)];
+
+		if (fileTypes.some((fileType) => isTextFile(fileType))) {
+			return "file-text";
+		}
+		if (fileTypes.some((fileType) => isImageFile(fileType))) {
+			return "file-image";
+		}
+		if (fileTypes.some((fileType) => isAudioFile(fileType))) {
+			return "file-music";
+		}
+		if (fileTypes.some((fileType) => isVideoFile(fileType))) {
+			return "file-play";
+		}
+		if (fileTypes.some((fileType) => isKnownFileType(fileType))) {
+			return "file";
+		}
+		return "file";
+	}
 
     public static isAttachmentData(this: void, data: unknown): data is {
         fileName: string;

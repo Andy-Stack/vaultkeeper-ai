@@ -48,8 +48,11 @@ export class InputService {
         // get text as sometimes uri's come through as plain text
         const textUriList = this.getTextFromDataTransfer(dataTransfer);
         const uriList = dataTransfer.getData("text/uri-list");
-        const uris = `${uriList}\n${textUriList}`.split("\n").unique().map(uri => uri.trim())
+
+        const allUris = `${uriList}\n${textUriList}`.split("\n").map(uri => uri.trim())
             .filter(uri => uri.length > 0 && !uri.startsWith("#"));
+
+        const uris = this.removeDuplicateUris(allUris);
 
         for (const uri of uris) {
             try {
@@ -388,6 +391,36 @@ export class InputService {
         }
 
         return traverse(element);
+    }
+
+    private removeDuplicateUris(uris: string[]): string[] {
+        const seenFiles = new Set<string>();
+        const uniqueUris: string[] = [];
+
+        for (const uri of uris) {
+            try {
+                const url = new URL(uri);
+                const fileParam = url.searchParams.get("file");
+
+                if (fileParam) {
+                    // Normalize by decoding the file parameter to handle different URL encodings
+                    const normalizedFile = decodeURIComponent(fileParam);
+
+                    if (!seenFiles.has(normalizedFile)) {
+                        seenFiles.add(normalizedFile);
+                        uniqueUris.push(uri);
+                    }
+                } else {
+                    // If no file parameter, include the URI anyway
+                    uniqueUris.push(uri);
+                }
+            } catch {
+                // If URL parsing fails, include the URI anyway
+                uniqueUris.push(uri);
+            }
+        }
+
+        return uniqueUris;
     }
 
 }

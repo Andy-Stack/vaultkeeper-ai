@@ -1,20 +1,11 @@
 <script lang="ts">
 	import type { Attachment } from "Conversations/Attachment";
-	import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
-	import { toMimeType } from "Enums/MimeType";
+	import { setElementIcon } from "Helpers/ElementHelper";
 	import { setIcon } from "obsidian";
-    import {
-		isAudioFile,
-		isImageFile,
-		isKnownFileType,
-		isTextFile,
-		isVideoFile,
-	} from "Enums/FileType";
 
 	export let attachments: Attachment[] = [];
 
 	let removeAttachmentButtons: (HTMLButtonElement | null)[] = [];
-	let iconElements: (HTMLDivElement | null)[] = [];
 	let attachmentElements: (HTMLDivElement | null)[] = [];
 	let selectedElement: HTMLDivElement | null = null;
 
@@ -24,40 +15,6 @@
 				setIcon(button, "circle-x");
 			}
 		});
-	}
-
-	$: if (iconElements.length > 0) {
-		iconElements.forEach((iconElement, index) => {
-			if (iconElement && attachments[index]) {
-				const iconName = getIconName(attachments[index]);
-                setIcon(iconElement, iconName);
-			}
-		});
-	}
-
-	function getIconName(attachment: Attachment | null): string {
-		if (attachment === null) {
-			return "file";
-		}
-
-		const fileTypes = MimeTypeToFileTypes[toMimeType(attachment.mimeType)];
-
-		if (fileTypes.some((fileType) => isTextFile(fileType))) {
-			return "file-text";
-		}
-		if (fileTypes.some((fileType) => isImageFile(fileType))) {
-			return "file-image";
-		}
-		if (fileTypes.some((fileType) => isAudioFile(fileType))) {
-			return "file-music";
-		}
-		if (fileTypes.some((fileType) => isVideoFile(fileType))) {
-			return "file-play";
-		}
-		if (fileTypes.some((fileType) => isKnownFileType(fileType))) {
-			return "file";
-		}
-		return "file";
 	}
 
 	function removeAttachment(attachment: Attachment) {
@@ -95,7 +52,7 @@
             bind:this={attachmentElements[index]}>
 			<div
 				class="chat-attachment-icon"
-				bind:this={iconElements[index]}
+				use:setElementIcon={attachment.getIconName()}
 			></div>
 			<div class="chat-attachment-info">
                 <div class="chat-attachment-name" aria-label="{attachment.fileName}">{attachment.fileName}</div>
@@ -131,6 +88,7 @@
 		display: grid;
 		grid-template-rows: var(--size-4-2) auto var(--size-4-2);
 		grid-template-columns: var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2);
+		background-color: var(--background-secondary-alt);
 		border: var(--border-width) solid var(--background-modifier-border);
 		border-radius: var(--radius-m);
         max-width: 33%;
@@ -145,7 +103,9 @@
 	.chat-attachment-icon {
 		grid-row: 2;
 		grid-column: 2;
-		align-content: center;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.chat-attachment-info {

@@ -737,7 +737,7 @@ describe('Claude', () => {
             expect(result[0].content.length).toBeGreaterThan(1);
 
             // Should have filename text block from formatBinaryFiles
-            const filenameBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === 'test-image.png');
+            const filenameBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === 'Binary data for test-image.png follows in next message');
             expect(filenameBlock).toBeDefined();
 
             // Should have image content blocks from formatBinaryFiles
@@ -769,7 +769,7 @@ describe('Claude', () => {
             expect(result[0].content.length).toBeGreaterThan(1);
 
             // Should have filename text block from formatBinaryFiles
-            const filenameBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === 'document.pdf');
+            const filenameBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === 'Binary data for document.pdf follows in next message');
             expect(filenameBlock).toBeDefined();
 
             // Should have document content blocks from formatBinaryFiles
@@ -903,7 +903,7 @@ describe('Claude', () => {
             expect(parsed).toHaveLength(2);
             expect(parsed[0]).toEqual({
                 type: 'text',
-                text: 'report.pdf'
+                text: 'Binary data for report.pdf follows in next message'
             });
             expect(parsed[1]).toEqual({
                 type: 'document',
@@ -930,7 +930,7 @@ describe('Claude', () => {
             expect(parsed).toHaveLength(2);
             expect(parsed[0]).toEqual({
                 type: 'text',
-                text: 'photo.jpg'
+                text: 'Binary data for photo.jpg follows in next message'
             });
             expect(parsed[1]).toEqual({
                 type: 'image',
@@ -1064,7 +1064,7 @@ describe('Claude', () => {
             expect(parsed).toHaveLength(6);
 
             // PDF file
-            expect(parsed[0]).toEqual({ type: 'text', text: 'doc.pdf' });
+            expect(parsed[0]).toEqual({ type: 'text', text: 'Binary data for doc.pdf follows in next message' });
             expect(parsed[1]).toEqual({
                 type: 'document',
                 source: {
@@ -1074,7 +1074,7 @@ describe('Claude', () => {
             });
 
             // JPEG image
-            expect(parsed[2]).toEqual({ type: 'text', text: 'image.jpg' });
+            expect(parsed[2]).toEqual({ type: 'text', text: 'Binary data for image.jpg follows in next message' });
             expect(parsed[3]).toEqual({
                 type: 'image',
                 source: {
@@ -1084,7 +1084,7 @@ describe('Claude', () => {
             });
 
             // PNG image
-            expect(parsed[4]).toEqual({ type: 'text', text: 'screenshot.png' });
+            expect(parsed[4]).toEqual({ type: 'text', text: 'Binary data for screenshot.png follows in next message' });
             expect(parsed[5]).toEqual({
                 type: 'image',
                 source: {
@@ -1128,14 +1128,14 @@ describe('Claude', () => {
             expect(parsed).toHaveLength(5);
 
             expect(parsed[0].type).toBe('text');
-            expect(parsed[0].text).toBe('good.jpg');
+            expect(parsed[0].text).toBe('Binary data for good.jpg follows in next message');
             expect(parsed[1].type).toBe('image');
             expect(parsed[2]).toEqual({
                 type: 'text',
                 text: 'Unsupported mime type \'image/bmp\': bad.bmp'
             });
             expect(parsed[3].type).toBe('text');
-            expect(parsed[3].text).toBe('doc.pdf');
+            expect(parsed[3].text).toBe('Binary data for doc.pdf follows in next message');
             expect(parsed[4].type).toBe('document');
         });
 
@@ -1180,9 +1180,9 @@ describe('Claude', () => {
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(4);
-            expect(parsed[0].text).toBe('document.PDF');
+            expect(parsed[0].text).toBe('Binary data for document.PDF follows in next message');
             expect(parsed[1].type).toBe('document');
-            expect(parsed[2].text).toBe('photo.JPG');
+            expect(parsed[2].text).toBe('Binary data for photo.JPG follows in next message');
             expect(parsed[3].type).toBe('image');
         });
 
@@ -1208,7 +1208,7 @@ describe('Claude', () => {
             const result = claude.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
-            expect(parsed[0].text).toBe('report (final) v2.pdf');
+            expect(parsed[0].text).toBe('Binary data for report (final) v2.pdf follows in next message');
         });
 
         it('should handle JPEG files with .jpeg extension', () => {

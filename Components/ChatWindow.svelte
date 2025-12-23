@@ -101,7 +101,6 @@
 
     await chatService.submit(conversation, editModeActive, currentRequest, formattedRequest, attachments, {
       onSubmit: () => {
-        chatArea.updateChatAreaLayout("smooth");
         isSubmitting = true;
         attachments = [];
       },

@@ -17,6 +17,7 @@ import { Exception } from "Helpers/Exception";
 import { Copy } from "Enums/Copy";
 import type { Attachment } from "Conversations/Attachment";
 import { Reference } from "Conversations/Reference";
+import type { WorkSpaceService } from "./WorkSpaceService";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
@@ -31,6 +32,7 @@ export class ChatService {
 	private conversationService: ConversationFileSystemService;
 	private aiFunctionService: AIFunctionService;
 	private namingService: ConversationNamingService;
+	private workSpaceService: WorkSpaceService;
 	private eventService: EventService;
 	private abortService: AbortService;
 
@@ -41,6 +43,7 @@ export class ChatService {
 		this.conversationService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
 		this.aiFunctionService = Resolve<AIFunctionService>(Services.AIFunctionService);
 		this.namingService = Resolve<ConversationNamingService>(Services.ConversationNamingService);
+		this.workSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
 		this.eventService = Resolve<EventService>(Services.EventService);
 		this.abortService = Resolve<AbortService>(Services.AbortService);
 		this.semaphore = new Semaphore(1, false);
@@ -71,11 +74,10 @@ export class ChatService {
 
 				const conversationContent = new ConversationContent({
 					role: Role.User,
-					content: formattedRequest,
+					content: this.requestWithContext(formattedRequest),
 					displayContent: userRequest
 				});
 				conversation.contents.push(conversationContent);
-				await this.saveConversation(conversation);
 
 				if (attachments.length > 0) {
 					// Add any attachments that came from paste / drop
@@ -88,6 +90,7 @@ export class ChatService {
 					conversationContent.references = attachments.map(attachment => 
 						new Reference(attachment.fileName, attachment.approximateFileSizeMB()));
 				}
+				await this.saveConversation(conversation);
 
 				callbacks.onSubmit();
 				callbacks.onStreamingUpdate(null);
@@ -281,5 +284,10 @@ export class ChatService {
 		sanitized = sanitized.replace(/\n{3,}/g, '\n\n').trim();
 	
 		return sanitized;
+	}
+
+	private requestWithContext(request: string) {
+		const activeFile = this.workSpaceService.getActiveFile();
+		return activeFile ? `${request}\nUser current active file: "${activeFile.path}"` : request;
 	}
 }

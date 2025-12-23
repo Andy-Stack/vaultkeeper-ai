@@ -94,8 +94,8 @@
     if (userRequest.trim() === "" || !diffOpen) {
       return;
     }
-    const suggestion = requestFromInput().formattedRequest;
-    diffService.onSuggest(suggestion);
+    const suggestion = requestFromInput();
+    diffService.onSuggest(suggestion.formattedRequest);
   }
 
   function requestFromInput() {

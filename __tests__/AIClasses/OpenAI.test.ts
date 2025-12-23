@@ -975,8 +975,12 @@ describe('OpenAI', () => {
 
             expect(parsed).toHaveLength(1);
             expect(parsed[0].role).toBe('user');
-            expect(parsed[0].content).toHaveLength(1);
+            expect(parsed[0].content).toHaveLength(2);
             expect(parsed[0].content[0]).toEqual({
+                type: 'input_text',
+                text: 'Binary data for report.pdf follows in next message'
+            });
+            expect(parsed[0].content[1]).toEqual({
                 type: 'input_file',
                 file_id: 'file-123'
             });
@@ -997,8 +1001,12 @@ describe('OpenAI', () => {
 
             expect(parsed).toHaveLength(1);
             expect(parsed[0].role).toBe('user');
-            expect(parsed[0].content).toHaveLength(1);
+            expect(parsed[0].content).toHaveLength(2);
             expect(parsed[0].content[0]).toEqual({
+                type: 'input_text',
+                text: 'Binary data for photo.jpg follows in next message'
+            });
+            expect(parsed[0].content[1]).toEqual({
                 type: 'input_image',
                 file_id: 'file-456'
             });
@@ -1018,7 +1026,12 @@ describe('OpenAI', () => {
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
+            expect(parsed[0].content).toHaveLength(2);
             expect(parsed[0].content[0]).toEqual({
+                type: 'input_text',
+                text: 'Binary data for diagram.png follows in next message'
+            });
+            expect(parsed[0].content[1]).toEqual({
                 type: 'input_image',
                 file_id: 'file-789'
             });
@@ -1038,7 +1051,12 @@ describe('OpenAI', () => {
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
+            expect(parsed[0].content).toHaveLength(2);
             expect(parsed[0].content[0]).toEqual({
+                type: 'input_text',
+                text: 'Binary data for modern.webp follows in next message'
+            });
+            expect(parsed[0].content[1]).toEqual({
                 type: 'input_image',
                 file_id: 'file-webp'
             });
@@ -1116,19 +1134,31 @@ describe('OpenAI', () => {
 
             expect(parsed).toHaveLength(1);
             expect(parsed[0].role).toBe('user');
-            expect(parsed[0].content).toHaveLength(3);
+            expect(parsed[0].content).toHaveLength(6);
 
             expect(parsed[0].content[0]).toEqual({
+                type: 'input_text',
+                text: 'Binary data for doc.pdf follows in next message'
+            });
+            expect(parsed[0].content[1]).toEqual({
                 type: 'input_file',
                 file_id: 'file-pdf'
             });
 
-            expect(parsed[0].content[1]).toEqual({
+            expect(parsed[0].content[2]).toEqual({
+                type: 'input_text',
+                text: 'Binary data for image.jpg follows in next message'
+            });
+            expect(parsed[0].content[3]).toEqual({
                 type: 'input_image',
                 file_id: 'file-jpg'
             });
 
-            expect(parsed[0].content[2]).toEqual({
+            expect(parsed[0].content[4]).toEqual({
+                type: 'input_text',
+                text: 'Binary data for screenshot.png follows in next message'
+            });
+            expect(parsed[0].content[5]).toEqual({
                 type: 'input_image',
                 file_id: 'file-png'
             });
@@ -1166,14 +1196,22 @@ describe('OpenAI', () => {
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
-            expect(parsed[0].content).toHaveLength(3);
+            expect(parsed[0].content).toHaveLength(5);
 
-            expect(parsed[0].content[0].type).toBe('input_image');
-            expect(parsed[0].content[1]).toEqual({
+            expect(parsed[0].content[0]).toEqual({
+                type: 'input_text',
+                text: 'Binary data for good.jpg follows in next message'
+            });
+            expect(parsed[0].content[1].type).toBe('input_image');
+            expect(parsed[0].content[2]).toEqual({
                 type: 'input_text',
                 text: 'Unsupported mime type \'image/bmp\': bad.bmp'
             });
-            expect(parsed[0].content[2].type).toBe('input_file');
+            expect(parsed[0].content[3]).toEqual({
+                type: 'input_text',
+                text: 'Binary data for doc.pdf follows in next message'
+            });
+            expect(parsed[0].content[4].type).toBe('input_file');
         });
 
         it('should handle mixed successful and failed uploads', () => {
@@ -1200,8 +1238,12 @@ describe('OpenAI', () => {
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
-            expect(parsed[0].content).toHaveLength(1); // Only successful upload
+            expect(parsed[0].content).toHaveLength(2); // Text + file reference
             expect(parsed[0].content[0]).toEqual({
+                type: 'input_text',
+                text: 'Binary data for success.pdf follows in next message'
+            });
+            expect(parsed[0].content[1]).toEqual({
                 type: 'input_file',
                 file_id: 'file-success'
             });

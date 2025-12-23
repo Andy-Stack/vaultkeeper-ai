@@ -14,4 +14,8 @@ export class WorkSpaceService {
             await leaf.openFile(file);
         }
     }
+
+    public getActiveFile(): TFile | null {
+        return this.plugin.app.workspace.getActiveFile();
+    }
 }

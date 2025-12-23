@@ -27,6 +27,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 	let mockPrompt: any;
 	let mockStatusBarService: any;
 	let mockEventService: any;
+	let mockWorkSpaceService: any;
 	let abortService: AbortService;
 
 	beforeEach(() => {
@@ -59,6 +60,12 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			off: vi.fn()
 		};
 
+		// Mock WorkSpaceService
+		mockWorkSpaceService = {
+			openNote: vi.fn(),
+			getActiveFile: vi.fn().mockReturnValue(null)
+		};
+
 		// Create real AbortService instance
 		abortService = new AbortService();
 
@@ -68,6 +75,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 		RegisterSingleton(Services.ConversationNamingService, mockNamingService);
 		RegisterSingleton(Services.IPrompt, mockPrompt);
 		RegisterSingleton(Services.EventService, mockEventService);
+		RegisterSingleton(Services.WorkSpaceService, mockWorkSpaceService);
 		RegisterSingleton(Services.AbortService, abortService);
 
 		// Create service
@@ -540,6 +548,79 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			expect(() => fromString('unknown_function')).toThrow('Unknown function name: unknown_function');
 			expect(() => fromString('test_function')).toThrow('Unknown function name: test_function');
 			expect(() => fromString('')).toThrow('Unknown function name: ');
+		});
+	});
+
+	describe('requestWithContext (private method tests via reflection)', () => {
+		// Access private method for testing
+		const getRequestWithContextMethod = (service: ChatService) => {
+			return (service as any).requestWithContext.bind(service);
+		};
+
+		it('should return request unchanged when no active file exists', () => {
+			mockWorkSpaceService.getActiveFile.mockReturnValue(null);
+			const requestWithContext = getRequestWithContextMethod(service);
+			const request = 'Please help me with this task';
+
+			const result = requestWithContext(request);
+
+			expect(result).toBe(request);
+			expect(mockWorkSpaceService.getActiveFile).toHaveBeenCalled();
+		});
+
+		it('should append active file path when active file exists', () => {
+			const mockFile = {
+				path: 'notes/my-note.md',
+				name: 'my-note.md',
+				basename: 'my-note'
+			};
+			mockWorkSpaceService.getActiveFile.mockReturnValue(mockFile);
+			const requestWithContext = getRequestWithContextMethod(service);
+			const request = 'Please help me with this task';
+
+			const result = requestWithContext(request);
+
+			expect(result).toBe('Please help me with this task\nUser current active file: "notes/my-note.md"');
+			expect(mockWorkSpaceService.getActiveFile).toHaveBeenCalled();
+		});
+
+		it('should handle empty request with active file', () => {
+			const mockFile = {
+				path: 'test.md'
+			};
+			mockWorkSpaceService.getActiveFile.mockReturnValue(mockFile);
+			const requestWithContext = getRequestWithContextMethod(service);
+			const request = '';
+
+			const result = requestWithContext(request);
+
+			expect(result).toBe('\nUser current active file: "test.md"');
+		});
+
+		it('should handle request with special characters in file path', () => {
+			const mockFile = {
+				path: 'folder/my file (v2).md'
+			};
+			mockWorkSpaceService.getActiveFile.mockReturnValue(mockFile);
+			const requestWithContext = getRequestWithContextMethod(service);
+			const request = 'Update this file';
+
+			const result = requestWithContext(request);
+
+			expect(result).toBe('Update this file\nUser current active file: "folder/my file (v2).md"');
+		});
+
+		it('should handle multiline requests with active file', () => {
+			const mockFile = {
+				path: 'docs/readme.md'
+			};
+			mockWorkSpaceService.getActiveFile.mockReturnValue(mockFile);
+			const requestWithContext = getRequestWithContextMethod(service);
+			const request = 'Please help me:\n1. First task\n2. Second task';
+
+			const result = requestWithContext(request);
+
+			expect(result).toBe('Please help me:\n1. First task\n2. Second task\nUser current active file: "docs/readme.md"');
 		});
 	});
 });

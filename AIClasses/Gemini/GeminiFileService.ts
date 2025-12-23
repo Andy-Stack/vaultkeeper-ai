@@ -74,6 +74,7 @@ export class GeminiFileService extends BaseAIFileService {
                 url: uploadUrl,
                 method: "POST",
                 headers: {
+                    "Content-Type": mimeType,
                     "X-Goog-Upload-Offset": "0",
                     "X-Goog-Upload-Command": "upload, finalize"
                 },

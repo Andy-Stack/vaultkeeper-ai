@@ -55,7 +55,7 @@ export class ClaudeFileService extends BaseAIFileService {
                     "anthropic-beta": "files-api-2025-04-14",
                     "Content-Type": `multipart/form-data; boundary=${boundary}`
                 },
-                body: formData.buffer,
+                body: formData,
                 throw: false
             });
 

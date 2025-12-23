@@ -152,7 +152,9 @@ describe('BaseAIFileService', () => {
 
 			const formData = fileService['createFormData']('test.txt', 'text/plain', boundary, bytes);
 
-			const formString = formData.toString();
+			// Convert ArrayBuffer to string for inspection
+			const decoder = new TextDecoder();
+			const formString = decoder.decode(formData);
 			expect(formString).toContain('--test-boundary');
 			expect(formString).toContain('name="file"');
 			expect(formString).toContain('filename="test.txt"');
@@ -167,7 +169,9 @@ describe('BaseAIFileService', () => {
 
 			const formData = fileService['createFormData']('test.png', 'image/png', boundary, bytes, additionalFields);
 
-			const formString = formData.toString();
+			// Convert ArrayBuffer to string for inspection
+			const decoder = new TextDecoder();
+			const formString = decoder.decode(formData);
 			expect(formString).toContain('name="purpose"');
 			expect(formString).toContain('vision');
 			expect(formString).toContain('name="custom"');

@@ -142,6 +142,9 @@ export abstract class BaseAIClass implements IAIClass {
                     Exception.throw("File has no content!");
                 }
                 await this.aiFileService.uploadFile(attachment);
+                if (!attachment.getFileID(this.provider)) {
+                    Exception.throw("File ID undefined after upload attempt");
+                }
             } catch (error) {
                 Exception.log(`Failed to upload ${attachment.fileName}: ${Exception.messageFrom(error)}`);
                 failedUploads.push(attachment.fileName);

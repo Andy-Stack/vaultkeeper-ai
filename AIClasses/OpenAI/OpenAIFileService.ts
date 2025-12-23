@@ -54,7 +54,7 @@ export class OpenAIFileService extends BaseAIFileService {
                     "Authorization": `Bearer ${this.apiKey}`,
                     "Content-Type": `multipart/form-data; boundary=${boundary}`
                 },
-                body: formData.buffer,
+                body: formData,
                 throw: false
             });
 

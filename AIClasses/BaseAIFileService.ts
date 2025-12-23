@@ -46,6 +46,7 @@ export abstract class BaseAIFileService implements IAIFileService {
 		if (existingFileID && this.fileIDs.includes(existingFileID)) {
 			return;
 		}
+		attachment.deleteFileID(this.provider);
 
 		const fileID = await this.uploadFileToAPI(attachment.base64, attachment.mimeType, attachment.fileName);
 
@@ -113,38 +114,46 @@ export abstract class BaseAIFileService implements IAIFileService {
 		return `----FormBoundary${Date.now()}${Math.random().toString(36).substring(2)}`;
 	}
 
-	protected createFormData(displayName: string | undefined, mimeType: string, boundary: string, bytes: Uint8Array<ArrayBuffer>, additionalFields?: Record<string, string>): Buffer<ArrayBuffer> {
-		const parts: Buffer[] = [];
+	protected createFormData(displayName: string | undefined, mimeType: string, boundary: string, bytes: Uint8Array<ArrayBuffer>, additionalFields?: Record<string, string>): ArrayBuffer {
+		const parts: Uint8Array[] = [];
+		const encoder = new TextEncoder();
 
 		// Add the file field
 		parts.push(
-			Buffer.from(
+			encoder.encode(
 				`--${boundary}\r\n` +
 				`Content-Disposition: form-data; name="file"; filename="${displayName || 'file'}"\r\n` +
-				`Content-Type: ${mimeType}\r\n\r\n`,
-				'utf8'
+				`Content-Type: ${mimeType}\r\n\r\n`
 			)
 		);
-		parts.push(Buffer.from(bytes));
+		parts.push(bytes);
 
 		// Add any additional fields
 		if (additionalFields) {
 			for (const [key, value] of Object.entries(additionalFields)) {
 				parts.push(
-					Buffer.from(
+					encoder.encode(
 						`\r\n--${boundary}\r\n` +
 						`Content-Disposition: form-data; name="${key}"\r\n\r\n` +
-						value,
-						'utf8'
+						value
 					)
 				);
 			}
 		}
 
 		// Add closing boundary
-		parts.push(Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8'));
+		parts.push(encoder.encode(`\r\n--${boundary}--\r\n`));
 
-		return Buffer.concat(parts);
+		// Calculate total length and concatenate
+		const totalLength = parts.reduce((sum, part) => sum + part.byteLength, 0);
+		const result = new Uint8Array(totalLength);
+		let offset = 0;
+		for (const part of parts) {
+			result.set(part, offset);
+			offset += part.byteLength;
+		}
+
+		return this.bytesToBuffer(result);
     }
 
 	protected bytesToBuffer(bytes: Uint8Array<ArrayBuffer>): ArrayBuffer {

@@ -13,6 +13,7 @@ import { FinishReason } from "@google/genai";
 import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
+import { Exception } from "Helpers/Exception";
 
 export class Gemini extends BaseAIClass {
 
@@ -250,16 +251,16 @@ export class Gemini extends BaseAIClass {
 
         // Add binary file attachments if present
         if (content.attachments && content.attachments.length > 0) {
-          const { formattedParts, errorMessage } = await this.processAttachments<Part>(
+          const { formattedParts, uploadErrors } = await this.processAttachments<Part>(
             content.attachments,
             (attachments) => this.formatBinaryFiles(attachments)
           );
 
           parts.push(...formattedParts);
 
-          if (errorMessage) {
+          for (const uploadError of uploadErrors) {
             parts.push({
-              text: errorMessage
+              text: Exception.messageFrom(uploadError)
             });
           }
         }

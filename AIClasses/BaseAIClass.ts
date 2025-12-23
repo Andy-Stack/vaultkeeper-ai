@@ -133,33 +133,27 @@ export abstract class BaseAIClass implements IAIClass {
     protected async processAttachments<T>(
         attachments: Attachment[],
         formatBinaryFiles: (attachments: Attachment[]) => string
-    ): Promise<{ formattedParts: T[], errorMessage?: string }> {
-        const failedUploads: string[] = [];
+    ): Promise<{ formattedParts: T[], uploadErrors: Error[] }> {
+        const uploadErrors: Error[] = [];
 
         for (const attachment of attachments) {
             try {
                 if (attachment.base64.trim() === "") {
-                    Exception.throw("File has no content!");
+                    Exception.throw(`Failed to upload ${attachment.fileName}: File has no content`);
                 }
                 await this.aiFileService.uploadFile(attachment);
                 if (!attachment.getFileID(this.provider)) {
-                    Exception.throw("File ID undefined after upload attempt");
+                    Exception.throw(`Failed to upload ${attachment.fileName}: File ID undefined after upload attempt`);
                 }
             } catch (error) {
-                Exception.log(`Failed to upload ${attachment.fileName}: ${Exception.messageFrom(error)}`);
-                failedUploads.push(attachment.fileName);
+                uploadErrors.push(Exception.new(error));
             }
         }
 
         const formattedContent = formatBinaryFiles(attachments);
         const formattedParts = JSON.parse(formattedContent) as T[];
 
-        return {
-            formattedParts,
-            errorMessage: failedUploads.length > 0
-                ? `[Upload failed for: ${failedUploads.join(', ')}.]`
-                : undefined
-        };
+        return { formattedParts, uploadErrors };
     }
 
     /**

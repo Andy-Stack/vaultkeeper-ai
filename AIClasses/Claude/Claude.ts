@@ -205,17 +205,17 @@ export class Claude extends BaseAIClass {
 
             // Add binary file attachments if present
             if (content.attachments && content.attachments.length > 0) {
-                const { formattedParts, errorMessage } = await this.processAttachments<ContentBlockParam>(
+                const { formattedParts, uploadErrors } = await this.processAttachments<ContentBlockParam>(
                     content.attachments,
                     (attachments) => this.formatBinaryFiles(attachments)
                 );
 
                 contentBlocks.push(...formattedParts);
 
-                if (errorMessage) {
+                for (const uploadError of uploadErrors) {
                     contentBlocks.push({
                         type: "text",
-                        text: errorMessage
+                        text: Exception.messageFrom(uploadError)
                     });
                 }
             }

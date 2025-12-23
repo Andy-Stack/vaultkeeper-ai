@@ -246,18 +246,18 @@ export class OpenAI extends BaseAIClass {
 
             // Case 2: Binary file attachments
             if (content.attachments && content.attachments.length > 0) {
-                const { formattedParts, errorMessage } = await this.processAttachments<ResponsesAPIInput>(
+                const { formattedParts, uploadErrors } = await this.processAttachments<ResponsesAPIInput>(
                     content.attachments,
                     (attachments) => this.formatBinaryFiles(attachments)
                 );
 
                 results.push(...formattedParts);
 
-                if (errorMessage) {
+                for (const uploadError of uploadErrors) {
                     // OpenAI formatBinaryFiles returns array with role wrapper, so add as separate message
                     results.push({
                         role: "user",
-                        content: errorMessage
+                        content: Exception.messageFrom(uploadError)
                     });
                 }
                 continue;

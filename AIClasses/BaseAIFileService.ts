@@ -160,4 +160,9 @@ export abstract class BaseAIFileService implements IAIFileService {
 		return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 	}
 
+	protected getHeader(headerName: string, headers: Record<string, string>): string | undefined {
+		const header = Object.keys(headers).find(header => header.toLowerCase() === headerName.toLowerCase());
+		return header ? headers[header] : undefined;
+	}
+
 }

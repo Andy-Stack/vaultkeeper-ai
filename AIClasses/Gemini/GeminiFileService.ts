@@ -64,7 +64,7 @@ export class GeminiFileService extends BaseAIFileService {
                 throw ApiError.fromResponse(initiateResponse.status, "Upload file failed", initiateResponse.text);
             }
 
-            const uploadUrl = initiateResponse.headers["x-goog-upload-url"];
+            const uploadUrl = this.getHeader("x-goog-upload-url", initiateResponse.headers);
             if (!uploadUrl) {
                 Exception.throw("No upload URL received from initiate request");
             }
@@ -73,8 +73,8 @@ export class GeminiFileService extends BaseAIFileService {
             const uploadResponse = await requestUrl({
                 url: uploadUrl,
                 method: "POST",
+                contentType: mimeType,
                 headers: {
-                    "Content-Type": mimeType,
                     "X-Goog-Upload-Offset": "0",
                     "X-Goog-Upload-Command": "upload, finalize"
                 },

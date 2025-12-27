@@ -526,7 +526,7 @@ export class VaultService {
 
                 let response = AIFunctionResponse.UserRejectionMessage;
                 if (result.suggestion) {
-                    response = AIFunctionResponse.UserSuggestionMessage + result.suggestion;
+                    response = `${AIFunctionResponse.UserSuggestionMessage}\n${result.suggestion}`;
                 }
                 return Exception.new(response);
             } catch (error) {

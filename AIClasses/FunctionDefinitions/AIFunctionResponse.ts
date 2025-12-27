@@ -13,7 +13,21 @@ export class AIFunctionResponse {
 
                                                            **CRITICAL:** Immediately stop all further actions and consult with the user`;
                                                            
-    public static readonly UserSuggestionMessage: string = "The user has rejected the change with the following suggestion: ";
+    public static readonly UserSuggestionMessage: string = `**USER MODIFICATION REQUEST:**
+
+    The user has reviewed your proposed action and provided a modification or alternative direction.
+
+    **Critical Instructions:**
+    1. This is NOT an error or failure - this is valuable user guidance that should be taken seriously
+    2. The user may want to:
+        - Adjust the SAME action with different parameters (e.g., write to a different file)
+        - Change to a DIFFERENT action entirely (e.g., delete instead of write)
+        - Add context or constraints you didn't initially consider
+    3. Carefully analyze the user's suggestion below to understand their true intent
+    4. Acknowledge their feedback and explain how you'll adjust your approach
+    5. Then proceed with the modified action that aligns with their guidance
+
+    **User's Suggestion:**`;
 
     constructor(name: AIFunction, response: object, toolId?: string) {
         this.name = name;

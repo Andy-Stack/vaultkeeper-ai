@@ -8,7 +8,7 @@ import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
-import type { RawMessageStreamEvent, ContentBlockParam, Tool } from '@anthropic-ai/sdk/resources/messages';
+import type { RawMessageStreamEvent, ContentBlockParam, Tool, TextBlockParam, ToolUnion, WebSearchTool20250305 } from '@anthropic-ai/sdk/resources/messages';
 import { Exception } from "Helpers/Exception";
 import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
@@ -47,17 +47,33 @@ export class Claude extends BaseAIClass {
             await this.aiFileService.refreshCache();
         }
 
-        const systemPrompt = await this.buildSystemPrompt();
+        // Build system prompt and convert to array with cache control
+        const systemPromptText = await this.buildSystemPrompt();
+        const systemPrompt: TextBlockParam[] = [
+            {
+                type: "text",
+                text: systemPromptText,
+                cache_control: { type: "ephemeral" }
+            }
+        ];
 
-        const messages = await this.extractContents(conversation.contents);
+        const messages = this.addCacheControlToMessages(
+            await this.extractContents(conversation.contents));
 
-        const tools = [{
+        const webSearchTool: WebSearchTool20250305 = {
             type: "web_search_20250305",
             name: "web_search",
             max_uses: 5
-        }, ...this.mapFunctionDefinitions(
-            this.aiFunctionDefinitions.getQueryActions(allowDestructiveActions)
-        )];
+        };
+
+        let tools: ToolUnion[] = [
+            webSearchTool,
+            ...this.mapFunctionDefinitions(
+                this.aiFunctionDefinitions.getQueryActions(allowDestructiveActions)
+            )
+        ];
+
+        tools = this.addCacheControlToTools(tools);
 
         const requestBody = {
             model: this.settingsService.settings.model,
@@ -302,5 +318,54 @@ export class Claude extends BaseAIClass {
 
     private isSupportedMimeType(mimeType: MimeType): boolean {
         return this.SUPPORTED_MIMETYPES.includes(mimeType);
+    }
+
+    // Adds cache control to the last tool in the tools array.
+    private addCacheControlToTools(tools: ToolUnion[]): ToolUnion[] {
+        if (tools.length === 0) {
+            return tools;
+        }
+
+        const cachedTools = [...tools];
+        const lastIndex = cachedTools.length - 1;
+
+        cachedTools[lastIndex] = {
+            ...cachedTools[lastIndex],
+            cache_control: { type: "ephemeral" }
+        };
+
+        return cachedTools;
+    }
+
+    // Adds cache control to the last content block of the second-to-last message.
+    private addCacheControlToMessages(
+        messages: { role: Role; content: ContentBlockParam[]; }[]
+    ): { role: Role; content: ContentBlockParam[]; }[] {
+        if (messages.length < 2) {
+            return messages;
+        }
+
+        const cachedMessages = messages.map(msg => ({
+            ...msg,
+            content: [...msg.content]
+        }));
+
+        const secondToLastIndex = cachedMessages.length - 2;
+        const secondToLastMessage = cachedMessages[secondToLastIndex];
+
+        const contentLength = secondToLastMessage.content.length;
+        if (contentLength === 0) {
+            return messages;
+        }
+
+        const lastContentIndex = contentLength - 1;
+        const lastContentBlock = secondToLastMessage.content[lastContentIndex];
+
+        secondToLastMessage.content[lastContentIndex] = {
+            ...lastContentBlock,
+            cache_control: { type: "ephemeral" }
+        } as ContentBlockParam;
+
+        return cachedMessages;
     }
 }

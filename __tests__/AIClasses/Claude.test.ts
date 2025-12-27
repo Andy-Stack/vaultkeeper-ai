@@ -826,8 +826,274 @@ describe('Claude', () => {
         });
     });
 
+    describe('addCacheControlToTools', () => {
+        it('should add cache control to the last tool in the array', () => {
+            const tools = [
+                {
+                    name: 'search_vault_files',
+                    description: 'Search for files',
+                    input_schema: {
+                        type: 'object' as const,
+                        properties: { query: { type: 'string' } }
+                    }
+                },
+                {
+                    name: 'read_file',
+                    description: 'Read a file',
+                    input_schema: {
+                        type: 'object' as const,
+                        properties: { path: { type: 'string' } }
+                    }
+                }
+            ];
+
+            const result = (claude as any).addCacheControlToTools(tools);
+
+            expect(result).toHaveLength(2);
+            expect(result[0]).not.toHaveProperty('cache_control');
+            expect(result[1]).toHaveProperty('cache_control');
+            expect(result[1].cache_control).toEqual({ type: 'ephemeral' });
+        });
+
+        it('should handle single tool array', () => {
+            const tools = [
+                {
+                    name: 'search_vault_files',
+                    description: 'Search for files',
+                    input_schema: {
+                        type: 'object' as const,
+                        properties: { query: { type: 'string' } }
+                    }
+                }
+            ];
+
+            const result = (claude as any).addCacheControlToTools(tools);
+
+            expect(result).toHaveLength(1);
+            expect(result[0]).toHaveProperty('cache_control');
+            expect(result[0].cache_control).toEqual({ type: 'ephemeral' });
+        });
+
+        it('should handle empty tools array', () => {
+            const tools: any[] = [];
+
+            const result = (claude as any).addCacheControlToTools(tools);
+
+            expect(result).toHaveLength(0);
+            expect(result).toEqual([]);
+        });
+
+        it('should not mutate the original tools array', () => {
+            const tools = [
+                {
+                    name: 'search_vault_files',
+                    description: 'Search for files',
+                    input_schema: {
+                        type: 'object' as const,
+                        properties: { query: { type: 'string' } }
+                    }
+                }
+            ];
+
+            const result = (claude as any).addCacheControlToTools(tools);
+
+            // Original array should not have cache_control
+            expect(tools[0]).not.toHaveProperty('cache_control');
+            // Result should have cache_control
+            expect(result[0]).toHaveProperty('cache_control');
+        });
+
+        it('should add cache control to web_search tool', () => {
+            const tools = [
+                {
+                    type: 'web_search_20250305',
+                    name: 'web_search',
+                    max_uses: 5
+                }
+            ];
+
+            const result = (claude as any).addCacheControlToTools(tools);
+
+            expect(result).toHaveLength(1);
+            expect(result[0]).toHaveProperty('cache_control');
+            expect(result[0].cache_control).toEqual({ type: 'ephemeral' });
+            expect(result[0].type).toBe('web_search_20250305');
+            expect(result[0].name).toBe('web_search');
+        });
+    });
+
+    describe('addCacheControlToMessages', () => {
+        it('should add cache control to the last content block of the second-to-last message', () => {
+            const messages = [
+                {
+                    role: Role.User,
+                    content: [{ type: 'text' as const, text: 'First message' }]
+                },
+                {
+                    role: Role.Assistant,
+                    content: [{ type: 'text' as const, text: 'Second message' }]
+                },
+                {
+                    role: Role.User,
+                    content: [{ type: 'text' as const, text: 'Third message' }]
+                }
+            ];
+
+            const result = (claude as any).addCacheControlToMessages(messages);
+
+            expect(result).toHaveLength(3);
+            // First message should not have cache control
+            expect(result[0].content[0]).not.toHaveProperty('cache_control');
+            // Second message (second-to-last) should have cache control
+            expect(result[1].content[0]).toHaveProperty('cache_control');
+            expect(result[1].content[0].cache_control).toEqual({ type: 'ephemeral' });
+            // Third message (last) should not have cache control
+            expect(result[2].content[0]).not.toHaveProperty('cache_control');
+        });
+
+        it('should add cache control to the last content block when message has multiple blocks', () => {
+            const messages = [
+                {
+                    role: Role.User,
+                    content: [
+                        { type: 'text' as const, text: 'First block' },
+                        { type: 'text' as const, text: 'Second block' },
+                        { type: 'text' as const, text: 'Third block' }
+                    ]
+                },
+                {
+                    role: Role.Assistant,
+                    content: [{ type: 'text' as const, text: 'Response' }]
+                }
+            ];
+
+            const result = (claude as any).addCacheControlToMessages(messages);
+
+            expect(result).toHaveLength(2);
+            // First message, last block should have cache control
+            expect(result[0].content[0]).not.toHaveProperty('cache_control');
+            expect(result[0].content[1]).not.toHaveProperty('cache_control');
+            expect(result[0].content[2]).toHaveProperty('cache_control');
+            expect(result[0].content[2].cache_control).toEqual({ type: 'ephemeral' });
+        });
+
+        it('should return messages unchanged when there are fewer than 2 messages', () => {
+            const singleMessage = [
+                {
+                    role: Role.User,
+                    content: [{ type: 'text' as const, text: 'Only message' }]
+                }
+            ];
+
+            const result = (claude as any).addCacheControlToMessages(singleMessage);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].content[0]).not.toHaveProperty('cache_control');
+        });
+
+        it('should return empty array when messages array is empty', () => {
+            const messages: any[] = [];
+
+            const result = (claude as any).addCacheControlToMessages(messages);
+
+            expect(result).toHaveLength(0);
+            expect(result).toEqual([]);
+        });
+
+        it('should handle messages with empty content blocks', () => {
+            const messages = [
+                {
+                    role: Role.User,
+                    content: []
+                },
+                {
+                    role: Role.Assistant,
+                    content: [{ type: 'text' as const, text: 'Response' }]
+                }
+            ];
+
+            const result = (claude as any).addCacheControlToMessages(messages);
+
+            expect(result).toHaveLength(2);
+            // Should return original messages since second-to-last has no content
+            expect(result).toEqual(messages);
+        });
+
+        it('should not mutate the original messages array', () => {
+            const messages = [
+                {
+                    role: Role.User,
+                    content: [{ type: 'text' as const, text: 'First' }]
+                },
+                {
+                    role: Role.Assistant,
+                    content: [{ type: 'text' as const, text: 'Second' }]
+                }
+            ];
+
+            const originalFirstContent = messages[0].content[0];
+            const result = (claude as any).addCacheControlToMessages(messages);
+
+            // Original should not have cache_control
+            expect(originalFirstContent).not.toHaveProperty('cache_control');
+            // Result should have cache_control on second-to-last message
+            expect(result[0].content[0]).toHaveProperty('cache_control');
+        });
+
+        it('should handle messages with tool_use and tool_result blocks', () => {
+            const messages = [
+                {
+                    role: Role.User,
+                    content: [{ type: 'text' as const, text: 'Search for files' }]
+                },
+                {
+                    role: Role.Assistant,
+                    content: [
+                        { type: 'text' as const, text: 'Let me search' },
+                        { type: 'tool_use' as const, id: 'call_1', name: 'search', input: {} }
+                    ]
+                },
+                {
+                    role: Role.User,
+                    content: [
+                        { type: 'tool_result' as const, tool_use_id: 'call_1', content: '["file1.txt"]' }
+                    ]
+                }
+            ];
+
+            const result = (claude as any).addCacheControlToMessages(messages);
+
+            expect(result).toHaveLength(3);
+            // Second-to-last message's last content block should have cache control
+            expect(result[1].content[1]).toHaveProperty('cache_control');
+            expect(result[1].content[1].cache_control).toEqual({ type: 'ephemeral' });
+        });
+
+        it('should work with exactly 2 messages', () => {
+            const messages = [
+                {
+                    role: Role.User,
+                    content: [{ type: 'text' as const, text: 'Hello' }]
+                },
+                {
+                    role: Role.Assistant,
+                    content: [{ type: 'text' as const, text: 'Hi' }]
+                }
+            ];
+
+            const result = (claude as any).addCacheControlToMessages(messages);
+
+            expect(result).toHaveLength(2);
+            // First message (second-to-last when length=2) should have cache control
+            expect(result[0].content[0]).toHaveProperty('cache_control');
+            expect(result[0].content[0].cache_control).toEqual({ type: 'ephemeral' });
+            // Second message should not have cache control
+            expect(result[1].content[0]).not.toHaveProperty('cache_control');
+        });
+    });
+
     describe('streamRequest', () => {
-        it('should call streamingService with correct parameters', async () => {
+        it('should call streamingService with correct parameters including cache control', async () => {
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test message' }));
 
@@ -847,7 +1113,13 @@ describe('Claude', () => {
                 expect.objectContaining({
                     model: 'claude-opus-4-20250514',
                     max_tokens: 16384,
-                    system: 'System instruction\n\nUser instruction',
+                    system: [
+                        {
+                            type: 'text',
+                            text: 'System instruction\n\nUser instruction',
+                            cache_control: { type: 'ephemeral' }
+                        }
+                    ],
                     messages: expect.any(Array),
                     tools: expect.any(Array),
                     stream: true

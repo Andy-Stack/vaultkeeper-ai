@@ -182,7 +182,7 @@
 					{@html content}
 					{#if selectedTopic === 1}
 						<a
-							href={plugin.manifest.authorUrl}
+							href="{plugin.manifest.authorUrl}/vaultkeeper-ai"
 							style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5em; margin: 0 0 1em 0;">
 							<svg
 								width="1em"

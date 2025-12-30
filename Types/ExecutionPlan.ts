@@ -64,7 +64,6 @@ export class ExecutionPlan {
                 };
             }
         }
-
         currentStep.status = ExecutionStatus.Completed;
 
         const nextStep = this.executionSteps[stepIndex + 1];
@@ -73,9 +72,12 @@ export class ExecutionPlan {
             return {
                 message: replaceCopy(Copy.StepCompletedWithNextStep, [
                     stepNumber.toString(),
-                    (stepNumber + 1).toString(),
-                    nextStep.description
-                ])
+                    (stepNumber + 1).toString()
+                ]),
+                step: nextStep.step,
+                description: nextStep.description,
+                instruction: nextStep.instruction,
+                ...(nextStep.context && { context: nextStep.context })
             };
         } else {
             return {

@@ -70,7 +70,7 @@ export enum Copy {
     PlanningFailedError = "Planning failed. No execution plan was generated. Please consult with the user about how to proceed.",
     StepDoesNotExistError = "Step {stepNumber} does not exist in the execution plan. Valid step numbers are 1-{totalSteps}.",
     StepMustBeCompletedInOrderError = "Cannot complete step {stepNumber}. Step \"{incompletStep}\" is not yet completed. Steps must be completed in order.",
-    StepCompletedWithNextStep = "Step {stepNumber} completed successfully. Now proceed with step {nextStepNumber}: {nextStepDescription}",
+    StepCompletedWithNextStep = "Step {stepNumber} completed successfully. Now proceed with step {nextStepNumber}.",
     AllStepsCompleted = "Step {stepNumber} completed successfully. All steps in the execution plan have been completed. Provide a final summary to the user based on the completed steps and overall success criteria.",
     MaxPlanningIterationsReached = "I've attempted multiple planning iterations but encountered persistent issues completing the task. It may need to be broken down further or requires additional clarification.",
 

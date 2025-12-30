@@ -153,7 +153,7 @@ export function isKnownFileType(value: string): value is FileType {
     return Object.values(FileType).includes(value as FileType) && value !== FileType.UNKNOWN.toString();
 }
 
-export function isFileType(value: string, fileType: FileType) {
+export function isFileType(value: unknown, fileType: FileType): value is FileType {
     return value === fileType.toString();
 }
 

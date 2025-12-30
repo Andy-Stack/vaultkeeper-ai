@@ -9,7 +9,7 @@ export class AbortService {
   public reset = () => this.initialiseAbortController(); // semantic alias for initialiseAbortController
 
   public initialiseAbortController(): void {
-      this.abortController.abort();
+      this.abort();
       this.abortController = new AbortController();
   }
 

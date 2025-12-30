@@ -1,3 +1,5 @@
+import { Exception } from "Helpers/Exception";
+
 export enum Copy {
     // General Copy
     UserInstructions1 = "You can create custom ",
@@ -63,6 +65,41 @@ export enum Copy {
     TooltipLearnMoreFileMonitoring = "Learn more in Plugin Guide",
 
     AIThoughtMessage = "Thinking...",
+
+    // Execution Plan Messages
+    PlanningFailedError = "Planning failed. No execution plan was generated. Please consult with the user about how to proceed.",
+    StepDoesNotExistError = "Step {stepNumber} does not exist in the execution plan. Valid step numbers are 1-{totalSteps}.",
+    StepMustBeCompletedInOrderError = "Cannot complete step {stepNumber}. Step \"{incompletStep}\" is not yet completed. Steps must be completed in order.",
+    StepCompletedWithNextStep = "Step {stepNumber} completed successfully. Now proceed with step {nextStepNumber}: {nextStepDescription}",
+    AllStepsCompleted = "Step {stepNumber} completed successfully. All steps in the execution plan have been completed. Provide a final summary to the user based on the completed steps and overall success criteria.",
+    MaxPlanningIterationsReached = "I've attempted multiple planning iterations but encountered persistent issues completing the task. It may need to be broken down further or requires additional clarification.",
+
+    // Execution Plan Request Templates
+    ContextTags = `
+<CONTEXT>
+{context}
+</CONTEXT>`,
+    ReplanRequestTemplate = `Plan execution has encountered an unexpected issue. Replan based on the following.
+
+### Original Goal
+{originalGoal}
+
+### Completed Steps
+{completedSteps}
+
+### Issue Encountered
+{issueEncountered}
+
+### Additional Context
+{context}`,
+    IncompleteExecutionRequestTemplate = `Plan execution stopped before all steps were completed. Review the execution history and create a revised plan to complete the remaining work.
+
+{completedSection}
+
+{remainingSection}`,
+    CompletedStepsHeader = "### Completed Steps",
+    RemainingStepsHeader = "### Remaining Steps",
+    NoSteps = "None",
 
     // Help Modal Copy
     HelpModalAboutTitle = "About",
@@ -516,4 +553,44 @@ Preferred programming language: {{language}}
 ---
 
 **Remember:** A good system prompt is clear, dense, and easy to understand, leaving no room for misinterpretation. Start simple, test thoroughly, and refine based on real results.`
+}
+
+/**
+ * Replaces placeholders in Copy strings with provided values.
+ * Placeholders are denoted by curly braces: {placeholderName}
+ *
+ * @param copyString - The Copy enum string containing placeholders
+ * @param replacements - Array of replacement values in the order they appear in the string
+ * @returns The string with all placeholders replaced
+ *
+ * @example
+ * replaceCopy(Copy.StepDoesNotExistError, ["5", "10"])
+ * // Returns: "Step 5 does not exist in the execution plan. Valid step numbers are 1-10."
+ */
+export function replaceCopy(copyString: string, replacements: string[]): string {
+    const placeholderRegex = /\{[^}]+\}/g;
+    const placeholders = copyString.match(placeholderRegex);
+
+    if (!placeholders) {
+        if (replacements.length > 0) {
+            Exception.log(`No placeholders found in copy string, but ${replacements.length} replacement(s) provided.`);
+        }
+        return copyString;
+    }
+
+    if (placeholders.length !== replacements.length) {
+        Exception.log(`Placeholder count (${placeholders.length}) does not match replacement count (${replacements.length}). Using best effort.`);
+    }
+
+    let result = copyString;
+    let replacementIndex = 0;
+
+    result = result.replace(placeholderRegex, () => {
+        if (replacementIndex < replacements.length) {
+            return replacements[replacementIndex++];
+        }
+        return placeholders[replacementIndex++]; // Return original placeholder if no replacement available
+    });
+
+    return result;
 }

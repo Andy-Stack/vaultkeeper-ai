@@ -46,6 +46,32 @@ export const ListVaultFilesArgsSchema = z.object({
 	user_message: z.string()
 });
 
+export const CreatePlanArgsSchema = z.object({
+	goal: z.string(),
+	context: z.string().optional(),
+	user_message: z.string()
+});
+
+export const ReplanArgsSchema = z.object({
+	original_goal: z.string(),
+	completed_steps: z.string(),
+	issue_encountered: z.string(),
+	context: z.string(),
+	user_message: z.string()
+});
+
+export const CompleteStepArgsSchema = z.object({
+	step_number: z.number()
+});
+
+export const SubmitPlanArgsSchema = z.object({
+	steps: z.array(z.object({
+		description: z.string(),
+		instruction: z.string(),
+		context: z.string().optional()
+	}))
+});
+
 // Infer TypeScript types from schemas
 export type SearchVaultFilesArgs = z.infer<typeof SearchVaultFilesArgsSchema>;
 export type ReadVaultFilesArgs = z.infer<typeof ReadVaultFilesArgsSchema>;
@@ -54,3 +80,7 @@ export type PatchVaultFileArgs = z.infer<typeof PatchVaultFileArgsSchema>;
 export type DeleteVaultFilesArgs = z.infer<typeof DeleteVaultFilesArgsSchema>;
 export type MoveVaultFilesArgs = z.infer<typeof MoveVaultFilesArgsSchema>;
 export type ListVaultFilesArgs = z.infer<typeof ListVaultFilesArgsSchema>;
+export type CreatePlanArgs = z.infer<typeof CreatePlanArgsSchema>;
+export type ReplanArgs = z.infer<typeof ReplanArgsSchema>;
+export type CompleteStepArgs = z.infer<typeof CompleteStepArgsSchema>;
+export type SubmitPlanArgs = z.infer<typeof SubmitPlanArgsSchema>;

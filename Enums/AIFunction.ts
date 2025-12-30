@@ -11,6 +11,12 @@ export enum AIFunction {
 
     // only used by gemini
     RequestWebSearch = "request_web_search",
+
+    // multi agent calls
+    CreatePlan = "create_plan",
+    Replan = "replan",
+    SubmitPlan = "submit_plan",
+    CompleteStep = "complete_step"
 }
 
 export function fromString(functionName: string): AIFunction {
@@ -19,4 +25,8 @@ export function fromString(functionName: string): AIFunction {
         return enumValue as AIFunction;
     }
     Exception.throw(`Unknown function name: ${functionName}`);
+}
+
+export function isAIFunction(value: unknown, aiFunction: AIFunction): value is AIFunction {
+    return value === aiFunction;
 }

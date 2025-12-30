@@ -1,11 +1,9 @@
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
 import type { IAIClass } from "AIClasses/IAIClass";
-import type { IPrompt } from "AIClasses/IPrompt";
 import { type IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import type { AIProvider } from "Enums/ApiProvider";
-import type { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Attachment } from "Conversations/Attachment";
@@ -22,31 +20,50 @@ export abstract class BaseAIClass implements IAIClass {
 
     protected readonly provider: AIProvider;
     protected readonly apiKey: string;
-    protected readonly aiPrompt: IPrompt;
     protected readonly abortService: AbortService;
     protected readonly aiFileService: IAIFileService;
     protected readonly settingsService: SettingsService;
     protected readonly streamingService: StreamingService;
-    protected readonly aiFunctionDefinitions: AIFunctionDefinitions;
+
+    private _systemPrompt: string = "";
+    private _userInstruction: string = "";
+    private _toolDefinitions: IAIFunctionDefinition[] = [];
 
     protected constructor(provider: AIProvider) {
         this.provider = provider;
-        this.aiPrompt = Resolve<IPrompt>(Services.IPrompt);
         this.abortService = Resolve<AbortService>(Services.AbortService);
         this.aiFileService = Resolve<IAIFileService>(Services.IAIFileService);
         this.settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.streamingService = Resolve<StreamingService>(Services.StreamingService);
-        this.aiFunctionDefinitions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
 
         this.apiKey = this.settingsService.getApiKeyForProvider(provider);
     }
 
+    public set systemPrompt(systemPrompt: string) {
+        this._systemPrompt = systemPrompt;
+    }
 
-    public abstract streamRequest(
-        conversation: Conversation,
-        allowDestructiveActions: boolean,
-        abortSignal?: AbortSignal
-    ): AsyncGenerator<IStreamChunk, void, unknown>;
+    public get systemPrompt(): string {
+        return this._systemPrompt;
+    }
+
+    public set userInstruction(userInstruction: string) {
+        this._userInstruction = userInstruction;
+    }
+
+    public get userInstruction(): string {
+        return this._userInstruction;
+    }
+
+    public get toolDefinitions(): IAIFunctionDefinition[] {
+        return this._toolDefinitions;
+    }
+
+    public set toolDefinitions(toolDefinitions: IAIFunctionDefinition[]) {
+        this._toolDefinitions = toolDefinitions;
+    }
+
+    public abstract streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown>;
 
     public abstract formatBinaryFiles(attachments: Attachment[]): string;
 
@@ -121,13 +138,6 @@ export abstract class BaseAIClass implements IAIClass {
             error: userMessage || `Failed to parse chunk: ${Exception.messageFrom(error)}`,
             errorType: errorType || ApiErrorType.UNKNOWN
         };
-    }
-
-    protected async buildSystemPrompt(): Promise<string> {
-        return [
-            this.aiPrompt.systemInstruction(),
-            await this.aiPrompt.userInstruction()
-        ].filter(s => s).join("\n\n");
     }
 
     protected async processAttachments<T>(

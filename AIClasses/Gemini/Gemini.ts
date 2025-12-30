@@ -76,9 +76,7 @@ export class Gemini extends BaseAIClass {
     super(AIProvider.Gemini);
   }
 
-  public async* streamRequest(
-    conversation: Conversation, allowDestructiveActions: boolean
-  ): AsyncGenerator<IStreamChunk, void, unknown> {
+  public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
     // next request should use web search only (gemini api doesn't support custom tooling and grounding at the same time)
     const requestWebSearch = this.accumulatedFunctionName == this.REQUEST_WEB_SEARCH;
 
@@ -102,7 +100,7 @@ export class Gemini extends BaseAIClass {
                         information, recent events, news, or facts that may have changed.
                         After calling this, you will be able to perform web searches.`,
           },
-          ...this.mapFunctionDefinitions(this.aiFunctionDefinitions.getQueryActions(allowDestructiveActions)),
+          ...this.mapFunctionDefinitions(this.toolDefinitions),
         ]
       }
 
@@ -110,7 +108,7 @@ export class Gemini extends BaseAIClass {
       system_instruction: {
         parts: [
           {
-            text: this.aiPrompt.systemInstruction()
+            text: this.systemPrompt
           },
           {
             text: `## IMPORTANT: Web Search Directive
@@ -120,7 +118,7 @@ export class Gemini extends BaseAIClass {
                    - Recent news, events, or happenings.
                    - Up-to-date prices, statistics, or factual data that is dynamic.
                    - Any information where "current," "latest," or "today's" is implied or explicitly requested.
-                   
+
                    When you need current information from the web, you *must* follow these steps:
                    1. First call the \`request_web_search\` function with a clear and concise \`reasoning\` explaining why web search is needed.
                    2. After calling this, you will be given access to Google Search.
@@ -128,7 +126,7 @@ export class Gemini extends BaseAIClass {
                    4. Subsequent interactions will revert to standard function calls or general assistance as appropriate.`
           },
           {
-            text: await this.aiPrompt.userInstruction()
+            text: this.userInstruction
           }
         ]
       },

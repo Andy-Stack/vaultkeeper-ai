@@ -3,7 +3,7 @@ import { Services } from "Services/Services";
 import type { IConversationNamingService } from "AIClasses/IConversationNamingService";
 import { AIProvider, AIProviderURL, AIProviderModel } from "Enums/ApiProvider";
 import { Role } from "Enums/Role";
-import { NamePrompt } from "AIClasses/NamePrompt";
+import { NamePrompt } from "AIPrompts/NamePrompt";
 import type { GenerateContentResponse } from "@google/genai";
 import type { SettingsService } from "Services/SettingsService";
 import { Exception } from "Helpers/Exception";

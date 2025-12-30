@@ -4,12 +4,12 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 export const ListVaultFiles: IAIFunctionDefinition = {
     name: AIFunction.ListVaultFiles,
     description: `Lists files and directories in the vault's directory structure.
-                  Returns a structured view of the vault's organization including file names, paths, and directory hierarchy.
-                  Use this function when you need to:
-                  - List files in a specific directory or the entire vault
-                  - Get an overview of vault organization and structure
-                  - Browse available files and folders
-                  - Understand how notes are organized`,
+Returns a structured view of the vault's organization including file names, paths, and directory hierarchy.
+Use this function when you need to:
+- List files in a specific directory or the entire vault
+- Get an overview of vault organization and structure
+- Browse available files and folders
+- Understand how notes are organized`,
     parameters: {
       type: "object",
       properties: {

@@ -1,7 +1,7 @@
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type { FileSystemService } from "./FileSystemService";
-import { AIFunction } from "Enums/AIFunction";
+import { AIFunction, fromString } from "Enums/AIFunction";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import type { ISearchMatch } from "../Helpers/SearchTypes";
@@ -37,7 +37,7 @@ export class AIFunctionService {
                     if (!parseResult.success) {
                         return new AIFunctionResponse(
                             functionCall.name,
-                            { error: `Invalid arguments for SearchVaultFiles: ${parseResult.error.message}` },
+                            { error: `Invalid arguments for ${AIFunction.SearchVaultFiles}: ${parseResult.error.message}` },
                             functionCall.toolId
                         );
                     }
@@ -49,7 +49,7 @@ export class AIFunctionService {
                     if (!parseResult.success) {
                         return new AIFunctionResponse(
                             functionCall.name,
-                            { error: `Invalid arguments for ReadVaultFiles: ${parseResult.error.message}` },
+                            { error: `Invalid arguments for ${AIFunction.ReadVaultFiles}: ${parseResult.error.message}` },
                             functionCall.toolId
                         );
                     }
@@ -61,7 +61,7 @@ export class AIFunctionService {
                     if (!parseResult.success) {
                         return new AIFunctionResponse(
                             functionCall.name,
-                            { error: `Invalid arguments for WriteVaultFile: ${parseResult.error.message}` },
+                            { error: `Invalid arguments for ${AIFunction.WriteVaultFile}: ${parseResult.error.message}` },
                             functionCall.toolId
                         );
                     }
@@ -73,7 +73,7 @@ export class AIFunctionService {
                     if (!parseResult.success) {
                         return new AIFunctionResponse(
                             functionCall.name,
-                            { error: `Invalid arguments for PatchVaultFile: ${parseResult.error.message}` },
+                            { error: `Invalid arguments for ${AIFunction.PatchVaultFile}: ${parseResult.error.message}` },
                             functionCall.toolId
                         );
                     }
@@ -85,7 +85,7 @@ export class AIFunctionService {
                     if (!parseResult.success) {
                         return new AIFunctionResponse(
                             functionCall.name,
-                            { error: `Invalid arguments for DeleteVaultFiles: ${parseResult.error.message}` },
+                            { error: `Invalid arguments for ${AIFunction.DeleteVaultFiles}: ${parseResult.error.message}` },
                             functionCall.toolId
                         );
                     }
@@ -97,7 +97,7 @@ export class AIFunctionService {
                     if (!parseResult.success) {
                         return new AIFunctionResponse(
                             functionCall.name,
-                            { error: `Invalid arguments for MoveVaultFiles: ${parseResult.error.message}` },
+                            { error: `Invalid arguments for ${AIFunction.MoveVaultFiles}: ${parseResult.error.message}` },
                             functionCall.toolId
                         );
                     }
@@ -109,22 +109,32 @@ export class AIFunctionService {
                     if (!parseResult.success) {
                         return new AIFunctionResponse(
                             functionCall.name,
-                            { error: `Invalid arguments for ListVaultFiles: ${parseResult.error.message}` },
+                            { error: `Invalid arguments for ${AIFunction.ListVaultFiles}: ${parseResult.error.message}` },
                             functionCall.toolId
                         );
                     }
                     return new AIFunctionResponse(functionCall.name, await this.ListVaultFiles(parseResult.data.path, parseResult.data.recursive), functionCall.toolId);
                 }
     
-                // this is only used by gemini
+                // This is only used by gemini
                 case AIFunction.RequestWebSearch:
                     return new AIFunctionResponse(functionCall.name, {}, functionCall.toolId)
-    
+
+                // multi-agent functions are handled elsewhere - this shouldn't ever get hit
+                case AIFunction.CreatePlan:
+                case AIFunction.Replan:
+                case AIFunction.SubmitPlan:
+                case AIFunction.CompleteStep: {
+                    Exception.throw(`Multi-agent function ${functionCall.name} should not be handled by AIFunctionService`);
+                    break;
+                }
+
                 default: {
-                    const error = `Unknown function request ${functionCall.name as string}`
+                    const functionCallName = fromString(functionCall.name);
+                    const error = `Unknown function request ${functionCallName}`
                     Exception.log(error);
                     return new AIFunctionResponse(
-                        functionCall.name,
+                        functionCallName,
                         { error: error },
                         functionCall.toolId
                     );

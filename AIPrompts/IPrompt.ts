@@ -3,9 +3,11 @@ import { Services } from "Services/Services";
 import { SystemInstruction } from "./SystemPrompt";
 import type { FileSystemService } from "Services/FileSystemService";
 import type { SettingsService } from "Services/SettingsService";
+import { PlanningAgentSystemPrompt } from "AIPrompts/PlanningAgentSystemPrompt";
 
 export interface IPrompt {
   systemInstruction(): string;
+  planningInstruction(): string;
   userInstruction(): Promise<string>;
 }
 
@@ -21,6 +23,10 @@ export class AIPrompt implements IPrompt {
 
   public systemInstruction(): string {
     return SystemInstruction;
+  }
+
+  public planningInstruction(): string {
+    return PlanningAgentSystemPrompt;
   }
 
   public async userInstruction(): Promise<string> {

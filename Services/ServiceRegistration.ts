@@ -2,7 +2,7 @@ import { AIProvider, fromModel } from "Enums/ApiProvider";
 import type VaultkeeperAIPlugin from "main";
 import { RegisterSingleton, RegisterTransient, Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import { AIPrompt, type IPrompt } from "AIClasses/IPrompt";
+import { AIPrompt, type IPrompt } from "AIPrompts/IPrompt";
 import type { IAIClass } from "AIClasses/IAIClass";
 import type { IConversationNamingService } from "AIClasses/IConversationNamingService";
 import { Gemini } from "AIClasses/Gemini/Gemini";
@@ -13,7 +13,6 @@ import { ConversationFileSystemService } from "./ConversationFileSystemService";
 import { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
 import { AIFunctionService } from "./AIFunctionService";
 import { StreamingService } from "./StreamingService";
-import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import { WorkSpaceService } from "./WorkSpaceService";
 import { ChatService } from "./ChatService";
 import { ConversationNamingService } from "./ConversationNamingService";
@@ -37,6 +36,7 @@ import type { IAIFileService } from "AIClasses/IAIFileService";
 import { ClaudeFileService } from "AIClasses/Claude/ClaudeFileService";
 import { GeminiFileService } from "AIClasses/Gemini/GeminiFileService";
 import { OpenAIFileService } from "AIClasses/OpenAI/OpenAIFileService";
+import { AIControllerService } from "./AIControllerService";
 
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
     RegisterSingleton<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin, plugin);
@@ -59,8 +59,8 @@ export function RegisterDependencies() {
     RegisterSingleton<ConversationNamingService>(Services.ConversationNamingService, new ConversationNamingService());
 
     RegisterSingleton<IPrompt>(Services.IPrompt, new AIPrompt());
-    RegisterSingleton<AIFunctionDefinitions>(Services.AIFunctionDefinitions, new AIFunctionDefinitions());
     RegisterSingleton<AIFunctionService>(Services.AIFunctionService, new AIFunctionService());
+    RegisterSingleton<AIControllerService>(Services.AIControllerService, new AIControllerService());
     RegisterSingleton<StreamingService>(Services.StreamingService, new StreamingService());
     RegisterSingleton<ChatService>(Services.ChatService, new ChatService());
 
@@ -91,7 +91,7 @@ export function RegisterAiProvider() {
         RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new OpenAIConversationNamingService());
     }
 
-    Resolve<ChatService>(Services.ChatService).resolveAIProvider();
+    Resolve<AIControllerService>(Services.AIControllerService).resolveAIProvider();
     Resolve<ConversationNamingService>(Services.ConversationNamingService).resolveNamingProvider();
     Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService).resolveAIFileService();
 }

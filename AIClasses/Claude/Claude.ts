@@ -35,9 +35,8 @@ export class Claude extends BaseAIClass {
         super(AIProvider.Claude);
     }
 
-    public async* streamRequest(
-        conversation: Conversation, allowDestructiveActions: boolean
-    ): AsyncGenerator<IStreamChunk, void, unknown> {
+    public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
+        
         this.accumulatedFunctionName = null;
         this.accumulatedFunctionArgs = "";
         this.accumulatedFunctionId = null;
@@ -48,7 +47,7 @@ export class Claude extends BaseAIClass {
         }
 
         // Build system prompt and convert to array with cache control
-        const systemPromptText = await this.buildSystemPrompt();
+        const systemPromptText = `${this.systemPrompt}\n\n${this.userInstruction}`;
         const systemPrompt: TextBlockParam[] = [
             {
                 type: "text",
@@ -66,14 +65,8 @@ export class Claude extends BaseAIClass {
             max_uses: 5
         };
 
-        let tools: ToolUnion[] = [
-            webSearchTool,
-            ...this.mapFunctionDefinitions(
-                this.aiFunctionDefinitions.getQueryActions(allowDestructiveActions)
-            )
-        ];
-
-        tools = this.addCacheControlToTools(tools);
+        const tools: ToolUnion[] = this.addCacheControlToTools([
+            webSearchTool, ...this.mapFunctionDefinitions(this.toolDefinitions)]);
 
         const requestBody = {
             model: this.settingsService.settings.model,

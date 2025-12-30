@@ -4,11 +4,11 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 export const WriteVaultFile: IAIFunctionDefinition = {
     name: AIFunction.WriteVaultFile,
     description: `Writes content to a file, creating it if it doesn't exist or replacing its contents if it does.
-                  
-                  **When to use this tool:**
-                  - Creating new notes, documents, or files from scratch
-                  - Completely rewriting a file's contents (when most/all content needs to change)
-                  - Generating new files from templates or structured data`,
+
+**When to use this tool:**
+- Creating new notes, documents, or files from scratch
+- Completely rewriting a file's contents (when most/all content needs to change)
+- Generating new files from templates or structured data`,
     parameters: {
         type: "object",
         properties: {

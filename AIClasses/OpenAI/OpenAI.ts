@@ -28,24 +28,20 @@ export class OpenAI extends BaseAIClass {
         super(AIProvider.OpenAI);
     }
 
-    public async* streamRequest(
-        conversation: Conversation, allowDestructiveActions: boolean
-    ): AsyncGenerator<IStreamChunk, void, unknown> {
+    public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
 
         // Refresh file cache only if conversation has attachments
         if (conversation.hasAttachments()) {
             await this.aiFileService.refreshCache();
         }
 
-        const systemPrompt = await this.buildSystemPrompt();
+        const systemPrompt = `${this.systemPrompt}\n\n${this.userInstruction}`;
 
         const input = await this.extractContents(conversation.contents);
 
         const tools = [{
             type: "web_search"
-        }, ...this.mapFunctionDefinitions(
-            this.aiFunctionDefinitions.getQueryActions(allowDestructiveActions)
-        )];
+        }, ...this.mapFunctionDefinitions(this.toolDefinitions)];
 
         const requestBody = {
             model: toProviderModel(this.settingsService.settings.model),

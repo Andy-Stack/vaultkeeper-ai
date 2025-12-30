@@ -3,12 +3,12 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 
 export const DeleteVaultFiles: IAIFunctionDefinition = {
     name: AIFunction.DeleteVaultFiles,
-    description: `Permanently removes files and folders from the vault. Use this when the user explicitly 
-                  requests to delete file(s) or folder(s), when a file or folder is no longer needed, or when removing outdated 
-                  content. IMPORTANT: This action is irreversible - always confirm the exact file path(s) 
-                  before deletion. Prefer archiving or moving files to a trash folder over permanent 
-                  deletion when uncertain. Only call this after verifying the file(s) exist and confirming 
-                  the user's intent to delete.`,
+    description: `Permanently removes files and folders from the vault. Use this when the user explicitly
+requests to delete file(s) or folder(s), when a file or folder is no longer needed, or when removing outdated
+content. IMPORTANT: This action is irreversible - always confirm the exact file path(s)
+before deletion. Prefer archiving or moving files to a trash folder over permanent
+deletion when uncertain. Only call this after verifying the file(s) exist and confirming
+the user's intent to delete.`,
     parameters: {
         type: "object",
         properties: {

@@ -3,9 +3,8 @@ import { Gemini } from '../../AIClasses/Gemini/Gemini';
 import { RegisterSingleton, Resolve, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { StreamingService } from '../../Services/StreamingService';
-import type { IPrompt } from '../../AIClasses/IPrompt';
+import type { IPrompt } from '../../AIPrompts/IPrompt';
 import type VaultkeeperAIPlugin from '../../main';
-import { AIFunctionDefinitions } from '../../AIClasses/FunctionDefinitions/AIFunctionDefinitions';
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
@@ -20,7 +19,6 @@ describe('Gemini', () => {
     let mockPrompt: any;
     let mockPlugin: any;
     let mockSettingsService: any;
-    let mockFunctionDefinitions: any;
     let abortService: AbortService;
 
     beforeEach(() => {
@@ -65,23 +63,6 @@ describe('Gemini', () => {
         };
         RegisterSingleton(Services.StreamingService, mockStreamingService);
 
-        // Mock AIFunctionDefinitions
-        mockFunctionDefinitions = {
-            getQueryActions: vi.fn().mockReturnValue([
-                {
-                    name: 'search_vault_filestion',
-                    description: 'Test function',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            query: { type: 'string' }
-                        }
-                    }
-                }
-            ])
-        };
-        RegisterSingleton(Services.AIFunctionDefinitions, mockFunctionDefinitions);
-
         // Mock IAIFileService
         const mockFileService = {
             refreshCache: vi.fn().mockResolvedValue(undefined),
@@ -114,13 +95,11 @@ describe('Gemini', () => {
             const plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
             const settingsService = Resolve<SettingsService>(Services.SettingsService);
             const streaming = Resolve<StreamingService>(Services.StreamingService);
-            const functions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
 
             expect(prompt).toBe(mockPrompt);
             expect(plugin).toBe(mockPlugin);
             expect(settingsService).toBe(mockSettingsService);
             expect(streaming).toBe(mockStreamingService);
-            expect(functions).toBe(mockFunctionDefinitions);
         });
     });
 
@@ -365,7 +344,7 @@ describe('Gemini', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = gemini.streamRequest(conversation, true);
+            const generator = gemini.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -393,7 +372,7 @@ describe('Gemini', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = gemini.streamRequest(conversation, true);
+            const generator = gemini.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -414,7 +393,7 @@ describe('Gemini', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = gemini.streamRequest(conversation, true);
+            const generator = gemini.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -428,11 +407,16 @@ describe('Gemini', () => {
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test', displayContent: 'Test' }));
 
+            // Set system prompts before calling streamRequest
+            gemini.systemPrompt = 'System instruction';
+            gemini.userInstruction = 'User instruction';
+            gemini.toolDefinitions = [];
+
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = gemini.streamRequest(conversation, true);
+            const generator = gemini.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -1032,7 +1016,7 @@ describe('Gemini', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = gemini.streamRequest(conversation, true);
+            const generator = gemini.streamRequest(conversation);
 
             for await (const chunk of generator) {}
 
@@ -1063,7 +1047,7 @@ describe('Gemini', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = gemini.streamRequest(conversation, false);
+            const generator = gemini.streamRequest(conversation);
             await generator.next();
 
             // State should be reset (after checking web search mode)

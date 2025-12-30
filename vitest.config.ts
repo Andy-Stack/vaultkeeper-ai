@@ -15,6 +15,7 @@ export default defineConfig({
 			"Services": path.resolve(__dirname, "Services"),
 			"Conversations": path.resolve(__dirname, "Conversations"),
 			"AIClasses": path.resolve(__dirname, "AIClasses"),
+			"AIPrompts": path.resolve(__dirname, "AIPrompts"),
 			"Components": path.resolve(__dirname, "Components"),
 			"Stores": path.resolve(__dirname, "Stores"),
 			"Views": path.resolve(__dirname, "Views"),

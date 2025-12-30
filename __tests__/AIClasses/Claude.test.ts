@@ -3,7 +3,7 @@ import { Claude } from '../../AIClasses/Claude/Claude';
 import { RegisterSingleton, Resolve, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { StreamingService } from '../../Services/StreamingService';
-import type { IPrompt } from '../../AIClasses/IPrompt';
+import type { IPrompt } from '../../AIPrompts/IPrompt';
 import type VaultkeeperAIPlugin from '../../main';
 import { AIFunctionDefinitions } from '../../AIClasses/FunctionDefinitions/AIFunctionDefinitions';
 import { Conversation } from '../../Conversations/Conversation';
@@ -65,7 +65,6 @@ describe('Claude', () => {
         };
         RegisterSingleton(Services.StreamingService, mockStreamingService);
 
-        // Mock AIFunctionDefinitions
         mockFunctionDefinitions = {
             getQueryActions: vi.fn().mockReturnValue([
                 {
@@ -80,7 +79,6 @@ describe('Claude', () => {
                 }
             ])
         };
-        RegisterSingleton(Services.AIFunctionDefinitions, mockFunctionDefinitions);
 
         // Mock IAIFileService
         const mockFileService = {
@@ -115,13 +113,12 @@ describe('Claude', () => {
             const plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
             const settingsService = Resolve<SettingsService>(Services.SettingsService);
             const streaming = Resolve<StreamingService>(Services.StreamingService);
-            const functions = Resolve<AIFunctionDefinitions>(Services.AIFunctionDefinitions);
 
             expect(prompt).toBe(mockPrompt);
             expect(plugin).toBe(mockPlugin);
             expect(settingsService).toBe(mockSettingsService);
             expect(streaming).toBe(mockStreamingService);
-            expect(functions).toBe(mockFunctionDefinitions);
+            expect(AIFunctionDefinitions.agentDefinitions).toBeDefined();
         });
     });
 
@@ -1097,11 +1094,16 @@ describe('Claude', () => {
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test message' }));
 
+            // Set system prompts before calling streamRequest
+            claude.systemPrompt = 'System instruction';
+            claude.userInstruction = 'User instruction';
+            claude.toolDefinitions = [];
+
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'response', isComplete: true };
             });
 
-            const generator = claude.streamRequest(conversation, true);
+            const generator = claude.streamRequest(conversation);
 
             // Consume the generator
             for await (const chunk of generator) {
@@ -1146,7 +1148,7 @@ describe('Claude', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = claude.streamRequest(conversation, false);
+            const generator = claude.streamRequest(conversation);
 
             // Start consuming
             await generator.next();

@@ -18,14 +18,26 @@
       "ES5",
       "ES6",
       "ES7"
-    ]
+    ],
+    "paths": {
+      "Helpers/*": ["./Helpers/*"],
+      "Enums/*": ["./Enums/*"],
+      "Services/*": ["./Services/*"],
+      "Conversations/*": ["./Conversations/*"],
+      "AIClasses/*": ["./AIClasses/*"],
+      "AIPrompts/*": ["./AIPrompts/*"],
+      "Components/*": ["./Components/*"],
+      "Stores/*": ["./Stores/*"],
+      "Views/*": ["./Views/*"],
+      "Modals/*": ["./Modals/*"],
+      "Types/*": ["./Types/*"]
+    }
   },
   "include": [
     "**/*.ts",
     "**/*.svelte"
   ],
   "exclude": [
-    "node_modules",
-    "__tests__"
+    "node_modules"
   ]
 }

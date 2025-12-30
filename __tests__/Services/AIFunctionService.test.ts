@@ -550,7 +550,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_patch_invalid'
 			} as any);
 
-			expect(result.response.error).toContain('Invalid arguments for PatchVaultFile');
+			expect(result.response.error).toContain('Invalid arguments for patch_vault_file');
 			expect(mockFileSystemService.patchFile).not.toHaveBeenCalled();
 		});
 	});
@@ -782,28 +782,20 @@ describe('AIFunctionService - Integration Tests', () => {
 	});
 
 	describe('performAIFunction - Unknown Function', () => {
-		it('should return error for unknown function', async () => {
-			const result = await service.performAIFunction({
+		it('should throw error for unknown function', async () => {
+			await expect(service.performAIFunction({
 				name: 'UnknownFunction' as any,
 				arguments: {},
 				toolId: 'tool_27'
-			} as any);
-
-			expect(result.response).toEqual({
-				error: 'Unknown function request UnknownFunction'
-			});
+			} as any)).rejects.toThrow('Unknown function name: UnknownFunction');
 		});
 
-		it('should preserve toolId in error response', async () => {
-			vi.spyOn(console, 'error').mockImplementation(() => {});
-
-			const result = await service.performAIFunction({
+		it('should throw error for invalid function', async () => {
+			await expect(service.performAIFunction({
 				name: 'InvalidFunction' as any,
 				arguments: {},
 				toolId: 'tool_error'
-			} as any);
-
-			expect(result.toolId).toBe('tool_error');
+			} as any)).rejects.toThrow('Unknown function name: InvalidFunction');
 		});
 	});
 

@@ -14,7 +14,8 @@ export interface ApiErrorInfo {
     message: string;
     userMessage: string;
     isRetryable: boolean;
-    retryAfter?: number; // seconds
+    responseHeaders?: Headers;
+    responseBody?: string;
 }
 
 export class ApiError extends Error {
@@ -27,7 +28,7 @@ export class ApiError extends Error {
         return error instanceof ApiError;
     }
 
-    static fromResponse(status: number, statusText: string, responseBody: string): ApiError {
+    static fromResponse(status: number, statusText: string, responseBody: string, headers?: Headers): ApiError {
         let type: ApiErrorType;
         let userMessage: string;
         let isRetryable: boolean;
@@ -83,7 +84,9 @@ export class ApiError extends Error {
             statusCode: status,
             message,
             userMessage,
-            isRetryable
+            isRetryable,
+            responseHeaders: headers,
+            responseBody: responseBody
         });
     }
 

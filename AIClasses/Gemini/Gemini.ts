@@ -14,6 +14,7 @@ import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { Exception } from "Helpers/Exception";
+import { ApiError, ApiErrorType } from "Types/ApiError";
 
 export class Gemini extends BaseAIClass {
 
@@ -137,7 +138,9 @@ export class Gemini extends BaseAIClass {
     yield* this.streamingService.streamRequest(
       `${AIProviderURL.Gemini}/${this.settingsService.settings.model}:streamGenerateContent?key=${this.apiKey}&alt=sse`,
       requestBody,
-      (chunk: string) => this.parseStreamChunk(chunk)
+      (chunk: string) => this.parseStreamChunk(chunk),
+      undefined,  // No additional headers
+      (error) => this.extractRetryDelay(error)
     );
   }
 
@@ -340,6 +343,34 @@ export class Gemini extends BaseAIClass {
     }
 
     return JSON.stringify(parts);
+  }
+
+  private extractRetryDelay(error: ApiError): number | undefined {
+    if (error.info.type !== ApiErrorType.RATE_LIMIT || !error.info.responseBody) {
+      return undefined;
+    }
+
+    try {
+      const parsed = JSON.parse(error.info.responseBody) as {
+        error?: {
+          details?: Array<{ retryDelay?: string }>
+        }
+      };
+
+      const retryDelay = parsed.error?.details?.[0]?.retryDelay;
+      if (!retryDelay) return undefined;
+
+      // Parse duration string (e.g., "60s", "1.5s")
+      const match = retryDelay.match(/^(\d+\.?\d*)s$/);
+      if (match) {
+        const seconds = parseFloat(match[1]);
+        return Math.ceil(seconds);
+      }
+
+      return undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   private isSupportedMimeType(mimeType: MimeType): boolean {

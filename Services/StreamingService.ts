@@ -27,7 +27,7 @@ export class StreamingService {
   }
 
   public async* streamRequest(url: string, requestBody: unknown, parseStreamChunk: (chunk: string) => IStreamChunk,
-    additionalHeaders?: Record<string, string>): AsyncGenerator<IStreamChunk, void, unknown> {
+    additionalHeaders?: Record<string, string>, extractRetryDelay?: (error: ApiError) => number | undefined): AsyncGenerator<IStreamChunk, void, unknown> {
 
       let lastError: Error | null = null;
 
@@ -61,7 +61,9 @@ export class StreamingService {
             return;
           }
 
-          await sleep(StreamingService.RETRY_DELAYS[attempt]);
+          const delayMs = this.calculateRetryDelay(error, attempt, extractRetryDelay);
+          Exception.warn(`Rate limit exceeded, waiting for ${delayMs}ms...`);
+          await sleep(delayMs);
         }
       }
 
@@ -86,7 +88,7 @@ export class StreamingService {
 
         if (!response.ok) {
           const responseBody = await response.text();
-          throw ApiError.fromResponse(response.status, response.statusText, responseBody);
+          throw ApiError.fromResponse(response.status, response.statusText, responseBody, response.headers);
         }
 
         return response;
@@ -176,6 +178,22 @@ export class StreamingService {
     }
 
     return attempt < StreamingService.MAX_RETRIES;
+  }
+
+  private calculateRetryDelay(error: unknown, attempt: number,
+    extractRetryDelay?: (error: ApiError) => number | undefined
+  ): number {
+    // Only use provider-specific delay for 429 rate limits
+    if (error instanceof ApiError && error.info.type === ApiErrorType.RATE_LIMIT && extractRetryDelay) {
+      const providerDelaySeconds = extractRetryDelay(error);
+      if (providerDelaySeconds !== undefined) {
+        // Convert to milliseconds
+        return providerDelaySeconds * 1000;
+      }
+    }
+
+    // Fall back to exponential backoff
+    return StreamingService.RETRY_DELAYS[attempt];
   }
 
 }

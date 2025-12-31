@@ -9,7 +9,7 @@ import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
 import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIFunctionTool, ResponsesAPIInput } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
-import { ApiErrorType } from "Types/ApiError";
+import { ApiError, ApiErrorType } from "Types/ApiError";
 import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
@@ -60,7 +60,8 @@ export class OpenAI extends BaseAIClass {
             AIProviderURL.OpenAI,
             requestBody,
             (chunk: string) => this.parseStreamChunk(chunk),
-            headers
+            headers,
+            (error) => this.extractRetryDelay(error)
         );
     }
 
@@ -346,6 +347,38 @@ export class OpenAI extends BaseAIClass {
             role: "user",
             content: contentBlocks
         }]);
+    }
+
+    private extractRetryDelay(error: ApiError): number | undefined {
+        if (error.info.type !== ApiErrorType.RATE_LIMIT || !error.info.responseHeaders) {
+            return undefined;
+        }
+
+        const headers = error.info.responseHeaders;
+
+        // Try x-ratelimit-reset-requests first (most common)
+        const resetRequests = headers.get('x-ratelimit-reset-requests');
+        if (resetRequests) {
+            const resetTimestamp = parseInt(resetRequests, 10);
+            if (!isNaN(resetTimestamp)) {
+                const now = Math.floor(Date.now() / 1000);
+                const delaySeconds = Math.max(0, resetTimestamp - now);
+                return delaySeconds;
+            }
+        }
+
+        // Fallback to x-ratelimit-reset-tokens
+        const resetTokens = headers.get('x-ratelimit-reset-tokens');
+        if (resetTokens) {
+            const resetTimestamp = parseInt(resetTokens, 10);
+            if (!isNaN(resetTimestamp)) {
+                const now = Math.floor(Date.now() / 1000);
+                const delaySeconds = Math.max(0, resetTimestamp - now);
+                return delaySeconds;
+            }
+        }
+
+        return undefined;
     }
 
     private isSupportedMimeType(mimeType: MimeType): boolean {

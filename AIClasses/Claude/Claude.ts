@@ -13,6 +13,7 @@ import { Exception } from "Helpers/Exception";
 import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
+import { ApiError, ApiErrorType } from "Types/ApiError";
 
 export class Claude extends BaseAIClass {
 
@@ -89,7 +90,8 @@ export class Claude extends BaseAIClass {
             AIProviderURL.Claude,
             requestBody,
             (chunk: string) => this.parseStreamChunk(chunk),
-            headers
+            headers,
+            (error) => this.extractRetryDelay(error)
         );
     }
 
@@ -307,6 +309,29 @@ export class Claude extends BaseAIClass {
             ];
         });
         return JSON.stringify(contentBlocks);
+    }
+
+    private extractRetryDelay(error: ApiError): number | undefined {
+        if (error.info.type !== ApiErrorType.RATE_LIMIT || !error.info.responseHeaders) {
+            return undefined;
+        }
+
+        const retryAfter = error.info.responseHeaders.get('Retry-After');
+        if (!retryAfter) return undefined;
+
+        // Try parsing as seconds (number)
+        const seconds = parseInt(retryAfter, 10);
+        if (!isNaN(seconds)) return seconds;
+
+        // Try parsing as HTTP date
+        const date = new Date(retryAfter);
+        if (!isNaN(date.getTime())) {
+            const now = Date.now();
+            const delayMs = date.getTime() - now;
+            return Math.max(0, Math.ceil(delayMs / 1000));
+        }
+
+        return undefined;
     }
 
     private isSupportedMimeType(mimeType: MimeType): boolean {

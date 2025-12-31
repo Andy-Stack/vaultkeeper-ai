@@ -10,7 +10,7 @@ export class ExecutionPlan {
     public constructor(plan: SubmitPlanArgs) {
         for (const [index, step] of plan.steps.entries()) {
             this.executionSteps.push(new ExecutionStep(
-                index,
+                index + 1,
                 step.description,
                 step.instruction,
                 step.context
@@ -100,7 +100,7 @@ export class ExecutionPlan {
         return {
             plan: this.executionSteps.map((step, index) => `${index + 1}. ${step.description}`),
             firstStep: {
-                step: firstStep.step + 1,
+                step: firstStep.step,
                 description: firstStep.description,
                 instruction: firstStep.instruction,
                 ...(firstStep.context && { context: firstStep.context })

@@ -80,7 +80,7 @@ export class InputService {
                     }
                 }
             } catch (error) {
-                Exception.log(error);
+                Exception.warn(error); // Just a warning as some pasted content seem to give nonsense URIs
             }
         }
 

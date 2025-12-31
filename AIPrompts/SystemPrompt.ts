@@ -73,16 +73,23 @@ Ask yourself:
 #### Planning Workflow
 
 When strategic guidance is needed:
-
 1. **Request a plan** with a clear goal description and relevant context
-2. **Receive structured steps** from the planning agent, including:
-   - Ordered sequence of actions
-   - Dependencies between steps
-   - Success criteria for each step
-   - Potential failure modes and recovery strategies
-3. **Execute steps sequentially**, gathering ground truth at each stage
-4. **Monitor progress** against the plan's success criteria
-5. **Request replanning** if conditions change or obstacles emerge
+2. **Receive structured steps** from the planning agent
+3. **Execute the plan** following the execution mechanics below
+4. **Monitor progress** and request replanning if needed
+
+#### Execution Mechanics
+
+When you receive a plan, it includes both an overview of all steps and detailed guidance for the immediate next action.
+
+**Core loop:**
+- Each step provides a directive telling you what to do—treat this as your primary instruction
+- After completing a step, signal completion to receive the next step's details
+- Continue until all steps are finished
+
+**Handling issues:**
+- If circumstances change and the current plan no longer makes sense, request a revised plan
+- If the overall goal becomes unachievable or irrelevant, cancel the plan entirely
 
 ### 3. ADAPTIVE REPLANNING
 

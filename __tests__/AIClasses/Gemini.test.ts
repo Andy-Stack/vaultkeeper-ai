@@ -545,6 +545,20 @@ describe('Gemini', () => {
         });
 
         it('should convert function response to Gemini format', async () => {
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
+                    functionCall: {
+                        id: 'call-123',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                toolId: 'call-123'
+            });
+
             const responseContent = JSON.stringify({
                 id: 'call-123',
                 functionResponse: {
@@ -556,15 +570,16 @@ describe('Gemini', () => {
                 role: Role.User,
                 content: responseContent,
                 displayContent: responseContent,  // displayContent for User role
-                functionResponse: responseContent
+                functionResponse: responseContent,
+                toolId: 'call-123'
             });
 
-            const result = await (gemini as any).extractContents([functionResponseContent]);
+            const result = await (gemini as any).extractContents([functionCallContent, functionResponseContent]);
 
-            expect(result).toHaveLength(1);
-            expect(result[0].parts).toHaveLength(1);
+            expect(result).toHaveLength(2);
+            expect(result[1].parts).toHaveLength(1);
             // Gemini API requires both 'name' and 'response' fields
-            expect(result[0].parts[0]).toEqual({
+            expect(result[1].parts[0]).toEqual({
                 functionResponse: {
                     name: 'search_vault_files',
                     response: ['file1.txt', 'file2.txt']
@@ -573,6 +588,20 @@ describe('Gemini', () => {
         });
 
         it('should fall back to legacy text format for function response without id (cross-provider)', async () => {
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
+                    functionCall: {
+                        id: 'call_legacy1',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                toolId: 'call_legacy1'
+            });
+
             const responseContent = JSON.stringify({
                 functionResponse: {
                     name: 'search_vault_files',
@@ -583,22 +612,37 @@ describe('Gemini', () => {
                 role: Role.User,
                 content: responseContent,
                 displayContent: responseContent,
-                functionResponse: responseContent
+                functionResponse: responseContent,
+                toolId: 'call_legacy1'
             });
 
-            const result = await (gemini as any).extractContents([functionResponseContent]);
+            const result = await (gemini as any).extractContents([functionCallContent, functionResponseContent]);
 
-            expect(result).toHaveLength(1);
-            expect(result[0].parts).toHaveLength(1);
-            expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('<!-- Historical tool result');
-            expect(result[0].parts[0].text).toContain('"name": "search_vault_files"');
-            expect(result[0].parts[0].text).toContain('"response": [');
-            expect(result[0].parts[0].text).toContain('  "file1.txt"');
-            expect(result[0].parts[0].text).toContain('  "file2.txt"');
+            expect(result).toHaveLength(2);
+            expect(result[1].parts).toHaveLength(1);
+            expect(result[1].parts[0]).toHaveProperty('text');
+            expect(result[1].parts[0].text).toContain('<!-- Historical tool result');
+            expect(result[1].parts[0].text).toContain('"name": "search_vault_files"');
+            expect(result[1].parts[0].text).toContain('"response": [');
+            expect(result[1].parts[0].text).toContain('  "file1.txt"');
+            expect(result[1].parts[0].text).toContain('  "file2.txt"');
         });
 
         it('should fall back to legacy text format for function response with empty id', async () => {
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
+                    functionCall: {
+                        id: 'call_legacy2',
+                        name: 'read_file',
+                        args: { path: 'test.md' }
+                    }
+                }),
+                toolId: 'call_legacy2'
+            });
+
             const responseContent = JSON.stringify({
                 id: '',
                 functionResponse: {
@@ -610,17 +654,18 @@ describe('Gemini', () => {
                 role: Role.User,
                 content: responseContent,
                 displayContent: responseContent,
-                functionResponse: responseContent
+                functionResponse: responseContent,
+                toolId: 'call_legacy2'
             });
 
-            const result = await (gemini as any).extractContents([functionResponseContent]);
+            const result = await (gemini as any).extractContents([functionCallContent, functionResponseContent]);
 
-            expect(result).toHaveLength(1);
-            expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('<!-- Historical tool result');
-            expect(result[0].parts[0].text).toContain('"name": "read_file"');
-            expect(result[0].parts[0].text).toContain('"response": {');
-            expect(result[0].parts[0].text).toContain('  "content": "file contents"');
+            expect(result).toHaveLength(2);
+            expect(result[1].parts[0]).toHaveProperty('text');
+            expect(result[1].parts[0].text).toContain('<!-- Historical tool result');
+            expect(result[1].parts[0].text).toContain('"name": "read_file"');
+            expect(result[1].parts[0].text).toContain('"response": {');
+            expect(result[1].parts[0].text).toContain('  "content": "file contents"');
         });
 
         it('should handle invalid JSON in function call gracefully', async () => {
@@ -649,19 +694,34 @@ describe('Gemini', () => {
         it('should handle invalid JSON in function response gracefully', async () => {
             const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
+                    functionCall: {
+                        id: 'call_invalid',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                toolId: 'call_invalid'
+            });
+
             const invalidContent = new ConversationContent({
                 role: Role.User,
                 content: 'invalid json {',
                 displayContent: 'invalid json {',  // displayContent for User role
-                functionResponse: 'invalid json {'
+                functionResponse: 'invalid json {',
+                toolId: 'call_invalid'
             });
 
-            const result = await (gemini as any).extractContents([invalidContent]);
+            const result = await (gemini as any).extractContents([functionCallContent, invalidContent]);
 
             // Should fallback to text
-            expect(result).toHaveLength(1);
-            expect(result[0].parts).toHaveLength(1);
-            expect(result[0].parts[0]).toEqual({ text: 'invalid json {' });
+            expect(result).toHaveLength(2);
+            expect(result[1].parts).toHaveLength(1);
+            expect(result[1].parts[0]).toEqual({ text: 'invalid json {' });
             expect(exceptionSpy).toHaveBeenCalled();
 
             exceptionSpy.mockRestore();

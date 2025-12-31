@@ -146,6 +146,20 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
         it('should convert function response without id to legacy text format', async () => {
             // Function responses from Claude/OpenAI may not have the id field in content
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
+                    functionCall: {
+                        id: 'call_cross1',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                toolId: 'call_cross1'
+            });
+
             const responseContent = JSON.stringify({
                 functionResponse: {
                     name: 'search_vault_files',
@@ -157,16 +171,17 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.User,
                 content: responseContent,
                 displayContent: responseContent,
-                functionResponse: responseContent
+                functionResponse: responseContent,
+                toolId: 'call_cross1'
             });
-            const result = await (gemini as any).extractContents([claudeResponse]);
+            const result = await (gemini as any).extractContents([functionCallContent, claudeResponse]);
 
-            expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('<!-- Historical tool result');
-            expect(result[0].parts[0].text).toContain('"name": "search_vault_files"');
-            expect(result[0].parts[0].text).toContain('"response": [');
-            expect(result[0].parts[0].text).toContain('  "note1.md"');
-            expect(result[0].parts[0].text).toContain('  "note2.md"');
+            expect(result[1].parts[0]).toHaveProperty('text');
+            expect(result[1].parts[0].text).toContain('<!-- Historical tool result');
+            expect(result[1].parts[0].text).toContain('"name": "search_vault_files"');
+            expect(result[1].parts[0].text).toContain('"response": [');
+            expect(result[1].parts[0].text).toContain('  "note1.md"');
+            expect(result[1].parts[0].text).toContain('  "note2.md"');
         });
     });
 
@@ -237,7 +252,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'call_claude_123'
                     });
                     return content;
                 })(),
@@ -262,7 +278,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
-                thoughtSignature: 'geminiSignature123=='
+                thoughtSignature: 'geminiSignature123==',
+                toolId: 'gemini-response-1'
             });
                     return content;
                 })(),
@@ -280,7 +297,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'gemini-response-1'
                     });
                     return content;
                 })()
@@ -342,7 +360,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'call_openai_456'
                     });
                     return content;
                 })()
@@ -387,7 +406,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'call-1'
                     });
                     return content;
                 })(),
@@ -405,7 +425,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
-                thoughtSignature: 'sig2=='
+                thoughtSignature: 'sig2==',
+                toolId: 'resp-2'
             });
                     return content;
                 })(),
@@ -419,7 +440,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'resp-2'
                     });
                     return content;
                 })(),
@@ -483,7 +505,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     role: Role.User,
                     content: responseContent,
                     displayContent: responseContent,
-                    functionResponse: responseContent
+                    functionResponse: responseContent,
+                    toolId: 'toolu_abc123'
                 });
                 return content;
             })();
@@ -537,7 +560,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     role: Role.User,
                     content: responseContent,
                     displayContent: responseContent,
-                    functionResponse: responseContent
+                    functionResponse: responseContent,
+                    toolId: 'call_xyz789'
                 });
                 return content;
             })();
@@ -597,7 +621,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'toolu_1'
                     });
                     return content;
                 })(),
@@ -638,7 +663,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'call_2'
                     });
                     return content;
                 })()
@@ -789,6 +815,20 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
         it('should handle OpenAI function response when switching to Gemini', async () => {
             // OpenAI response with ID should work with Gemini
+            const openaiCall = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
+                    functionCall: {
+                        id: 'call_123',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                toolId: 'call_123'
+            });
+
             const openaiResponse = (() => {
                 const responseContent = JSON.stringify({
                     id: 'call_123',
@@ -801,16 +841,17 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     role: Role.User,
                     content: responseContent,
                     displayContent: responseContent,
-                    functionResponse: responseContent
+                    functionResponse: responseContent,
+                    toolId: 'call_123'
                 });
                 return content;
             })();
 
-            const result = await (gemini as any).extractContents([openaiResponse]);
+            const result = await (gemini as any).extractContents([openaiCall, openaiResponse]);
 
             // Gemini should accept the response with ID
-            expect(result).toHaveLength(1);
-            expect(result[0].parts[0]).toEqual({
+            expect(result).toHaveLength(2);
+            expect(result[1].parts[0]).toEqual({
                 functionResponse: {
                     name: 'search_vault_files',
                     response: ['file1.md', 'file2.md']
@@ -834,7 +875,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 }),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
-                thoughtSignature: 'gemini_signature_123=='
+                thoughtSignature: 'gemini_signature_123==',
+                toolId: 'gemini_tool_1'
             });
 
             const geminiResponse = (() => {
@@ -849,7 +891,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     role: Role.User,
                     content: responseContent,
                     displayContent: responseContent,
-                    functionResponse: responseContent
+                    functionResponse: responseContent,
+                    toolId: 'gemini_tool_1'
                 });
                 return content;
             })();
@@ -911,7 +954,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'call_xyz'
                     });
                     return content;
                 })(),
@@ -976,7 +1020,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'toolu_1'
                     });
                     return content;
                 })(),
@@ -1013,7 +1058,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'call_2'
                     });
                     return content;
                 })(),
@@ -1062,7 +1108,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
-                thoughtSignature: 'gemini_signature_1=='
+                thoughtSignature: 'gemini_signature_1==',
+                toolId: 'resp_1'
             });
                     return content;
                 })(),
@@ -1076,7 +1123,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'resp_1'
                     });
                     return content;
                 })(),
@@ -1113,7 +1161,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'toolu_2'
                     });
                     return content;
                 })(),
@@ -1150,7 +1199,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'call_3'
                     });
                     return content;
                 })()
@@ -1211,7 +1261,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'toolu_round'
                     });
                     return content;
                 })(),
@@ -1279,7 +1330,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'call_round'
                     });
                     return content;
                 })(),
@@ -1340,7 +1392,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'toolu_step1'
                     });
                     return content;
                 })(),
@@ -1376,7 +1429,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'call_step2'
                     });
                     return content;
                 })(),
@@ -1397,7 +1451,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         }),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
-                thoughtSignature: 'gemini_step3_signature=='
+                thoughtSignature: 'gemini_step3_signature==',
+                toolId: 'resp_step3'
             });
                     return content;
                 })(),
@@ -1411,7 +1466,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'resp_step3'
                     });
                     return content;
                 })(),
@@ -1613,8 +1669,9 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(openaiResult).toHaveLength(1);
         });
 
-        it('should handle function response ID mismatch gracefully', async () => {
+        it('should filter out function response with mismatched toolId', async () => {
             // Function call with one ID, response with different ID
+            // The new filtering logic should filter out the mismatched response
             const conversation = [
                 (() => {
                     const content = new ConversationContent({
@@ -1646,24 +1703,22 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'call-456'  // Mismatched toolId
                     });
                     return content;
                 })()
             ];
 
-            // Providers should still parse this (even if IDs don't match)
+            // The mismatched response should be filtered out, leaving only the orphaned function call
+            // But orphaned function calls (without responses) are also filtered unless they're the last item
             const claude = new Claude();
             const claudeResult = await (claude as any).extractContents(conversation);
-            expect(claudeResult).toHaveLength(2);
-            expect(claudeResult[0].content[0].id).toBe('call-123');
-            expect(claudeResult[1].content[0].tool_use_id).toBe('call-456');
+            expect(claudeResult).toHaveLength(0);
 
             const openai = new OpenAI();
             const openaiResult = await (openai as any).extractContents(conversation);
-            expect(openaiResult).toHaveLength(2);
-            expect(openaiResult[0].call_id).toBe('call-123');
-            expect(openaiResult[1].call_id).toBe('call-456');
+            expect(openaiResult).toHaveLength(0);
         });
     });
 });

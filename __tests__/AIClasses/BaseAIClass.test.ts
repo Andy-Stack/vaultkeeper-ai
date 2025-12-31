@@ -376,7 +376,8 @@ describe('BaseAIClass Shared Methods', () => {
                     functionResponse: JSON.stringify({
                         id: 'call_with_response',
                         functionResponse: { name: 'search', response: [] }
-                    })
+                    }),
+                    toolId: 'call_with_response'
                 })
             ];
 
@@ -423,7 +424,8 @@ describe('BaseAIClass Shared Methods', () => {
                     functionResponse: JSON.stringify({
                         id: 'complete1',
                         functionResponse: { name: 'read', response: 'data' }
-                    })
+                    }),
+                    toolId: 'complete1'
                 }),
 
                 new ConversationContent({ role: Role.User, content: 'End', displayContent: 'End' })

@@ -14,6 +14,7 @@ import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { ApiError, ApiErrorType } from "Types/ApiError";
+import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 
 export class Claude extends BaseAIClass {
 
@@ -190,7 +191,7 @@ export class Claude extends BaseAIClass {
 
             // Add function call if present
             if (content.functionCall) {
-                const parsedContent = this.parseFunctionCall(content.functionCall);
+                const parsedContent = parseFunctionCall(content.functionCall);
 
                 if (parsedContent) {
                     if (parsedContent.functionCall.id && parsedContent.functionCall.id.trim() !== "") {
@@ -233,7 +234,7 @@ export class Claude extends BaseAIClass {
 
             // Add function response if present
             if (content.functionResponse) {
-                const parsedContent = this.parseFunctionResponse(content.functionResponse);
+                const parsedContent = parseFunctionResponse(content.functionResponse);
 
                 if (parsedContent) {
                     if (parsedContent.id && parsedContent.id.trim() !== "") {

@@ -377,6 +377,22 @@ describe('OpenAI', () => {
 
         it('should convert function response to function_call_output format', async () => {
             const conversation = new Conversation();
+
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
+                    functionCall: {
+                        id: 'call_123',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                toolId: 'call_123'
+            });
+            conversation.contents.push(functionCallContent);
+
             const responseContent = JSON.stringify({
                 id: 'call_123',
                 functionResponse: {
@@ -386,7 +402,8 @@ describe('OpenAI', () => {
             });
             const functionResponseContent = new ConversationContent({
                 role: Role.User,
-                functionResponse: responseContent
+                functionResponse: responseContent,
+                toolId: 'call_123'
             });
             conversation.contents.push(functionResponseContent);
 
@@ -400,9 +417,9 @@ describe('OpenAI', () => {
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
             const requestBody = callArgs[1];
 
-            // Should have 1 function_call_output item
-            expect(requestBody.input).toHaveLength(1);
-            expect(requestBody.input[0]).toEqual({
+            // Should have 2 items: function call and function response
+            expect(requestBody.input).toHaveLength(2);
+            expect(requestBody.input[1]).toEqual({
                 type: 'function_call_output',
                 call_id: 'call_123',
                 output: '["file1.txt","file2.txt"]'
@@ -439,9 +456,26 @@ describe('OpenAI', () => {
             const exceptionSpy = vi.spyOn(Exception, 'log');
 
             const conversation = new Conversation();
+
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
+                    functionCall: {
+                        id: 'call_invalid',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                toolId: 'call_invalid'
+            });
+            conversation.contents.push(functionCallContent);
+
             const invalidContent = new ConversationContent({
                 role: Role.User,
-                functionResponse: 'invalid json {'
+                functionResponse: 'invalid json {',
+                toolId: 'call_invalid'
             });
             conversation.contents.push(invalidContent);
 
@@ -454,10 +488,11 @@ describe('OpenAI', () => {
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
             const requestBody = callArgs[1];
-            const message = requestBody.input.find((m: any) => m.role === Role.User);
+            const messages = requestBody.input.filter((m: any) => m.role === Role.User);
 
-            expect(message.content).toBe('invalid json {');
-            expect(message.role).toBe(Role.User); // Falls back to original role
+            expect(messages).toHaveLength(1);
+            expect(messages[0].content).toBe('invalid json {');
+            expect(messages[0].role).toBe(Role.User); // Falls back to original role
             expect(exceptionSpy).toHaveBeenCalled();
         });
 
@@ -730,6 +765,22 @@ describe('OpenAI', () => {
 
             it('should handle complex function response objects', async () => {
                 const conversation = new Conversation();
+
+                const functionCallContent = new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    functionCall: JSON.stringify({
+                        functionCall: {
+                            id: 'call_123',
+                            name: 'search_vault_files',
+                            args: { query: 'test' }
+                        }
+                    }),
+                    toolId: 'call_123'
+                });
+                conversation.contents.push(functionCallContent);
+
                 const complexResponse = {
                     files: ['file1.txt', 'file2.md'],
                     count: 2,
@@ -744,7 +795,8 @@ describe('OpenAI', () => {
                 });
                 const functionResponseContent = new ConversationContent({
                     role: Role.User,
-                    functionResponse: responseContent
+                    functionResponse: responseContent,
+                    toolId: 'call_123'
                 });
                 conversation.contents.push(functionResponseContent);
 
@@ -758,8 +810,8 @@ describe('OpenAI', () => {
                 const callArgs = mockStreamingService.streamRequest.mock.calls[0];
                 const requestBody = callArgs[1];
 
-                expect(requestBody.input).toHaveLength(1);
-                expect(requestBody.input[0]).toEqual({
+                expect(requestBody.input).toHaveLength(2);
+                expect(requestBody.input[1]).toEqual({
                     type: 'function_call_output',
                     call_id: 'call_123',
                     output: JSON.stringify(complexResponse)
@@ -918,7 +970,8 @@ describe('OpenAI', () => {
                 expect.objectContaining({
                     'Authorization': 'Bearer test-openai-key',
                     'Content-Type': 'application/json'
-                })
+                }),
+                expect.any(Function) // extractRetryDelay
             );
         });
 

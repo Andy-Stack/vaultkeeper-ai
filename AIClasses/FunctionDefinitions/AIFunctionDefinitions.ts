@@ -66,8 +66,4 @@ export abstract class AIFunctionDefinitions {
             return `| ${definition.name} | ${description} |`;
         }).join("\n");
     }
-
-    public static detailedAppendixForPlanningAgent(): string {
-        return this.definitionsList.map(definition => JSON.stringify(definition, null, 2)).join('\n\n');
-    }
 }

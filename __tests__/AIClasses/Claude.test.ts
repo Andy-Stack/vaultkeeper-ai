@@ -330,6 +330,20 @@ describe('Claude', () => {
         });
 
         it('should convert function response to tool_result format', async () => {
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
+                    functionCall: {
+                        id: 'call_123',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                toolId: 'call_123'
+            });
+
             const responseContent = JSON.stringify({
                 id: 'call_123',
                 functionResponse: {
@@ -340,14 +354,15 @@ describe('Claude', () => {
                 role: Role.User,
                 content: responseContent,
                 displayContent: responseContent,
-                functionResponse: responseContent
+                functionResponse: responseContent,
+                toolId: 'call_123'
             });
 
-            const result = await (claude as any).extractContents([functionResponseContent]);
+            const result = await (claude as any).extractContents([functionCallContent, functionResponseContent]);
 
-            expect(result).toHaveLength(1);
-            expect(result[0].content).toHaveLength(1);
-            expect(result[0].content[0]).toEqual({
+            expect(result).toHaveLength(2);
+            expect(result[1].content).toHaveLength(1);
+            expect(result[1].content[0]).toEqual({
                 type: 'tool_result',
                 tool_use_id: 'call_123',
                 content: JSON.stringify(['file1.txt', 'file2.txt'])
@@ -380,20 +395,35 @@ describe('Claude', () => {
         it('should handle invalid JSON in function response gracefully', async () => {
             const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
+                    functionCall: {
+                        id: 'call_invalid',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                toolId: 'call_invalid'
+            });
+
             const invalidContent = new ConversationContent({
                 role: Role.User,
                 content: 'invalid json {',
                 displayContent: 'invalid json {',
-                functionResponse: 'invalid json {'
+                functionResponse: 'invalid json {',
+                toolId: 'call_invalid'
             });
 
-            const result = await (claude as any).extractContents([invalidContent]);
+            const result = await (claude as any).extractContents([functionCallContent, invalidContent]);
 
             // Should fallback to text
-            expect(result).toHaveLength(1);
-            expect(result[0].content).toHaveLength(1);
-            expect(result[0].content[0].type).toBe('text');
-            expect(result[0].content[0].text).toBe('invalid json {');
+            expect(result).toHaveLength(2);
+            expect(result[1].content).toHaveLength(1);
+            expect(result[1].content[0].type).toBe('text');
+            expect(result[1].content[0].text).toBe('invalid json {');
             expect(exceptionSpy).toHaveBeenCalled();
 
             exceptionSpy.mockRestore();
@@ -502,6 +532,20 @@ describe('Claude', () => {
         });
 
         it('should convert function response without ID to legacy text format', async () => {
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
+                    functionCall: {
+                        id: 'call_legacy',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                toolId: 'call_legacy'
+            });
+
             const responseContent = JSON.stringify({
                 functionResponse: {
                     name: 'search_vault_files',
@@ -513,14 +557,15 @@ describe('Claude', () => {
                 role: Role.User,
                 content: responseContent,
                 displayContent: responseContent,
-                functionResponse: responseContent
+                functionResponse: responseContent,
+                toolId: 'call_legacy'
             });
 
-            const result = await (claude as any).extractContents([functionResponseContent]);
+            const result = await (claude as any).extractContents([functionCallContent, functionResponseContent]);
 
-            expect(result).toHaveLength(1);
-            expect(result[0].content).toHaveLength(1);
-            expect(result[0].content[0].type).toBe('text');
+            expect(result).toHaveLength(2);
+            expect(result[1].content).toHaveLength(1);
+            expect(result[1].content[0].type).toBe('text');
             const expected = `<!-- Historical tool result. This action was ALREADY COMPLETED. -->
 {
   "name": "search_vault_files",
@@ -529,10 +574,24 @@ describe('Claude', () => {
     "file2.txt"
   ]
 }`;
-            expect(result[0].content[0].text).toBe(expected);
+            expect(result[1].content[0].text).toBe(expected);
         });
 
         it('should convert function response with empty ID to legacy text format', async () => {
+            const functionCallContent = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                functionCall: JSON.stringify({
+                    functionCall: {
+                        id: 'call_empty',
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                toolId: 'call_empty'
+            });
+
             const responseContent = JSON.stringify({
                 id: '',  // Empty ID
                 functionResponse: {
@@ -544,14 +603,15 @@ describe('Claude', () => {
                 role: Role.User,
                 content: responseContent,
                 displayContent: responseContent,
-                functionResponse: responseContent
+                functionResponse: responseContent,
+                toolId: 'call_empty'
             });
 
-            const result = await (claude as any).extractContents([functionResponseContent]);
+            const result = await (claude as any).extractContents([functionCallContent, functionResponseContent]);
 
-            expect(result).toHaveLength(1);
-            expect(result[0].content).toHaveLength(1);
-            expect(result[0].content[0].type).toBe('text');
+            expect(result).toHaveLength(2);
+            expect(result[1].content).toHaveLength(1);
+            expect(result[1].content[0].type).toBe('text');
             const expected = `<!-- Historical tool result. This action was ALREADY COMPLETED. -->
 {
   "name": "search_vault_files",
@@ -560,7 +620,7 @@ describe('Claude', () => {
     "file2.txt"
   ]
 }`;
-            expect(result[0].content[0].text).toBe(expected);
+            expect(result[1].content[0].text).toBe(expected);
         });
 
         it('should exclude orphaned function calls without responses', async () => {
@@ -1131,7 +1191,8 @@ describe('Claude', () => {
                     'x-api-key': 'test-claude-key',
                     'anthropic-version': '2023-06-01',
                     'anthropic-dangerous-direct-browser-access': 'true'
-                })
+                }),
+                expect.any(Function) // extractRetryDelay
             );
         });
 

@@ -8,7 +8,7 @@ import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import type { AIFunctionService } from "./AIFunctionService";
 import { Copy, replaceCopy } from "Enums/Copy";
-import { sanitizeFunctionCallContent } from "Helpers/ResponseHelper";
+import { parseFunctionCall, sanitizeFunctionCallContent } from "Helpers/ResponseHelper";
 import type { IPrompt } from "AIPrompts/IPrompt";
 import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import { AIFunction, isAIFunction } from "Enums/AIFunction";
@@ -26,6 +26,7 @@ export class AIControllerService {
     private readonly aiFunctionService: AIFunctionService;
 
     private planningConversation: Conversation;
+    private onSaveConversation?: (conversation: Conversation) => Promise<void>;
 
     public constructor() {
         this.aiPrompt = Resolve<IPrompt>(Services.IPrompt);
@@ -34,6 +35,10 @@ export class AIControllerService {
 
     public resolveAIProvider() {
         this.ai = Resolve<IAIClass>(Services.IAIClass);
+    }
+
+    public setSaveCallback(callback: (conversation: Conversation) => Promise<void>) {
+        this.onSaveConversation = callback;
     }
 
     public async runMainAgent(conversation: Conversation, allowDestructiveActions: boolean, callbacks: IChatServiceCallbacks) {
@@ -53,7 +58,7 @@ export class AIControllerService {
                 return { shouldExit: completedSuccessfully };
             }
 
-            this.updateThought({ functionCall, shouldContinue: false }, callbacks);
+            this.updateThought(functionCall, callbacks);
             const functionResponse = await this.aiFunctionService.performAIFunction(functionCall);
             conversation.addFunctionResponse(functionResponse);
             return { shouldExit: false };
@@ -80,6 +85,7 @@ export class AIControllerService {
 
         let planningIteration = 0;
         let continueExecution = true;
+        let planExecutionCancelled = false;
 
         this.planningConversation = new Conversation();
         this.planningConversation.contents.push(new ConversationContent({
@@ -106,6 +112,7 @@ export class AIControllerService {
 
             // Stop if cancelled, otherwise continue if replanning was requested OR execution was incomplete
             if (executionResult.planExecutionCancelled) {
+                planExecutionCancelled = true;
                 continueExecution = false;
             } else {
                 continueExecution = executionResult.shouldReplan || executionResult.isIncomplete;
@@ -134,12 +141,14 @@ export class AIControllerService {
             }));
         }
 
-        return true; // Planning and execution completed - terminate main agent
+        // If plan was cancelled, return false to give control back to main agent for summary
+        // Otherwise return true to terminate the main agent loop
+        return !planExecutionCancelled;
     }
 
     private async runPlanningAgent(planningConversation: Conversation, callbacks: IChatServiceCallbacks): Promise<ExecutionPlan> {
         let capturedPlan: ExecutionPlan | null = null;
-
+        
         await this.runAgentLoop(planningConversation, callbacks, async (functionCall) => {
             const functionCallName = functionCall.name;
 
@@ -148,14 +157,20 @@ export class AIControllerService {
                 capturedPlan = parseResult.success
                     ? new ExecutionPlan(parseResult.data)
                     : new ExecutionPlan({ steps: [] });
+                // Add response before exiting to avoid orphaned function call
+                planningConversation.addFunctionResponse(new AIFunctionResponse(
+                    functionCallName,
+                    { message: "Plan received" },
+                    functionCall.toolId
+                ));
                 return { shouldExit: true }; // Exit once plan is submitted
             }
 
-            this.updateThought({ functionCall, shouldContinue: false }, callbacks);
+            this.updateThought(functionCall, callbacks);
             const functionResponse = await this.aiFunctionService.performAIFunction(functionCall);
             planningConversation.addFunctionResponse(functionResponse);
             return { shouldExit: false };
-        }, false);
+        }, true);
 
         return capturedPlan ?? new ExecutionPlan({ steps: [] });
     }
@@ -211,6 +226,12 @@ export class AIControllerService {
                 }
                 // Capture replan data and exit execution loop to trigger replanning
                 replanData = parseResult.data;
+                // Add response before exiting to avoid orphaned function call
+                conversation.addFunctionResponse(new AIFunctionResponse(
+                    functionCallName,
+                    { message: "Replanning initiated" },
+                    functionCall.toolId
+                ));
                 return { shouldExit: true };
             }
 
@@ -233,7 +254,7 @@ export class AIControllerService {
                 return { shouldExit: false };
             }
 
-            this.updateThought({ functionCall, shouldContinue: false }, callbacks);
+            this.updateThought(functionCall, callbacks);
             const functionResponse = await this.aiFunctionService.performAIFunction(functionCall);
             conversation.addFunctionResponse(functionResponse);
             return { shouldExit: false };
@@ -244,26 +265,37 @@ export class AIControllerService {
     }
 
     private async runAgentLoop(conversation: Conversation, callbacks: IChatServiceCallbacks,
-        handleFunctionCall: (functionCall: AIFunctionCall) => Promise<{ shouldExit: boolean }>, clearThoughtOnContent: boolean = true
+        handleFunctionCall: (functionCall: AIFunctionCall) => Promise<{ shouldExit: boolean }>, isPlanningConversation: boolean = false
     ): Promise<void> {
-        let response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), callbacks, clearThoughtOnContent);
+        let response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), callbacks, isPlanningConversation);
+
+        if (!isPlanningConversation) {
+            await this.onSaveConversation?.(conversation);
+        }
 
         while (response.functionCall || response.shouldContinue) {
             if (response.functionCall) {
                 const result = await handleFunctionCall(response.functionCall);
                 if (result.shouldExit) {
+                    if (!isPlanningConversation) {
+                        await this.onSaveConversation?.(conversation);
+                    }
                     return;
                 }
             } else {
                 callbacks.onThoughtUpdate(Copy.AIThoughtMessage);
             }
 
-            response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), callbacks, clearThoughtOnContent);
+            response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), callbacks, isPlanningConversation);
+
+            if (!isPlanningConversation) {
+                await this.onSaveConversation?.(conversation);
+            }
         }
     }
 
-    private updateThought(response: { functionCall: AIFunctionCall | null, shouldContinue: boolean }, callbacks: IChatServiceCallbacks) {
-        const userMessage = response.functionCall?.arguments.user_message;
+    private updateThought(functionCall: AIFunctionCall | null, callbacks: IChatServiceCallbacks) {
+        const userMessage = functionCall?.arguments.user_message;
         if (userMessage && typeof userMessage === "string") {
             callbacks.onThoughtUpdate(userMessage);
         }
@@ -282,7 +314,7 @@ export class AIControllerService {
 		return conversation;
 	}
 
-    private async streamRequestResponse(conversation: Conversation, callbacks: IChatServiceCallbacks, clearThoughtOnContent: boolean = true
+    private async streamRequestResponse(conversation: Conversation, callbacks: IChatServiceCallbacks, isPlanningConversation: boolean
     ): Promise<{ functionCall: AIFunctionCall | null, shouldContinue: boolean }> {
         if (!this.ai) { // this should never happen
             return { functionCall: null, shouldContinue: false };
@@ -315,7 +347,7 @@ export class AIControllerService {
                 accumulatedContent += chunk.content;
 
                 conversationContent.content = accumulatedContent;
-                if (accumulatedContent.trim() !== "" && clearThoughtOnContent) {
+                if (accumulatedContent.trim() !== "" && !isPlanningConversation) {
                     callbacks.onThoughtUpdate(null);
                 }
             }
@@ -329,6 +361,7 @@ export class AIControllerService {
                     conversationContent.content = sanitizedContent;
                     if (capturedFunctionCall) {
                         conversationContent.functionCall = capturedFunctionCall.toConversationString();
+                        conversationContent.toolId = capturedFunctionCall.toolId;
                         if (capturedFunctionCall.thoughtSignature) {
                             conversationContent.thoughtSignature = capturedFunctionCall.thoughtSignature;
                         }
@@ -376,7 +409,15 @@ export class AIControllerService {
     }
 
     private createPlanningResponse(conversationContent: ConversationContent, executionPlan: ExecutionPlan): AIFunctionResponse | undefined {
-        const createParseResult = CreatePlanArgsSchema.safeParse(conversationContent.functionCall);
+        if (!conversationContent.functionCall) {
+            return undefined;
+        }
+        const parsedFunctionCall = parseFunctionCall(conversationContent.functionCall);
+        if (!parsedFunctionCall) {
+            return undefined;
+        }
+
+        const createParseResult = CreatePlanArgsSchema.safeParse(parsedFunctionCall.functionCall.args);
         if (createParseResult.success) {
             return new AIFunctionResponse(
                 AIFunction.CreatePlan,
@@ -384,7 +425,7 @@ export class AIControllerService {
                 conversationContent.toolId
             );
         }
-        const replanParseResult = ReplanArgsSchema.safeParse(conversationContent.functionCall);
+        const replanParseResult = ReplanArgsSchema.safeParse(parsedFunctionCall.functionCall.args);
         if (replanParseResult.success) {
             return new AIFunctionResponse(
                 AIFunction.Replan,
@@ -392,5 +433,7 @@ export class AIControllerService {
                 conversationContent.toolId
             );
         }
+
+        return undefined;
     }
 }

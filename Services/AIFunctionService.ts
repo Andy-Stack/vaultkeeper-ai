@@ -120,14 +120,18 @@ export class AIFunctionService {
                 case AIFunction.RequestWebSearch:
                     return new AIFunctionResponse(functionCall.name, {}, functionCall.toolId)
 
-                // multi-agent functions are handled elsewhere - this shouldn't ever get hit
+                // multi-agent functions are handled elsewhere - this shouldn't really ever get hit
                 case AIFunction.CreatePlan:
                 case AIFunction.Replan:
                 case AIFunction.SubmitPlan:
                 case AIFunction.CompleteStep:
                 case AIFunction.CancelPlan: {
-                    Exception.throw(`Multi-agent function ${functionCall.name} should not be handled by AIFunctionService`);
-                    break;
+                    Exception.log(`Multi-agent function ${functionCall.name} should not be handled by AIFunctionService`);
+                    return new AIFunctionResponse(
+                        functionCall.name,
+                        { error: `Failed to execute ${functionCall.name}.` },
+                        functionCall.toolId
+                    );
                 }
 
                 default: {

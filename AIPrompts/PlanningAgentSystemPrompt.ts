@@ -186,12 +186,4 @@ Before returning any plan, verify:
    - Creates a new summary note with proper wiki-links
 
 **Remember**: You are the strategic intelligence of the system. The main agent executes; you ensure it executes optimally.
-
----
-
-## Appendix: Complete Tool Specifications
-
-Below are the complete function definitions available to the main agent, specified in JSON format as per Anthropic's documentation standards.
-
-${AIFunctionDefinitions.detailedAppendixForPlanningAgent()}
 `;

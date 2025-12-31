@@ -1,4 +1,7 @@
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
+import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
+import { StringTools } from "./StringTools";
+import { Exception } from "./Exception";
 
 // handle the rare event where a function call is also included in content (gemini sometimes does this)
 export function sanitizeFunctionCallContent(content: string, functionCall: AIFunctionCall | null): string {
@@ -57,4 +60,30 @@ export function sanitizeFunctionCallContent(content: string, functionCall: AIFun
     sanitized = sanitized.replace(/\n{3,}/g, '\n\n').trim();
 
     return sanitized;
+}
+
+export function parseFunctionCall(functionCallJson: string): StoredFunctionCall | null {
+    if (!StringTools.isValidJson(functionCallJson)) {
+        Exception.log(`Invalid JSON in functionCall field:\n${functionCallJson}`);
+        return null;
+    }
+    try {
+        return JSON.parse(functionCallJson) as StoredFunctionCall;
+    } catch (error) {
+        Exception.log(error);
+        return null;
+    }
+}
+
+export function parseFunctionResponse(responseJson: string): StoredFunctionResponse | null {
+    if (!StringTools.isValidJson(responseJson)) {
+        Exception.log(`Invalid JSON in function response content:\n${responseJson}`);
+        return null;
+    }
+    try {
+        return JSON.parse(responseJson) as StoredFunctionResponse;
+    } catch (error) {
+        Exception.log(error);
+        return null;
+    }
 }

@@ -15,6 +15,7 @@ import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
+import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 
 export class Gemini extends BaseAIClass {
 
@@ -224,7 +225,7 @@ export class Gemini extends BaseAIClass {
 
         // Add function call if present
         if (content.functionCall) {
-          const parsedContent = this.parseFunctionCall(content.functionCall);
+          const parsedContent = parseFunctionCall(content.functionCall);
 
           if (parsedContent) {
             if (content.thoughtSignature && content.thoughtSignature.trim() !== "") {
@@ -268,7 +269,7 @@ export class Gemini extends BaseAIClass {
 
         // Add function response if present
         if (content.functionResponse) {
-          const parsedContent = this.parseFunctionResponse(content.functionResponse);
+          const parsedContent = parseFunctionResponse(content.functionResponse);
 
           if (parsedContent) {
             if (parsedContent.id && parsedContent.id.trim() !== "") {

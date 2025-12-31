@@ -44,6 +44,10 @@ export class ChatService {
 		this.eventService = Resolve<EventService>(Services.EventService);
 		this.abortService = Resolve<AbortService>(Services.AbortService);
 		this.semaphore = new Semaphore(1, false);
+
+		this.aiControllerService.setSaveCallback(async (conversation) => {
+			await this.saveConversation(conversation);
+		});
 	}
 
 	public onNameChanged: ((name: string) => void) | undefined = undefined;

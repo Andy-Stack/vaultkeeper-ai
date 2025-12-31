@@ -10,7 +10,6 @@ import type { Attachment } from "Conversations/Attachment";
 import type { SettingsService } from "Services/SettingsService";
 import type { StreamingService } from "Services/StreamingService";
 import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
-import { StringTools } from "Helpers/StringTools";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import type { AbortService } from "Services/AbortService";
@@ -74,7 +73,6 @@ export abstract class BaseAIClass implements IAIClass {
     protected filterConversationContents(conversationContent: ConversationContent[]): ConversationContent[] {
         return conversationContent.filter((content, index, array) => {
             if (!content.content && !content.functionCall && !content.functionResponse && (!content.attachments || content.attachments.length === 0)) {
-                Exception.warn(`Filtered out message that had no content, this was likely deliberate`);
                 return false; // Filter out empty content
             }
 
@@ -82,7 +80,11 @@ export abstract class BaseAIClass implements IAIClass {
                 const previousItem = array[index - 1];
                 const hasValidCall = previousItem && previousItem.functionCall && content.toolId === previousItem.toolId;
                 if (!hasValidCall) {
-                    Exception.warn(`Filtered out function response that had no matching function call:\n${content.functionResponse}`);
+                    Exception.warn(`[Filter Debug] Filtered orphaned function response at index ${index}/${array.length}:\n` +
+                        `  ToolId: ${content.toolId}\n` +
+                        `  Previous item has functionCall: ${previousItem?.functionCall ? 'yes' : 'no'}\n` +
+                        `  Previous item toolId: ${previousItem?.toolId}\n` +
+                        `  Response: ${content.functionResponse}`);
                 }
                 return hasValidCall;
             }
@@ -99,36 +101,14 @@ export abstract class BaseAIClass implements IAIClass {
             const nextItem = array[index + 1];
             const hasValidResponse = nextItem && nextItem.functionResponse && content.toolId === nextItem.toolId;
             if (!hasValidResponse) {
-                Exception.warn(`Filtered out function call that had no matching function response:\n${content.functionCall}`);
+                Exception.warn(`[Filter Debug] Filtered orphaned function call at index ${index}/${array.length}:\n` +
+                    `  ToolId: ${content.toolId}\n` +
+                    `  Next item has functionResponse: ${nextItem?.functionResponse ? 'yes' : 'no'}\n` +
+                    `  Next item toolId: ${nextItem?.toolId}\n` +
+                    `  Call: ${content.functionCall}`);
             }
             return hasValidResponse;
         });
-    }
-
-    protected parseFunctionCall(functionCallJson: string): StoredFunctionCall | null {
-        if (!StringTools.isValidJson(functionCallJson)) {
-            Exception.log(`Invalid JSON in functionCall field:\n${functionCallJson}`);
-            return null;
-        }
-        try {
-            return JSON.parse(functionCallJson) as StoredFunctionCall;
-        } catch (error) {
-            Exception.log(error);
-            return null;
-        }
-    }
-
-    protected parseFunctionResponse(responseJson: string): StoredFunctionResponse | null {
-        if (!StringTools.isValidJson(responseJson)) {
-            Exception.log(`Invalid JSON in function response content:\n${responseJson}`);
-            return null;
-        }
-        try {
-            return JSON.parse(responseJson) as StoredFunctionResponse;
-        } catch (error) {
-            Exception.log(error);
-            return null;
-        }
     }
 
     protected throwRetryableError(message: string, code?: string, errorType?: ApiErrorType): never {

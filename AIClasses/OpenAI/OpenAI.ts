@@ -13,6 +13,7 @@ import { ApiError, ApiErrorType } from "Types/ApiError";
 import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
+import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 
 export class OpenAI extends BaseAIClass {
 
@@ -198,7 +199,7 @@ export class OpenAI extends BaseAIClass {
 
             // Case 1: Assistant message with function call
             if (content.functionCall) {
-                const parsedContent = this.parseFunctionCall(content.functionCall);
+                const parsedContent = parseFunctionCall(content.functionCall);
 
                 if (parsedContent) {
                     // Check if function call has required id field (for OpenAI Responses API)
@@ -262,7 +263,7 @@ export class OpenAI extends BaseAIClass {
 
             // Case 3: Function call response
             if (content.functionResponse) {
-                const parsedContent = this.parseFunctionResponse(content.functionResponse);
+                const parsedContent = parseFunctionResponse(content.functionResponse);
 
                 if (parsedContent) {
                     // Check if response has required id field (for OpenAI Responses API)

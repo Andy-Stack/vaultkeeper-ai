@@ -31,7 +31,8 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 		};
 
 		mockAIControllerService = {
-			runMainAgent: vi.fn()
+			runMainAgent: vi.fn(),
+			setSaveCallback: vi.fn()
 		};
 
 		mockNamingService = {

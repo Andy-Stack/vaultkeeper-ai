@@ -8,6 +8,7 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { AbortService } from '../../Services/AbortService';
 import { AIProvider } from '../../Enums/ApiProvider';
+import { parseFunctionCall, parseFunctionResponse } from '../../Helpers/ResponseHelper';
 
 /**
  * BaseAIClass Shared Method Tests
@@ -90,12 +91,12 @@ describe('BaseAIClass Shared Methods', () => {
                 }
             });
 
-            const result = (claude as any).parseFunctionCall(claudeCall);
+            const result = parseFunctionCall(claudeCall);
 
             expect(result).toBeDefined();
-            expect(result.functionCall.id).toBe('toolu_123');
-            expect(result.functionCall.name).toBe('search_vault_files');
-            expect(result.functionCall.args).toEqual({ query: 'test' });
+            expect(result!.functionCall.id).toBe('toolu_123');
+            expect(result!.functionCall.name).toBe('search_vault_files');
+            expect(result!.functionCall.args).toEqual({ query: 'test' });
         });
 
         it('should parse OpenAI-style function call (with id)', () => {
@@ -107,12 +108,12 @@ describe('BaseAIClass Shared Methods', () => {
                 }
             });
 
-            const result = (openai as any).parseFunctionCall(openaiCall);
+            const result = parseFunctionCall(openaiCall);
 
             expect(result).toBeDefined();
-            expect(result.functionCall.id).toBe('call_abc');
-            expect(result.functionCall.name).toBe('read_file');
-            expect(result.functionCall.args).toEqual({ path: 'note.md' });
+            expect(result!.functionCall.id).toBe('call_abc');
+            expect(result!.functionCall.name).toBe('read_file');
+            expect(result!.functionCall.args).toEqual({ path: 'note.md' });
         });
 
         it('should parse Gemini-style function call (no id)', () => {
@@ -123,19 +124,19 @@ describe('BaseAIClass Shared Methods', () => {
                 }
             });
 
-            const result = (gemini as any).parseFunctionCall(geminiCall);
+            const result = parseFunctionCall(geminiCall);
 
             expect(result).toBeDefined();
-            expect(result.functionCall.name).toBe('search_vault_files');
-            expect(result.functionCall.args).toEqual({ query: 'gemini test' });
+            expect(result!.functionCall.name).toBe('search_vault_files');
+            expect(result!.functionCall.args).toEqual({ query: 'gemini test' });
             // ID may be undefined for Gemini
-            expect(result.functionCall.id).toBeUndefined();
+            expect(result!.functionCall.id).toBeUndefined();
         });
 
         it('should handle invalid JSON gracefully', () => {
             const invalidJson = 'not valid json {';
 
-            const result = (claude as any).parseFunctionCall(invalidJson);
+            const result = parseFunctionCall(invalidJson);
 
             expect(result).toBeNull();
         });
@@ -149,11 +150,11 @@ describe('BaseAIClass Shared Methods', () => {
                 }
             });
 
-            const result = (claude as any).parseFunctionCall(missingName);
+            const result = parseFunctionCall(missingName);
 
             // Should still parse, but may have undefined name
             expect(result).toBeDefined();
-            expect(result.functionCall.id).toBe('test-id');
+            expect(result!.functionCall.id).toBe('test-id');
         });
 
         it('should handle empty args object', () => {
@@ -165,10 +166,10 @@ describe('BaseAIClass Shared Methods', () => {
                 }
             });
 
-            const result = (claude as any).parseFunctionCall(emptyArgs);
+            const result = parseFunctionCall(emptyArgs);
 
             expect(result).toBeDefined();
-            expect(result.functionCall.args).toEqual({});
+            expect(result!.functionCall.args).toEqual({});
         });
 
         it('should handle complex nested args', () => {
@@ -186,11 +187,11 @@ describe('BaseAIClass Shared Methods', () => {
                 }
             });
 
-            const result = (claude as any).parseFunctionCall(complexArgs);
+            const result = parseFunctionCall(complexArgs);
 
             expect(result).toBeDefined();
-            expect(result.functionCall.args.filters.tags).toHaveLength(2);
-            expect(result.functionCall.args.options.limit).toBe(10);
+            expect((result!.functionCall.args as any).filters.tags).toHaveLength(2);
+            expect((result!.functionCall.args as any).options.limit).toBe(10);
         });
     });
 
@@ -204,12 +205,12 @@ describe('BaseAIClass Shared Methods', () => {
                 }
             });
 
-            const result = (claude as any).parseFunctionResponse(responseWithId);
+            const result = parseFunctionResponse(responseWithId);
 
             expect(result).toBeDefined();
-            expect(result.id).toBe('call-123');
-            expect(result.functionResponse.name).toBe('search_vault_files');
-            expect(result.functionResponse.response).toEqual(['file1.md', 'file2.md']);
+            expect(result!.id).toBe('call-123');
+            expect(result!.functionResponse.name).toBe('search_vault_files');
+            expect(result!.functionResponse.response).toEqual(['file1.md', 'file2.md']);
         });
 
         it('should parse response without id field', () => {
@@ -220,18 +221,18 @@ describe('BaseAIClass Shared Methods', () => {
                 }
             });
 
-            const result = (gemini as any).parseFunctionResponse(responseNoId);
+            const result = parseFunctionResponse(responseNoId);
 
             expect(result).toBeDefined();
-            expect(result.functionResponse.name).toBe('read_file');
-            expect(result.functionResponse.response).toEqual({ content: 'File contents' });
-            expect(result.id).toBeUndefined();
+            expect(result!.functionResponse.name).toBe('read_file');
+            expect(result!.functionResponse.response).toEqual({ content: 'File contents' });
+            expect(result!.id).toBeUndefined();
         });
 
         it('should handle invalid JSON', () => {
             const invalidJson = 'invalid response json';
 
-            const result = (claude as any).parseFunctionResponse(invalidJson);
+            const result = parseFunctionResponse(invalidJson);
 
             expect(result).toBeNull();
         });
@@ -245,10 +246,10 @@ describe('BaseAIClass Shared Methods', () => {
                 }
             });
 
-            const result = (openai as any).parseFunctionResponse(nullResponse);
+            const result = parseFunctionResponse(nullResponse);
 
             expect(result).toBeDefined();
-            expect(result.functionResponse.response).toBeNull();
+            expect(result!.functionResponse.response).toBeNull();
         });
 
         it('should handle complex response objects', () => {
@@ -266,11 +267,11 @@ describe('BaseAIClass Shared Methods', () => {
                 }
             });
 
-            const result = (claude as any).parseFunctionResponse(complexResponse);
+            const result = parseFunctionResponse(complexResponse);
 
             expect(result).toBeDefined();
-            expect(result.functionResponse.response.results).toHaveLength(2);
-            expect(result.functionResponse.response.metadata.totalCount).toBe(2);
+            expect((result!.functionResponse.response as any).results).toHaveLength(2);
+            expect((result!.functionResponse.response as any).metadata.totalCount).toBe(2);
         });
     });
 
@@ -453,15 +454,12 @@ describe('BaseAIClass Shared Methods', () => {
                 }
             });
 
-            const claudeResult = (claude as any).parseFunctionCall(sharedFunctionCall);
-            const openaiResult = (openai as any).parseFunctionCall(sharedFunctionCall);
-            const geminiResult = (gemini as any).parseFunctionCall(sharedFunctionCall);
+            const result = parseFunctionCall(sharedFunctionCall);
 
-            // All providers should parse to the same structure
-            expect(claudeResult.functionCall.name).toBe(openaiResult.functionCall.name);
-            expect(openaiResult.functionCall.name).toBe(geminiResult.functionCall.name);
-            expect(claudeResult.functionCall.args).toEqual(openaiResult.functionCall.args);
-            expect(openaiResult.functionCall.args).toEqual(geminiResult.functionCall.args);
+            // All providers should parse to the same structure using the shared helper
+            expect(result).toBeDefined();
+            expect(result!.functionCall.name).toBe('search_vault_files');
+            expect(result!.functionCall.args).toEqual({ query: 'consistent test' });
         });
 
         it('should filter conversations consistently across providers', () => {

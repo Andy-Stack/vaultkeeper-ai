@@ -173,9 +173,9 @@ describe('AIFunctionService - Integration Tests', () => {
 			} as any);
 
 			expect(result.response).toHaveLength(1);
-			expect(result.response[0].searchTerm).toBe('single');
-			expect(result.response[0].results).toHaveLength(1);
-			expect(result.response[0].results[0].path).toBe('single.md');
+			expect((result.response as any)[0].searchTerm).toBe('single');
+			expect((result.response as any)[0].results).toHaveLength(1);
+			expect((result.response as any)[0].results[0].path).toBe('single.md');
 		});
 	});
 
@@ -237,7 +237,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_8'
 			} as any);
 
-			const results = result.response.results;
+			const results = (result.response as any).results;
 			expect(results[0].contents).toBe('Content A');
 			expect(results[1].error).toBe('File not found');
 			expect(results[2].contents).toBe('Content B');
@@ -262,8 +262,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_10'
 			} as any);
 
-			expect(result.response.results).toHaveLength(1);
-			expect(result.response.results[0].contents).toBe('Single file content');
+			expect((result.response as any).results).toHaveLength(1);
+			expect((result.response as any).results[0].contents).toBe('Single file content');
 		});
 	});
 
@@ -302,8 +302,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_12'
 			} as any);
 
-			expect(result.response.success).toBe(false);
-			expect(result.response.error).toBeDefined();
+			expect((result.response as any).success).toBe(false);
+			expect((result.response as any).error).toBeDefined();
 		});
 
 		it('should normalize file path', async () => {
@@ -340,7 +340,7 @@ describe('AIFunctionService - Integration Tests', () => {
 			} as any);
 
 			expect(mockFileSystemService.writeFile).toHaveBeenCalledWith('empty.md', '');
-			expect(result.response.success).toBe(true);
+			expect((result.response as any).success).toBe(true);
 		});
 	});
 
@@ -384,8 +384,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_patch_2'
 			} as any);
 
-			expect(result.response.success).toBe(false);
-			expect(result.response.error).toBe('Content to replace was not found in the file');
+			expect((result.response as any).success).toBe(false);
+			expect((result.response as any).error).toBe('Content to replace was not found in the file');
 		});
 
 		it('should normalize file path', async () => {
@@ -431,8 +431,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_patch_4'
 			} as any);
 
-			expect(result.response.success).toBe(false);
-			expect(result.response.error).toContain('File does not exist');
+			expect((result.response as any).success).toBe(false);
+			expect((result.response as any).error).toContain('File does not exist');
 		});
 
 		it('should handle complex multi-line replacement', async () => {
@@ -453,7 +453,7 @@ describe('AIFunctionService - Integration Tests', () => {
 			} as any);
 
 			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('complex.md', oldContent, newContent);
-			expect(result.response.success).toBe(true);
+			expect((result.response as any).success).toBe(true);
 		});
 
 		it('should handle adding new content', async () => {
@@ -473,7 +473,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_patch_6'
 			} as any);
 
-			expect(result.response.success).toBe(true);
+			expect((result.response as any).success).toBe(true);
 		});
 
 		it('should handle removing content', async () => {
@@ -493,7 +493,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_patch_7'
 			} as any);
 
-			expect(result.response.success).toBe(true);
+			expect((result.response as any).success).toBe(true);
 		});
 
 		it('should handle permission denied error', async () => {
@@ -514,8 +514,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_patch_8'
 			} as any);
 
-			expect(result.response.success).toBe(false);
-			expect(result.response.error).toBe('Permission denied');
+			expect((result.response as any).success).toBe(false);
+			expect((result.response as any).error).toBe('Permission denied');
 		});
 
 		it('should return correct toolId in response', async () => {
@@ -550,7 +550,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_patch_invalid'
 			} as any);
 
-			expect(result.response.error).toContain('Invalid arguments for patch_vault_file');
+			expect((result.response as any).error).toContain('Invalid arguments for patch_vault_file');
 			expect(mockFileSystemService.patchFile).not.toHaveBeenCalled();
 		});
 	});
@@ -616,7 +616,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_17'
 			} as any);
 
-			expect(result.response.results).toEqual([
+			expect((result.response as any).results).toEqual([
 				{ path: 'a.md', success: true },
 				{ path: 'missing.md', success: false, error: 'File not found' },
 				{ path: 'c.md', success: true }
@@ -638,7 +638,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_18'
 			} as any);
 
-			const results = result.response.results;
+			const results = (result.response as any).results;
 			expect(results[0].success).toBe(false);
 			expect(results[1].success).toBe(false);
 		});
@@ -654,7 +654,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_19'
 			} as any);
 
-			expect(result.response.results).toEqual([]);
+			expect((result.response as any).results).toEqual([]);
 		});
 	});
 
@@ -719,7 +719,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_22'
 			} as any);
 
-			expect(result.response.results).toEqual([
+			expect((result.response as any).results).toEqual([
 				{ path: 'new/a.md', success: true },
 				{ path: 'existing.md', success: false, error: 'Destination exists' },
 				{ path: 'new/c.md', success: true }
@@ -753,7 +753,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'tool_24'
 			} as any);
 
-			expect(result.response.results).toEqual([]);
+			expect((result.response as any).results).toEqual([]);
 		});
 	});
 
@@ -816,7 +816,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'search_1'
 			} as any);
 
-			const foundPath = searchResult.response[0].results[0].path;
+			const foundPath = (searchResult.response as any)[0].results[0].path;
 
 			// Then read
 			mockFileSystemService.readFile.mockResolvedValue('File content here');
@@ -827,8 +827,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'read_1'
 			} as any);
 
-			expect(readResult.response.results[0].contents).toBe('File content here');
-			expect(readResult.response.results[0].error).toBeUndefined();
+			expect((readResult.response as any).results[0].contents).toBe('File content here');
+			expect((readResult.response as any).results[0].error).toBeUndefined();
 		});
 
 		it('should handle write -> move workflow', async () => {
@@ -845,7 +845,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'write_1'
 			} as any);
 
-			expect(writeResult.response.success).toBe(true);
+			expect((writeResult.response as any).success).toBe(true);
 
 			// Then move
 			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
@@ -860,7 +860,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'move_1'
 			} as any);
 
-			expect(moveResult.response.results[0].success).toBe(true);
+			expect((moveResult.response as any).results[0].success).toBe(true);
 		});
 
 		it('should handle read -> patch workflow', async () => {
@@ -873,7 +873,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'read_2'
 			} as any);
 
-			expect(readResult.response.results[0].contents).toContain('Original');
+			expect((readResult.response as any).results[0].contents).toContain('Original');
 
 			// Then patch it
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('document.md', 'document'));
@@ -892,7 +892,7 @@ describe('AIFunctionService - Integration Tests', () => {
 				toolId: 'patch_1'
 			} as any);
 
-			expect(patchResult.response.success).toBe(true);
+			expect((patchResult.response as any).success).toBe(true);
 			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('document.md', oldContent, newContent);
 		});
 	});

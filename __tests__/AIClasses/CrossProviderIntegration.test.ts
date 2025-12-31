@@ -2,14 +2,10 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { Gemini } from '../../AIClasses/Gemini/Gemini';
 import { Claude } from '../../AIClasses/Claude/Claude';
 import { OpenAI } from '../../AIClasses/OpenAI/OpenAI';
-import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
-import { RegisterSingleton, DeregisterAllServices, Resolve } from '../../Services/DependencyService';
+import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import { StreamingService } from '../../Services/StreamingService';
-import { SettingsService } from '../../Services/SettingsService';
-import { AIFunctionDefinitions } from '../../AIClasses/FunctionDefinitions/AIFunctionDefinitions';
 import { AbortService } from '../../Services/AbortService';
 import { AIProvider } from '../../Enums/ApiProvider';
 
@@ -34,7 +30,6 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
     let mockPrompt: any;
     let mockPlugin: any;
     let mockSettingsService: any;
-    let mockFunctionDefinitions: any;
     let abortService: AbortService;
 
     beforeEach(() => {
@@ -78,23 +73,6 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             streamRequest: vi.fn()
         };
         RegisterSingleton(Services.StreamingService, mockStreamingService);
-
-        // Mock AIFunctionDefinitions
-        mockFunctionDefinitions = {
-            getQueryActions: vi.fn().mockReturnValue([
-                {
-                    name: 'search_vault_files',
-                    description: 'Test function',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            query: { type: 'string' }
-                        }
-                    }
-                }
-            ])
-        };
-        RegisterSingleton(Services.AIFunctionDefinitions, mockFunctionDefinitions);
 
         // Mock IAIFileService
         const mockFileService = {

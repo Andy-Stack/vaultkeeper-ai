@@ -74,19 +74,34 @@ export abstract class BaseAIClass implements IAIClass {
     protected filterConversationContents(conversationContent: ConversationContent[]): ConversationContent[] {
         return conversationContent.filter((content, index, array) => {
             if (!content.content && !content.functionCall && !content.functionResponse && (!content.attachments || content.attachments.length === 0)) {
+                Exception.warn(`Filtered out message that had no content, this was likely deliberate`);
                 return false; // Filter out empty content
+            }
+
+            if (content.functionResponse) { // Filter out 'lone' function responses
+                const previousItem = array[index - 1];
+                const hasValidCall = previousItem && previousItem.functionCall && content.toolId === previousItem.toolId;
+                if (!hasValidCall) {
+                    Exception.warn(`Filtered out function response that had no matching function call:\n${content.functionResponse}`);
+                }
+                return hasValidCall;
             }
 
             if (!content.functionCall) {
                 return true; // Keep non-function-calls
             }
 
-            // Keep if it's the last item (most recent)
-            if (index === array.length - 1) return true;
+            if (index === array.length - 1) {
+                return true; // Keep if it's the last item (most recent)
+            }
 
-            // Keep if next item is a function response
+            // Keep if next item is a matched function response
             const nextItem = array[index + 1];
-            return nextItem && nextItem.functionResponse;
+            const hasValidResponse = nextItem && nextItem.functionResponse && content.toolId === nextItem.toolId;
+            if (!hasValidResponse) {
+                Exception.warn(`Filtered out function call that had no matching function response:\n${content.functionCall}`);
+            }
+            return hasValidResponse;
         });
     }
 

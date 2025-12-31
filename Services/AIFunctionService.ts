@@ -124,7 +124,8 @@ export class AIFunctionService {
                 case AIFunction.CreatePlan:
                 case AIFunction.Replan:
                 case AIFunction.SubmitPlan:
-                case AIFunction.CompleteStep: {
+                case AIFunction.CompleteStep:
+                case AIFunction.CancelPlan: {
                     Exception.throw(`Multi-agent function ${functionCall.name} should not be handled by AIFunctionService`);
                     break;
                 }

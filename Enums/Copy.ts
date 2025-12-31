@@ -73,6 +73,8 @@ export enum Copy {
     StepCompletedWithNextStep = "Step {stepNumber} completed successfully. Now proceed with step {nextStepNumber}.",
     AllStepsCompleted = "Step {stepNumber} completed successfully. All steps in the execution plan have been completed. Provide a final summary to the user based on the completed steps and overall success criteria.",
     MaxPlanningIterationsReached = "I've attempted multiple planning iterations but encountered persistent issues completing the task. It may need to be broken down further or requires additional clarification.",
+    PlanExecutionCancelled = "Plan execution cancelled. Provide a summary to the user explaining what happened and any partial progress made.",
+    PlanExecutionNotCancelled = "Confirmation was false, no action taken",
 
     // Execution Plan Request Templates
     ContextTags = `

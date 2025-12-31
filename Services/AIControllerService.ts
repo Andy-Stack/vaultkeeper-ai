@@ -14,7 +14,7 @@ import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionD
 import { AIFunction, isAIFunction } from "Enums/AIFunction";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import { Exception } from "Helpers/Exception";
-import { CompleteStepArgsSchema, CreatePlanArgsSchema, ReplanArgsSchema, SubmitPlanArgsSchema, type CreatePlanArgs, type ReplanArgs } from "AIClasses/Schemas/AIFunctionSchemas";
+import { CancelPlanArgsSchema, CompleteStepArgsSchema, CreatePlanArgsSchema, ReplanArgsSchema, SubmitPlanArgsSchema, type CreatePlanArgs, type ReplanArgs } from "AIClasses/Schemas/AIFunctionSchemas";
 import { ExecutionPlan } from "Types/ExecutionPlan";
 
 export class AIControllerService {
@@ -102,10 +102,14 @@ export class AIControllerService {
             this.ai.userInstruction = await this.aiPrompt.userInstruction();
             this.ai.toolDefinitions = AIFunctionDefinitions.agentExecutionDefinitions();
 
-            const executionResult = await this.runExecutionAgent(conversation, functionCall, executionPlan, callbacks);
+            const executionResult = await this.runExecutionAgent(conversation, executionPlan, callbacks);
 
-            // Continue if either replanning was requested OR execution was incomplete
-            continueExecution = executionResult.shouldReplan || executionResult.isIncomplete;
+            // Stop if cancelled, otherwise continue if replanning was requested OR execution was incomplete
+            if (executionResult.planExecutionCancelled) {
+                continueExecution = false;
+            } else {
+                continueExecution = executionResult.shouldReplan || executionResult.isIncomplete;
+            }
 
             if (continueExecution && executionResult.replanData) {
                 // Agent explicitly requested replan with context
@@ -151,27 +155,49 @@ export class AIControllerService {
             const functionResponse = await this.aiFunctionService.performAIFunction(functionCall);
             planningConversation.addFunctionResponse(functionResponse);
             return { shouldExit: false };
-        });
+        }, false);
 
         return capturedPlan ?? new ExecutionPlan({ steps: [] });
     }
 
     // The 'execution agent' is still the main agent but given specific tools related to plan execution
-    private async runExecutionAgent(conversation: Conversation, functionCall: AIFunctionCall,
-        executionPlan: ExecutionPlan, callbacks: IChatServiceCallbacks
-    ): Promise<{ shouldReplan: boolean, isIncomplete: boolean, replanData?: ReplanArgs }> {
+    private async runExecutionAgent(conversation: Conversation, executionPlan: ExecutionPlan, callbacks: IChatServiceCallbacks
+    ): Promise<{ shouldReplan: boolean, isIncomplete: boolean, planExecutionCancelled: boolean, replanData?: ReplanArgs }> {
+
         // callback to ui with execution plan - gets reference to plan so auto updates when updated
 
-        conversation.addFunctionResponse(new AIFunctionResponse(
-            functionCall.name,
-            executionPlan.toFunctionResponse(),
-            functionCall.toolId
-        ));
+        const lastCall = conversation.contents[conversation.contents.length - 1];
+        if (lastCall && lastCall.functionCall) {
+            const planningResponse = this.createPlanningResponse(lastCall, executionPlan);
+            if (planningResponse) {
+                conversation.addFunctionResponse(planningResponse);
+            }
+        }
 
         let replanData: ReplanArgs | undefined;
+        let planExecutionCancelled = false;
 
         await this.runAgentLoop(conversation, callbacks, async (functionCall) => {
             const functionCallName = functionCall.name;
+
+            if (isAIFunction(functionCallName, AIFunction.CancelPlan)) {
+                const parseResult = CancelPlanArgsSchema.safeParse(functionCall.arguments);
+                if (!parseResult.success) {
+                    conversation.addFunctionResponse(new AIFunctionResponse(
+                        functionCallName,
+                        { error: `Invalid arguments for ${AIFunction.CancelPlan}: ${parseResult.error.message}` },
+                        functionCall.toolId
+                    ));
+                    return { shouldExit: false };
+                }
+                planExecutionCancelled = parseResult.data.confirm_cancellation;
+                conversation.addFunctionResponse(new AIFunctionResponse(
+                    functionCallName,
+                    { message: planExecutionCancelled ? Copy.PlanExecutionCancelled : Copy.PlanExecutionNotCancelled },
+                    functionCall.toolId
+                ));
+                return { shouldExit: planExecutionCancelled };
+            }
 
             if (isAIFunction(functionCallName, AIFunction.Replan)) {
                 const parseResult = ReplanArgsSchema.safeParse(functionCall.arguments);
@@ -214,13 +240,13 @@ export class AIControllerService {
         });
 
         const isIncomplete = !executionPlan.completed();
-        return { shouldReplan: replanData !== undefined, isIncomplete, replanData };
+        return { shouldReplan: replanData !== undefined, isIncomplete, planExecutionCancelled: planExecutionCancelled, replanData };
     }
 
-    private async runAgentLoop(conversation: Conversation,callbacks: IChatServiceCallbacks,
-        handleFunctionCall: (functionCall: AIFunctionCall) => Promise<{ shouldExit: boolean }>
+    private async runAgentLoop(conversation: Conversation, callbacks: IChatServiceCallbacks,
+        handleFunctionCall: (functionCall: AIFunctionCall) => Promise<{ shouldExit: boolean }>, clearThoughtOnContent: boolean = true
     ): Promise<void> {
-        let response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), callbacks);
+        let response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), callbacks, clearThoughtOnContent);
 
         while (response.functionCall || response.shouldContinue) {
             if (response.functionCall) {
@@ -232,7 +258,7 @@ export class AIControllerService {
                 callbacks.onThoughtUpdate(Copy.AIThoughtMessage);
             }
 
-            response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), callbacks);
+            response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), callbacks, clearThoughtOnContent);
         }
     }
 
@@ -256,7 +282,7 @@ export class AIControllerService {
 		return conversation;
 	}
 
-    private async streamRequestResponse(conversation: Conversation, callbacks: IChatServiceCallbacks
+    private async streamRequestResponse(conversation: Conversation, callbacks: IChatServiceCallbacks, clearThoughtOnContent: boolean = true
     ): Promise<{ functionCall: AIFunctionCall | null, shouldContinue: boolean }> {
         if (!this.ai) { // this should never happen
             return { functionCall: null, shouldContinue: false };
@@ -289,7 +315,7 @@ export class AIControllerService {
                 accumulatedContent += chunk.content;
 
                 conversationContent.content = accumulatedContent;
-                if (accumulatedContent.trim() !== "") {
+                if (accumulatedContent.trim() !== "" && clearThoughtOnContent) {
                     callbacks.onThoughtUpdate(null);
                 }
             }
@@ -347,5 +373,24 @@ export class AIControllerService {
             completedSection,
             remainingSection
         ]);
+    }
+
+    private createPlanningResponse(conversationContent: ConversationContent, executionPlan: ExecutionPlan): AIFunctionResponse | undefined {
+        const createParseResult = CreatePlanArgsSchema.safeParse(conversationContent.functionCall);
+        if (createParseResult.success) {
+            return new AIFunctionResponse(
+                AIFunction.CreatePlan,
+                executionPlan.toFunctionResponse(),
+                conversationContent.toolId
+            );
+        }
+        const replanParseResult = ReplanArgsSchema.safeParse(conversationContent.functionCall);
+        if (replanParseResult.success) {
+            return new AIFunctionResponse(
+                AIFunction.Replan,
+                executionPlan.toFunctionResponse(),
+                conversationContent.toolId
+            );
+        }
     }
 }

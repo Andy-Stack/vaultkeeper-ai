@@ -18,12 +18,12 @@ describe('AIFunctionCall', () => {
 
 		it('should create instance with name, arguments, and toolId', () => {
 			const functionCall = new AIFunctionCall(
-				AIFunction.ReadFile,
+				AIFunction.ReadVaultFiles,
 				{ path: 'test.md' },
 				'tool-123'
 			);
 
-			expect(functionCall.name).toBe(AIFunction.ReadFile);
+			expect(functionCall.name).toBe(AIFunction.ReadVaultFiles);
 			expect(functionCall.arguments).toEqual({ path: 'test.md' });
 			expect(functionCall.toolId).toBe('tool-123');
 			expect(functionCall.thoughtSignature).toBeUndefined();
@@ -47,13 +47,13 @@ describe('AIFunctionCall', () => {
 		it('should create instance with toolId and thoughtSignature', () => {
 			const signature = 'aGVsbG8gd29ybGQ=';
 			const functionCall = new AIFunctionCall(
-				AIFunction.WriteFile,
+				AIFunction.WriteVaultFile,
 				{ path: 'note.md', content: 'Hello' },
 				'tool-456',
 				signature
 			);
 
-			expect(functionCall.name).toBe(AIFunction.WriteFile);
+			expect(functionCall.name).toBe(AIFunction.WriteVaultFile);
 			expect(functionCall.arguments).toEqual({ path: 'note.md', content: 'Hello' });
 			expect(functionCall.toolId).toBe('tool-456');
 			expect(functionCall.thoughtSignature).toBe(signature);
@@ -109,7 +109,7 @@ describe('AIFunctionCall', () => {
 
 		it('should serialize with toolId when present', () => {
 			const functionCall = new AIFunctionCall(
-				AIFunction.ReadFile,
+				AIFunction.ReadVaultFiles,
 				{ path: 'note.md' },
 				'tool-789'
 			);
@@ -119,7 +119,7 @@ describe('AIFunctionCall', () => {
 
 			expect(parsed).toEqual({
 				functionCall: {
-					name: AIFunction.ReadFile,
+					name: AIFunction.ReadVaultFiles,
 					args: { path: 'note.md' },
 					id: 'tool-789',
 					thoughtSignature: undefined
@@ -152,7 +152,7 @@ describe('AIFunctionCall', () => {
 		it('should serialize with both toolId and thoughtSignature when present', () => {
 			const signature = 'YW5vdGhlclNpZ25hdHVyZQ==';
 			const functionCall = new AIFunctionCall(
-				AIFunction.WriteFile,
+				AIFunction.WriteVaultFile,
 				{ path: 'file.md', content: 'content' },
 				'tool-999',
 				signature
@@ -163,7 +163,7 @@ describe('AIFunctionCall', () => {
 
 			expect(parsed).toEqual({
 				functionCall: {
-					name: AIFunction.WriteFile,
+					name: AIFunction.WriteVaultFile,
 					args: { path: 'file.md', content: 'content' },
 					id: 'tool-999',
 					thoughtSignature: signature

@@ -502,7 +502,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			const conversations = await service.getAllConversations();
 
 			expect(conversations[0].contents[0].functionCall).toBeDefined();
-			expect(JSON.parse(conversations[0].contents[0].functionCall)).toEqual({
+			expect(JSON.parse(conversations[0].contents[0].functionCall!)).toEqual({
 				name: 'test_func',
 				arguments: {}
 			});
@@ -658,7 +658,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(reconstructed.title).toBe(original.title);
 			expect(reconstructed.contents).toHaveLength(4);
 			expect(reconstructed.contents[2].functionCall).toBeDefined();
-			expect(JSON.parse(reconstructed.contents[2].functionCall)).toEqual({
+			expect(JSON.parse(reconstructed.contents[2].functionCall!)).toEqual({
 				name: 'test',
 				arguments: { arg: 'val' }
 			});

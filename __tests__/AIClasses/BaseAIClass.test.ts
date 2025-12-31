@@ -61,12 +61,6 @@ describe('BaseAIClass Shared Methods', () => {
         };
         RegisterSingleton(Services.StreamingService, mockStreamingService);
 
-        // Mock AIFunctionDefinitions
-        const mockFunctionDefinitions = {
-            getQueryActions: vi.fn().mockReturnValue([])
-        };
-        RegisterSingleton(Services.AIFunctionDefinitions, mockFunctionDefinitions);
-
         // Mock IAIFileService
         const mockFileService = {
             refreshCache: vi.fn().mockResolvedValue(undefined),

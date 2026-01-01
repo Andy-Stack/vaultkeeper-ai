@@ -75,6 +75,13 @@ export class ChatService {
 					displayContent: userRequest
 				});
 				conversation.contents.push(conversationContent);
+				
+				await this.saveConversation(conversation);
+
+				if (firstMessage) {
+					this.onNameChanged?.(conversation.title); // on change for initial conversation name
+					void this.namingService.requestName(conversation, formattedRequest, this.onNameChanged)
+				}
 
 				if (attachments.length > 0) {
 					// Add any attachments that came from paste / drop
@@ -91,11 +98,6 @@ export class ChatService {
 
 				callbacks.onSubmit();
 				callbacks.onStreamingUpdate(null);
-
-				if (firstMessage) {
-					this.onNameChanged?.(conversation.title); // on change for initial conversation name
-					await this.namingService.requestName(conversation, formattedRequest, this.onNameChanged);
-				}
 
 				await this.aiControllerService.runMainAgent(conversation, allowDestructiveActions, callbacks);
 			});

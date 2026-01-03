@@ -5,7 +5,7 @@ import { Path } from '../../Enums/Path';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { SanitiserService } from '../../Services/SanitiserService';
-import { SettingsService, IVaultkeeperAISettings } from '../../Services/SettingsService';
+import { SettingsService, type IVaultkeeperAISettings } from '../../Services/SettingsService';
 import { AIProviderModel } from '../../Enums/ApiProvider';
 import { Exception } from '../../Helpers/Exception';
 

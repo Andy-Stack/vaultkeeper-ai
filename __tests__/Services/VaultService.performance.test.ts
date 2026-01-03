@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TFile, TFolder, TAbstractFile, Vault, FileManager } from 'obsidian';
 import { VaultService } from '../../Services/VaultService';
-import { SettingsService, IVaultkeeperAISettings } from '../../Services/SettingsService';
+import { SettingsService, type IVaultkeeperAISettings } from '../../Services/SettingsService';
 import { SanitiserService } from '../../Services/SanitiserService';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';

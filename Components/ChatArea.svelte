@@ -4,7 +4,6 @@
   import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
 	import ThoughtIndicator from "./ThoughtIndicator.svelte";
 	import StreamingIndicator from "./StreamingIndicator.svelte";
-  import CancellationIndicator from "./CancellationIndicator.svelte";
 	import { Greeting } from "Enums/Greeting";
 	import { Role } from "Enums/Role";
   import type { ConversationContent } from "Conversations/ConversationContent";
@@ -13,7 +12,6 @@
 	import { Exception } from "Helpers/Exception";
 	import { getOuterHeight, setElementIcon } from "Helpers/ElementHelper";
 
-  export let cancelling: boolean = false;
   export let messages: ConversationContent[] = [];
   export let currentThought: string | null = null;
   export let isSubmitting: boolean = false;
@@ -23,7 +21,6 @@
 
   export function resetChatArea() {
     autoScroll = true;
-    cancelling = false;
     messageElements = [];
     lastProcessedContent.clear();
     currentStreamFinalized = false;
@@ -301,10 +298,6 @@
     <ThoughtIndicator thought={currentThought} bind:thoughtIndicatorElement={thoughtIndicatorElement}/>
     {#if isSubmitting}
       <StreamingIndicator editModeActive={editModeActive} bind:streamingIndicatorElement={streamingIndicatorElement}/>
-    {/if}
-
-    {#if cancelling}
-      <CancellationIndicator/>
     {/if}
 
     <div bind:this={chatAreaPaddingElement} style:user-select=none></div>

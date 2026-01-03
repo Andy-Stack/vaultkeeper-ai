@@ -2,6 +2,7 @@ import { Role } from "Enums/Role";
 import { ApiErrorType } from "Types/ApiError";
 import type { Attachment } from "./Attachment";
 import type { Reference } from "./Reference";
+import { Copy } from "Enums/Copy";
 
 type ConversationContentInit = {
     role: Role;
@@ -109,7 +110,7 @@ export class ConversationContent {
     public static safeContinue(): ConversationContent {
         return new ConversationContent({
             role: Role.User,
-            content: "Continue",
+            content: Copy.SafeContinue,
             shouldDisplayContent: false
         });
     }

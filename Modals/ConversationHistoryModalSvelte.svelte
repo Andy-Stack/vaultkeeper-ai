@@ -131,7 +131,7 @@
     display: grid;
     grid-template-rows: auto;
     grid-template-columns: var(--size-4-2) auto 1fr var(--size-4-2) auto var(--size-4-2);
-    background-color: var(--background-modifier-hover);
+    background-color: var(--background-secondary-alt);
     border-radius: var(--radius-m);
   }
 

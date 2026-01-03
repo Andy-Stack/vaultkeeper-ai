@@ -16,8 +16,11 @@
 	import { Copy } from "Enums/Copy";
 	import { AbortService } from "Services/AbortService";
 	import type { Attachment } from "Conversations/Attachment";
+	import ChatPlanArea from "./ChatPlanArea.svelte";
+	import type { ExecutionPlanStore } from "Stores/ExecutionPlanStore";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
+  const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);
   const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
   const chatService: ChatService = Resolve<ChatService>(Services.ChatService);
   const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
@@ -28,9 +31,9 @@
   let chatArea: ChatArea;
   let chatInput: ChatInput;
 
-  let cancelling = false;
   let hasNoApiKey = false;
   let isSubmitting = false;
+  let busyPlanning = false;
   let editModeActive = false;
   let currentStreamingMessageId: string | null = null;
 
@@ -117,15 +120,31 @@
           currentThought = thought;
         }
       },
-      onComplete: async () => {
-        cancelling = false;
-        isSubmitting = false;
-        abortService.reset();
-        chatArea.updateChatAreaLayout("smooth", true);
+      onPlanningStarted: () => {
+        busyPlanning = true;
       },
-      onCancel: () => {
-        cancelling = true;
-      }
+      onPlanningFinished: () => {
+        busyPlanning = false;
+      },
+      onPlanUpdate: (executionPlan) => {
+        executionPlanStore.setPlan(executionPlan);
+      },
+      onPlanStepUpdate: () => {
+        executionPlanStore.updatePlan();
+      },
+      onPlanComplete: () => {
+        executionPlanStore.clearPlan();
+      },
+      onComplete: async () => {
+        isSubmitting = false;
+        busyPlanning = false;
+        currentThought = null;
+        executionPlanStore.clearPlan();
+        abortService.reset();
+        tick().then(() => {
+          chatArea.updateChatAreaLayout("smooth", true);
+        });
+      },
     });
   }
 
@@ -167,8 +186,10 @@
 </script>
 
 <main class="container">
+  <ChatPlanArea executionPlanState={executionPlanStore.executionPlanState} {editModeActive} {busyPlanning}/>
+
   <div id="chat-container">
-    <ChatArea messages={conversation.contents} bind:this={chatArea} bind:currentThought bind:isSubmitting bind:chatContainer bind:cancelling
+    <ChatArea messages={conversation.contents} bind:this={chatArea} bind:currentThought bind:isSubmitting bind:chatContainer
       currentStreamingMessageId={currentStreamingMessageId} editModeActive={editModeActive}/>
   </div>
 
@@ -178,16 +199,16 @@
     {hasNoApiKey}
     {isSubmitting}
     {editModeActive}
-    onsubmit={handleSubmit}
-    ontoggleeditmode={toggleEditMode}
-    onstop={handleStop}
+    onSubmit={handleSubmit}
+    onTogglEeditMode={toggleEditMode}
+    onStop={handleStop}
   />
 </main>
 
 <style>
   .container {
     display: grid;
-    grid-template-rows: 1fr auto var(--size-2-1);
+    grid-template-rows: auto 1fr auto var(--size-2-1);
     grid-template-columns: 1fr;
     height: calc(100% - var(--size-4-16));
     border-radius: var(--radius-m);
@@ -200,7 +221,7 @@
     max-width: 1000px;
     justify-self: center;
     user-select: text;
-    grid-row: 1;
+    grid-row: 2;
     grid-column: 1;
     overflow: hidden;
   }

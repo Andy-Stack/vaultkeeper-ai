@@ -86,6 +86,11 @@ describe('AIControllerService - Integration Tests', () => {
 				onSubmit: vi.fn(),
 				onStreamingUpdate: vi.fn(),
 				onThoughtUpdate: vi.fn(),
+				onPlanningStarted: vi.fn(),
+				onPlanningFinished: vi.fn(),
+				onPlanUpdate: vi.fn(),
+				onPlanStepUpdate: vi.fn(),
+				onPlanComplete: vi.fn(),
 				onComplete: vi.fn(),
 				onCancel: vi.fn()
 			};
@@ -111,6 +116,11 @@ describe('AIControllerService - Integration Tests', () => {
 				onSubmit: vi.fn(),
 				onStreamingUpdate: vi.fn(),
 				onThoughtUpdate: vi.fn(),
+				onPlanningStarted: vi.fn(),
+				onPlanningFinished: vi.fn(),
+				onPlanUpdate: vi.fn(),
+				onPlanStepUpdate: vi.fn(),
+				onPlanComplete: vi.fn(),
 				onComplete: vi.fn(),
 				onCancel: vi.fn()
 			};
@@ -136,6 +146,11 @@ describe('AIControllerService - Integration Tests', () => {
 				onSubmit: vi.fn(),
 				onStreamingUpdate: vi.fn(),
 				onThoughtUpdate: vi.fn(),
+				onPlanningStarted: vi.fn(),
+				onPlanningFinished: vi.fn(),
+				onPlanUpdate: vi.fn(),
+				onPlanStepUpdate: vi.fn(),
+				onPlanComplete: vi.fn(),
 				onComplete: vi.fn(),
 				onCancel: vi.fn()
 			};
@@ -156,6 +171,11 @@ describe('AIControllerService - Integration Tests', () => {
 				onSubmit: vi.fn(),
 				onStreamingUpdate: vi.fn(),
 				onThoughtUpdate: vi.fn(),
+				onPlanningStarted: vi.fn(),
+				onPlanningFinished: vi.fn(),
+				onPlanUpdate: vi.fn(),
+				onPlanStepUpdate: vi.fn(),
+				onPlanComplete: vi.fn(),
 				onComplete: vi.fn(),
 				onCancel: vi.fn()
 			};

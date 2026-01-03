@@ -66,18 +66,25 @@ export enum Copy {
 
     AIThoughtMessage = "Thinking...",
 
+    SafeContinue= "Continue",
+
     // Execution Plan Messages
-    PlanningFailedError = "Planning failed. No execution plan was generated. Please consult with the user about how to proceed.",
+    PlanningFailedError = `Failed to generate plan. You should attempt to recover from this.
+### Next Actions
+- Create your own simplified plan
+- Follow your own simplified plan`,
     StepDoesNotExistError = "Step {stepNumber} does not exist in the execution plan. Valid step numbers are 1-{totalSteps}.",
     StepMustBeCompletedInOrderError = "Cannot complete step {stepNumber}. Step \"{incompletStep}\" is not yet completed. Steps must be completed in order.",
     StepCompletedWithNextStep = "Step {stepNumber} completed successfully. Now proceed with step {nextStepNumber}.",
     AllStepsCompleted = "Step {stepNumber} completed successfully. All steps in the execution plan have been completed. Provide a final summary to the user based on the completed steps and overall success criteria.",
     MaxPlanningIterationsReached = "I've attempted multiple planning iterations but encountered persistent issues completing the task. It may need to be broken down further or requires additional clarification.",
     PlanExecutionCancelled = "Plan execution cancelled. Provide a summary to the user explaining what happened and any partial progress made.",
-    PlanExecutionNotCancelled = "Confirmation was false, no action taken",
+    PlanExecutionNotCancelled = "Confirmation was false, no action taken.",
+    PlanningToolDenial = "Invalid tool call - this is an execution tool and cannot be called during the planning phase.",
 
     // Execution Plan Request Templates
     ContextTags = `
+### New planning request
 <CONTEXT>
 {context}
 </CONTEXT>`,

@@ -1,8 +1,9 @@
+import type { AIFunction } from "Enums/AIFunction";
 import type { JSONSchemaProperty } from "../Schemas/AIFunctionTypes";
 
 // platform agnostic function definition used to present function calls in an API call
 export interface IAIFunctionDefinition {
-    name: string;
+    name: AIFunction;
     description: string;
     parameters: {
       type: string;

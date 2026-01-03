@@ -329,6 +329,24 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect((result as Error).message).toBe('Permission denied');
 			expect(service.getCurrentConversationPath()).not.toBeNull();
 		});
+
+		it('should prevent subsequent saves after deletion', async () => {
+			// This tests the fix for the bug where deleting during an active diff
+			// would resurrect the conversation when the finally block tried to save
+			const conversation = createTestConversation('Delete During Diff');
+			await service.saveConversation(conversation);
+			expect(service.getCurrentConversationPath()).not.toBeNull();
+
+			mockFileSystemService.deleteFile.mockResolvedValue(undefined);
+			await service.deleteCurrentConversation();
+
+			// Try to save the same conversation again (simulates what happens in finally block)
+			const result = await service.saveConversation(conversation);
+
+			// Should return empty string (silent skip), not save the file
+			expect(result).toBe('');
+			expect(mockFileSystemService.writeObjectToFile).toHaveBeenCalledTimes(1); // Only the initial save
+		});
 	});
 
 	describe('getAllConversations', () => {
@@ -613,6 +631,9 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			mockFileSystemService.deleteFile.mockResolvedValue(undefined); // void = success
 			await service.deleteCurrentConversation();
 			expect(service.getCurrentConversationPath()).toBeNull();
+
+			// Reset for new conversation (matches real workflow)
+			service.resetCurrentConversation();
 
 			// New conversation
 			const conv2 = createTestConversation('Second');

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { StreamingService, IStreamChunk } from '../../Services/StreamingService';
+import { StreamingService, type IStreamChunk } from '../../Services/StreamingService';
 import { Exception } from '../../Helpers/Exception';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';

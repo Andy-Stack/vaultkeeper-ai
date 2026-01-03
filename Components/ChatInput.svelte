@@ -22,9 +22,9 @@
   export let hasNoApiKey: boolean;
   export let isSubmitting: boolean;
   export let editModeActive: boolean;
-  export let onsubmit: (userRequest: string, formattedRequest: string) => void;
-  export let ontoggleeditmode: () => void;
-  export let onstop: () => void;
+  export let onSubmit: (userRequest: string, formattedRequest: string) => void;
+  export let onTogglEeditMode: () => void;
+  export let onStop: () => void;
 
   const inputService: InputService = Resolve<InputService>(Services.InputService);
   const userInputService: UserInputService = Resolve<UserInputService>(Services.UserInputService);
@@ -79,7 +79,7 @@
   }
 
   function handleStop() {
-    onstop();
+    onStop();
   }
 
   function handleSubmit() {
@@ -87,7 +87,7 @@
       return;
     }
     const result = requestFromInput();
-    onsubmit(result.request, result.formattedRequest);
+    onSubmit(result.request, result.formattedRequest);
   }
 
   function handleSuggestion() {
@@ -115,7 +115,7 @@
   }
 
   function toggleEditMode() {
-    ontoggleeditmode();
+    onTogglEeditMode();
   }
 
   async function handleKeydown(e: KeyboardEvent) {
@@ -306,8 +306,8 @@
     <ChatAttachments bind:attachments={attachments}/>
   </div>
 
-  <div id="diff-controls-container" style:padding-top={diffOpen ? "var(--size-4-2)" : 0} style:display={diffOpen ? "inline" : "none"}>
-    <DiffControls/>
+  <div id="diff-controls-container" style:padding-top={diffOpen ? "var(--size-4-2)" : 0}>
+    <DiffControls {diffOpen}/>
   </div>
 
   <div id="input-search-results-container" style:padding-top={$searchState.results.length > 0 ? "var(--size-4-2)" : 0}>
@@ -377,7 +377,7 @@
 
 <style>
   #input-container {
-    grid-row: 2;
+    grid-row: 3;
     grid-column: 1;
     display: grid;
     grid-template-rows: auto auto auto var(--size-4-3) 1fr var(--size-4-3);

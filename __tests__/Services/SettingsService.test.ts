@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { SettingsService, IVaultkeeperAISettings } from '../../Services/SettingsService';
+import { SettingsService, type IVaultkeeperAISettings } from '../../Services/SettingsService';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { AIProvider, AIProviderModel, fromModel } from '../../Enums/ApiProvider';

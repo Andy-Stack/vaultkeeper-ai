@@ -15,13 +15,18 @@ import type { Attachment } from "Conversations/Attachment";
 import { Reference } from "Conversations/Reference";
 import type { WorkSpaceService } from "./WorkSpaceService";
 import type { AIControllerService } from "./AIControllerService";
+import type { ExecutionPlan } from "Types/ExecutionPlan";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
 	onStreamingUpdate: (streamingMessageId: string | null) => void;
 	onThoughtUpdate: (thought: string | null) => void;
+	onPlanningStarted: () => void;
+	onPlanningFinished: () => void;
+	onPlanUpdate: (executionPlan: ExecutionPlan) => void;
+	onPlanStepUpdate: () => void;
+	onPlanComplete: () => void;
 	onComplete: () => void;
-	onCancel: () => void;
 }
 
 export class ChatService {
@@ -102,9 +107,7 @@ export class ChatService {
 				await this.aiControllerService.runMainAgent(conversation, allowDestructiveActions, callbacks);
 			});
 		} catch (error) {
-			if (AbortService.isAbortError(error)) {
-				callbacks.onCancel();
-			} else {
+			if (!AbortService.isAbortError(error)) {
 				Exception.log(error);
 				new Notice("Vaultkeeper AI encountered an error");
 			}

@@ -34,7 +34,7 @@
     background: var(--background-primary-alt);
     border-radius: 10px;
     padding: 0.75rem 1rem;
-    font-size: 0.875rem;
+    font-size: var(--font-smallest);
     color: var(--text-muted);
     font-style: italic;
     word-wrap: break-word;

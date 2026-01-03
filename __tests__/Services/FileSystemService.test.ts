@@ -708,7 +708,8 @@ describe('FileSystemService', () => {
 						{
 							text: 'This is a test query in the content',
 							matchIndex: 10,
-							matchLength: 10
+							matchLength: 10,
+							pageNumber: 1
 						}
 					]
 				},
@@ -718,7 +719,8 @@ describe('FileSystemService', () => {
 						{
 							text: 'Another test query here',
 							matchIndex: 8,
-							matchLength: 10
+							matchLength: 10,
+							pageNumber: 1
 						}
 					]
 				}

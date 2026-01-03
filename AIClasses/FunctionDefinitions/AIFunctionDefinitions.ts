@@ -63,7 +63,7 @@ export abstract class AIFunctionDefinitions {
         return this.definitionsList.map(definition => {
             // Extract first line of description as brief purpose
             const description = definition.description.split('\n')[0].trim();
-            return `| ${definition.name} | ${description} |`;
+            return `- ${description}`;
         }).join("\n");
     }
 }

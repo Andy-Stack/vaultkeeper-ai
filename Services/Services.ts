@@ -23,6 +23,7 @@ export class Services {
 
     // stores
     static SearchStateStore = Symbol("SearchStateStore");
+    static ExecutionPlanStore = Symbol("ExecutionPlanStore");
 
     // interfaces
     static IAIClass = Symbol("IAIClass");

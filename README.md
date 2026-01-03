@@ -338,7 +338,6 @@ This plugin is built on the shoulders of many excellent projects:
 **CSS**
 - [Loader](https://uiverse.io/Li-Deheng/bright-firefox-37) - Animated streaming indicator adapted from original by Li-Deheng
 - [Gradient Border](https://codepen.io/alphardex/pen/vYEYGzp) - Animated border adapted from original by alphardex
-- [Cancellation Indicator](https://codepen.io/aybukeceylan/pen/abLNeox) - Animated cancellation spinner adapted from original by Aybüke Ceylan
 
 ---
 

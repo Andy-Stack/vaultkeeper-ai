@@ -25,6 +25,7 @@ import { SanitiserService } from "./SanitiserService";
 import { VaultCacheService } from "./VaultCacheService";
 import { UserInputService } from "./UserInputService";
 import { SearchStateStore } from "Stores/SearchStateStore";
+import { ExecutionPlanStore } from "Stores/ExecutionPlanStore";
 import { InputService } from "./InputService";
 import { HTMLService } from "./HTMLService";
 import { SettingsService, type IVaultkeeperAISettings } from "./SettingsService";
@@ -52,6 +53,7 @@ export function RegisterDependencies() {
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
     RegisterSingleton<VaultCacheService>(Services.VaultCacheService, new VaultCacheService());
     RegisterSingleton<SearchStateStore>(Services.SearchStateStore, new SearchStateStore());
+    RegisterSingleton<ExecutionPlanStore>(Services.ExecutionPlanStore, new ExecutionPlanStore());
     RegisterSingleton<UserInputService>(Services.UserInputService, new UserInputService());
     RegisterSingleton<WorkSpaceService>(Services.WorkSpaceService, new WorkSpaceService());
     RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());

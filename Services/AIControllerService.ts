@@ -54,8 +54,12 @@ export class AIControllerService {
         await this.runAgentLoop(conversation, callbacks, async (functionCall) => {
             const functionCallName = functionCall.name;
             if (isAIFunction(functionCallName, AIFunction.CreatePlan)) {
-                const completedSuccessfully = await this.handlePlanningWorkflow(conversation, functionCall, callbacks);
-                return { shouldExit: completedSuccessfully };
+                try {
+                    const completedSuccessfully = await this.handlePlanningWorkflow(conversation, functionCall, callbacks);
+                    return { shouldExit: completedSuccessfully };
+                } finally {
+                    callbacks.onPlanComplete();
+                }
             }
 
             this.updateThought(functionCall, callbacks);
@@ -101,7 +105,9 @@ export class AIControllerService {
             this.ai.userInstruction = ""; // do not include user instruction
             this.ai.toolDefinitions = AIFunctionDefinitions.planningAgentDefinitions();
 
+            callbacks.onPlanningStarted();
             const executionPlan = await this.runPlanningAgent(this.planningConversation, callbacks);
+            callbacks.onPlanningFinished();
 
             // Run execution agent with the plan
             this.ai.systemPrompt = this.aiPrompt.systemInstruction();
@@ -152,11 +158,26 @@ export class AIControllerService {
         await this.runAgentLoop(planningConversation, callbacks, async (functionCall) => {
             const functionCallName = functionCall.name;
 
+            if (!AIFunctionDefinitions.planningAgentDefinitions().some(definition => isAIFunction(functionCallName, definition.name))) {
+                planningConversation.addFunctionResponse(new AIFunctionResponse(
+                    functionCallName,
+                    { message: Copy.PlanningToolDenial },
+                    functionCall.toolId
+                ));
+                return { shouldExit: false };
+            }
+
             if (isAIFunction(functionCallName, AIFunction.SubmitPlan)) {
                 const parseResult = SubmitPlanArgsSchema.safeParse(functionCall.arguments);
-                capturedPlan = parseResult.success
-                    ? new ExecutionPlan(parseResult.data)
-                    : new ExecutionPlan({ steps: [] });
+                if (!parseResult.success) {
+                    planningConversation.addFunctionResponse(new AIFunctionResponse(
+                        functionCallName,
+                        { error: `Invalid arguments for ${AIFunction.SubmitPlan}: ${parseResult.error.message}` },
+                        functionCall.toolId
+                    ));
+                    return { shouldExit: false };
+                }
+                capturedPlan = new ExecutionPlan(parseResult.data);
                 // Add response before exiting to avoid orphaned function call
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
@@ -172,14 +193,18 @@ export class AIControllerService {
             return { shouldExit: false };
         }, true);
 
-        return capturedPlan ?? new ExecutionPlan({ steps: [] });
+        if (!capturedPlan) {
+            Exception.log(`Failed to generate execution plan.\n${JSON.stringify(planningConversation, null, 2)}`);
+            return new ExecutionPlan({ steps: [] });
+        }
+        return capturedPlan;
     }
 
     // The 'execution agent' is still the main agent but given specific tools related to plan execution
     private async runExecutionAgent(conversation: Conversation, executionPlan: ExecutionPlan, callbacks: IChatServiceCallbacks
     ): Promise<{ shouldReplan: boolean, isIncomplete: boolean, planExecutionCancelled: boolean, replanData?: ReplanArgs }> {
 
-        // callback to ui with execution plan - gets reference to plan so auto updates when updated
+        callbacks.onPlanUpdate(executionPlan); // plan is being executed so inform UI
 
         const lastCall = conversation.contents[conversation.contents.length - 1];
         if (lastCall && lastCall.functionCall) {
@@ -251,6 +276,7 @@ export class AIControllerService {
                     functionCall.toolId
                 );
                 conversation.addFunctionResponse(functionResponse);
+                callbacks.onPlanStepUpdate();
                 return { shouldExit: false };
             }
 
@@ -261,7 +287,12 @@ export class AIControllerService {
         });
 
         const isIncomplete = !executionPlan.completed();
-        return { shouldReplan: replanData !== undefined, isIncomplete, planExecutionCancelled: planExecutionCancelled, replanData };
+        return {
+            shouldReplan: replanData !== undefined,
+            isIncomplete: isIncomplete,
+            planExecutionCancelled: planExecutionCancelled,
+            replanData: replanData
+        };
     }
 
     private async runAgentLoop(conversation: Conversation, callbacks: IChatServiceCallbacks,

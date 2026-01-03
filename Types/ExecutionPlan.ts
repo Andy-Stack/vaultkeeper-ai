@@ -5,7 +5,7 @@ import { Copy, replaceCopy } from "Enums/Copy";
 
 export class ExecutionPlan {
 
-    private executionSteps: ExecutionStep[] = [];
+    public readonly executionSteps: ExecutionStep[] = [];
 
     public constructor(plan: SubmitPlanArgs) {
         for (const [index, step] of plan.steps.entries()) {

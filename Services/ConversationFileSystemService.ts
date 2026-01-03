@@ -16,6 +16,7 @@ export class ConversationFileSystemService {
 
     private currentConversationPath: string | null = null;
     private deletionQueue: Promise<void> = Promise.resolve();
+    private isDeleted: boolean = false;
 
     public constructor() {
         this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
@@ -30,6 +31,10 @@ export class ConversationFileSystemService {
     }
 
     public async saveConversation(conversation: Conversation): Promise<string | Error> {
+        if (this.isDeleted) {
+            return ""; // Return empty string to indicate silent skip (not an error)
+        }
+
         if (!this.currentConversationPath) {
             this.currentConversationPath = this.generateConversationPath(conversation);
         } else {
@@ -74,6 +79,7 @@ export class ConversationFileSystemService {
 
     public resetCurrentConversation() {
         this.currentConversationPath = null;
+        this.isDeleted = false;
     }
 
     public getCurrentConversationPath(): string | null {
@@ -82,6 +88,7 @@ export class ConversationFileSystemService {
 
     public setCurrentConversationPath(filePath: string) {
         this.currentConversationPath = filePath;
+        this.isDeleted = false;
     }
 
     public async deleteCurrentConversation(): Promise<void | Error> {
@@ -104,7 +111,9 @@ export class ConversationFileSystemService {
             return deleteResult;
         }
 
-        this.resetCurrentConversation();
+        // Mark as deleted to prevent subsequent saves during ongoing operations
+        this.isDeleted = true;
+        this.currentConversationPath = null;
     }
 
     public async getAllConversations(): Promise<Conversation[]> {

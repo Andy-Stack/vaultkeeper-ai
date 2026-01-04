@@ -92,11 +92,17 @@ export enum Copy {
     StepMustBeCompletedInOrderError = "Cannot complete step {stepNumber}. The following steps have not yet been marked as completed: {incompleteSteps}. Steps must be completed in order.",
     StepCompletedWithNextStep = "Step {stepNumber} completed successfully. Now proceed with step {nextStepNumber}.",
     AllStepsCompleted = "Step {stepNumber} completed successfully. All steps in the execution plan have been completed. Provide a final summary to the user based on the completed steps and overall success criteria.",
-    MaxPlanningIterationsReached = "I've attempted multiple planning iterations but encountered persistent issues completing the task. It may need to be broken down further or requires additional clarification.",
     PlanExecutionCancelled = "Plan execution cancelled. Provide a summary to the user explaining what happened and any partial progress made.",
     PlanExecutionNotCancelled = "Confirmation was false, no action taken.",
+    PlanExecutionComplete = "Plan execution complete.",
+    PlanCompletionNotConfirmed = "Confirmation was false, no action taken.",
     PlanningToolDenial = "Invalid tool call - this is an execution tool and cannot be called during the planning phase.",
     PlanningModeError = "You must first create a plan before executing any functions!",
+    IncompleteExecutionAttempt = `Error: Plan execution incomplete - incomplete steps: {incompleteSteps}.
+- If all work has been completed, complete each remaining step in order and then complete the plan
+- If work remains, continue executing the plan
+- If the plan cannot be completed, request to cancel or replan`,
+    MaxExecutionDepthReached = "Exceeded maximum plan execution attempts - consult with the user on how to continue.",
 
     // Execution Plan Request Templates
     ContextTags = `
@@ -122,9 +128,6 @@ export enum Copy {
 {completedSection}
 
 {remainingSection}`,
-    CompletedStepsHeader = "### Completed Steps",
-    RemainingStepsHeader = "### Remaining Steps",
-    NoSteps = "None",
 
     // Help Modal Copy
     HelpModalAboutTitle = "About",

@@ -81,6 +81,10 @@ export const SubmitPlanArgsSchema = z.object({
 	}))
 });
 
+export const CompletePlanArgsSchema = z.object({
+	confirm_completion: z.boolean()
+});
+
 // Infer TypeScript types from schemas
 export type SearchVaultFilesArgs = z.infer<typeof SearchVaultFilesArgsSchema>;
 export type ReadVaultFilesArgs = z.infer<typeof ReadVaultFilesArgsSchema>;
@@ -95,3 +99,4 @@ export type AskUserQuestionArgs = z.infer<typeof AskUserQuestionArgsSchema>;
 export type CancelPlanArgs = z.infer<typeof CancelPlanArgsSchema>;
 export type CompleteStepArgs = z.infer<typeof CompleteStepArgsSchema>;
 export type SubmitPlanArgs = z.infer<typeof SubmitPlanArgsSchema>;
+export type CompletePlanArgs = z.infer<typeof CompletePlanArgsSchema>;

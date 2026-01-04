@@ -88,6 +88,17 @@ export class ExecutionPlan {
         }
     }
 
+    public completeExecutionPlan(confirmation: boolean): object {
+        if (!confirmation) {
+            return { error: Copy.PlanCompletionNotConfirmed };
+        }
+        if (!this.completed()) {
+            return { error: replaceCopy(Copy.IncompleteExecutionAttempt,
+                [this.incompleteSteps().join(", ")]) };
+        }
+        return { message: Copy.PlanExecutionComplete }
+    }
+
     public toFunctionResponse(): object {
         if (this.executionSteps.length === 0) {
             return {
@@ -108,7 +119,7 @@ export class ExecutionPlan {
         };
     }
 
-    private incompleteSteps(): number[] {
+    public incompleteSteps(): number[] {
         const incompleteSteps = [];
         for (const step of this.executionSteps) {
             if (step.status !== ExecutionStatus.Completed) {

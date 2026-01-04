@@ -14,12 +14,12 @@ import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionD
 import { AIFunction, isAIFunction } from "Enums/AIFunction";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import { Exception } from "Helpers/Exception";
-import { AskUserQuestionArgsSchema, CancelPlanArgsSchema, CompleteStepArgsSchema, CreatePlanArgsSchema, ReplanArgsSchema, SubmitPlanArgsSchema, type CreatePlanArgs, type ReplanArgs } from "AIClasses/Schemas/AIFunctionSchemas";
+import { AskUserQuestionArgsSchema, CancelPlanArgsSchema, CompletePlanArgsSchema, CompleteStepArgsSchema, CreatePlanArgsSchema, ReplanArgsSchema, SubmitPlanArgsSchema, type CreatePlanArgs, type ReplanArgs } from "AIClasses/Schemas/AIFunctionSchemas";
 import { ExecutionPlan } from "Types/ExecutionPlan";
 
 export class AIControllerService {
 
-    private static readonly MAX_PLANNING_ITERATIONS = 3;
+    private static readonly MAX_EXECUTION_DEPTH = 3;
 
     private ai: IAIClass | undefined;
     private readonly aiPrompt: IPrompt;
@@ -27,6 +27,8 @@ export class AIControllerService {
 
     private planningConversation: Conversation;
     private onSaveConversation?: (conversation: Conversation) => Promise<void>;
+
+    private executionDepth: number = 1;
 
     public constructor() {
         this.aiPrompt = Resolve<IPrompt>(Services.IPrompt);
@@ -98,8 +100,6 @@ export class AIControllerService {
 
         // Orchestrate planning and execution loop (handles replanning)
 
-        let planningIteration = 0;
-        let continueExecution = true;
         let planExecutionCancelled = false;
 
         this.planningConversation = new Conversation();
@@ -108,9 +108,7 @@ export class AIControllerService {
             content: this.preparePlanRequest(parseResult.data)
         }));
 
-        while (continueExecution && planningIteration < AIControllerService.MAX_PLANNING_ITERATIONS) {
-            planningIteration++;
-
+        while (true) {
             // Run planning agent to get execution plan
             this.ai.systemPrompt = this.aiPrompt.planningInstruction();
             this.ai.userInstruction = ""; // do not include user instruction
@@ -125,38 +123,24 @@ export class AIControllerService {
             this.ai.userInstruction = await this.aiPrompt.userInstruction();
             this.ai.toolDefinitions = AIFunctionDefinitions.agentExecutionDefinitions();
 
+            this.executionDepth = 1;
             const executionResult = await this.runExecutionAgent(conversation, executionPlan, callbacks);
 
-            // Stop if cancelled, otherwise continue if replanning was requested OR execution was incomplete
             if (executionResult.planExecutionCancelled) {
                 planExecutionCancelled = true;
-                continueExecution = false;
-            } else {
-                continueExecution = executionResult.shouldReplan || executionResult.isIncomplete;
+                break;
             }
-
-            if (continueExecution && executionResult.replanData) {
+            
+            if (executionResult.replanData) {
                 // Agent explicitly requested replan with context
                 this.planningConversation.contents.push(new ConversationContent({
                     role: Role.User,
                     content: this.prepareReplanRequest(executionResult.replanData)
                 }));
-            } else if (continueExecution && executionResult.isIncomplete) {
-                // Execution stopped prematurely - ask planner to revise
-                this.planningConversation.contents.push(new ConversationContent({
-                    role: Role.User,
-                    content: this.prepareIncompleteExecutionRequest(executionPlan)
-                }));
+                continue;
             }
-        }
 
-        // Handle max iterations reached
-        if (planningIteration >= AIControllerService.MAX_PLANNING_ITERATIONS && continueExecution) {
-            const conversationContent = new ConversationContent({
-                role: Role.Assistant,
-                content: Copy.MaxPlanningIterationsReached
-            });
-            conversation.contents.push(conversationContent);
+            break;
         }
 
         // If plan was cancelled, return false to give control back to main agent for summary
@@ -234,8 +218,17 @@ export class AIControllerService {
 
     // The 'execution agent' is still the main agent but given specific tools related to plan execution
     private async runExecutionAgent(conversation: Conversation, executionPlan: ExecutionPlan, callbacks: IChatServiceCallbacks
-    ): Promise<{ shouldReplan: boolean, isIncomplete: boolean, planExecutionCancelled: boolean, replanData?: ReplanArgs }> {
-
+    ): Promise<{ planExecutionCancelled: boolean, replanData?: ReplanArgs }> {
+        if (this.executionDepth >= AIControllerService.MAX_EXECUTION_DEPTH) {
+            conversation.contents.push(new ConversationContent({
+                role: Role.User,
+                content: Copy.MaxExecutionDepthReached,
+                shouldDisplayContent: false
+            }));
+            return { planExecutionCancelled: true };
+        }
+        this.executionDepth++;
+        
         callbacks.onPlanUpdate(executionPlan); // plan is being executed so inform UI
 
         const lastCall = conversation.contents[conversation.contents.length - 1];
@@ -312,19 +305,42 @@ export class AIControllerService {
                 return { shouldExit: false };
             }
 
+            if (isAIFunction(functionCallName, AIFunction.CompletePlan)) {
+                const parseResult = CompletePlanArgsSchema.safeParse(functionCall.arguments);
+                if (!parseResult.success) {
+                    conversation.addFunctionResponse(new AIFunctionResponse(
+                        functionCallName,
+                        { error: `Invalid arguments for ${AIFunction.CompletePlan}: ${parseResult.error.message}` },
+                        functionCall.toolId
+                    ));
+                    return { shouldExit: false };
+                }
+                const functionResponse = new AIFunctionResponse(
+                    functionCallName,
+                    executionPlan.completeExecutionPlan(parseResult.data.confirm_completion),
+                    functionCall.toolId
+                );
+                conversation.addFunctionResponse(functionResponse);
+                return { shouldExit: false };
+            }
+
             this.updateThought(functionCall, callbacks);
             const functionResponse = await this.aiFunctionService.performAIFunction(functionCall);
             conversation.addFunctionResponse(functionResponse);
             return { shouldExit: false };
         });
 
-        const isIncomplete = !executionPlan.completed();
-        return {
-            shouldReplan: replanData !== undefined,
-            isIncomplete: isIncomplete,
-            planExecutionCancelled: planExecutionCancelled,
-            replanData: replanData
-        };
+        if (!executionPlan.completed()) {
+            conversation.contents.push(new ConversationContent({
+                role: Role.User,
+                content: replaceCopy(Copy.IncompleteExecutionAttempt, 
+                    [executionPlan.incompleteSteps().join(", ")]),
+                shouldDisplayContent: false
+            }));
+            return this.runExecutionAgent(conversation, executionPlan, callbacks);
+        }
+
+        return { planExecutionCancelled: planExecutionCancelled, replanData: replanData };
     }
 
     private async runAgentLoop(conversation: Conversation, callbacks: IChatServiceCallbacks,
@@ -456,21 +472,6 @@ export class AIControllerService {
             input.completed_steps,
             input.issue_encountered,
             input.context
-        ]);
-    }
-
-    private prepareIncompleteExecutionRequest(executionPlan: ExecutionPlan): string {
-        const { completed, remaining } = executionPlan.getStatusSummary();
-        const completedSection = completed.length > 0
-            ? `${Copy.CompletedStepsHeader}\n${completed.join("\n")}`
-            : `${Copy.CompletedStepsHeader}\n${Copy.NoSteps}`;
-        const remainingSection = remaining.length > 0
-            ? `${Copy.RemainingStepsHeader}\n${remaining.join("\n")}`
-            : `${Copy.RemainingStepsHeader}\n${Copy.NoSteps}`;
-
-        return replaceCopy(Copy.IncompleteExecutionRequestTemplate, [
-            completedSection,
-            remainingSection
         ]);
     }
 

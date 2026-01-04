@@ -171,7 +171,9 @@ For tasks where the user has enabled planning:
 2. **Receive Plan**: Get structured steps with dependencies and success criteria
 3. **Execute Sequentially**: Work through steps, gathering ground truth
 4. **Monitor & Adapt**: Check progress; request replan if needed
-5. **Synthesize Results**: Integrate findings across all steps
+5. **Mark Progress**: Signal completion after finishing each step to track progress
+6. **Confirm Completion**: Once all steps are done, explicitly mark the plan as complete
+7. **Synthesize Results**: Integrate findings across all steps
 
 ### Synthesis Phase
 

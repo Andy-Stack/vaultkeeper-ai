@@ -12,6 +12,7 @@ import { CompleteStep } from "./Functions/CompleteStep";
 import { SubmitPlan } from "./Functions/SubmitPlan";
 import { CancelPlan } from "./Functions/CancelPlan";
 import { AskUserQuestion } from "./Functions/AskUserQuestion";
+import { CompletePlan } from "./Functions/CompletePlan";
 
 export abstract class AIFunctionDefinitions {
     
@@ -59,6 +60,7 @@ export abstract class AIFunctionDefinitions {
             MoveVaultFiles,
             CompleteStep,
             Replan,
+            CompletePlan,
             CancelPlan
         ];
     }

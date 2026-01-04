@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { Copy } from "Enums/Copy";
-	import { Selector } from "Enums/Selector";
 	import type VaultkeeperAIPlugin from "main";
 	import { DropdownComponent, setIcon } from "obsidian";
 	import { Resolve } from "Services/DependencyService";

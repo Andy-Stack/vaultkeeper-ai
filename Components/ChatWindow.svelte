@@ -18,6 +18,8 @@
 	import type { Attachment } from "Conversations/Attachment";
 	import ChatPlanArea from "./ChatPlanArea.svelte";
 	import type { ExecutionPlanStore } from "Stores/ExecutionPlanStore";
+	import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
+	import { HTMLService } from "Services/HTMLService";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);
@@ -25,6 +27,8 @@
   const chatService: ChatService = Resolve<ChatService>(Services.ChatService);
   const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
   const conversationService: ConversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
+  const streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
+  const htmlService: HTMLService = Resolve<HTMLService>(Services.HTMLService);
   const abortService: AbortService = Resolve<AbortService>(Services.AbortService);
 
   let chatContainer: HTMLDivElement;
@@ -123,7 +127,10 @@
         busyPlanning = false;
       },
       onPlanningQuestion: async (question) => {
-        chatInput.setDisplayItem(createEl("span", { text: question }));
+        const displayEl = createEl("div");
+        const formattedHtml = streamingMarkdownService.formatText(question);
+        htmlService.setHTMLContent(displayEl, formattedHtml);
+        chatInput.setDisplayItem(displayEl);
         return new Promise<string>((resolve) => {
           chatInput.enterQuestionMode(resolve);
         });

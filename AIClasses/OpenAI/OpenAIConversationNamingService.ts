@@ -10,7 +10,6 @@ import { Exception } from "Helpers/Exception";
 import type { AbortService } from "Services/AbortService";
 
 export class OpenAIConversationNamingService implements IConversationNamingService {
-
     private readonly apiKey: string;
     private readonly abortService: AbortService;
 
@@ -24,7 +23,6 @@ export class OpenAIConversationNamingService implements IConversationNamingServi
         return await this.abortService.abortableOperation(async () => {
             const requestBody = {
                 model: AIProviderModel.OpenAINamer,
-                max_output_tokens: 100,
                 instructions: NamePrompt,
                 input: [
                     {
@@ -49,20 +47,22 @@ export class OpenAIConversationNamingService implements IConversationNamingServi
                 Exception.throw(`OpenAI API error: ${response.status} ${response.statusText} - ${await response.text()}`);
             }
 
-            const data = await response.json() as OpenAI.Responses.Response;
+            const data = await response.json();
 
-            // Try to get the name from output_text first (most common case)
-            if (data.output_text && data.output_text.trim()) {
-                return data.output_text.trim();
+            // Find text from any message-type output
+            let generatedName: string | undefined;
+
+            for (const item of data.output ?? []) {
+                if (item.type === 'message' && Array.isArray(item.content)) {
+                    for (const content of item.content) {
+                        if (content.type === 'output_text' && content.text) {
+                            generatedName = content.text.trim();
+                            break;
+                        }
+                    }
+                }
+                if (generatedName) break;
             }
-
-            // Fall back to checking the output array
-            const firstOutput = data.output?.[0];
-            const generatedName = firstOutput && 'content' in firstOutput
-                ? firstOutput.content?.[0]?.type === 'output_text'
-                    ? firstOutput.content[0].text
-                    : undefined
-                : undefined;
 
             if (!generatedName) {
                 Exception.throw("Failed to generate conversation name");

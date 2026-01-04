@@ -35,6 +35,7 @@
   let isSubmitting = false;
   let busyPlanning = false;
   let editModeActive = false;
+  let planningModeActive = false;
   let currentStreamingMessageId: string | null = null;
 
   let conversation: Conversation = new Conversation();
@@ -85,11 +86,6 @@
     return hasNoApiKey;
   }
 
-  function toggleEditMode() {
-    editModeActive = !editModeActive;
-    focusInput();
-  }
-
   function handleStop() {
     chatService.stop();
     currentThought = null;
@@ -102,7 +98,7 @@
 
     const currentRequest = userRequest;
 
-    await chatService.submit(conversation, editModeActive, currentRequest, formattedRequest, attachments, {
+    await chatService.submit(conversation, editModeActive, planningModeActive, currentRequest, formattedRequest, attachments, {
       onSubmit: () => {
         isSubmitting = true;
         attachments = [];
@@ -126,6 +122,12 @@
       onPlanningFinished: () => {
         busyPlanning = false;
       },
+      onPlanningQuestion: async (question) => {
+        chatInput.setDisplayItem(createEl("span", { text: question }));
+        return new Promise<string>((resolve) => {
+          chatInput.enterQuestionMode(resolve);
+        });
+      },
       onPlanUpdate: (executionPlan) => {
         executionPlanStore.setPlan(executionPlan);
       },
@@ -140,6 +142,7 @@
         busyPlanning = false;
         currentThought = null;
         executionPlanStore.clearPlan();
+        chatInput.clearDisplayItem();
         abortService.reset();
         tick().then(() => {
           chatArea.updateChatAreaLayout("smooth", true);
@@ -150,6 +153,7 @@
 
   $: if ($conversationStore.shouldReset) {
     conversation = new Conversation();
+    conversationService.resetCurrentConversation();
 
     isSubmitting = false;
     currentStreamingMessageId = null;
@@ -195,12 +199,12 @@
 
   <ChatInput
     bind:this={chatInput}
-    bind:attachments={attachments}
+    bind:attachments
+    bind:editModeActive
+    bind:planningModeActive
     {hasNoApiKey}
     {isSubmitting}
-    {editModeActive}
     onSubmit={handleSubmit}
-    onTogglEeditMode={toggleEditMode}
     onStop={handleStop}
   />
 </main>

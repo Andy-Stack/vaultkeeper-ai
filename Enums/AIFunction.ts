@@ -17,7 +17,8 @@ export enum AIFunction {
     Replan = "replan",
     SubmitPlan = "submit_plan",
     CompleteStep = "complete_step",
-    CancelPlan = "cancel_plan"
+    CancelPlan = "cancel_plan",
+    AskUserQuestion = "ask_user_question"
 }
 
 export function fromString(functionName: string): AIFunction {

@@ -14,7 +14,7 @@ import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionD
 import { AIFunction, isAIFunction } from "Enums/AIFunction";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import { Exception } from "Helpers/Exception";
-import { CancelPlanArgsSchema, CompleteStepArgsSchema, CreatePlanArgsSchema, ReplanArgsSchema, SubmitPlanArgsSchema, type CreatePlanArgs, type ReplanArgs } from "AIClasses/Schemas/AIFunctionSchemas";
+import { AskUserQuestionArgsSchema, CancelPlanArgsSchema, CompleteStepArgsSchema, CreatePlanArgsSchema, ReplanArgsSchema, SubmitPlanArgsSchema, type CreatePlanArgs, type ReplanArgs } from "AIClasses/Schemas/AIFunctionSchemas";
 import { ExecutionPlan } from "Types/ExecutionPlan";
 
 export class AIControllerService {
@@ -41,25 +41,36 @@ export class AIControllerService {
         this.onSaveConversation = callback;
     }
 
-    public async runMainAgent(conversation: Conversation, allowDestructiveActions: boolean, callbacks: IChatServiceCallbacks) {
+    public async runMainAgent(conversation: Conversation, allowDestructiveActions: boolean, planningMode: boolean, callbacks: IChatServiceCallbacks) {
         if (!this.ai) { // this shouldn't ever happen
             Exception.throw("Error: No AI provider has been set!");
         }
 
         // Setup initial prompts & tools
-        this.ai.systemPrompt = this.aiPrompt.systemInstruction();
+        this.ai.systemPrompt = this.aiPrompt.systemInstruction(planningMode);
         this.ai.userInstruction = await this.aiPrompt.userInstruction();
-        this.ai.toolDefinitions = AIFunctionDefinitions.agentDefinitions(allowDestructiveActions);
+        this.ai.toolDefinitions = AIFunctionDefinitions.agentDefinitions(allowDestructiveActions, planningMode);
 
+        let planRequested = false;
         await this.runAgentLoop(conversation, callbacks, async (functionCall) => {
             const functionCallName = functionCall.name;
             if (isAIFunction(functionCallName, AIFunction.CreatePlan)) {
                 try {
+                    planRequested = true;
                     const completedSuccessfully = await this.handlePlanningWorkflow(conversation, functionCall, callbacks);
                     return { shouldExit: completedSuccessfully };
                 } finally {
                     callbacks.onPlanComplete();
                 }
+            }
+
+            if (planningMode && !planRequested) {
+                conversation.addFunctionResponse(new AIFunctionResponse(
+                    functionCallName,
+                    { error: Copy.PlanningModeError },
+                    functionCall.toolId
+                ));
+                return { shouldExit: false };
             }
 
             this.updateThought(functionCall, callbacks);
@@ -141,10 +152,11 @@ export class AIControllerService {
 
         // Handle max iterations reached
         if (planningIteration >= AIControllerService.MAX_PLANNING_ITERATIONS && continueExecution) {
-            conversation.contents.push(new ConversationContent({
+            const conversationContent = new ConversationContent({
                 role: Role.Assistant,
                 content: Copy.MaxPlanningIterationsReached
-            }));
+            });
+            conversation.contents.push(conversationContent);
         }
 
         // If plan was cancelled, return false to give control back to main agent for summary
@@ -162,6 +174,26 @@ export class AIControllerService {
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
                     { message: Copy.PlanningToolDenial },
+                    functionCall.toolId
+                ));
+                return { shouldExit: false };
+            }
+
+            if (isAIFunction(functionCallName, AIFunction.AskUserQuestion)) {
+                const parseResult = AskUserQuestionArgsSchema.safeParse(functionCall.arguments);
+                if (!parseResult.success) {
+                    planningConversation.addFunctionResponse(new AIFunctionResponse(
+                        functionCallName,
+                        { error: `Invalid arguments for ${AIFunction.AskUserQuestion}: ${parseResult.error.message}` },
+                        functionCall.toolId
+                    ));
+                    return { shouldExit: false };
+                }
+                this.updateThought(functionCall, callbacks);
+                const answer = await callbacks.onPlanningQuestion(parseResult.data.question);
+                planningConversation.addFunctionResponse(new AIFunctionResponse(
+                    functionCallName,
+                    { answer: answer },
                     functionCall.toolId
                 ));
                 return { shouldExit: false };
@@ -393,6 +425,7 @@ export class AIControllerService {
                     if (capturedFunctionCall) {
                         conversationContent.functionCall = capturedFunctionCall.toConversationString();
                         conversationContent.toolId = capturedFunctionCall.toolId;
+                        //conversationContent.shouldDisplayContent = false;
                         if (capturedFunctionCall.thoughtSignature) {
                             conversationContent.thoughtSignature = capturedFunctionCall.thoughtSignature;
                         }
@@ -402,6 +435,8 @@ export class AIControllerService {
 
             if (conversationContent.content?.trim() !== "") {
                 callbacks.onStreamingUpdate(conversationContent.timestamp.getTime().toString());
+            } else {
+                conversationContent.shouldDisplayContent = false;
             }
         }
 

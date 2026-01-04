@@ -497,6 +497,7 @@ describe('Gemini', () => {
                 displayContent: '',
                 functionCall: JSON.stringify({
                     functionCall: {
+                        id: 'toolu_01234567',  // toolId indicates this came from Claude/OpenAI
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
@@ -518,30 +519,30 @@ describe('Gemini', () => {
             expect(result[0].parts[0].text).toContain('  "query": "test"');
         });
 
-        it('should fall back to legacy text format for function call with empty thoughtSignature', async () => {
+        it('should use native format for Gemini function call without thoughtSignature', async () => {
             const functionCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
                 functionCall: JSON.stringify({
                     functionCall: {
+                        // No id field - this is a native Gemini function call
                         name: 'read_file',
                         args: { path: 'note.md' }
                     }
                 }),
                 timestamp: new Date(),
-                shouldDisplayContent: false,
-                thoughtSignature: ''  // Empty thoughtSignature
+                shouldDisplayContent: false
+                // No thoughtSignature (normal Gemini call without extended thinking)
             });
 
             const result = await (gemini as any).extractContents([functionCallContent]);
 
             expect(result).toHaveLength(1);
-            expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
-            expect(result[0].parts[0].text).toContain('"name": "read_file"');
-            expect(result[0].parts[0].text).toContain('"args": {');
-            expect(result[0].parts[0].text).toContain('  "path": "note.md"');
+            expect(result[0].parts[0]).toHaveProperty('functionCall');
+            expect(result[0].parts[0].functionCall.name).toBe('read_file');
+            expect(result[0].parts[0].functionCall.args).toEqual({ path: 'note.md' });
+            expect(result[0].parts[0].thoughtSignature).toBeUndefined();
         });
 
         it('should convert function response to Gemini format', async () => {

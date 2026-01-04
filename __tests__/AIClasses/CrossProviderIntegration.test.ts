@@ -100,6 +100,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 displayContent: '',
                 functionCall: JSON.stringify({
                     functionCall: {
+                        id: 'call_abc123',  // AIFunctionCall.toConversationString() includes id in JSON
                         name: 'search_vault_files',
                         args: { query: 'meeting notes' }
                     }
@@ -127,6 +128,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 displayContent: '',
                 functionCall: JSON.stringify({
                     functionCall: {
+                        id: 'call_xyz789',  // AIFunctionCall.toConversationString() includes id in JSON
                         name: 'read_file',
                         args: { path: 'project.md' }
                     }
@@ -229,6 +231,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 displayContent: '',
                 functionCall: JSON.stringify({
                             functionCall: {
+                                id: 'call_claude_123',  // AIFunctionCall.toConversationString() includes id
                                 name: 'search_vault_files',
                                 args: { query: 'project' }
                             }
@@ -337,6 +340,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 displayContent: '',
                 functionCall: JSON.stringify({
                             functionCall: {
+                                id: 'call_openai_456',  // AIFunctionCall.toConversationString() includes id
                                 name: 'list_files',
                                 args: {}
                             }
@@ -389,7 +393,11 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 content: '',
                 displayContent: '',
                 functionCall: JSON.stringify({
-                            functionCall: { name: 'func1', args: { a: 1 } }
+                            functionCall: {
+                                id: 'call-1',  // AIFunctionCall.toConversationString() includes id
+                                name: 'func1',
+                                args: { a: 1 }
+                            }
                         }),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
@@ -1512,13 +1520,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
     });
 
     describe('Edge Cases', () => {
-        it('should handle empty thoughtSignature as missing signature (legacy format)', async () => {
+        it('should handle empty thoughtSignature as missing signature (use native format)', async () => {
             const content = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
                 functionCall: JSON.stringify({
-                    functionCall: { name: 'test_func', args: {} }
+                    functionCall: { name: 'test_func', args: {} }  // No id = native Gemini
                 }),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
@@ -1527,18 +1535,19 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             const result = await (gemini as any).extractContents([content]);
 
-            expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
-            expect(result[0].parts[0].text).toContain('"name": "test_func"');
+            // Empty thoughtSignature with no id field = native Gemini call without extended thinking
+            expect(result[0].parts[0]).toHaveProperty('functionCall');
+            expect(result[0].parts[0].functionCall.name).toBe('test_func');
+            expect(result[0].parts[0].thoughtSignature).toBeUndefined();
         });
 
-        it('should handle whitespace-only thoughtSignature as missing signature (legacy format)', async () => {
+        it('should handle whitespace-only thoughtSignature as missing signature (use native format)', async () => {
             const content = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
                 functionCall: JSON.stringify({
-                    functionCall: { name: 'test_func', args: {} }
+                    functionCall: { name: 'test_func', args: {} }  // No id = native Gemini
                 }),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
@@ -1547,15 +1556,14 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             const result = await (gemini as any).extractContents([content]);
 
-            // Whitespace-only signature is trimmed and treated as missing
-            // Should fall back to legacy text format
-            expect(result[0].parts[0]).toHaveProperty('text');
-            expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
-            expect(result[0].parts[0].text).toContain('"name": "test_func"');
+            // Whitespace-only signature is trimmed, but no id field = native Gemini call
+            expect(result[0].parts[0]).toHaveProperty('functionCall');
+            expect(result[0].parts[0].functionCall.name).toBe('test_func');
+            expect(result[0].parts[0].thoughtSignature).toBeUndefined();
         });
 
-        it('should gracefully handle conversation with only legacy format calls', async () => {
-            // Entire conversation from Claude - no signatures anywhere
+        it('should gracefully handle conversation with cross-provider legacy format calls', async () => {
+            // Entire conversation from Claude - has id fields
             const conversation = [
                 new ConversationContent({ role: Role.User, content: 'Test', displayContent: 'Test' }),
                 (() => {
@@ -1563,21 +1571,30 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.Assistant,
                         content: '',
                         displayContent: '',
-                        functionCall: JSON.stringify({ functionCall: { name: 'func1', args: {} } }),
+                        functionCall: JSON.stringify({
+                            functionCall: {
+                                id: 'toolu_123',  // id field indicates Claude/OpenAI origin
+                                name: 'func1',
+                                args: {}
+                            }
+                        }),
                         timestamp: new Date(),
-                        shouldDisplayContent: true
+                        shouldDisplayContent: true,
+                        toolId: 'toolu_123'  // toolId must be set for filtering to work
                     });
                     return content;
                 })(),
                 (() => {
                     const responseContent = JSON.stringify({
+                        id: 'toolu_123',  // id field indicates Claude/OpenAI origin
                         functionResponse: { name: 'func1', response: 'ok' }
                     });
                     const content = new ConversationContent({
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'toolu_123'  // toolId must be set for filtering to work
                     });
                     return content;
                 })()
@@ -1585,23 +1602,27 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             const result = await (gemini as any).extractContents(conversation);
 
-            // All function calls/responses should be in legacy format
+            // Function call should be in legacy format (has id field)
             expect(result[1].parts[0].text).toContain('<!-- Historical tool call');
             expect(result[1].parts[0].text).toContain('"name": "func1"');
-            expect(result[2].parts[0].text).toContain('<!-- Historical tool result');
-            expect(result[2].parts[0].text).toContain('"name": "func1"');
+
+            // Function response should be in native Gemini format (has id, can be used natively)
+            expect(result[2].parts[0]).toHaveProperty('functionResponse');
+            expect(result[2].parts[0].functionResponse.name).toBe('func1');
+            expect(result[2].parts[0].functionResponse.response).toBe('ok');
         });
 
         it('should handle both toolId and thoughtSignature present (defensive)', async () => {
             // This tests the unusual scenario where both provider-specific fields are set
-            // In production, AIFunctionCall.toConversationString() ensures the id is in the JSON
+            // When id is present, it indicates cross-provider origin (Claude/OpenAI)
+            // so it should use legacy text format even if thoughtSignature is also present
             const content = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
                 functionCall: JSON.stringify({
                     functionCall: {
-                        id: 'tool-123',  // ID in the JSON (as AIFunctionCall does)
+                        id: 'tool-123',  // ID in the JSON indicates cross-provider origin
                         name: 'test_func',
                         args: { query: 'test' }
                     }
@@ -1609,14 +1630,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'tool-123',  // toolId metadata (matches JSON id)
-                thoughtSignature: 'signature=='  // Also has thoughtSignature (unusual but possible)
+                thoughtSignature: 'signature=='  // Also has thoughtSignature (unusual edge case)
             });
 
-            // Gemini should use thoughtSignature (its provider-specific field)
+            // Gemini should use legacy text format because id is present (cross-provider)
             const geminiResult = await (gemini as any).extractContents([content]);
-            expect(geminiResult[0].parts[0]).toHaveProperty('functionCall');
-            expect(geminiResult[0].parts[0]).toHaveProperty('thoughtSignature');
-            expect(geminiResult[0].parts[0].thoughtSignature).toBe('signature==');
+            expect(geminiResult[0].parts[0]).toHaveProperty('text');
+            expect(geminiResult[0].parts[0].text).toContain('<!-- Historical tool call');
 
             // Claude reads from the JSON id field (not the metadata toolId field)
             const claude = new Claude();

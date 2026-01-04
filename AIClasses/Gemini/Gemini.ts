@@ -228,21 +228,28 @@ export class Gemini extends BaseAIClass {
           const parsedContent = parseFunctionCall(content.functionCall);
 
           if (parsedContent) {
-            if (content.thoughtSignature && content.thoughtSignature.trim() !== "") {
-              // Has signature - use proper function call format
+            // Check if this is a cross-provider function call (has toolId in the stored format)
+            // Gemini never uses toolId, so presence of toolId indicates Claude/OpenAI origin
+            const isCrossProvider = parsedContent.functionCall.id && parsedContent.functionCall.id.trim() !== "";
+
+            if (isCrossProvider) {
+              // Cross-provider function call (from Claude/OpenAI) - use legacy text format
+              parts.push({
+                text: this.convertFunctionCallToText(parsedContent)
+              });
+            } else {
+              // Native Gemini function call - use proper function call format
               const part: Part = {
                 functionCall: {
                   name: parsedContent.functionCall.name,
                   args: parsedContent.functionCall.args
-                },
-                thoughtSignature: content.thoughtSignature
+                }
               };
+              // Include thoughtSignature if present (optional Gemini feature)
+              if (content.thoughtSignature && content.thoughtSignature.trim() !== "") {
+                part.thoughtSignature = content.thoughtSignature;
+              }
               parts.push(part);
-            } else {
-              // No signature (cross-provider scenario) - use legacy text format
-              parts.push({
-                text: this.convertFunctionCallToText(parsedContent)
-              });
             }
           } else {
             parts.push({

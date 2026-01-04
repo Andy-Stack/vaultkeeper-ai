@@ -215,7 +215,7 @@
         position: absolute;
         left: 0;
         right: 0;
-        height: var(--size-4-2);
+        height: var(--size-4-1);
         border-radius: var(--radius-m);
         pointer-events: none;
         z-index: 1;

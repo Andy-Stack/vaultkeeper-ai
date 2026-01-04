@@ -16,14 +16,17 @@
 	import type { DiffService } from "Services/DiffService";
 	import type { Attachment } from "Conversations/Attachment";
 	import ChatAttachments from "./ChatAttachments.svelte";
+	import InputDisplay from "./InputDisplay.svelte";
+	import { InputMode } from "Enums/InputMode";
+	import { Copy } from "Enums/Copy";
 
   export let attachments: Attachment[] = [];
 
   export let hasNoApiKey: boolean;
   export let isSubmitting: boolean;
   export let editModeActive: boolean;
+  export let planningModeActive: boolean;
   export let onSubmit: (userRequest: string, formattedRequest: string) => void;
-  export let onTogglEeditMode: () => void;
   export let onStop: () => void;
 
   const inputService: InputService = Resolve<InputService>(Services.InputService);
@@ -34,19 +37,22 @@
 
   const searchState: Writable<ISearchState> = searchStateStore.searchState;
 
+  let inputDisplay: InputDisplay;
   let textareaElement: HTMLDivElement;
   let userInstructionButton: HTMLButtonElement;
   let submitButton: HTMLButtonElement;
   let editModeButton: HTMLButtonElement;
+  let planningModeButton: HTMLButtonElement;
 
   let userInstructionActive: boolean = false;
 
   let userRequest: string = "";
 
-  let diffOpen: boolean = false;
-  
-  const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { diffOpen = true; focusInput(); });
-  const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { diffOpen = false; focusInput(); });
+  let inputMode: InputMode = InputMode.Normal;
+  let questionResolver: ((answer: string) => void) | null = null;
+
+  const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { inputMode = InputMode.Diff; focusInput(); });
+  const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { inputMode = InputMode.Normal; focusInput(); });
 
   onDestroy(() => {
     eventService.offref(diffOpenedRef);
@@ -62,12 +68,27 @@
     }
   }
 
+  export function setDisplayItem(element: HTMLElement) {
+    inputDisplay.setDisplayItem(element);
+  }
+
+  export function clearDisplayItem() {
+    inputDisplay.clearDisplayItem();
+    inputMode = InputMode.Normal;
+  }
+
+  export function enterQuestionMode(resolver: (answer: string) => void) {
+    questionResolver = resolver;
+    inputMode = InputMode.Question;
+    focusInput();
+  }
+
   $: if (userInstructionButton) {
     setIcon(userInstructionButton, "user-round-pen");
   }
 
   $: if (submitButton) {
-    if (diffOpen) {
+    if (inputMode === InputMode.Question || inputMode === InputMode.Diff) {
       setIcon(submitButton, userRequest.trim() === "" ? "square" : "send-horizontal");
     } else {
       setIcon(submitButton, isSubmitting ? "square" : "send-horizontal");
@@ -77,6 +98,33 @@
   $: if (editModeButton) {
     setIcon(editModeButton, editModeActive ? "pencil" : "pencil-off");
   }
+
+  $: if (planningModeButton) {
+    setIcon(planningModeButton, planningModeActive ? "list-ordered" : "list-x");
+  }
+
+  $: inputPlaceholder = (() => {
+    if (inputMode === InputMode.Question) return Copy.InputPlaceholderQuestion;
+    if (inputMode === InputMode.Diff) return Copy.InputPlaceholderDiff;
+    return Copy.InputPlaceholderNormal;
+  })();
+
+  $: submitDisabled = (() => {
+    if (inputMode === InputMode.Diff || inputMode === InputMode.Question) {
+      return false;
+    }
+    return !isSubmitting && userRequest.trim() === "";
+  })();
+
+  $: submitAriaLabel = (() => {
+    if (inputMode === InputMode.Question) {
+      return userRequest.trim() === "" ? Copy.ButtonCancel : Copy.ButtonSubmitAnswer;
+    }
+    if (inputMode === InputMode.Diff) {
+      return userRequest.trim() === "" ? Copy.ButtonCancel : Copy.ButtonMakeSuggestion;
+    }
+    return isSubmitting ? Copy.ButtonCancel : Copy.ButtonSendMessage;
+  })();
 
   function handleStop() {
     onStop();
@@ -91,11 +139,25 @@
   }
 
   function handleSuggestion() {
-    if (userRequest.trim() === "" || !diffOpen) {
+    if (userRequest.trim() === "" || inputMode !== InputMode.Diff) {
       return;
     }
     const suggestion = requestFromInput();
     diffService.onSuggest(suggestion.formattedRequest);
+  }
+
+  function handleAnswer() {
+    if (userRequest.trim() === "" || inputMode !== InputMode.Question) {
+      return;
+    }
+    const answer = requestFromInput();
+
+    if (questionResolver) {
+      questionResolver(answer.formattedRequest);
+      questionResolver = null;
+    }
+
+    clearDisplayItem();
   }
 
   function requestFromInput() {
@@ -115,7 +177,23 @@
   }
 
   function toggleEditMode() {
-    onTogglEeditMode();
+    if (planningModeActive) {
+      planningModeActive = false
+    }
+    editModeActive = !editModeActive;
+    focusInput();
+  }
+
+  function togglePlanningMode() {
+    if (planningModeActive) {
+      planningModeActive = false;
+    } else {
+      if (!editModeActive) {
+        toggleEditMode(); // Mandatory for planning mode
+      }
+      planningModeActive = true;
+    }
+    focusInput();
   }
 
   async function handleKeydown(e: KeyboardEvent) {
@@ -130,7 +208,13 @@
         return;
       }
       e.preventDefault();
-      diffOpen ? handleSuggestion() : handleSubmit();
+      if (inputMode === InputMode.Question) {
+        handleAnswer();
+      } else if (inputMode === InputMode.Diff) {
+        handleSuggestion();
+      } else {
+        handleSubmit();
+      }
     }
   }
 
@@ -302,12 +386,16 @@
 </script>
 
 <div id="input-container" class:edit-mode={editModeActive}>
+  <div id="input-display-container" style:padding-top={attachments.length > 0 ? "var(--size-4-2)" : 0}>
+    <InputDisplay bind:this={inputDisplay} {editModeActive}/>
+  </div>
+
   <div id="input-attachments-container" style:padding-top={attachments.length > 0 ? "var(--size-4-2)" : 0}>
     <ChatAttachments bind:attachments={attachments}/>
   </div>
 
-  <div id="diff-controls-container" style:padding-top={diffOpen ? "var(--size-4-2)" : 0}>
-    <DiffControls {diffOpen}/>
+  <div id="diff-controls-container" style:padding-top={inputMode === InputMode.Diff ? "var(--size-4-2)" : 0}>
+    <DiffControls diffOpen={inputMode === InputMode.Diff}/>
   </div>
 
   <div id="input-search-results-container" style:padding-top={$searchState.results.length > 0 ? "var(--size-4-2)" : 0}>
@@ -344,7 +432,7 @@
     on:click={handleCursorPositionChange}
     on:keyup={handleCursorPositionChange}
     on:focusout={handleFocusOut}
-    data-placeholder={diffOpen ? "Make a suggestion..." : "Type a message..."}
+    data-placeholder={inputPlaceholder}
     role="textbox"
     aria-multiline="true"
     tabindex="0">
@@ -356,7 +444,16 @@
     bind:this={editModeButton}
     on:click={() => { toggleEditMode() }}
     disabled={isSubmitting}
-    aria-label={editModeActive ? "Turn off Agent Mode" : "Turn on Agent Mode"}>
+    aria-label={editModeActive ? Copy.ButtonTurnOffAgentMode : Copy.ButtonTurnOnAgentMode}>
+  </button>
+
+  <button
+    id="planning-mode-button"
+    class:planning-mode={planningModeActive}
+    bind:this={planningModeButton}
+    on:click={() => { togglePlanningMode() }}
+    disabled={isSubmitting}
+    aria-label={planningModeActive ? Copy.ButtonTurnOffPlanningMode : Copy.ButtonTurnOnPlanningMode}>
   </button>
 
   <button
@@ -364,14 +461,16 @@
     class:edit-mode={editModeActive}
     bind:this={submitButton}
     on:click={() => {
-      if (diffOpen) {
+      if (inputMode === InputMode.Question) {
+        userRequest.trim() === "" ? handleStop() : handleAnswer();
+      } else if (inputMode === InputMode.Diff) {
         userRequest.trim() === "" ? handleStop() : handleSuggestion();
       } else {
         isSubmitting ? handleStop() : handleSubmit();
       }
     }}
-    disabled={diffOpen ? false : !isSubmitting && userRequest.trim() === ""}
-    aria-label={diffOpen ? (userRequest.trim() === "" ? "Cancel" : "Make Suggestion") : (isSubmitting ? "Cancel" : "Send Message")}>
+    disabled={submitDisabled}
+    aria-label={submitAriaLabel}>
   </button>
 </div>
 
@@ -380,8 +479,8 @@
     grid-row: 3;
     grid-column: 1;
     display: grid;
-    grid-template-rows: auto auto auto var(--size-4-3) 1fr var(--size-4-3);
-    grid-template-columns: var(--size-4-3) auto var(--size-4-2) 1fr var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
+    grid-template-rows: auto auto auto auto var(--size-4-3) 1fr var(--size-4-3);
+    grid-template-columns: var(--size-4-3) auto var(--size-4-2) 1fr var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
     border-radius: var(--modal-radius);
     background-color: var(--background-primary);
   }
@@ -391,28 +490,33 @@
     transition: border-color 0.5s ease-out;
   }
 
-  #input-attachments-container {
+  #input-display-container {
     grid-row: 1;
-    grid-column: 2 / 9;
+    grid-column: 2 / 11;
+  }
+
+  #input-attachments-container {
+    grid-row: 2;
+    grid-column: 2 / 11;
   }
 
   #diff-controls-container {
-    grid-row: 2;
-    grid-column: 2 / 9;
+    grid-row: 3;
+    grid-column: 2 / 11;
   }
 
   #input-search-results-container {
-    grid-row: 3;
-    grid-column: 2 / 9;
+    grid-row: 4;
+    grid-column: 2 / 11;
   }
 
   #user-instruction-container {
-    grid-row: 3;
-    grid-column: 2 / 9;
+    grid-row: 4;
+    grid-column: 2 / 11;
   }
 
   #user-instruction-button {
-    grid-row: 5;
+    grid-row: 6;
     grid-column: 2;
     border-radius: var(--button-radius);
     align-self: end;
@@ -428,7 +532,7 @@
   }
 
   #input-field {
-    grid-row: 5;
+    grid-row: 6;
     grid-column: 4;
     height: 100%;
     max-height: 30vh;
@@ -489,20 +593,40 @@
   }
 
   #edit-mode-button {
-    grid-row: 5;
+    grid-row: 6;
     grid-column: 6;
     border-radius: var(--button-radius);
     align-self: end;
     transition-duration: 0.5s;
   }
 
+  #edit-mode-button.edit-mode {
+    box-shadow: inset 0px 0px 1px 1px var(--alt-interactive-accent);
+  }
+
   :global(.is-mobile) #edit-mode-button {
     max-height: 2rem;
   }
 
-  #submit-button {
-    grid-row: 5;
+  #planning-mode-button {
+    grid-row: 6;
     grid-column: 8;
+    border-radius: var(--button-radius);
+    align-self: end;
+    transition-duration: 0.5s;
+  }
+
+  #planning-mode-button.planning-mode {
+    box-shadow: inset 0px 0px 1px 1px var(--alt-interactive-accent);
+  }
+
+  :global(.is-mobile) #planning-mode-button {
+    max-height: 2rem;
+  }
+
+  #submit-button {
+    grid-row: 6;
+    grid-column: 10;
     border-radius: var(--button-radius);
     padding-left: var(--size-4-5);
     padding-right: var(--size-4-5);

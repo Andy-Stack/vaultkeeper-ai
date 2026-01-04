@@ -59,7 +59,7 @@ export class ExecutionPlan {
                 return {
                     error: replaceCopy(Copy.StepMustBeCompletedInOrderError, [
                         stepNumber.toString(),
-                        `${i + 1}. ${this.executionSteps[i].description}`
+                        this.incompleteSteps().join(",")
                     ])
                 };
             }
@@ -106,6 +106,16 @@ export class ExecutionPlan {
                 ...(firstStep.context && { context: firstStep.context })
             }
         };
+    }
+
+    private incompleteSteps(): number[] {
+        const incompleteSteps = [];
+        for (const step of this.executionSteps) {
+            if (step.status !== ExecutionStatus.Completed) {
+                incompleteSteps.push(step.step);
+            }
+        }
+        return incompleteSteps;
     }
 
 }

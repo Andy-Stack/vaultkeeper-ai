@@ -68,19 +68,35 @@ export enum Copy {
 
     SafeContinue= "Continue",
 
+    // Chat Input Placeholders
+    InputPlaceholderQuestion = "Provide an answer...",
+    InputPlaceholderDiff = "Make a suggestion...",
+    InputPlaceholderNormal = "Type a message...",
+
+    // Chat Input Button Labels
+    ButtonCancel = "Cancel",
+    ButtonSubmitAnswer = "Submit answer",
+    ButtonMakeSuggestion = "Make Suggestion",
+    ButtonSendMessage = "Send Message",
+    ButtonTurnOffAgentMode = "Turn off Agent Mode",
+    ButtonTurnOnAgentMode = "Turn on Agent Mode",
+    ButtonTurnOffPlanningMode = "Turn off Planning Mode",
+    ButtonTurnOnPlanningMode = "Turn on Planning Mode",
+
     // Execution Plan Messages
     PlanningFailedError = `Failed to generate plan. You should attempt to recover from this.
 ### Next Actions
 - Create your own simplified plan
 - Follow your own simplified plan`,
     StepDoesNotExistError = "Step {stepNumber} does not exist in the execution plan. Valid step numbers are 1-{totalSteps}.",
-    StepMustBeCompletedInOrderError = "Cannot complete step {stepNumber}. Step \"{incompletStep}\" is not yet completed. Steps must be completed in order.",
+    StepMustBeCompletedInOrderError = "Cannot complete step {stepNumber}. The following steps have not yet been marked as completed: {incompleteSteps}. Steps must be completed in order.",
     StepCompletedWithNextStep = "Step {stepNumber} completed successfully. Now proceed with step {nextStepNumber}.",
     AllStepsCompleted = "Step {stepNumber} completed successfully. All steps in the execution plan have been completed. Provide a final summary to the user based on the completed steps and overall success criteria.",
     MaxPlanningIterationsReached = "I've attempted multiple planning iterations but encountered persistent issues completing the task. It may need to be broken down further or requires additional clarification.",
     PlanExecutionCancelled = "Plan execution cancelled. Provide a summary to the user explaining what happened and any partial progress made.",
     PlanExecutionNotCancelled = "Confirmation was false, no action taken.",
     PlanningToolDenial = "Invalid tool call - this is an execution tool and cannot be called during the planning phase.",
+    PlanningModeError = "You must first create a plan before executing any functions!",
 
     // Execution Plan Request Templates
     ContextTags = `

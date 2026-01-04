@@ -11,6 +11,7 @@ import { Replan } from "./Functions/Replan";
 import { CompleteStep } from "./Functions/CompleteStep";
 import { SubmitPlan } from "./Functions/SubmitPlan";
 import { CancelPlan } from "./Functions/CancelPlan";
+import { AskUserQuestion } from "./Functions/AskUserQuestion";
 
 export abstract class AIFunctionDefinitions {
     
@@ -18,7 +19,11 @@ export abstract class AIFunctionDefinitions {
     private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles];
 
     // Definitions for the main agent
-    public static agentDefinitions(destructive: boolean): IAIFunctionDefinition[] {
+    public static agentDefinitions(destructive: boolean, planning: boolean): IAIFunctionDefinition[] {
+        if (planning) {
+            return [CreatePlan];
+        }
+
         let actions = [
             SearchVaultFiles,
             ReadVaultFiles,
@@ -30,8 +35,7 @@ export abstract class AIFunctionDefinitions {
                 WriteVaultFile,
                 PatchVaultFile,
                 DeleteVaultFiles,
-                MoveVaultFiles,
-                CreatePlan
+                MoveVaultFiles
             ]);
         }
 
@@ -40,7 +44,7 @@ export abstract class AIFunctionDefinitions {
 
     // Definitions for the planning agent
     public static planningAgentDefinitions(): IAIFunctionDefinition[] {
-        return [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, SubmitPlan];
+        return [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, AskUserQuestion, SubmitPlan];
     }
 
     // Definitions for the main agent during plan execution

@@ -23,6 +23,7 @@ export interface IChatServiceCallbacks {
 	onThoughtUpdate: (thought: string | null) => void;
 	onPlanningStarted: () => void;
 	onPlanningFinished: () => void;
+	onPlanningQuestion: (question: string) => Promise<string>;
 	onPlanUpdate: (executionPlan: ExecutionPlan) => void;
 	onPlanStepUpdate: () => void;
 	onPlanComplete: () => void;
@@ -57,7 +58,7 @@ export class ChatService {
 
 	public onNameChanged: ((name: string) => void) | undefined = undefined;
 
-	public async submit(conversation: Conversation, allowDestructiveActions: boolean, userRequest: string, formattedRequest: string, attachments: Attachment[], callbacks: IChatServiceCallbacks) {
+	public async submit(conversation: Conversation, allowDestructiveActions: boolean, planningMode: boolean, userRequest: string, formattedRequest: string, attachments: Attachment[], callbacks: IChatServiceCallbacks) {
 		if (!await this.semaphore.wait()) {
 			return;
 		}
@@ -82,6 +83,7 @@ export class ChatService {
 				conversation.contents.push(conversationContent);
 				
 				await this.saveConversation(conversation);
+				callbacks.onStreamingUpdate(conversationContent.timestamp.getTime().toString());
 
 				if (firstMessage) {
 					this.onNameChanged?.(conversation.title); // on change for initial conversation name
@@ -104,7 +106,7 @@ export class ChatService {
 				callbacks.onSubmit();
 				callbacks.onStreamingUpdate(null);
 
-				await this.aiControllerService.runMainAgent(conversation, allowDestructiveActions, callbacks);
+				await this.aiControllerService.runMainAgent(conversation, allowDestructiveActions, planningMode, callbacks);
 			});
 		} catch (error) {
 			if (!AbortService.isAbortError(error)) {

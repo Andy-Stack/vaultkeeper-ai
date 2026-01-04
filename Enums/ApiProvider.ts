@@ -74,7 +74,7 @@ export enum AIProviderModel {
     // Conversation naming models (aliases to existing models)
     ClaudeNamer = ClaudeHaiku_4_5,
     GeminiNamer = GeminiFlash_2_5_Lite,
-    OpenAINamer = GPT_4o_Mini,
+    OpenAINamer = GPT_5_Nano,
 }
 
 export enum AIProviderURL {

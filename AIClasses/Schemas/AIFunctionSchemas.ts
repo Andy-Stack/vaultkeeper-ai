@@ -60,6 +60,11 @@ export const ReplanArgsSchema = z.object({
 	user_message: z.string()
 });
 
+export const AskUserQuestionArgsSchema = z.object({
+	question: z.string(),
+	user_message: z.string()
+});
+
 export const CancelPlanArgsSchema = z.object({
 	confirm_cancellation: z.boolean()
 });
@@ -86,6 +91,7 @@ export type MoveVaultFilesArgs = z.infer<typeof MoveVaultFilesArgsSchema>;
 export type ListVaultFilesArgs = z.infer<typeof ListVaultFilesArgsSchema>;
 export type CreatePlanArgs = z.infer<typeof CreatePlanArgsSchema>;
 export type ReplanArgs = z.infer<typeof ReplanArgsSchema>;
+export type AskUserQuestionArgs = z.infer<typeof AskUserQuestionArgsSchema>;
 export type CancelPlanArgs = z.infer<typeof CancelPlanArgsSchema>;
 export type CompleteStepArgs = z.infer<typeof CompleteStepArgsSchema>;
 export type SubmitPlanArgs = z.infer<typeof SubmitPlanArgsSchema>;

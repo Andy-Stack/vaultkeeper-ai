@@ -19,7 +19,7 @@ import { ExecutionPlan } from "Types/ExecutionPlan";
 
 export class AIControllerService {
 
-    private static readonly MAX_EXECUTION_DEPTH = 3;
+    private static readonly MAX_AGENT_DEPTH = 3;
 
     private ai: IAIClass | undefined;
     private readonly aiPrompt: IPrompt;
@@ -29,6 +29,7 @@ export class AIControllerService {
     private onSaveConversation?: (conversation: Conversation) => Promise<void>;
 
     private executionDepth: number = 1;
+    private planningDepth: number = 1;
 
     public constructor() {
         this.aiPrompt = Resolve<IPrompt>(Services.IPrompt);
@@ -114,6 +115,7 @@ export class AIControllerService {
             this.ai.userInstruction = ""; // do not include user instruction
             this.ai.toolDefinitions = AIFunctionDefinitions.planningAgentDefinitions();
 
+            this.planningDepth = 1;
             callbacks.onPlanningStarted();
             const executionPlan = await this.runPlanningAgent(this.planningConversation, callbacks);
             callbacks.onPlanningFinished();
@@ -151,6 +153,11 @@ export class AIControllerService {
     private async runPlanningAgent(planningConversation: Conversation, callbacks: IChatServiceCallbacks): Promise<ExecutionPlan> {
         let capturedPlan: ExecutionPlan | null = null;
         
+        if (this.planningDepth >= AIControllerService.MAX_AGENT_DEPTH) {
+            return new ExecutionPlan({ steps: [] });
+        }
+        this.planningDepth++;
+
         await this.runAgentLoop(planningConversation, callbacks, async (functionCall) => {
             const functionCallName = functionCall.name;
 
@@ -210,16 +217,21 @@ export class AIControllerService {
         }, true);
 
         if (!capturedPlan) {
-            Exception.log(`Failed to generate execution plan.\n${JSON.stringify(planningConversation, null, 2)}`);
-            return new ExecutionPlan({ steps: [] });
+            Exception.warn(`Failed to generate execution plan.\n${JSON.stringify(planningConversation, null, 2)}`);
+            planningConversation.contents.push(new ConversationContent({
+                role: Role.User,
+                content: Copy.PlanSubmissionRequired,
+                shouldDisplayContent: false
+            }));
+            return await this.runPlanningAgent(planningConversation, callbacks);
         }
-        return capturedPlan;
+        return capturedPlan || new ExecutionPlan({ steps: [] });
     }
 
     // The 'execution agent' is still the main agent but given specific tools related to plan execution
     private async runExecutionAgent(conversation: Conversation, executionPlan: ExecutionPlan, callbacks: IChatServiceCallbacks
     ): Promise<{ planExecutionCancelled: boolean, replanData?: ReplanArgs }> {
-        if (this.executionDepth >= AIControllerService.MAX_EXECUTION_DEPTH) {
+        if (this.executionDepth >= AIControllerService.MAX_AGENT_DEPTH) {
             conversation.contents.push(new ConversationContent({
                 role: Role.User,
                 content: Copy.MaxExecutionDepthReached,
@@ -229,7 +241,9 @@ export class AIControllerService {
         }
         this.executionDepth++;
         
-        callbacks.onPlanUpdate(executionPlan); // plan is being executed so inform UI
+        if (executionPlan.executionSteps.length > 0) {
+            callbacks.onPlanUpdate(executionPlan); // plan is being executed so inform UI
+        }
 
         const lastCall = conversation.contents[conversation.contents.length - 1];
         if (lastCall && lastCall.functionCall) {
@@ -337,7 +351,7 @@ export class AIControllerService {
                     [executionPlan.incompleteSteps().join(", ")]),
                 shouldDisplayContent: false
             }));
-            return this.runExecutionAgent(conversation, executionPlan, callbacks);
+            return await this.runExecutionAgent(conversation, executionPlan, callbacks);
         }
 
         return { planExecutionCancelled: planExecutionCancelled, replanData: replanData };

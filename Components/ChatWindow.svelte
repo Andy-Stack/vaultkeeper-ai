@@ -185,6 +185,7 @@
 
   $: if ($conversationStore.shouldDeactivateEditMode) {
     conversationStore.clearEditModeFlag();
+    planningModeActive = false;
     editModeActive = false;
   }
 </script>

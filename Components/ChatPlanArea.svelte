@@ -93,7 +93,7 @@
          aria-label={expanded ? "Collapse planned steps" : "Expand planned steps"}
          role="button"
          tabindex=0>
-        <div id="chat-plan-steps-wrapper" style:height="{expanded ? expandedHeight : collapsedHeight}px" style:overflow-y={expanded ? 'auto' : 'hidden'} bind:this={wrapperDiv}>
+        <div id="chat-plan-steps-wrapper" style:height="{expanded ? expandedHeight : collapsedHeight}px" bind:this={wrapperDiv}>
             <div id="chat-plan-steps" bind:this={contentDiv}>
                 {#each $executionPlanState.plan.executionSteps as step, index }
                     <div class="chat-plan-step" bind:this={stepElements[index]}>
@@ -169,6 +169,7 @@
         grid-column: 1;
         transition: height 0.2s ease-out;
         overflow-x: hidden;
+        overflow-y: auto;
         scroll-behavior: smooth;
         max-height: 20vh;
     }

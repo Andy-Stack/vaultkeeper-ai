@@ -21,7 +21,6 @@ function createConversationStore() {
         loadConversation: (conversation: Conversation, filePath: string) =>
             set({ shouldReset: false, conversationToLoad: { conversation, filePath }, shouldDeactivateEditMode: true }),
         clearLoadFlag: () => update(state => ({ ...state, conversationToLoad: null })),
-        deactivateEditMode: () => update(state => ({ ...state, shouldDeactivateEditMode: true })),
         clearEditModeFlag: () => update(state => ({ ...state, shouldDeactivateEditMode: false }))
     };
 }

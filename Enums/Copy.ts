@@ -97,7 +97,8 @@ export enum Copy {
     PlanExecutionComplete = "Plan execution complete.",
     PlanCompletionNotConfirmed = "Confirmation was false, no action taken.",
     PlanningToolDenial = "Invalid tool call - this is an execution tool and cannot be called during the planning phase.",
-    PlanningModeError = "You must first create a plan before executing any functions!",
+    PlanningModeError = "First create a plan before executing any functions!",
+    PlanSubmissionRequired = "Error: Attempted to exit planning but plan has not yet been submitted!",
     IncompleteExecutionAttempt = `Error: Plan execution incomplete - incomplete steps: {incompleteSteps}.
 - If all work has been completed, complete each remaining step in order and then complete the plan
 - If work remains, continue executing the plan

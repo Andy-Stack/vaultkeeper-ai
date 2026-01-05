@@ -37,7 +37,7 @@ export class Claude extends BaseAIClass {
         super(AIProvider.Claude);
     }
 
-    public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
+    public async* streamRequest(conversation: Conversation, isPlanningAgent: boolean): AsyncGenerator<IStreamChunk, void, unknown> {
         
         this.accumulatedFunctionName = null;
         this.accumulatedFunctionArgs = "";
@@ -71,7 +71,7 @@ export class Claude extends BaseAIClass {
             webSearchTool, ...this.mapFunctionDefinitions(this.toolDefinitions)]);
 
         const requestBody = {
-            model: this.settingsService.settings.model,
+            model: this.model(isPlanningAgent),
             max_tokens: 16384,
             system: systemPrompt,
             messages: messages,
@@ -312,29 +312,6 @@ export class Claude extends BaseAIClass {
         return JSON.stringify(contentBlocks);
     }
 
-    private extractRetryDelay(error: ApiError): number | undefined {
-        if (error.info.type !== ApiErrorType.RATE_LIMIT || !error.info.responseHeaders) {
-            return undefined;
-        }
-
-        const retryAfter = error.info.responseHeaders.get('Retry-After');
-        if (!retryAfter) return undefined;
-
-        // Try parsing as seconds (number)
-        const seconds = parseInt(retryAfter, 10);
-        if (!isNaN(seconds)) return seconds;
-
-        // Try parsing as HTTP date
-        const date = new Date(retryAfter);
-        if (!isNaN(date.getTime())) {
-            const now = Date.now();
-            const delayMs = date.getTime() - now;
-            return Math.max(0, Math.ceil(delayMs / 1000));
-        }
-
-        return undefined;
-    }
-
     private isSupportedMimeType(mimeType: MimeType): boolean {
         return this.SUPPORTED_MIMETYPES.includes(mimeType);
     }
@@ -386,5 +363,28 @@ export class Claude extends BaseAIClass {
         } as ContentBlockParam;
 
         return cachedMessages;
+    }
+
+    private extractRetryDelay(error: ApiError): number | undefined {
+        if (error.info.type !== ApiErrorType.RATE_LIMIT || !error.info.responseHeaders) {
+            return undefined;
+        }
+
+        const retryAfter = error.info.responseHeaders.get('Retry-After');
+        if (!retryAfter) return undefined;
+
+        // Try parsing as seconds (number)
+        const seconds = parseInt(retryAfter, 10);
+        if (!isNaN(seconds)) return seconds;
+
+        // Try parsing as HTTP date
+        const date = new Date(retryAfter);
+        if (!isNaN(date.getTime())) {
+            const now = Date.now();
+            const delayMs = date.getTime() - now;
+            return Math.max(0, Math.ceil(delayMs / 1000));
+        }
+
+        return undefined;
     }
 }

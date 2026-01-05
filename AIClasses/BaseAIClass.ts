@@ -62,13 +62,17 @@ export abstract class BaseAIClass implements IAIClass {
         this._toolDefinitions = toolDefinitions;
     }
 
-    public abstract streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown>;
+    public abstract streamRequest(conversation: Conversation, isPlanningAgent: boolean): AsyncGenerator<IStreamChunk, void, unknown>;
 
     public abstract formatBinaryFiles(attachments: Attachment[]): string;
 
     protected abstract parseStreamChunk(chunk: string): IStreamChunk;
     protected abstract extractContents(conversationContent: ConversationContent[]): unknown;
     protected abstract mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): object;
+
+    protected model(isPlanningAgent: boolean): string {
+        return isPlanningAgent ? this.settingsService.settings.planningModel : this.settingsService.settings.model;
+    }
 
     protected filterConversationContents(conversationContent: ConversationContent[]): ConversationContent[] {
         return conversationContent.filter((content, index, array) => {

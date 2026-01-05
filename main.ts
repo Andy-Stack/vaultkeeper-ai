@@ -1,7 +1,7 @@
 import { WorkspaceLeaf, Plugin } from "obsidian";
 import { MainView, VIEW_TYPE_MAIN } from "Views/MainView";
 import { RegisterDependencies, RegisterPlugin } from "Services/ServiceRegistration";
-import { VaultkeeperAISettingTab } from "VaultkeeperAISettingTab";
+import { VaultkeeperAISettingTab } from "Views/VaultkeeperAISettingTab";
 import { DiffView, VIEW_TYPE_DIFF } from "Views/DiffView";
 import { Services } from "Services/Services";
 import { DeregisterAllServices, Resolve } from "Services/DependencyService";

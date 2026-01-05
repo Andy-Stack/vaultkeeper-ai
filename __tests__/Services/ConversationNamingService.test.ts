@@ -144,7 +144,7 @@ describe('ConversationNamingService', () => {
 
             await service.requestName(conversation, 'User prompt', onNameChanged);
 
-            expect(mockNamingProvider.generateName).toHaveBeenCalledWith('User prompt');
+            expect(mockNamingProvider.generateName).toHaveBeenCalledWith('<message_to_title>\nUser prompt\n</message_to_title>');
             expect(mockConversationService.updateConversationTitle).toHaveBeenCalledWith(
                 'conversations/test.json',
                 'New Conversation Title'

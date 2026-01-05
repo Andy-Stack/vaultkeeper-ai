@@ -15,13 +15,6 @@ export function fromModel(model: string): AIProvider {
     }
 }
 
-export function toProviderModel(model: string): AIProviderModel {
-    if (isValidProviderModel(model)) {
-        return model;
-    }
-    Exception.throw(`Invalid model: ${model}`);
-}
-
 function isClaudeModel(model: string): boolean {
     return isValidProviderModel(model) && model.startsWith("claude-");
 }

@@ -141,3 +141,20 @@ export interface OpenAIDeleteResponse {
     object: "file";
     deleted: boolean;
 }
+
+/**
+ * Non-streaming Responses API response
+ * Used when stream: false is set in the request
+ */
+export interface ResponsesAPINonStreamingResponse {
+    id: string;
+    status: string;
+    output: Array<{
+        type: string;
+        role?: string;
+        content?: Array<{
+            type: string;
+            text?: string;
+        }>;
+    }>;
+}

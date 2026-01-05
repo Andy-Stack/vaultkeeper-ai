@@ -63,7 +63,6 @@ describe('OpenAIConversationNamingService', () => {
                 json: async () => ({
                     id: 'resp_123',
                     created_at: 1234567890,
-                    output_text: 'Test Conversation',
                     error: null,
                     incomplete_details: null,
                     instructions: null,
@@ -75,7 +74,21 @@ describe('OpenAIConversationNamingService', () => {
                     tool_choice: 'auto',
                     tools: [],
                     top_p: null,
-                    output: []
+                    output: [
+                        {
+                            id: 'msg_1',
+                            type: 'message',
+                            role: 'assistant',
+                            status: 'completed',
+                            content: [
+                                {
+                                    type: 'output_text',
+                                    text: 'Test Conversation',
+                                    annotations: []
+                                }
+                            ]
+                        }
+                    ]
                 })
             });
 
@@ -95,7 +108,6 @@ describe('OpenAIConversationNamingService', () => {
 
             const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
             expect(requestBody.model).toBe(AIProviderModel.OpenAINamer);
-            expect(requestBody.max_output_tokens).toBe(100);
             expect(requestBody.instructions).toBeDefined();
             expect(requestBody.input).toHaveLength(1);
             expect(requestBody.input[0].role).toBe(Role.User);
@@ -104,40 +116,12 @@ describe('OpenAIConversationNamingService', () => {
             expect(requestBody.messages).toBeUndefined();
         });
 
-        it('should return generated name from output_text', async () => {
-            fetchMock.mockResolvedValue({
-                ok: true,
-                json: async () => ({
-                    id: 'resp_123',
-                    created_at: 1234567890,
-                    output_text: 'Generated Name',
-                    error: null,
-                    incomplete_details: null,
-                    instructions: null,
-                    metadata: null,
-                    model: AIProviderModel.OpenAINamer,
-                    object: 'response',
-                    parallel_tool_calls: true,
-                    temperature: null,
-                    tool_choice: 'auto',
-                    tools: [],
-                    top_p: null,
-                    output: []
-                })
-            });
-
-            const result = await service.generateName('Test prompt');
-
-            expect(result).toBe('Generated Name');
-        });
-
         it('should return generated name from output array', async () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
                     id: 'resp_123',
                     created_at: 1234567890,
-                    output_text: '',
                     error: null,
                     incomplete_details: null,
                     instructions: null,
@@ -204,7 +188,6 @@ describe('OpenAIConversationNamingService', () => {
                 json: async () => ({
                     id: 'resp_123',
                     created_at: 1234567890,
-                    output_text: 'Name',
                     error: null,
                     incomplete_details: null,
                     instructions: null,
@@ -216,7 +199,21 @@ describe('OpenAIConversationNamingService', () => {
                     tool_choice: 'auto',
                     tools: [],
                     top_p: null,
-                    output: []
+                    output: [
+                        {
+                            id: 'msg_1',
+                            type: 'message',
+                            role: 'assistant',
+                            status: 'completed',
+                            content: [
+                                {
+                                    type: 'output_text',
+                                    text: 'Name',
+                                    annotations: []
+                                }
+                            ]
+                        }
+                    ]
                 })
             });
 

@@ -3,7 +3,7 @@ import type { IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Attachment } from "Conversations/Attachment";
-import { AIProvider, AIProviderURL, toProviderModel } from "Enums/ApiProvider";
+import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { fromString as aiFunctionFromString } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
@@ -29,7 +29,7 @@ export class OpenAI extends BaseAIClass {
         super(AIProvider.OpenAI);
     }
 
-    public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
+    public async* streamRequest(conversation: Conversation, isPlanningAgent: boolean): AsyncGenerator<IStreamChunk, void, unknown> {
 
         // Refresh file cache only if conversation has attachments
         if (conversation.hasAttachments()) {
@@ -45,7 +45,7 @@ export class OpenAI extends BaseAIClass {
         }, ...this.mapFunctionDefinitions(this.toolDefinitions)];
 
         const requestBody = {
-            model: toProviderModel(this.settingsService.settings.model),
+            model: this.model(isPlanningAgent),
             instructions: systemPrompt,
             input: input,
             tools: tools,
@@ -354,32 +354,58 @@ export class OpenAI extends BaseAIClass {
         if (error.info.type !== ApiErrorType.RATE_LIMIT || !error.info.responseHeaders) {
             return undefined;
         }
-
+        
         const headers = error.info.responseHeaders;
-
-        // Try x-ratelimit-reset-requests first (most common)
-        const resetRequests = headers.get('x-ratelimit-reset-requests');
-        if (resetRequests) {
-            const resetTimestamp = parseInt(resetRequests, 10);
-            if (!isNaN(resetTimestamp)) {
-                const now = Math.floor(Date.now() / 1000);
-                const delaySeconds = Math.max(0, resetTimestamp - now);
-                return delaySeconds;
+        
+        // 1. Prefer standard Retry-After header (seconds or HTTP-date)
+        const retryAfter = headers.get('retry-after');
+        if (retryAfter) {
+            const seconds = Number(retryAfter);
+            if (!Number.isNaN(seconds)) {
+                return Math.max(0, seconds);
             }
         }
-
-        // Fallback to x-ratelimit-reset-tokens
-        const resetTokens = headers.get('x-ratelimit-reset-tokens');
-        if (resetTokens) {
-            const resetTimestamp = parseInt(resetTokens, 10);
-            if (!isNaN(resetTimestamp)) {
-                const now = Math.floor(Date.now() / 1000);
-                const delaySeconds = Math.max(0, resetTimestamp - now);
-                return delaySeconds;
-            }
+        
+        // 2. Fallback to provider-specific headers (e.g., OpenAI)
+        const resetHeader = 
+            headers.get('x-ratelimit-reset-requests') ??
+            headers.get('x-ratelimit-reset-tokens');
+        
+        if (resetHeader) {
+            return this.parseDurationToSeconds(resetHeader);
         }
-
+        
         return undefined;
+    }
+
+    /**
+     * Parses duration strings (e.g., "15s", "600ms", "2m", "1h") into seconds.
+     * Returns undefined if parsing fails.
+     */
+    private parseDurationToSeconds(value: string): number | undefined {
+        const trimmed = value.trim();
+        const numericValue = parseFloat(trimmed);
+        
+        if (Number.isNaN(numericValue)) {
+            return undefined;
+        }
+        
+        // Parse based on suffix
+        if (trimmed.endsWith('ms')) {
+            return Math.max(0, Math.ceil(numericValue / 1000));
+        }
+        if (trimmed.endsWith('s')) {
+            return Math.max(0, numericValue);
+        }
+        if (trimmed.endsWith('m')) {
+            return Math.max(0, numericValue * 60);
+        }
+        if (trimmed.endsWith('h')) {
+            return Math.max(0, numericValue * 3600);
+        }
+        
+        // Fallback: treat as raw seconds
+        return Math.max(0, numericValue);
     }
 
     private isSupportedMimeType(mimeType: MimeType): boolean {

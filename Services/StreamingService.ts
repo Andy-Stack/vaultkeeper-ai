@@ -1,8 +1,10 @@
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
+import { Event } from "Enums/Event";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import { AbortService } from "./AbortService";
 import { Resolve } from "./DependencyService";
+import { EventService } from "./EventService";
 import { Services } from "./Services";
 import { sleep } from "Helpers/Helpers";
 
@@ -21,9 +23,11 @@ export class StreamingService {
   private static readonly RETRY_DELAYS = [1000, 2000, 4000]; // ms
 
   private readonly abortService: AbortService;
+  private readonly eventService: EventService;
 
   public constructor() {
     this.abortService = Resolve<AbortService>(Services.AbortService);
+    this.eventService = Resolve<EventService>(Services.EventService);
   }
 
   public async* streamRequest(url: string, requestBody: unknown, parseStreamChunk: (chunk: string) => IStreamChunk,
@@ -187,8 +191,9 @@ export class StreamingService {
     if (error instanceof ApiError && error.info.type === ApiErrorType.RATE_LIMIT && extractRetryDelay) {
       const providerDelaySeconds = extractRetryDelay(error);
       if (providerDelaySeconds !== undefined) {
-        // Convert to milliseconds
-        return providerDelaySeconds * 1000;
+        const delayMs = providerDelaySeconds * 1000;
+        this.eventService.trigger(Event.RateLimitCountdown, delayMs);
+        return delayMs;
       }
     }
 

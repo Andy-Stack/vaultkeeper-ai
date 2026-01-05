@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { Platform } from "obsidian";
 	import { slide } from "svelte/transition";
 
     export let editModeActive = false;
@@ -23,7 +22,7 @@
 
 {#if displayItem}
     <div id="input-display-wrapper" transition:slide>
-        <div id="input-display-container" class:edit-mode={editModeActive} style:max-height={Platform.isMobile ? "15vh" : "30vh"} bind:this={contentDiv}>
+        <div id="input-display-container" class:edit-mode={editModeActive} bind:this={contentDiv}>
         </div>
     </div>
 {/if}
@@ -50,7 +49,12 @@
         font-size: var(--font-ui-medium);
         font-family: var(--font-interface-theme);
         transition: border-color 0.5s ease-out;
+        max-height: 30vh;
 	}
+
+    :global(.is-mobile) #input-display-container {
+        max-height: 15vh;
+    }
 
     #input-display-container.edit-mode {
         border-color: var(--alt-interactive-accent);

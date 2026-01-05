@@ -7,7 +7,8 @@ const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     firstTimeStart: true,
     userInstruction: "",
 
-    model: AIProviderModel.ClaudeSonnet_4_5,
+    model: AIProviderModel.ClaudeHaiku_4_5,
+    planningModel: AIProviderModel.ClaudeSonnet_4_5,
     apiKeys: {
         claude: "",
         openai: "",
@@ -24,6 +25,7 @@ export interface IVaultkeeperAISettings {
     userInstruction: string;
 
     model: string;
+    planningModel: string;
     apiKeys: {
         claude: string;
         openai: string;

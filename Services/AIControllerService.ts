@@ -272,7 +272,7 @@ export class AIControllerService {
                 planExecutionCancelled = parseResult.data.confirm_cancellation;
                 conversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
-                    { message: planExecutionCancelled ? Copy.PlanExecutionCancelled : Copy.PlanExecutionNotCancelled },
+                    { message: planExecutionCancelled ? Copy.PlanExecutionCancelled : Copy.ConfirmationFalse },
                     functionCall.toolId
                 ));
                 return { shouldExit: planExecutionCancelled };
@@ -358,11 +358,11 @@ export class AIControllerService {
     }
 
     private async runAgentLoop(conversation: Conversation, callbacks: IChatServiceCallbacks,
-        handleFunctionCall: (functionCall: AIFunctionCall) => Promise<{ shouldExit: boolean }>, isPlanningConversation: boolean = false
+        handleFunctionCall: (functionCall: AIFunctionCall) => Promise<{ shouldExit: boolean }>, isPlanningAgent: boolean = false
     ): Promise<void> {
-        let response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), callbacks, isPlanningConversation);
+        let response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), callbacks, isPlanningAgent);
 
-        if (!isPlanningConversation) {
+        if (!isPlanningAgent) {
             await this.onSaveConversation?.(conversation);
         }
 
@@ -370,7 +370,7 @@ export class AIControllerService {
             if (response.functionCall) {
                 const result = await handleFunctionCall(response.functionCall);
                 if (result.shouldExit) {
-                    if (!isPlanningConversation) {
+                    if (!isPlanningAgent) {
                         await this.onSaveConversation?.(conversation);
                     }
                     return;
@@ -379,9 +379,9 @@ export class AIControllerService {
                 callbacks.onThoughtUpdate(Copy.AIThoughtMessage);
             }
 
-            response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), callbacks, isPlanningConversation);
+            response = await this.streamRequestResponse(this.ensureCorrectConversationStructure(conversation), callbacks, isPlanningAgent);
 
-            if (!isPlanningConversation) {
+            if (!isPlanningAgent) {
                 await this.onSaveConversation?.(conversation);
             }
         }
@@ -407,7 +407,7 @@ export class AIControllerService {
 		return conversation;
 	}
 
-    private async streamRequestResponse(conversation: Conversation, callbacks: IChatServiceCallbacks, isPlanningConversation: boolean
+    private async streamRequestResponse(conversation: Conversation, callbacks: IChatServiceCallbacks, isPlanningAgent: boolean
     ): Promise<{ functionCall: AIFunctionCall | null, shouldContinue: boolean }> {
         if (!this.ai) { // this should never happen
             return { functionCall: null, shouldContinue: false };
@@ -420,7 +420,7 @@ export class AIControllerService {
         let capturedFunctionCall: AIFunctionCall | null = null;
         let capturedShouldContinue = false;
 
-        for await (const chunk of this.ai.streamRequest(conversation)) {
+        for await (const chunk of this.ai.streamRequest(conversation, isPlanningAgent)) {
             if (chunk.error && chunk.errorType) {
                 conversationContent.content = chunk.error;
                 conversationContent.errorType = chunk.errorType;
@@ -440,7 +440,7 @@ export class AIControllerService {
                 accumulatedContent += chunk.content;
 
                 conversationContent.content = accumulatedContent;
-                if (accumulatedContent.trim() !== "" && !isPlanningConversation) {
+                if (accumulatedContent.trim() !== "" && !isPlanningAgent) {
                     callbacks.onThoughtUpdate(null);
                 }
             }

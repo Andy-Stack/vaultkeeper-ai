@@ -16,6 +16,7 @@ import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
+import type { GeminiRetryInfo, GeminiErrorResponse } from "./GeminiTypes";
 
 export class Gemini extends BaseAIClass {
 
@@ -78,7 +79,7 @@ export class Gemini extends BaseAIClass {
     super(AIProvider.Gemini);
   }
 
-  public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
+  public async* streamRequest(conversation: Conversation, isPlanningAgent: boolean): AsyncGenerator<IStreamChunk, void, unknown> {
     // next request should use web search only (gemini api doesn't support custom tooling and grounding at the same time)
     const requestWebSearch = this.accumulatedFunctionName == this.REQUEST_WEB_SEARCH;
 
@@ -137,7 +138,7 @@ export class Gemini extends BaseAIClass {
     };
 
     yield* this.streamingService.streamRequest(
-      `${AIProviderURL.Gemini}/${this.settingsService.settings.model}:streamGenerateContent?key=${this.apiKey}&alt=sse`,
+      `${AIProviderURL.Gemini}/${this.model(isPlanningAgent)}:streamGenerateContent?key=${this.apiKey}&alt=sse`,
       requestBody,
       (chunk: string) => this.parseStreamChunk(chunk),
       undefined,  // No additional headers
@@ -359,26 +360,84 @@ export class Gemini extends BaseAIClass {
     }
 
     try {
-      const parsed = JSON.parse(error.info.responseBody) as {
-        error?: {
-          details?: Array<{ retryDelay?: string }>
+      const parsed: unknown = JSON.parse(error.info.responseBody);
+
+      // Handle root array quirk (some APIs wrap the response in an array)
+      const responseObj: unknown = Array.isArray(parsed) ? parsed[0] : parsed;
+
+      if (!this.isGeminiErrorResponse(responseObj)) {
+        return undefined;
+      }
+
+      const details = responseObj.error?.details;
+      if (!Array.isArray(details)) {
+        return undefined;
+      }
+
+      // Find RetryInfo object - check for @type field or presence of retry delay fields
+      const retryInfo = details.find((d: unknown): d is GeminiRetryInfo =>
+        this.isRetryInfoDetail(d)
+      );
+
+      if (!retryInfo) {
+        return undefined;
+      }
+
+      // Extract delay (support both camelCase and snake_case)
+      const rawDelay: unknown = retryInfo.retry_delay ?? retryInfo.retryDelay;
+      if (!rawDelay) {
+        return undefined;
+      }
+
+      // Handle object format: { seconds: 10, nanos: 500000000 }
+      if (typeof rawDelay === 'object' && rawDelay !== null && 'seconds' in rawDelay) {
+        const seconds = (rawDelay as { seconds: unknown }).seconds;
+        if (typeof seconds === 'number' || typeof seconds === 'string') {
+          return Math.ceil(Number(seconds));
         }
-      };
+        return undefined;
+      }
 
-      const retryDelay = parsed.error?.details?.[0]?.retryDelay;
-      if (!retryDelay) return undefined;
-
-      // Parse duration string (e.g., "60s", "1.5s")
-      const match = retryDelay.match(/^(\d+\.?\d*)s$/);
-      if (match) {
-        const seconds = parseFloat(match[1]);
-        return Math.ceil(seconds);
+      // Handle string format: "10s", "1.5s", "500ms"
+      if (typeof rawDelay === 'string') {
+        return this.parseGoogleDuration(rawDelay);
       }
 
       return undefined;
     } catch {
       return undefined;
     }
+  }
+
+  private isGeminiErrorResponse(obj: unknown): obj is GeminiErrorResponse {
+    return typeof obj === 'object' &&
+           obj !== null &&
+           'error' in obj;
+  }
+
+  private isRetryInfoDetail(d: unknown): d is GeminiRetryInfo {
+    if (typeof d !== 'object' || d === null) {
+      return false;
+    }
+    const detail = d as Record<string, unknown>;
+    return detail['@type'] === 'type.googleapis.com/google.rpc.RetryInfo' ||
+           detail.retryDelay !== undefined ||
+           detail.retry_delay !== undefined;
+  }
+  
+  private parseGoogleDuration(duration: string): number | undefined {
+    const trimmed = duration.trim();
+    const match = trimmed.match(/^(\d+\.?\d*)(s|ms)$/);
+    
+    if (!match) return undefined;
+    
+    const value = parseFloat(match[1]);
+    if (Number.isNaN(value)) return undefined;
+    
+    const unit = match[2];
+    return unit === 'ms' 
+      ? Math.ceil(value / 1000) 
+      : Math.ceil(value);
   }
 
   private isSupportedMimeType(mimeType: MimeType): boolean {

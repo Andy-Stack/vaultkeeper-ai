@@ -1,4 +1,5 @@
 export enum Event {
     DiffOpened = "diffOpened",
-    DiffClosed = "diffClosed"
+    DiffClosed = "diffClosed",
+    RateLimitCountdown = "rateLimitCountdown"
 }

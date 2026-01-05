@@ -1,5 +1,24 @@
 import { vi } from 'vitest';
 
+export class Component {
+	public load() {}
+	public onload() {}
+	public unload() {}
+	public onunload() {}
+	public addChild<T extends Component>(component: T): T {
+		return component;
+	}
+	public removeChild<T extends Component>(component: T): T {
+		return component;
+	}
+	public register(cb: () => void): void { void cb; }
+	public registerEvent(eventRef: { unload: () => void }): void { void eventRef; }
+	public registerDomEvent(el: HTMLElement, type: string, callback: EventListener, options?: AddEventListenerOptions): void { void el; void type; void callback; void options; }
+	public registerInterval(id: number): number {
+		return id;
+	}
+}
+
 export class Plugin {
 	app: unknown;
 	manifest: unknown;
@@ -152,4 +171,48 @@ export class Setting {
 	addTextArea() { return this; }
 	addSlider() { return this; }
 	then() { return this; }
+}
+
+export class Events {
+	private events: Map<string, Array<(...data: unknown[]) => unknown>> = new Map();
+
+	on(name: string, callback: (...data: unknown[]) => unknown, ctx?: unknown): { unload: () => void } {
+		if (!this.events.has(name)) {
+			this.events.set(name, []);
+		}
+		const boundCallback: (...data: unknown[]) => unknown = ctx
+			? (...args: unknown[]) => callback.apply(ctx, args) as unknown
+			: callback;
+		this.events.get(name)!.push(boundCallback);
+		return {
+			unload: () => this.off(name, boundCallback)
+		};
+	}
+
+	off(name: string, callback: (...data: unknown[]) => unknown): void {
+		const callbacks = this.events.get(name);
+		if (callbacks) {
+			const index = callbacks.indexOf(callback);
+			if (index > -1) {
+				callbacks.splice(index, 1);
+			}
+		}
+	}
+
+	offref(ref: { unload: () => void }): void {
+		ref.unload();
+	}
+
+	trigger(name: string, ...data: unknown[]): void {
+		const callbacks = this.events.get(name);
+		if (callbacks) {
+			for (const callback of callbacks) {
+				callback(...data);
+			}
+		}
+	}
+
+	tryTrigger(name: string, ...data: unknown[]): void {
+		this.trigger(name, ...data);
+	}
 }

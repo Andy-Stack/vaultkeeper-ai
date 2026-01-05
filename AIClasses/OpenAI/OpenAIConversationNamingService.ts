@@ -5,9 +5,9 @@ import { AIProvider, AIProviderURL, AIProviderModel } from "Enums/ApiProvider";
 import { Role } from "Enums/Role";
 import { NamePrompt } from "AIPrompts/NamePrompt";
 import type { SettingsService } from "Services/SettingsService";
-import type OpenAI from "openai";
 import { Exception } from "Helpers/Exception";
 import type { AbortService } from "Services/AbortService";
+import type { ResponsesAPINonStreamingResponse } from "./OpenAITypes";
 
 export class OpenAIConversationNamingService implements IConversationNamingService {
     private readonly apiKey: string;
@@ -47,7 +47,7 @@ export class OpenAIConversationNamingService implements IConversationNamingServi
                 Exception.throw(`OpenAI API error: ${response.status} ${response.statusText} - ${await response.text()}`);
             }
 
-            const data = await response.json();
+            const data = await response.json() as ResponsesAPINonStreamingResponse;
 
             // Find text from any message-type output
             let generatedName: string | undefined;

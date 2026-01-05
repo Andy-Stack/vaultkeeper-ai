@@ -88,6 +88,7 @@ describe('AIControllerService - Integration Tests', () => {
 				onThoughtUpdate: vi.fn(),
 				onPlanningStarted: vi.fn(),
 				onPlanningFinished: vi.fn(),
+				onPlanningQuestion: vi.fn(),
 				onPlanUpdate: vi.fn(),
 				onPlanStepUpdate: vi.fn(),
 				onPlanComplete: vi.fn(),
@@ -101,7 +102,7 @@ describe('AIControllerService - Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runMainAgent(conversation, true, callbacks);
+			await service.runMainAgent(conversation, true, false, callbacks);
 
 			// Verify system prompt and user instruction were set
 			expect(mockPrompt.systemInstruction).toHaveBeenCalled();
@@ -118,6 +119,7 @@ describe('AIControllerService - Integration Tests', () => {
 				onThoughtUpdate: vi.fn(),
 				onPlanningStarted: vi.fn(),
 				onPlanningFinished: vi.fn(),
+				onPlanningQuestion: vi.fn(),
 				onPlanUpdate: vi.fn(),
 				onPlanStepUpdate: vi.fn(),
 				onPlanComplete: vi.fn(),
@@ -131,7 +133,7 @@ describe('AIControllerService - Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runMainAgent(conversation, true, callbacks);
+			await service.runMainAgent(conversation, true, false, callbacks);
 
 			// Should have added assistant message to conversation
 			expect(conversation.contents.length).toBeGreaterThan(1);
@@ -148,6 +150,7 @@ describe('AIControllerService - Integration Tests', () => {
 				onThoughtUpdate: vi.fn(),
 				onPlanningStarted: vi.fn(),
 				onPlanningFinished: vi.fn(),
+				onPlanningQuestion: vi.fn(),
 				onPlanUpdate: vi.fn(),
 				onPlanStepUpdate: vi.fn(),
 				onPlanComplete: vi.fn(),
@@ -156,7 +159,7 @@ describe('AIControllerService - Integration Tests', () => {
 			};
 
 			// Don't call resolveAIProvider()
-			await expect(service.runMainAgent(conversation, true, callbacks))
+			await expect(service.runMainAgent(conversation, true, false, callbacks))
 				.rejects.toThrow('Error: No AI provider has been set!');
 		});
 	});
@@ -173,6 +176,7 @@ describe('AIControllerService - Integration Tests', () => {
 				onThoughtUpdate: vi.fn(),
 				onPlanningStarted: vi.fn(),
 				onPlanningFinished: vi.fn(),
+				onPlanningQuestion: vi.fn(),
 				onPlanUpdate: vi.fn(),
 				onPlanStepUpdate: vi.fn(),
 				onPlanComplete: vi.fn(),
@@ -185,7 +189,7 @@ describe('AIControllerService - Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runMainAgent(conversation, true, callbacks);
+			await service.runMainAgent(conversation, true, false, callbacks);
 
 			// Should have inserted Continue message between last assistant and new assistant
 			const continueMessage = conversation.contents.find(c =>

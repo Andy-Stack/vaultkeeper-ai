@@ -4,11 +4,12 @@ import { Exception } from '../../Helpers/Exception';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { AbortService } from '../../Services/AbortService';
+import { EventService } from '../../Services/EventService';
 
 /**
  * UNIT TESTS
  *
- * StreamingService now depends on AbortService, so we mock that dependency.
+ * StreamingService now depends on AbortService and EventService, so we mock those dependencies.
  * We also mock the global fetch API to test streaming behavior.
  */
 
@@ -17,11 +18,14 @@ describe('StreamingService', () => {
 	let mockFetch: any;
 	let originalFetch: any;
 	let abortService: AbortService;
+	let eventService: EventService;
 
 	beforeEach(() => {
 		DeregisterAllServices();
 		abortService = new AbortService();
+		eventService = new EventService();
 		RegisterSingleton<AbortService>(Services.AbortService, abortService);
+		RegisterSingleton<EventService>(Services.EventService, eventService);
 		service = new StreamingService();
 		originalFetch = global.fetch;
 		mockFetch = vi.fn();

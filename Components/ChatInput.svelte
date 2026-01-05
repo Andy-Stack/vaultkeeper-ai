@@ -18,7 +18,9 @@
 	import ChatAttachments from "./ChatAttachments.svelte";
 	import InputDisplay from "./InputDisplay.svelte";
 	import { InputMode } from "Enums/InputMode";
-	import { Copy } from "Enums/Copy";
+	import { Copy, replaceCopy } from "Enums/Copy";
+	import { HelpModal } from "Modals/HelpModal";
+  import { sleep } from "Helpers/Helpers";
 
   export let attachments: Attachment[] = [];
 
@@ -51,12 +53,18 @@
   let inputMode: InputMode = InputMode.Normal;
   let questionResolver: ((answer: string) => void) | null = null;
 
+  let countdownIntervalId: ReturnType<typeof setInterval> | null = null;
+  let countdownSecondsRemaining: number = 0;
+
   const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { inputMode = InputMode.Diff; focusInput(); });
   const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { inputMode = InputMode.Normal; focusInput(); });
+  const rateLimitCountdownRef: EventRef = eventService.on(Event.RateLimitCountdown, (delayMs: number) => { startCountdown(delayMs); });
 
   onDestroy(() => {
     eventService.offref(diffOpenedRef);
     eventService.offref(diffClosedRef);
+    eventService.offref(rateLimitCountdownRef);
+    stopCountdown();
   });
 
   export function focusInput(onMobile: boolean = false) {
@@ -73,8 +81,69 @@
   }
 
   export function clearDisplayItem() {
+    stopCountdown();
     inputDisplay.clearDisplayItem();
     inputMode = InputMode.Normal;
+  }
+
+  async function startCountdown(delayMs: number) {
+    stopCountdown();
+
+    countdownSecondsRemaining = Math.ceil(delayMs / 1000);
+    updateCountdownDisplay();
+
+    countdownIntervalId = setInterval(() => {
+      countdownSecondsRemaining--;
+
+      if (countdownSecondsRemaining <= 0) {
+        clearDisplayItem();
+      } else {
+        updateCountdownDisplay();
+      }
+    }, 1000);
+  }
+
+  function stopCountdown() {
+    if (countdownIntervalId !== null) {
+      clearInterval(countdownIntervalId);
+      countdownIntervalId = null;
+    }
+  }
+
+  function openTroubleshootingModal() {
+    const modal = Resolve<HelpModal>(Services.HelpModal);
+    modal.open(3); // 3 = Troubleshooting
+  }
+
+  function updateCountdownDisplay() {
+    const countdownDisplay = createEl("div");
+    countdownDisplay.addClass("rate-limit-container");
+
+    const countdown = createEl("span");
+    countdown.addClass("rate-limit-countdown");
+    countdown.textContent = replaceCopy(Copy.RateLimitCountdown, [countdownSecondsRemaining.toString()]);
+
+    const info1 = createEl("span");
+    info1.addClass("rate-limit-info");
+    info1.appendText(Copy.RateLimitInfo1);
+
+    const link = createEl("span");
+    link.addClass("rate-limit-link");
+    link.textContent = Copy.RateLimitInfoLink;
+    link.setAttribute("role", "link");
+    link.setAttribute("tabindex", "-1");
+    link.addEventListener("click", openTroubleshootingModal);
+    info1.append(link);
+
+    const info2 = createEl("span");
+    info2.addClass("rate-limit-info");
+    info2.appendText(Copy.RateLimitInfo2);
+    info1.append(info2);
+
+    countdownDisplay.append(countdown);
+    countdownDisplay.append(createEl("br"));
+    countdownDisplay.append(info1);
+    inputDisplay.setDisplayItem(countdownDisplay);
   }
 
   export function enterQuestionMode(resolver: (answer: string) => void) {
@@ -651,5 +720,44 @@
   #submit-button.edit-mode:not(:disabled):hover {
     cursor: pointer;
     background-color: var(--alt-interactive-accent-hover);
+  }
+
+  /* Narrow/mobile layout: input above, buttons below */
+  :global(.is-mobile) #input-container {
+    grid-template-rows: auto auto auto auto var(--size-4-3) 1fr var(--size-4-2) auto var(--size-4-3);
+    grid-template-columns: var(--size-4-3) auto 1fr auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
+  }
+
+  :global(.is-mobile) #input-display-container,
+  :global(.is-mobile) #input-attachments-container,
+  :global(.is-mobile) #diff-controls-container,
+  :global(.is-mobile) #input-search-results-container,
+  :global(.is-mobile) #user-instruction-container {
+    grid-column: 2 / 9;
+  }
+
+  :global(.is-mobile) #input-field {
+    grid-row: 6;
+    grid-column: 2 / 9;
+  }
+
+  :global(.is-mobile) #user-instruction-button {
+    grid-row: 8;
+    grid-column: 2;
+  }
+
+  :global(.is-mobile) #edit-mode-button {
+    grid-row: 8;
+    grid-column: 4;
+  }
+
+  :global(.is-mobile) #planning-mode-button {
+    grid-row: 8;
+    grid-column: 6;
+  }
+
+  :global(.is-mobile) #submit-button {
+    grid-row: 8;
+    grid-column: 8;
   }
 </style>

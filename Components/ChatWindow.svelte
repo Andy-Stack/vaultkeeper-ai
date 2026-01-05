@@ -66,7 +66,7 @@
 
     const link = target.closest(`.${Selector.MarkDownLink}`) as HTMLAnchorElement | null;
     if (!link) {
-      return;
+      return; 
     }
 
     const href = link.getAttribute('href');

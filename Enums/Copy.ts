@@ -38,6 +38,7 @@ export enum Copy {
 
     // Settings Copy
     SettingModel = "Model",
+    SettingPlanningModel = "Planning Model",
     SettingApiKey = "API Key",
     SettingFileExclusions = "File Exclusions",
     SettingContext = "Context",
@@ -47,6 +48,8 @@ export enum Copy {
 
     // Settings Descriptions
     SettingModelDesc = "Select the AI model to use.",
+    SettingPlanningModelDesc = "Select the AI model to use when planning complex tasks.",
+    SettingPlanningModelTip = "Tip: You can reduce cost by using a more powerful model for planning and a cheaper model for the regular agent.",
     SettingApiKeyDesc = "Enter your API key here.",
     SettingFileExclusionsDesc = "Set which directories and files the AI should ignore. Enter one path per line - supports glob patterns like folder/**, *.md",
     SettingSearchResultsLimitDesc = "Set the maximum number of results provided to the AI when it searches through files in your vault. Higher values provide more context but increase search time.",
@@ -66,6 +69,12 @@ export enum Copy {
 
     AIThoughtMessage = "Thinking...",
 
+    // Rate Limit Countdown
+    RateLimitCountdown = "Rate limit exceeded retrying in {seconds}...",
+    RateLimitInfo1 = "Tip: See info on ",
+    RateLimitInfoLink = "API tiers",
+    RateLimitInfo2 = " if you often exceed your rate limit.",
+
     SafeContinue= "Continue",
 
     // Chat Input Placeholders
@@ -83,6 +92,8 @@ export enum Copy {
     ButtonTurnOffPlanningMode = "Turn off Planning Mode",
     ButtonTurnOnPlanningMode = "Turn on Planning Mode",
 
+    ConfirmationFalse = "Confirmation was false, no action taken.",
+
     // Execution Plan Messages
     PlanningFailedError = `Failed to generate plan. You should attempt to recover from this.
 ### Next Actions
@@ -93,9 +104,7 @@ export enum Copy {
     StepCompletedWithNextStep = "Step {stepNumber} completed successfully. Now proceed with step {nextStepNumber}.",
     AllStepsCompleted = "Step {stepNumber} completed successfully. All steps in the execution plan have been completed. Provide a final summary to the user based on the completed steps and overall success criteria.",
     PlanExecutionCancelled = "Plan execution cancelled. Provide a summary to the user explaining what happened and any partial progress made.",
-    PlanExecutionNotCancelled = "Confirmation was false, no action taken.",
     PlanExecutionComplete = "Plan execution complete.",
-    PlanCompletionNotConfirmed = "Confirmation was false, no action taken.",
     PlanningToolDenial = "Invalid tool call - this is an execution tool and cannot be called during the planning phase.",
     PlanningModeError = "First create a plan before executing any functions!",
     PlanSubmissionRequired = "Error: Attempted to exit planning but plan has not yet been submitted!",

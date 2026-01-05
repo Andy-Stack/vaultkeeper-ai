@@ -122,6 +122,12 @@
   display: none;
 }
 
+.planning-model-description-tip {
+  font-size: var(--font-smaller);
+  font-style: italic;
+  color: var(--text-muted);
+}
+
 .top-bar-button {
   margin: var(--size-4-2) 0px var(--size-4-2) 0px;
   padding: var(--size-4-1) var(--size-4-2) var(--size-4-1) var(--size-4-2);
@@ -141,6 +147,29 @@
   border-radius: var(--radius-m);
   padding: var(--size-2-3);
   margin: var(--size-4-2) 0;
+}
+
+.rate-limit-container {
+  text-align: center;
+}
+
+.rate-limit-countdown {
+  font-size: var(--font-smaller);
+}
+
+.rate-limit-info {
+  font-size: var(--font-smaller);
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.rate-limit-link {
+  color: var(--interactive-accent);
+  cursor: pointer;
+}
+
+.rate-limit-link:hover {
+  text-decoration: underline;
 }
 
 /* ============================== */

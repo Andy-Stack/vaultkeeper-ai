@@ -86,7 +86,7 @@ export class ConversationNamingService {
             index++;
 
             if (index > this.stackLimit) {
-                Exception.log(`Stack limit reached when trying to generate conversation name for "${cleanedTitle}"`);
+                Exception.throw(`Stack limit reached when trying to generate conversation name for "${cleanedTitle}"`);
             }
         }
         return availableTitle;

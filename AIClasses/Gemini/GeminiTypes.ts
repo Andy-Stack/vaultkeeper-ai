@@ -22,3 +22,15 @@ export interface GeminiListFilesResponse {
 export interface GeminiUploadResponse {
     file: GeminiFile;
 }
+
+export interface GeminiRetryInfo {
+    '@type'?: string;
+    retryDelay?: unknown;
+    retry_delay?: unknown;
+}
+
+export interface GeminiErrorResponse {
+    error?: {
+        details?: unknown[];
+    };
+}

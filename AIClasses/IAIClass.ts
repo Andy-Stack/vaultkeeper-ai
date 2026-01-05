@@ -8,6 +8,6 @@ export interface IAIClass {
     set userInstruction(userInstruction: string);
     set toolDefinitions(toolDefinitions: IAIFunctionDefinition[]);
 
-    streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown>;
+    streamRequest(conversation: Conversation, isPlanningAgent: boolean): AsyncGenerator<IStreamChunk, void, unknown>;
     formatBinaryFiles(attachments: Attachment[]): string;
 }

@@ -90,7 +90,7 @@ export class ExecutionPlan {
 
     public completeExecutionPlan(confirmation: boolean): object {
         if (!confirmation) {
-            return { error: Copy.PlanCompletionNotConfirmed };
+            return { error: Copy.ConfirmationFalse };
         }
         if (!this.completed()) {
             return { error: replaceCopy(Copy.IncompleteExecutionAttempt,

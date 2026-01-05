@@ -344,7 +344,7 @@ describe('Gemini', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = gemini.streamRequest(conversation);
+            const generator = gemini.streamRequest(conversation, false);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -372,7 +372,7 @@ describe('Gemini', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = gemini.streamRequest(conversation);
+            const generator = gemini.streamRequest(conversation, false);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -393,7 +393,7 @@ describe('Gemini', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = gemini.streamRequest(conversation);
+            const generator = gemini.streamRequest(conversation, false);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -416,7 +416,7 @@ describe('Gemini', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = gemini.streamRequest(conversation);
+            const generator = gemini.streamRequest(conversation, false);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -1077,7 +1077,7 @@ describe('Gemini', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = gemini.streamRequest(conversation);
+            const generator = gemini.streamRequest(conversation, false);
 
             for await (const chunk of generator) {}
 
@@ -1108,7 +1108,7 @@ describe('Gemini', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = gemini.streamRequest(conversation);
+            const generator = gemini.streamRequest(conversation, false);
             await generator.next();
 
             // State should be reset (after checking web search mode)

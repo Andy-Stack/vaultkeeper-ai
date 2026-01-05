@@ -49,6 +49,7 @@ const mockFileManager = {
 const mockSettings: IVaultkeeperAISettings = {
 	firstTimeStart: false,
 	model: AIProviderModel.ClaudeSonnet_4_5,
+	planningModel: AIProviderModel.ClaudeSonnet_4_5,
 	apiKeys: {
 		claude: 'test-claude-key',
 		openai: 'test-openai-key',

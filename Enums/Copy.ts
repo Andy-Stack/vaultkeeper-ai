@@ -169,6 +169,10 @@ If you find any issues or have a feature request, please feel free to raise them
 - Delete or move files
 - Rename files
 
+**Planning Mode** - Have the AI plan before acting:
+- A planning agent analyzes your vault and creates a strategy
+- An execution agent carries out the given plan
+
 ##### Reference System
 
 Quickly provide context to the AI:

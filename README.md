@@ -15,6 +15,7 @@
 - **Two Operating Modes**
   - 🔍 **Read-Only Mode**: AI can search, read, and list your notes safely
   - ✏️ **Agent Mode**: AI can create, edit, delete, and move notes (when you need it)
+- **Planning Mode** - Enable a two-agent workflow where a planning agent analyzes your vault and creates a step-by-step strategy before execution
 - **Interactive Diff Viewer** - Review and approve AI-proposed changes before they're applied with side-by-side diff view
 - **Smart Reference System** - Mention tags (`#`), files (`@`), and folders (`/`) with autocomplete
 - **Custom System Instructions** - Create and switch between personalized AI behaviors
@@ -111,6 +112,50 @@ When the AI proposes changes to your files in Agent Mode, an interactive diff vi
 
 The diff viewer ensures you're always in control of what changes are made to your vault, providing transparency and safety when working with AI-generated edits.
 
+### Planning Mode
+
+Planning Mode introduces a two-agent workflow that separates task planning from execution. When enabled, a specialized planning agent first analyzes your vault and creates a detailed strategy before the main agent executes any changes.
+
+**How It Works**
+
+1. **Enable Planning Mode**: Click the planning mode button in the chat input toolbar (list icon)
+2. **Submit Your Request**: Send your message as normal
+3. **Planning Phase**: The planning agent analyzes your vault, exploring existing notes, organizational patterns, and relevant content
+4. **Clarifying Questions**: The planning agent may ask you questions to better understand your requirements
+5. **Plan Display**: A step-by-step plan appears above the chat showing what will be done
+6. **Execution Phase**: The main agent executes each step, with progress tracked visually
+7. **Completion**: All steps are marked complete when finished
+
+**Planning Agent Capabilities**
+
+During the planning phase, the planning agent can:
+- Search and read files in your vault
+- Analyze organizational patterns and naming conventions
+- Ask you clarifying questions with markdown-formatted prompts
+- Create detailed, ordered execution steps
+
+The planning agent **cannot** modify files directly - it only gathers information and strategizes.
+
+**Plan Visualization**
+
+- Steps display in a collapsible panel above the chat
+- Status indicators show progress: pending, active (with spinner), or completed (green checkmark)
+- The view auto-scrolls to keep the active step visible
+- Expand/collapse to see the full plan or a compact view
+
+**When to Use Planning Mode**
+
+Planning mode is especially useful for:
+- Complex multi-step tasks requiring vault exploration
+- Comprehensive changes across multiple files
+- Research tasks needing deep vault analysis
+- Tasks where you want to review the approach before execution
+- Uncertain requirements where clarifying questions help
+
+**Replanning**
+
+If issues arise during execution, the agent can request a replan. This returns to the planning phase with context about what's already been completed, allowing the plan to adapt to new information.
+
 ### Reference System
 
 Quickly provide context to the AI using the reference system:
@@ -178,6 +223,13 @@ See `EXAMPLE_INSTRUCTIONS.md` in your vault for a template.
 
 - Choose from 15+ supported models
 - Switch anytime without conversation loss
+
+**Planning Model**
+
+- Select a separate model for the planning agent (used in Planning Mode)
+- Default: Claude Sonnet 4.5
+- Allows cost optimization by using a more capable model for planning and a faster/cheaper model for execution
+- The planning model dropdown updates to match your selected provider
 
 **Search Configuration**
 
@@ -338,6 +390,7 @@ This plugin is built on the shoulders of many excellent projects:
 **CSS**
 - [Loader](https://uiverse.io/Li-Deheng/bright-firefox-37) - Animated streaming indicator adapted from original by Li-Deheng
 - [Gradient Border](https://codepen.io/alphardex/pen/vYEYGzp) - Animated border adapted from original by alphardex
+- [Gradient Spinner](https://codepen.io/AlexWarnes/pen/jXYYKL) - Animated spinner adapted from original by AlexWarnes
 
 ---
 

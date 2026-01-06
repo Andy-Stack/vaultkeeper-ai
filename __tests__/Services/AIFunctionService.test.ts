@@ -782,20 +782,26 @@ describe('AIFunctionService - Integration Tests', () => {
 	});
 
 	describe('performAIFunction - Unknown Function', () => {
-		it('should throw error for unknown function', async () => {
-			await expect(service.performAIFunction({
+		it('should return unknown response for unknown function', async () => {
+			const result = await service.performAIFunction({
 				name: 'UnknownFunction' as any,
 				arguments: {},
 				toolId: 'tool_27'
-			} as any)).rejects.toThrow('Unknown function name: UnknownFunction');
+			} as any);
+			expect(result.name).toBe('unknown');
+			expect(result.toolId).toBe('tool_27');
+			expect(result.response).toEqual({ error: 'Unknown function request unknown' });
 		});
 
-		it('should throw error for invalid function', async () => {
-			await expect(service.performAIFunction({
+		it('should return unknown response for invalid function', async () => {
+			const result = await service.performAIFunction({
 				name: 'InvalidFunction' as any,
 				arguments: {},
 				toolId: 'tool_error'
-			} as any)).rejects.toThrow('Unknown function name: InvalidFunction');
+			} as any);
+			expect(result.name).toBe('unknown');
+			expect(result.toolId).toBe('tool_error');
+			expect(result.response).toEqual({ error: 'Unknown function request unknown' });
 		});
 	});
 

@@ -50,13 +50,16 @@
     }
 
     async function updateHeight() {
-        await tick();
-        if (!contentDiv || stepElements.length === 0) return;
+        setTimeout(() => {
+            if (!contentDiv || stepElements.length === 0) {
+                return;
+            }
 
-        expandedHeight = contentDiv.scrollHeight;
+            expandedHeight = contentDiv.scrollHeight;
 
-        const stepsToShow = Math.min(3, stepElements.length);
-        collapsedHeight = (stepsToShow * stepHeight) + (Math.max(0, stepsToShow - 1) * separatorHeight);
+            const stepsToShow = Math.min(3, stepElements.length);
+            collapsedHeight = (stepsToShow * stepHeight) + (Math.max(0, stepsToShow - 1) * separatorHeight); 
+        }, 1000);
     }
 
     async function scrollToActiveStep() {

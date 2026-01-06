@@ -99,10 +99,16 @@ export enum Copy {
 ### Next Actions
 - Create your own simplified plan
 - Follow your own simplified plan`,
+    CompleteStepReminder = "<SYSTEM>Reminder: Mark each step of the plan as complete once it has been executed</SYSTEM>",
     StepDoesNotExistError = "Step {stepNumber} does not exist in the execution plan. Valid step numbers are 1-{totalSteps}.",
     StepMustBeCompletedInOrderError = "Cannot complete step {stepNumber}. The following steps have not yet been marked as completed: {incompleteSteps}. Steps must be completed in order.",
     StepCompletedWithNextStep = "Step {stepNumber} completed successfully. Now proceed with step {nextStepNumber}.",
-    AllStepsCompleted = "Step {stepNumber} completed successfully. All steps in the execution plan have been completed. Provide a final summary to the user based on the completed steps and overall success criteria.",
+    CompletionReminder = "After completing this step, you must mark it as complete to track progress. Failure to do so will cause the workflow to lose track of completion status.",
+    AllStepsCompleted = `Step {stepNumber} completed successfully. All steps in the execution plan have been completed. 
+
+### NEXT REQUIRED ACTIONS
+- Mark the entire plan as completed.
+- Provide a final summary to the user based on the completed steps and overall success criteria.`,
     PlanExecutionCancelled = "Plan execution cancelled. Provide a summary to the user explaining what happened and any partial progress made.",
     PlanExecutionComplete = "Plan execution complete.",
     PlanningToolDenial = "Invalid tool call - this is an execution tool and cannot be called during the planning phase.",

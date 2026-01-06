@@ -1,5 +1,3 @@
-import { Exception } from "Helpers/Exception";
-
 export enum AIFunction {
     SearchVaultFiles = "search_vault_files",
     ReadVaultFiles = "read_vault_files",
@@ -19,7 +17,9 @@ export enum AIFunction {
     CompleteStep = "complete_step",
     CompletePlan = "complete_plan",
     CancelPlan = "cancel_plan",
-    AskUserQuestion = "ask_user_question"
+    AskUserQuestion = "ask_user_question",
+
+    Unknown = "unknown"
 }
 
 export function fromString(functionName: string): AIFunction {
@@ -27,7 +27,7 @@ export function fromString(functionName: string): AIFunction {
     if (enumValue) {
         return enumValue as AIFunction;
     }
-    Exception.throw(`Unknown function name: ${functionName}`);
+    return AIFunction.Unknown;
 }
 
 export function isAIFunction(value: unknown, aiFunction: AIFunction): value is AIFunction {

@@ -75,9 +75,9 @@ export class ExecutionPlan {
                     (stepNumber + 1).toString()
                 ]),
                 step: nextStep.step,
-                description: nextStep.description,
                 instruction: nextStep.instruction,
-                ...(nextStep.context && { context: nextStep.context })
+                ...(nextStep.context && { context: nextStep.context }),
+                completion_reminder: Copy.CompletionReminder
             };
         } else {
             return {
@@ -112,9 +112,9 @@ export class ExecutionPlan {
             plan: this.executionSteps.map((step, index) => `${index + 1}. ${step.description}`),
             firstStep: {
                 step: firstStep.step,
-                description: firstStep.description,
                 instruction: firstStep.instruction,
-                ...(firstStep.context && { context: firstStep.context })
+                ...(firstStep.context && { context: firstStep.context }),
+                completion_reminder: Copy.CompletionReminder
             }
         };
     }

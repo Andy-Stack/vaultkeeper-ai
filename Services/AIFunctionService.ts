@@ -136,6 +136,7 @@ export class AIFunctionService {
                     );
                 }
 
+                case AIFunction.Unknown:
                 default: {
                     const functionCallName = fromString(functionCall.name);
                     const error = `Unknown function request ${functionCallName}`

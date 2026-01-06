@@ -126,10 +126,10 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 			expect(fromString('request_web_search')).toBe(AIFunction.RequestWebSearch);
 		});
 
-		it('should throw an error for unknown function names', () => {
-			expect(() => fromString('unknown_function')).toThrow('Unknown function name: unknown_function');
-			expect(() => fromString('test_function')).toThrow('Unknown function name: test_function');
-			expect(() => fromString('')).toThrow('Unknown function name: ');
+		it('should return Unknown for unknown function names', () => {
+			expect(fromString('unknown_function')).toBe(AIFunction.Unknown);
+			expect(fromString('test_function')).toBe(AIFunction.Unknown);
+			expect(fromString('')).toBe(AIFunction.Unknown);
 		});
 	});
 

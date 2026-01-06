@@ -36,7 +36,7 @@ Do NOT use for simple, single-step operations that don't require planning.`,
       },
       user_message: {
         type: "string",
-        description: "A short message to be displayed to the user explaining why you're requesting a plan. Examples: 'Creating a plan to organize your project notes', 'Developing a strategy to compile your research on AI topics'"
+        description: "A short message to be displayed to the user explaining why you're requesting a plan. This message should be very concise. Examples: 'Creating a plan to organize your project notes', 'Developing a strategy to compile your research on AI topics'"
       }
     },
     required: ["goal", "user_message"]

@@ -126,7 +126,7 @@
       onPlanningFinished: () => {
         busyPlanning = false;
       },
-      onPlanningQuestion: async (question) => {
+      onUserQuestion: async (question) => {
         const displayEl = createEl("div");
         const formattedHtml = streamingMarkdownService.formatText(question);
         htmlService.setHTMLContent(displayEl, formattedHtml);
@@ -141,7 +141,7 @@
       onPlanStepUpdate: () => {
         executionPlanStore.updatePlan();
       },
-      onPlanComplete: () => {
+      onPlanReset: () => {
         executionPlanStore.clearPlan();
       },
       onComplete: async () => {

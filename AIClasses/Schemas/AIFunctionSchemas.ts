@@ -60,7 +60,12 @@ export const ReplanArgsSchema = z.object({
 	user_message: z.string()
 });
 
-export const AskUserQuestionArgsSchema = z.object({
+export const AskUserQuestionPlanningArgsSchema = z.object({
+	question: z.string(),
+	user_message: z.string()
+});
+
+export const AskUserQuestionExecutionArgsSchema = z.object({
 	question: z.string(),
 	user_message: z.string()
 });
@@ -95,7 +100,8 @@ export type MoveVaultFilesArgs = z.infer<typeof MoveVaultFilesArgsSchema>;
 export type ListVaultFilesArgs = z.infer<typeof ListVaultFilesArgsSchema>;
 export type CreatePlanArgs = z.infer<typeof CreatePlanArgsSchema>;
 export type ReplanArgs = z.infer<typeof ReplanArgsSchema>;
-export type AskUserQuestionArgs = z.infer<typeof AskUserQuestionArgsSchema>;
+export type AskUserQuestionPlanningArgs = z.infer<typeof AskUserQuestionPlanningArgsSchema>;
+export type AskUserQuestionExecutionArgs = z.infer<typeof AskUserQuestionExecutionArgsSchema>;
 export type CancelPlanArgs = z.infer<typeof CancelPlanArgsSchema>;
 export type CompleteStepArgs = z.infer<typeof CompleteStepArgsSchema>;
 export type SubmitPlanArgs = z.infer<typeof SubmitPlanArgsSchema>;

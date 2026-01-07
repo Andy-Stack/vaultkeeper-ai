@@ -124,7 +124,8 @@ export class AIFunctionService {
                 case AIFunction.CreatePlan:
                 case AIFunction.Replan:
                 case AIFunction.SubmitPlan:
-                case AIFunction.AskUserQuestion:
+                case AIFunction.AskUserQuestionPlanning:
+                case AIFunction.AskUserQuestionExecution:
                 case AIFunction.CompleteStep:
                 case AIFunction.CompletePlan:
                 case AIFunction.CancelPlan: {

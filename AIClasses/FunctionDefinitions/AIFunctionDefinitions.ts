@@ -11,8 +11,9 @@ import { Replan } from "./Functions/Replan";
 import { CompleteStep } from "./Functions/CompleteStep";
 import { SubmitPlan } from "./Functions/SubmitPlan";
 import { CancelPlan } from "./Functions/CancelPlan";
-import { AskUserQuestion } from "./Functions/AskUserQuestion";
+import { AskUserQuestionPlanning } from "./Functions/AskUserQuestionPlanning";
 import { CompletePlan } from "./Functions/CompletePlan";
+import { AskUserQuestionExecution } from "./Functions/AskUserQuestionExecution";
 
 export abstract class AIFunctionDefinitions {
     
@@ -45,7 +46,7 @@ export abstract class AIFunctionDefinitions {
 
     // Definitions for the planning agent
     public static planningAgentDefinitions(): IAIFunctionDefinition[] {
-        return [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, AskUserQuestion, SubmitPlan];
+        return [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, AskUserQuestionPlanning, SubmitPlan];
     }
 
     // Definitions for the main agent during plan execution
@@ -59,6 +60,7 @@ export abstract class AIFunctionDefinitions {
             DeleteVaultFiles,
             MoveVaultFiles,
             CompleteStep,
+            AskUserQuestionExecution,
             Replan,
             CompletePlan,
             CancelPlan

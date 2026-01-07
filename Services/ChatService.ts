@@ -23,10 +23,10 @@ export interface IChatServiceCallbacks {
 	onThoughtUpdate: (thought: string | null) => void;
 	onPlanningStarted: () => void;
 	onPlanningFinished: () => void;
-	onPlanningQuestion: (question: string) => Promise<string>;
+	onUserQuestion: (question: string) => Promise<string>;
 	onPlanUpdate: (executionPlan: ExecutionPlan) => void;
 	onPlanStepUpdate: () => void;
-	onPlanComplete: () => void;
+	onPlanReset: () => void;
 	onComplete: () => void;
 }
 

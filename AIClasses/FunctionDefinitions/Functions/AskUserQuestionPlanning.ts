@@ -1,8 +1,8 @@
 import { AIFunction } from "Enums/AIFunction";
 import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 
-export const AskUserQuestion: IAIFunctionDefinition = {
-  name: AIFunction.AskUserQuestion,
+export const AskUserQuestionPlanning: IAIFunctionDefinition = {
+  name: AIFunction.AskUserQuestionPlanning,
   description: `Asks the user a question during the planning phase and waits for their response.
 Use this function when you need clarification, user input, or decisions while creating the plan.
 This allows interactive planning where user feedback shapes the plan before it's submitted.

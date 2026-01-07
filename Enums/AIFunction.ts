@@ -17,7 +17,8 @@ export enum AIFunction {
     CompleteStep = "complete_step",
     CompletePlan = "complete_plan",
     CancelPlan = "cancel_plan",
-    AskUserQuestion = "ask_user_question",
+    AskUserQuestionPlanning = "ask_user_question_planning",
+    AskUserQuestionExecution = "ask_user_question_execution",
 
     Unknown = "unknown"
 }

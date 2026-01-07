@@ -5,9 +5,10 @@ import { Copy, replaceCopy } from "Enums/Copy";
 
 export class ExecutionPlan {
 
+    public readonly isReplan: boolean;
     public readonly executionSteps: ExecutionStep[] = [];
 
-    public constructor(plan: SubmitPlanArgs) {
+    public constructor(plan: SubmitPlanArgs, isReplan: boolean) {
         for (const [index, step] of plan.steps.entries()) {
             this.executionSteps.push(new ExecutionStep(
                 index + 1,
@@ -19,6 +20,7 @@ export class ExecutionPlan {
         if (this.executionSteps[0]) { // Mark first step as active
             this.executionSteps[0].status = ExecutionStatus.Active;
         }
+        this.isReplan = isReplan;
     }
 
     public completed(): boolean {

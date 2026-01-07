@@ -28,7 +28,8 @@
     $: separatorHeight = stepElements[0]?.nextElementSibling?.clientHeight ?? 0;
 
     $: if (steps) {
-        updateHeight();
+        tick().then(updateHeight);
+        setTimeout(updateHeight, 500);
     }
 
     $: if (activeStepIndex >= 0 && !isTransitioning) {
@@ -50,16 +51,14 @@
     }
 
     async function updateHeight() {
-        setTimeout(() => {
-            if (!contentDiv || stepElements.length === 0) {
-                return;
-            }
+        if (!contentDiv || stepElements.length === 0) {
+            return;
+        }
 
-            expandedHeight = contentDiv.scrollHeight;
+        expandedHeight = contentDiv.scrollHeight;
 
-            const stepsToShow = Math.min(3, stepElements.length);
-            collapsedHeight = (stepsToShow * stepHeight) + (Math.max(0, stepsToShow - 1) * separatorHeight); 
-        }, 1000);
+        const stepsToShow = Math.min(3, stepElements.length);
+        collapsedHeight = (stepsToShow * stepHeight) + (Math.max(0, stepsToShow - 1) * separatorHeight); 
     }
 
     async function scrollToActiveStep() {
@@ -88,7 +87,7 @@
         <span id="chat-planning-in-progress-text">Planning in progress...</span>
     </div>
 {/if}
-{#if $executionPlanState.plan}
+{#if steps && steps?.length > 0}
     <div id="chat-plan-area"
          out:slide
          on:click={toggleExpand}
@@ -98,7 +97,7 @@
          tabindex=0>
         <div id="chat-plan-steps-wrapper" style:height="{expanded ? expandedHeight : collapsedHeight}px" bind:this={wrapperDiv}>
             <div id="chat-plan-steps" bind:this={contentDiv}>
-                {#each $executionPlanState.plan.executionSteps as step, index }
+                {#each steps as step, index }
                     <div class="chat-plan-step" bind:this={stepElements[index]}>
                         {#if step.status === ExecutionStatus.Completed}
                             <div class="chat-plan-step-icon" use:setElementIcon={"circle-check"} style:color="var(--color-green)"></div>
@@ -115,7 +114,7 @@
                             {`${step.step}. ${step.description}`}
                         </span>
                     </div>
-                    {#if index < $executionPlanState.plan.executionSteps.length - 1}
+                    {#if index < steps.length - 1}
                         <div class="chat-plan-step-icon"
                              use:setElementIcon={"ellipsis-vertical"}
                              style:opacity={step.status === ExecutionStatus.Completed ? 1 : 0.25}>
@@ -124,7 +123,7 @@
                 {/each}
             </div>
         </div>
-        {#if $executionPlanState.plan.executionSteps.length > 2}
+        {#if steps.length > 2}
             <div class="chat-plan-fade top-fade" transition:fade></div>
             <div class="chat-plan-fade bottom-fade" transition:fade></div>
         {/if}

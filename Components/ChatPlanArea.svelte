@@ -23,10 +23,6 @@
     $: steps = $executionPlanState.plan?.executionSteps;
     $: activeStepIndex = steps?.findIndex(step => step.status === ExecutionStatus.Active) ?? -1;
 
-    // Step measurements for height calculations
-    $: stepHeight = stepElements[0]?.offsetHeight ?? 0;
-    $: separatorHeight = stepElements[0]?.nextElementSibling?.clientHeight ?? 0;
-
     $: if (steps) {
         tick().then(updateHeight);
         setTimeout(updateHeight, 500);
@@ -51,14 +47,19 @@
     }
 
     async function updateHeight() {
-        if (!contentDiv || stepElements.length === 0) {
+        const firstStep = stepElements[0];
+        if (!contentDiv || !firstStep) {
             return;
         }
 
         expandedHeight = contentDiv.scrollHeight;
 
+        // Calculate heights fresh each time to ensure accurate measurements
+        const stepHeight = firstStep.offsetHeight;
+        const separatorHeight = firstStep.nextElementSibling?.clientHeight ?? 0;
+
         const stepsToShow = Math.min(3, stepElements.length);
-        collapsedHeight = (stepsToShow * stepHeight) + (Math.max(0, stepsToShow - 1) * separatorHeight); 
+        collapsedHeight = (stepsToShow * stepHeight) + (Math.max(0, stepsToShow - 1) * separatorHeight);
     }
 
     async function scrollToActiveStep() {

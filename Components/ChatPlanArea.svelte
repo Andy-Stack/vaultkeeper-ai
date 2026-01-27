@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { ExecutionStatus } from "Enums/ExecutionStatus";
 	import { setElementIcon } from "Helpers/ElementHelper";
 	import Spinner from "./Spinner.svelte";
 	import { tick } from "svelte";
@@ -21,7 +20,7 @@
     let isTransitioning = false;
 
     $: steps = $executionPlanState.plan?.executionSteps;
-    $: activeStepIndex = steps?.findIndex(step => step.status === ExecutionStatus.Active) ?? -1;
+    $: activeStepIndex = $executionPlanState.currentStepIndex;
 
     $: if (steps) {
         tick().then(updateHeight);
@@ -85,7 +84,7 @@
 {#if busyPlanning}
     <div id="chat-planning-in-progress" transition:slide>
         <Spinner {editModeActive}/>
-        <span id="chat-planning-in-progress-text">Planning in progress...</span>
+        <span id="chat-planning-in-progress-text">{$executionPlanState.plan?.isReplan ? "Replanning in progress..." : "Planning in progress..."}</span>
     </div>
 {/if}
 {#if steps && steps?.length > 0}
@@ -100,25 +99,25 @@
             <div id="chat-plan-steps" bind:this={contentDiv}>
                 {#each steps as step, index }
                     <div class="chat-plan-step" bind:this={stepElements[index]}>
-                        {#if step.status === ExecutionStatus.Completed}
+                        {#if index < activeStepIndex}
                             <div class="chat-plan-step-icon" use:setElementIcon={"circle-check"} style:color="var(--color-green)"></div>
                         {/if}
-                        {#if step.status === ExecutionStatus.Active}
+                        {#if index === activeStepIndex}
                             <div class="chat-plan-step-icon">
                                 <Spinner {editModeActive}/>
                             </div>
                         {/if}
-                        {#if step.status === ExecutionStatus.Pending}
+                        {#if index > activeStepIndex}
                             <div class="chat-plan-step-icon" use:setElementIcon={"circle"} style:opacity={0.5}></div>
                         {/if}
                         <span class="chat-plan-step-span">
-                            {`${step.step}. ${step.description}`}
+                            {`${index + 1}. ${step.description}`}
                         </span>
                     </div>
                     {#if index < steps.length - 1}
                         <div class="chat-plan-step-icon"
                              use:setElementIcon={"ellipsis-vertical"}
-                             style:opacity={step.status === ExecutionStatus.Completed ? 1 : 0.25}>
+                             style:opacity={index < activeStepIndex ? 1 : 0.25}>
                         </div>
                     {/if}
                 {/each}

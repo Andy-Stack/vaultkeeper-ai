@@ -11,10 +11,12 @@ export enum AIFunction {
     RequestWebSearch = "request_web_search",
 
     // multi agent calls
-    CreatePlan = "create_plan",
+    ExecuteWorkflow = "execute_workflow",
     Replan = "replan",
     SubmitPlan = "submit_plan",
     CompleteStep = "complete_step",
+    CompleteTask = "complete_task",
+    ContinuePlanExecution = "continue_plan_execution",
     CompletePlan = "complete_plan",
     CancelPlan = "cancel_plan",
     AskUserQuestionPlanning = "ask_user_question_planning",

@@ -14,8 +14,8 @@ import { Exception } from "Helpers/Exception";
 import type { Attachment } from "Conversations/Attachment";
 import { Reference } from "Conversations/Reference";
 import type { WorkSpaceService } from "./WorkSpaceService";
-import type { AIControllerService } from "./AIControllerService";
 import type { ExecutionPlan } from "Types/ExecutionPlan";
+import type { MainAgent } from "./AIServices/MainAgent";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
@@ -25,14 +25,14 @@ export interface IChatServiceCallbacks {
 	onPlanningFinished: () => void;
 	onUserQuestion: (question: string) => Promise<string>;
 	onPlanUpdate: (executionPlan: ExecutionPlan) => void;
-	onPlanStepUpdate: () => void;
+	onPlanStepUpdate: (currentStepIndex: number) => void;
 	onPlanReset: () => void;
 	onComplete: () => void;
 }
 
 export class ChatService {
 
-	private aiControllerService: AIControllerService;
+	private mainAgent: MainAgent;
 	private conversationService: ConversationFileSystemService;
 	private namingService: ConversationNamingService;
 	private workSpaceService: WorkSpaceService;
@@ -43,7 +43,7 @@ export class ChatService {
 	private semaphoreHeld: boolean = false;
 
 	constructor() {
-		this.aiControllerService = Resolve<AIControllerService>(Services.AIControllerService);
+		this.mainAgent = Resolve<MainAgent>(Services.MainAgent);
 		this.conversationService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
 		this.namingService = Resolve<ConversationNamingService>(Services.ConversationNamingService);
 		this.workSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
@@ -51,7 +51,7 @@ export class ChatService {
 		this.abortService = Resolve<AbortService>(Services.AbortService);
 		this.semaphore = new Semaphore(1, false);
 
-		this.aiControllerService.setSaveCallback(async (conversation) => {
+		this.mainAgent.setSaveCallback(async (conversation) => {
 			await this.saveConversation(conversation);
 		});
 	}
@@ -106,7 +106,7 @@ export class ChatService {
 				callbacks.onSubmit();
 				callbacks.onStreamingUpdate(null);
 
-				await this.aiControllerService.runMainAgent(conversation, allowDestructiveActions, planningMode, callbacks);
+				await this.mainAgent.runMainAgent(conversation, allowDestructiveActions, planningMode, callbacks);
 			});
 		} catch (error) {
 			if (!AbortService.isAbortError(error)) {

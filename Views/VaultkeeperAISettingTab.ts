@@ -205,6 +205,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_2_5_Lite, text: Copy.GeminiFlash_2_5_Lite });
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_2_5, text: Copy.GeminiFlash_2_5 });
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_2_5, text: Copy.GeminiPro_2_5 });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_Preview, text: Copy.GeminiFlash_3_Preview });
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_3_Preview, text: Copy.GeminiPro_3_Preview });
 		}
 	}

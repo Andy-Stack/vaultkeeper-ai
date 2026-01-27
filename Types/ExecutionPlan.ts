@@ -1,134 +1,14 @@
-import { ExecutionStatus } from "Enums/ExecutionStatus";
-import { ExecutionStep } from "./ExecutionStep";
+import type { ExecutionStep } from "./ExecutionStep";
 import type { SubmitPlanArgs } from "AIClasses/Schemas/AIFunctionSchemas";
-import { Copy, replaceCopy } from "Enums/Copy";
 
 export class ExecutionPlan {
 
     public readonly isReplan: boolean;
-    public readonly executionSteps: ExecutionStep[] = [];
+    public readonly executionSteps: ExecutionStep[];
 
     public constructor(plan: SubmitPlanArgs, isReplan: boolean) {
-        for (const [index, step] of plan.steps.entries()) {
-            this.executionSteps.push(new ExecutionStep(
-                index + 1,
-                step.description,
-                step.instruction,
-                step.context
-            ));
-        }
-        if (this.executionSteps[0]) { // Mark first step as active
-            this.executionSteps[0].status = ExecutionStatus.Active;
-        }
+        this.executionSteps = plan.steps;
         this.isReplan = isReplan;
-    }
-
-    public completed(): boolean {
-        return this.executionSteps.every(step => step.status === ExecutionStatus.Completed);
-    }
-
-    public getStatusSummary(): { completed: string[], remaining: string[] } {
-        const completed: string[] = [];
-        const remaining: string[] = [];
-
-        for (const step of this.executionSteps) {
-            const stepDescription = `${step.step + 1}. ${step.description}`;
-            if (step.status === ExecutionStatus.Completed) {
-                completed.push(stepDescription);
-            } else {
-                remaining.push(stepDescription);
-            }
-        }
-
-        return { completed, remaining };
-    }
-
-    public completeExecutionStep(stepNumber: number): object {
-        const stepIndex = stepNumber - 1;
-
-        const currentStep = this.executionSteps[stepIndex];
-        if (!currentStep) {
-            return {
-                error: replaceCopy(Copy.StepDoesNotExistError, [
-                    stepNumber.toString(),
-                    this.executionSteps.length.toString()
-                ])
-            };
-        }
-
-        for (let i = 0; i < stepIndex; i++) { // Ensure all previous steps are completed
-            if (this.executionSteps[i].status !== ExecutionStatus.Completed) {
-                return {
-                    error: replaceCopy(Copy.StepMustBeCompletedInOrderError, [
-                        stepNumber.toString(),
-                        this.incompleteSteps().join(",")
-                    ])
-                };
-            }
-        }
-        currentStep.status = ExecutionStatus.Completed;
-
-        const nextStep = this.executionSteps[stepIndex + 1];
-        if (nextStep) {
-            nextStep.status = ExecutionStatus.Active;
-            return {
-                message: replaceCopy(Copy.StepCompletedWithNextStep, [
-                    stepNumber.toString(),
-                    (stepNumber + 1).toString()
-                ]),
-                step: nextStep.step,
-                instruction: nextStep.instruction,
-                ...(nextStep.context && { context: nextStep.context }),
-                completion_reminder: Copy.CompletionReminder
-            };
-        } else {
-            return {
-                message: replaceCopy(Copy.AllStepsCompleted, [
-                    stepNumber.toString()
-                ])
-            };
-        }
-    }
-
-    public completeExecutionPlan(confirmation: boolean): object {
-        if (!confirmation) {
-            return { error: Copy.ConfirmationFalse };
-        }
-        if (!this.completed()) {
-            return { error: replaceCopy(Copy.IncompleteExecutionAttempt,
-                [this.incompleteSteps().join(", ")]) };
-        }
-        return { message: Copy.PlanExecutionComplete }
-    }
-
-    public toFunctionResponse(): object {
-        if (this.executionSteps.length === 0) {
-            return {
-                error: Copy.PlanningFailedError
-            };
-        }
-
-        const firstStep = this.executionSteps[0];
-
-        return {
-            plan: this.executionSteps.map((step, index) => `${index + 1}. ${step.description}`),
-            firstStep: {
-                step: firstStep.step,
-                instruction: firstStep.instruction,
-                ...(firstStep.context && { context: firstStep.context }),
-                completion_reminder: Copy.CompletionReminder
-            }
-        };
-    }
-
-    public incompleteSteps(): number[] {
-        const incompleteSteps = [];
-        for (const step of this.executionSteps) {
-            if (step.status !== ExecutionStatus.Completed) {
-                incompleteSteps.push(step.step);
-            }
-        }
-        return incompleteSteps;
     }
 
 }

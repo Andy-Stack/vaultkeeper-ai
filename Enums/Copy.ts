@@ -19,6 +19,7 @@ export enum Copy {
     GeminiFlash_2_5_Lite = "Gemini 2.5 Flash Lite",
     GeminiFlash_2_5 = "Gemini 2.5 Flash",
     GeminiPro_2_5 = "Gemini 2.5 Pro",
+    GeminiFlash_3_Preview = "Gemini 3 Flash Preview",
     GeminiPro_3_Preview = "Gemini 3 Pro Preview",
 
     GPT_5_1 = "GPT-5.1",
@@ -92,32 +93,31 @@ export enum Copy {
     ButtonTurnOffPlanningMode = "Turn off Planning Mode",
     ButtonTurnOnPlanningMode = "Turn on Planning Mode",
 
-    ConfirmationFalse = "Confirmation was false, no action taken.",
-
     // Execution Plan Messages
     PlanningFailedError = `Failed to generate plan. You should attempt to recover from this.
 ### Next Actions
 - Create your own simplified plan
 - Follow your own simplified plan`,
-    CompleteStepReminder = "<SYSTEM>Reminder: Mark each step of the plan as complete once it has been executed</SYSTEM>",
-    StepDoesNotExistError = "Step {stepNumber} does not exist in the execution plan. Valid step numbers are 1-{totalSteps}.",
-    StepMustBeCompletedInOrderError = "Cannot complete step {stepNumber}. The following steps have not yet been marked as completed: {incompleteSteps}. Steps must be completed in order.",
-    StepCompletedWithNextStep = "Step {stepNumber} completed successfully. Now proceed with step {nextStepNumber}.",
-    CompletionReminder = "After completing this step, you must mark it as complete to track progress. Failure to do so will cause the workflow to lose track of completion status.",
-    AllStepsCompleted = `Step {stepNumber} completed successfully. All steps in the execution plan have been completed. 
+    ContinuePlanExecution = "Tools and context restored. You may continue working on the current step.",
+    ExecuteStep = `### Action to Complete
+{action}
 
-### NEXT REQUIRED ACTIONS
-- Mark the entire plan as completed.
-- Provide a final summary to the user based on the completed steps and overall success criteria.`,
+### Additional Context (optional)
+{context}`,
+    ExecuteSignal = "You must singal step completion as either successful or unsuccessful",
     PlanExecutionCancelled = "Plan execution cancelled. Provide a summary to the user explaining what happened and any partial progress made.",
-    PlanExecutionComplete = "Plan execution complete.",
     PlanningToolDenial = "Invalid tool call - this is an execution tool and cannot be called during the planning phase.",
+    OrchestrationToolDenial = "Invalid tool call - this is not an orchestration tool and cannot be called during the orchestration phase.",
+    OrchestrationSignalRequired = "You must signal a decision: continue with the next step, request a replan, or abort execution.",
+    TextResponseToolDenial = "Tool calls are not permitted for this request. Provide a text response instead.",
+    TextResponseRequired = "A text response is required. Please provide your response.",
+    RequestPlanSummary = "All steps have been executed. Provide a concise summary of what was accomplished for the user.",
+    PlanningFailedNoSteps = "The planned workflow has failed, however steps may have been completed. Consult with the user on how to continue.",
+    WorkflowFailedAtStep = "The planned workflow failed when executing step '{stepDescription}'. Consult with the user on how to continue.",
+    WorkflowAborted = "The planned workflow was aborted. Result: {abortContext}",
+    PlanReceived = "Plan received, now attempting to execute plan",
     PlanningModeError = "First create a plan before executing any functions!",
     PlanSubmissionRequired = "Error: Attempted to exit planning but plan has not yet been submitted!",
-    IncompleteExecutionAttempt = `Error: Plan execution incomplete - incomplete steps: {incompleteSteps}.
-- If all work has been completed, complete each remaining step in order and then complete the plan
-- If work remains, continue executing the plan
-- If the plan cannot be completed, request to cancel or replan`,
     MaxExecutionDepthReached = "Exceeded maximum plan execution attempts - consult with the user on how to continue.",
 
     // Execution Plan Request Templates
@@ -612,8 +612,8 @@ Preferred programming language: {{language}}
  * @returns The string with all placeholders replaced
  *
  * @example
- * replaceCopy(Copy.StepDoesNotExistError, ["5", "10"])
- * // Returns: "Step 5 does not exist in the execution plan. Valid step numbers are 1-10."
+ * replaceCopy(Copy.WorkflowFailedAtStep, ["authentication"])
+ * // Returns: "The planned workflow failed when executing step 'authentication'. Consult with the user on how to continue."
  */
 export function replaceCopy(copyString: string, replacements: string[]): string {
     const placeholderRegex = /\{[^}]+\}/g;

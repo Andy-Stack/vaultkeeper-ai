@@ -4,11 +4,14 @@ import { SystemInstruction } from "./SystemPrompt";
 import type { FileSystemService } from "Services/FileSystemService";
 import type { SettingsService } from "Services/SettingsService";
 import { PlanningAgentSystemPrompt } from "AIPrompts/PlanningAgentSystemPrompt";
-import { PlanningEnabledAppendix } from "./PlanningEnabledAppendix";
+import { ExecutionPrompt } from "./ExecutionPrompt";
+import { OrchestrationPrompt } from "./OrchestrationPrompt";
 
 export interface IPrompt {
-  systemInstruction(planningMode?: boolean): string;
+  systemInstruction(): string;
+  orchestrationInstruction(): string;
   planningInstruction(): string;
+  executionInstruction(): string;
   userInstruction(): Promise<string>;
 }
 
@@ -22,12 +25,20 @@ export class AIPrompt implements IPrompt {
     this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
   }
 
-  public systemInstruction(planningMode: boolean = false): string {
-    return planningMode ? SystemInstruction + PlanningEnabledAppendix : SystemInstruction;
+  public systemInstruction(): string {
+    return SystemInstruction;
+  }
+
+  public orchestrationInstruction(): string {
+    return OrchestrationPrompt;
   }
 
   public planningInstruction(): string {
     return PlanningAgentSystemPrompt;
+  }
+
+  public executionInstruction(): string {
+    return ExecutionPrompt;
   }
 
   public async userInstruction(): Promise<string> {

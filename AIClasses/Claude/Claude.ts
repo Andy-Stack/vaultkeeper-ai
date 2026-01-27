@@ -37,7 +37,7 @@ export class Claude extends BaseAIClass {
         super(AIProvider.Claude);
     }
 
-    public async* streamRequest(conversation: Conversation, isPlanningAgent: boolean): AsyncGenerator<IStreamChunk, void, unknown> {
+    public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
         
         this.accumulatedFunctionName = null;
         this.accumulatedFunctionArgs = "";
@@ -71,7 +71,7 @@ export class Claude extends BaseAIClass {
             webSearchTool, ...this.mapFunctionDefinitions(this.toolDefinitions)]);
 
         const requestBody = {
-            model: this.model(isPlanningAgent),
+            model: this.model(),
             max_tokens: 16384,
             system: systemPrompt,
             messages: messages,

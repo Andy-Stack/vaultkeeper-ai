@@ -51,6 +51,7 @@ export enum AIProviderModel {
     GeminiFlash_2_5_Lite = "gemini-2.5-flash-lite",
     GeminiFlash_2_5 = "gemini-2.5-flash",
     GeminiPro_2_5 = "gemini-2.5-pro",
+    GeminiFlash_3_Preview = "gemini-3-flash-preview",
     GeminiPro_3_Preview = "gemini-3-pro-preview",
 
     // OpenAI models

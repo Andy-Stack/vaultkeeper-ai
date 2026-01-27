@@ -5,9 +5,7 @@ export const CancelPlan: IAIFunctionDefinition = {
   name: AIFunction.CancelPlan,
   description: `Terminates the current plan execution immediately and returns control to the main conversation loop.
 
-Use this function when plan execution cannot or should not continue. After calling this,
-you will receive confirmation that the plan has been cancelled, at which point you should
-provide a summary to the user explaining what happened and any partial progress made.
+Use this function when plan execution cannot or should not continue.
 
 Call this function when:
 - The user has explicitly requested to stop, cancel, or terminate the current operation
@@ -17,18 +15,15 @@ Call this function when:
 - The task has grown beyond the original plan's boundaries (scope creep)
 
 Do NOT use this function:
-- For temporary setbacks that can be worked around
-- When a replan would be more appropriate
-- For single-step failures (attempt recovery or replan first)`,
+- When a replan would be more appropriate`,
   parameters: {
     type: "object",
     properties: {
-      confirm_cancellation: {
-        type: "boolean",
-        description: "Safety flag that must be explicitly set to true to confirm the cancellation is intentional. This prevents accidental cancellations.",
-        default: false
+      context: {
+        type: "string",
+        description: "Explain why cancellation is being chosen, including what went wrong, what conditions prevented continuation, or why the task cannot proceed as planned.",
       }
     },
-    required: ["confirm_cancellation"]
+    required: ["context"]
   }
 }

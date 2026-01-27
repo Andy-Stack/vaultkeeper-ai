@@ -11,7 +11,7 @@ import { StreamingMarkdownService } from "./StreamingMarkdownService";
 import { FileSystemService } from "./FileSystemService";
 import { ConversationFileSystemService } from "./ConversationFileSystemService";
 import { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
-import { AIFunctionService } from "./AIFunctionService";
+import { AIFunctionService } from "./AIServices/AIFunctionService";
 import { StreamingService } from "./StreamingService";
 import { WorkSpaceService } from "./WorkSpaceService";
 import { ChatService } from "./ChatService";
@@ -37,7 +37,7 @@ import type { IAIFileService } from "AIClasses/IAIFileService";
 import { ClaudeFileService } from "AIClasses/Claude/ClaudeFileService";
 import { GeminiFileService } from "AIClasses/Gemini/GeminiFileService";
 import { OpenAIFileService } from "AIClasses/OpenAI/OpenAIFileService";
-import { AIControllerService } from "./AIControllerService";
+import { MainAgent } from "./AIServices/MainAgent";
 
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
     RegisterSingleton<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin, plugin);
@@ -62,7 +62,7 @@ export function RegisterDependencies() {
 
     RegisterSingleton<IPrompt>(Services.IPrompt, new AIPrompt());
     RegisterSingleton<AIFunctionService>(Services.AIFunctionService, new AIFunctionService());
-    RegisterSingleton<AIControllerService>(Services.AIControllerService, new AIControllerService());
+    RegisterSingleton<MainAgent>(Services.MainAgent, new MainAgent());
     RegisterSingleton<StreamingService>(Services.StreamingService, new StreamingService());
     RegisterSingleton<ChatService>(Services.ChatService, new ChatService());
 
@@ -93,7 +93,7 @@ export function RegisterAiProvider() {
         RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new OpenAIConversationNamingService());
     }
 
-    Resolve<AIControllerService>(Services.AIControllerService).resolveAIProvider();
+    Resolve<MainAgent>(Services.MainAgent).resolveAIProvider();
     Resolve<ConversationNamingService>(Services.ConversationNamingService).resolveNamingProvider();
     Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService).resolveAIFileService();
 }

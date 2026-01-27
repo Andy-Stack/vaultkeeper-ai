@@ -138,8 +138,8 @@
       onPlanUpdate: (executionPlan) => {
         executionPlanStore.setPlan(executionPlan);
       },
-      onPlanStepUpdate: () => {
-        executionPlanStore.updatePlan();
+      onPlanStepUpdate: (currentStepIndex) => {
+        executionPlanStore.setCurrentStepIndex(currentStepIndex);
       },
       onPlanReset: () => {
         executionPlanStore.clearPlan();

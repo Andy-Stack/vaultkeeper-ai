@@ -46,18 +46,14 @@ export const ListVaultFilesArgsSchema = z.object({
 	user_message: z.string()
 });
 
-export const CreatePlanArgsSchema = z.object({
+export const ExecuteWorkflowArgsSchema = z.object({
 	goal: z.string(),
 	context: z.string().optional(),
 	user_message: z.string()
 });
 
 export const ReplanArgsSchema = z.object({
-	original_goal: z.string(),
-	completed_steps: z.string(),
-	issue_encountered: z.string(),
-	context: z.string(),
-	user_message: z.string()
+	context: z.string()
 });
 
 export const AskUserQuestionPlanningArgsSchema = z.object({
@@ -70,12 +66,21 @@ export const AskUserQuestionExecutionArgsSchema = z.object({
 	user_message: z.string()
 });
 
+export const ContinuePlanExecutionArgsSchema = z.object({
+	confirm_continuation: z.boolean()
+});
+
 export const CancelPlanArgsSchema = z.object({
-	confirm_cancellation: z.boolean()
+	context: z.string()
 });
 
 export const CompleteStepArgsSchema = z.object({
-	step_number: z.number()
+	confirm_completion: z.boolean()
+});
+
+export const CompleteTaskArgsSchema = z.object({
+	success: z.boolean(),
+	description: z.string()
 });
 
 export const SubmitPlanArgsSchema = z.object({
@@ -98,11 +103,13 @@ export type PatchVaultFileArgs = z.infer<typeof PatchVaultFileArgsSchema>;
 export type DeleteVaultFilesArgs = z.infer<typeof DeleteVaultFilesArgsSchema>;
 export type MoveVaultFilesArgs = z.infer<typeof MoveVaultFilesArgsSchema>;
 export type ListVaultFilesArgs = z.infer<typeof ListVaultFilesArgsSchema>;
-export type CreatePlanArgs = z.infer<typeof CreatePlanArgsSchema>;
+export type ExecuteWorkflowArgs = z.infer<typeof ExecuteWorkflowArgsSchema>;
 export type ReplanArgs = z.infer<typeof ReplanArgsSchema>;
 export type AskUserQuestionPlanningArgs = z.infer<typeof AskUserQuestionPlanningArgsSchema>;
 export type AskUserQuestionExecutionArgs = z.infer<typeof AskUserQuestionExecutionArgsSchema>;
+export type ContinuePlanExecutionArgs = z.infer<typeof ContinuePlanExecutionArgsSchema>;
 export type CancelPlanArgs = z.infer<typeof CancelPlanArgsSchema>;
 export type CompleteStepArgs = z.infer<typeof CompleteStepArgsSchema>;
+export type CompleteTaskArgs = z.infer<typeof CompleteTaskArgsSchema>;
 export type SubmitPlanArgs = z.infer<typeof SubmitPlanArgsSchema>;
 export type CompletePlanArgs = z.infer<typeof CompletePlanArgsSchema>;

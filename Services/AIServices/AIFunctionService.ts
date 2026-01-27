@@ -1,11 +1,11 @@
-import { Resolve } from "./DependencyService";
-import { Services } from "./Services";
-import type { FileSystemService } from "./FileSystemService";
+import { Resolve } from "../DependencyService";
+import { Services } from "../Services";
+import type { FileSystemService } from "../FileSystemService";
 import { AIFunction, fromString } from "Enums/AIFunction";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
-import type { ISearchMatch } from "../Helpers/SearchTypes";
-import { AbortService } from "./AbortService";
+import type { ISearchMatch } from "../../Helpers/SearchTypes";
+import { AbortService } from "../AbortService";
 import { normalizePath, TAbstractFile, TFile } from "obsidian";
 import { Exception } from "Helpers/Exception";
 import { pathExtname } from "Helpers/Helpers";

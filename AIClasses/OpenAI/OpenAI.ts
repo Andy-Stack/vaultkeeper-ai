@@ -29,7 +29,7 @@ export class OpenAI extends BaseAIClass {
         super(AIProvider.OpenAI);
     }
 
-    public async* streamRequest(conversation: Conversation, isPlanningAgent: boolean): AsyncGenerator<IStreamChunk, void, unknown> {
+    public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
 
         // Refresh file cache only if conversation has attachments
         if (conversation.hasAttachments()) {
@@ -45,7 +45,7 @@ export class OpenAI extends BaseAIClass {
         }, ...this.mapFunctionDefinitions(this.toolDefinitions)];
 
         const requestBody = {
-            model: this.model(isPlanningAgent),
+            model: this.model(),
             instructions: systemPrompt,
             input: input,
             tools: tools,

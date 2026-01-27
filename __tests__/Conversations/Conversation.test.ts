@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
+import { AIFunctionResponse } from '../../AIClasses/FunctionDefinitions/AIFunctionResponse';
+import { AIFunction } from '../../Enums/AIFunction';
 
 describe('Conversation', () => {
 	describe('constructor', () => {
@@ -376,6 +378,187 @@ describe('Conversation', () => {
 			expect(conversation.created).toBeInstanceOf(Date);
 			expect(conversation.updated).toBeInstanceOf(Date);
 			expect(conversation.contents).toEqual([]);
+		});
+	});
+
+	describe('addFunctionResponse', () => {
+		describe('read_vault_files with errors', () => {
+			it('should handle file not found errors without creating attachments', () => {
+				const conversation = new Conversation();
+				const functionResponse = new AIFunctionResponse(
+					AIFunction.ReadVaultFiles,
+					{
+						results: [
+							{ path: 'nonexistent.md', error: 'File does not exist: nonexistent.md' }
+						]
+					},
+					'tool-123'
+				);
+
+				conversation.addFunctionResponse(functionResponse);
+
+				// Should have one content item (the function response with error)
+				expect(conversation.contents).toHaveLength(1);
+				expect(conversation.contents[0].role).toBe(Role.User);
+				expect(conversation.contents[0].shouldDisplayContent).toBe(false);
+
+				// Should not have attachments
+				expect(conversation.contents[0].attachments).toHaveLength(0);
+
+				// Parse the function response to verify error is included
+				const parsedResponse = JSON.parse(conversation.contents[0].functionResponse!);
+				expect(parsedResponse.functionResponse.response.results).toHaveLength(1);
+				expect(parsedResponse.functionResponse.response.results[0].error).toBe('File does not exist: nonexistent.md');
+			});
+
+			it('should handle mix of successful reads and errors', () => {
+				const conversation = new Conversation();
+				const functionResponse = new AIFunctionResponse(
+					AIFunction.ReadVaultFiles,
+					{
+						results: [
+							{ path: 'existing.md', type: 'md', contents: '# Hello' },
+							{ path: 'nonexistent.md', error: 'File does not exist: nonexistent.md' },
+							{ path: 'another.txt', type: 'txt', contents: 'World' }
+						]
+					},
+					'tool-123'
+				);
+
+				conversation.addFunctionResponse(functionResponse);
+
+				// Should have one content item with all results
+				expect(conversation.contents).toHaveLength(1);
+				expect(conversation.contents[0].role).toBe(Role.User);
+
+				// Parse the function response
+				const parsedResponse = JSON.parse(conversation.contents[0].functionResponse!);
+				const results = parsedResponse.functionResponse.response.results;
+
+				// Should have all 3 results (2 successful + 1 error)
+				expect(results).toHaveLength(3);
+
+				// Check that we have the expected content (order may vary)
+				const textResults = results.filter((r: { contents?: string }) => r.contents);
+				const errorResult = results.filter((r: { error?: string }) => r.error);
+
+				expect(textResults).toHaveLength(2);
+				expect(textResults.some((r: { contents: string }) => r.contents === '# Hello')).toBe(true);
+				expect(textResults.some((r: { contents: string }) => r.contents === 'World')).toBe(true);
+				expect(errorResult).toHaveLength(1);
+				expect(errorResult[0].error).toBe('File does not exist: nonexistent.md');
+			});
+
+			it('should not create attachments for error results with binary file extensions', () => {
+				const conversation = new Conversation();
+				const functionResponse = new AIFunctionResponse(
+					AIFunction.ReadVaultFiles,
+					{
+						results: [
+							{ path: 'image.png', error: 'File does not exist: image.png' }
+						]
+					},
+					'tool-123'
+				);
+
+				conversation.addFunctionResponse(functionResponse);
+
+				// Should have one content item (function response only)
+				expect(conversation.contents).toHaveLength(1);
+
+				// Should not have attachments (error result should not be treated as binary file)
+				expect(conversation.contents[0].attachments).toHaveLength(0);
+
+				// Verify error is in the function response
+				const parsedResponse = JSON.parse(conversation.contents[0].functionResponse!);
+				expect(parsedResponse.functionResponse.response.results[0].error).toBeDefined();
+			});
+
+			it('should handle binary files with errors not creating invalid attachments', () => {
+				const conversation = new Conversation();
+				const functionResponse = new AIFunctionResponse(
+					AIFunction.ReadVaultFiles,
+					{
+						results: [
+							{ path: 'image.png', error: 'File does not exist: image.png' },
+							{ path: 'valid.png', type: 'png', contents: 'base64encodeddata...' }
+						]
+					},
+					'tool-123'
+				);
+
+				conversation.addFunctionResponse(functionResponse);
+
+				// Should have 2 content items: function response + attachments
+				expect(conversation.contents).toHaveLength(2);
+
+				// First item should have the error and success message
+				const parsedResponse = JSON.parse(conversation.contents[0].functionResponse!);
+				expect(parsedResponse.functionResponse.response.results).toHaveLength(1);
+				expect(parsedResponse.functionResponse.response.results[0].error).toBe('File does not exist: image.png');
+
+				// Second item should only have the valid attachment
+				expect(conversation.contents[1].attachments).toHaveLength(1);
+				expect(conversation.contents[1].attachments[0].fileName).toBe('valid.png');
+			});
+		});
+
+		describe('read_vault_files without errors', () => {
+			it('should handle successful text file reads', () => {
+				const conversation = new Conversation();
+				const functionResponse = new AIFunctionResponse(
+					AIFunction.ReadVaultFiles,
+					{
+						results: [
+							{ path: 'file.md', type: 'md', contents: '# Title' }
+						]
+					},
+					'tool-123'
+				);
+
+				conversation.addFunctionResponse(functionResponse);
+
+				expect(conversation.contents).toHaveLength(1);
+				const parsedResponse = JSON.parse(conversation.contents[0].functionResponse!);
+				expect(parsedResponse.functionResponse.response.results[0].contents).toBe('# Title');
+			});
+
+			it('should create attachments for binary files', () => {
+				const conversation = new Conversation();
+				const functionResponse = new AIFunctionResponse(
+					AIFunction.ReadVaultFiles,
+					{
+						results: [
+							{ path: 'image.png', type: 'png', contents: 'base64data...' }
+						]
+					},
+					'tool-123'
+				);
+
+				conversation.addFunctionResponse(functionResponse);
+
+				// Should have 2 items: function response + attachments
+				expect(conversation.contents).toHaveLength(2);
+				expect(conversation.contents[1].attachments).toHaveLength(1);
+				expect(conversation.contents[1].attachments[0].fileName).toBe('image.png');
+			});
+		});
+
+		describe('non-read_vault_files functions', () => {
+			it('should handle other functions normally', () => {
+				const conversation = new Conversation();
+				const functionResponse = new AIFunctionResponse(
+					AIFunction.WriteVaultFile,
+					{ success: true },
+					'tool-123'
+				);
+
+				conversation.addFunctionResponse(functionResponse);
+
+				expect(conversation.contents).toHaveLength(1);
+				expect(conversation.contents[0].role).toBe(Role.User);
+				expect(conversation.contents[0].attachments).toHaveLength(0);
+			});
 		});
 	});
 });

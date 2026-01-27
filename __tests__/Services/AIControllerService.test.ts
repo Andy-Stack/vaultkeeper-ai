@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AIControllerService } from '../../Services/AIControllerService';
+import { AIController } from '../../Services/AIServices/AIController';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { Conversation } from '../../Conversations/Conversation';
@@ -20,7 +20,7 @@ import { AIFunctionResponse } from '../../AIClasses/FunctionDefinitions/AIFuncti
  */
 
 describe('AIControllerService - Integration Tests', () => {
-	let service: AIControllerService;
+	let service: AIController;
 	let mockAI: any;
 	let mockPrompt: any;
 	let mockAIFunctionService: any;
@@ -52,7 +52,7 @@ describe('AIControllerService - Integration Tests', () => {
 		RegisterSingleton(Services.IAIClass, mockAI);
 
 		// Create service
-		service = new AIControllerService();
+		service = new AIController();
 	});
 
 	afterEach(() => {
@@ -62,7 +62,7 @@ describe('AIControllerService - Integration Tests', () => {
 
 	describe('constructor', () => {
 		it('should initialize with all required services', () => {
-			const testService = new AIControllerService();
+			const testService = new AIController();
 
 			expect(testService).toBeDefined();
 		});

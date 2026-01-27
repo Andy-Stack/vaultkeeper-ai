@@ -39,28 +39,46 @@ export class Conversation {
             return;
         }
 
-        const results = (functionResponse.response as
-            {results: Array<{type: string, path: string, contents: string}>}).results;
+        const responseData = functionResponse.response as
+            {results?: Array<{type?: string, path: string, contents?: string, error?: string}>};
+        const results = responseData.results;
 
-        const textResults = results.filter(result => isTextFile(result.type));
-        const binaryResults = results.filter(result => !isTextFile(result.type));
+        if (!results) {
+            // Handle case where results array is missing (general error response)
+            const functionResponseString = functionResponse.toConversationString();
+            this.contents.push(new ConversationContent({
+                role: Role.User,
+                functionResponse: functionResponseString,
+                shouldDisplayContent: false,
+                toolId: functionResponse.toolId
+            }));
+            return;
+        }
 
-        // 1. Function response with text files (or success message if none)
+        // Separate error results from successful file reads
+        const errorResults = results.filter(result => result.error);
+        const successResults = results.filter(result => !result.error && result.type && result.contents !== undefined);
+
+        const textResults = successResults.filter(result => isTextFile(result.type!));
+        const binaryResults = successResults.filter(result => !isTextFile(result.type!));
+
+        // 1. Function response with text files and/or errors
         let functionResponseData;
-        if (textResults.length > 0) {
-            // Include text file contents in function response
+        if (textResults.length > 0 || errorResults.length > 0) {
+            // Include text file contents and any errors in function response
+            const responseResults = [...textResults, ...errorResults];
             functionResponseData = {
                 id: functionResponse.toolId,
                 functionResponse: {
                     name: functionResponse.name,
                     response: {
-                        results: textResults,
+                        results: responseResults,
                         ...(binaryResults.length > 0 && {message: "Binary files follow in next message"})
                     }
                 }
             };
         } else {
-            // No text files - just acknowledge success
+            // No text files or errors - just binary files
             functionResponseData = {
                 id: functionResponse.toolId,
                 functionResponse: {
@@ -82,12 +100,14 @@ export class Conversation {
 
         // 2. If there are binary files, create Attachments and add to conversation
         if (binaryResults.length > 0) {
-            const attachments = binaryResults.map(file => {
-                const fileName = file.path.split('/').pop() || file.path;
-                const mimeType = FileTypeToMimeType[toFileType(file.type)];
-                
-                return new Attachment(fileName, mimeType, file.contents);
-            });
+            const attachments = binaryResults
+                .filter(file => file.type && file.contents !== undefined)
+                .map(file => {
+                    const fileName = file.path.split('/').pop() || file.path;
+                    const mimeType = FileTypeToMimeType[toFileType(file.type as string)];
+
+                    return new Attachment(fileName, mimeType, file.contents as string);
+                });
 
             this.contents.push(new ConversationContent({
                 role: Role.User,

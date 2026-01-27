@@ -79,7 +79,7 @@ export class Gemini extends BaseAIClass {
     super(AIProvider.Gemini);
   }
 
-  public async* streamRequest(conversation: Conversation, isPlanningAgent: boolean): AsyncGenerator<IStreamChunk, void, unknown> {
+  public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
     // next request should use web search only (gemini api doesn't support custom tooling and grounding at the same time)
     const requestWebSearch = this.accumulatedFunctionName == this.REQUEST_WEB_SEARCH;
 
@@ -138,7 +138,7 @@ export class Gemini extends BaseAIClass {
     };
 
     yield* this.streamingService.streamRequest(
-      `${AIProviderURL.Gemini}/${this.model(isPlanningAgent)}:streamGenerateContent?key=${this.apiKey}&alt=sse`,
+      `${AIProviderURL.Gemini}/${this.model()}:streamGenerateContent?key=${this.apiKey}&alt=sse`,
       requestBody,
       (chunk: string) => this.parseStreamChunk(chunk),
       undefined,  // No additional headers

@@ -345,7 +345,7 @@ export class VaultService {
                     const snippets = this.extractSnippets(content, regex);
 
                     // Check filename match
-                    const hasFilenameMatch = file.basename.match(regex) !== null;
+                    const hasFilenameMatch = file.basename.match(regex) !== null || file.name.match(regex) !== null;
 
                     // Return match if content has snippets OR filename matches
                     if (snippets.length > 0 || hasFilenameMatch) {

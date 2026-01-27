@@ -3,28 +3,20 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 
 export const CompleteStep: IAIFunctionDefinition = {
   name: AIFunction.CompleteStep,
-  description: `Marks a specific step in the current execution plan as completed.
-
-Use this function to track your progress through a plan created by the planning agent.
-This helps maintain accurate state of which steps have been executed and provides
-visibility to the user about task progress.
-
-Call this function:
-- Immediately after successfully completing a plan step
-- Before moving on to the next step in the plan
-- When a step's objectives have been fully satisfied
-
-Do NOT use this function:
-- For steps that failed
-- For partial completion of a step`,
+  description: `Signals that plan execution should proceed to the next step without modification. 
+   
+- Use this tool when the most recent step completed successfully and its results align with the plan's expectations.
+- This is the appropriate choice when everything is working as intended and no course correction is needed.
+- Do NOT use this if there were any failures, unexpected results, or if the plan needs adjustment based on new information.`,
   parameters: {
     type: "object",
     properties: {
-      step_number: {
-        type: "number",
-        description: "The number of the step being marked as completed (1-indexed). This should correspond to the step number in the plan."
+      confirm_completion: {
+          type: "boolean",
+          description: "Safety flag that must be explicitly set to true to confirm the step completion is intentional. This prevents accidental completions.",
+          default: false
       }
     },
-    required: ["step_number"]
+    required: ["confirm_completion"]
   }
 }

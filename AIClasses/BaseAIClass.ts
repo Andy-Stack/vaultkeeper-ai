@@ -14,6 +14,7 @@ import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import type { AbortService } from "Services/AbortService";
 import type { IAIFileService } from "./IAIFileService";
+import { AgentType } from "Enums/AgentType";
 
 export abstract class BaseAIClass implements IAIClass {
 
@@ -26,6 +27,7 @@ export abstract class BaseAIClass implements IAIClass {
 
     private _systemPrompt: string = "";
     private _userInstruction: string = "";
+    private _agentType: AgentType = AgentType.Main;
     private _toolDefinitions: IAIFunctionDefinition[] = [];
 
     protected constructor(provider: AIProvider) {
@@ -66,7 +68,15 @@ export abstract class BaseAIClass implements IAIClass {
         this._toolDefinitions = toolDefinitions;
     }
 
-    public abstract streamRequest(conversation: Conversation, isPlanningAgent: boolean): AsyncGenerator<IStreamChunk, void, unknown>;
+    public get agentType() {
+        return this._agentType;
+    }
+
+    public set agentType(agentType: AgentType) {
+        this._agentType = agentType;
+    }
+
+    public abstract streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown>;
 
     public abstract formatBinaryFiles(attachments: Attachment[]): string;
 
@@ -74,8 +84,17 @@ export abstract class BaseAIClass implements IAIClass {
     protected abstract extractContents(conversationContent: ConversationContent[]): unknown;
     protected abstract mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): object;
 
-    protected model(isPlanningAgent: boolean): string {
-        return isPlanningAgent ? this.settingsService.settings.planningModel : this.settingsService.settings.model;
+    protected model(): string {
+        switch (this._agentType) {
+            case AgentType.Main:
+                return this.settingsService.settings.model;
+            case AgentType.Orchestration:
+                return this.settingsService.settings.model;
+            case AgentType.Planning:
+                return this.settingsService.settings.planningModel;
+            case AgentType.Execution:
+                return this.settingsService.settings.model;
+        }
     }
 
     protected filterConversationContents(conversationContent: ConversationContent[]): ConversationContent[] {

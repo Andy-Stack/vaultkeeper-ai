@@ -1,4 +1,4 @@
-import { CancelPlanArgsSchema, CompleteStepArgsSchema, ReplanArgsSchema, type ExecuteWorkflowArgs } from "AIClasses/Schemas/AIFunctionSchemas";
+import { CancelPlanArgsSchema, CompletePlanArgsSchema, CompleteStepArgsSchema, ReplanArgsSchema, type ExecuteWorkflowArgs } from "AIClasses/Schemas/AIFunctionSchemas";
 import { AIController } from "./AIController";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
@@ -48,7 +48,6 @@ export class OrchestrationAgent extends AIController {
             callbacks.onPlanUpdate(executionPlan);
 
             let currentStepIndex = 0;
-            let replanRequested = false;
             for (const [index, step] of executionPlan.executionSteps.entries()) {
                 currentStepIndex = index;
                 callbacks.onPlanStepUpdate(currentStepIndex);
@@ -103,15 +102,12 @@ export class OrchestrationAgent extends AIController {
                         role: Role.User,
                         content: `A replan was requested when attempting to execute Step ${index + 1}. Replan context: ${orchestrationResult.replanContext}`
                     }));
-                    replanRequested = true;
                     break;
                 }
-            }
-
-            planCompleted = !replanRequested && currentStepIndex >= executionPlan.executionSteps.length - 1;
-
-            if (planCompleted) {
-                callbacks.onPlanStepUpdate(executionPlan.executionSteps.length);
+                if (orchestrationResult.complete) {
+                    callbacks.onPlanStepUpdate(executionPlan.executionSteps.length);
+                    planCompleted = true;
+                }
             }
         }
 
@@ -175,6 +171,34 @@ export class OrchestrationAgent extends AIController {
                     functionCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ continue: true, continueContext: parseResult.data.context_for_next_step });
+                return { shouldExit: true }
+            }
+
+            if (isAIFunction(functionCallName, AIFunction.CompletePlan)) {
+                const parseResult = CompletePlanArgsSchema.safeParse(functionCall.arguments);
+                if (!parseResult.success) {
+                    planningConversation.addFunctionResponse(new AIFunctionResponse(
+                        functionCallName,
+                        { error: `Invalid arguments for ${AIFunction.CompletePlan}: ${parseResult.error.message}` },
+                        functionCall.toolId
+                    ));
+                    return { shouldExit: false };
+                }
+                if (!parseResult.data.confirm_completion) {
+                    planningConversation.addFunctionResponse(new AIFunctionResponse(
+                        functionCallName,
+                        { error: "Confirmation was false, no action taken" },
+                        functionCall.toolId
+                    ));
+                    return { shouldExit: false };
+                }
+                this.debugService?.log("Orchestration", `CompletePlan called (confirmed: ${parseResult.data.confirm_completion})`);
+                planningConversation.addFunctionResponse(new AIFunctionResponse(
+                    functionCallName,
+                    { message: "Plan Completed" },
+                    functionCall.toolId
+                ));
+                orchestrationResult = new OrchestrationResult({ complete: true });
                 return { shouldExit: true }
             }
 

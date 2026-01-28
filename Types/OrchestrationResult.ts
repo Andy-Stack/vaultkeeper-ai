@@ -5,6 +5,7 @@ type OrchestrationResultInit = {
     abortContext?: string;
     replan?: boolean;
     replanContext?: string;
+    complete?: boolean;
 };
 
 export class OrchestrationResult {
@@ -15,6 +16,7 @@ export class OrchestrationResult {
     public abortContext: string;
     public replan: boolean;
     public replanContext: string;
+    public complete: boolean;
 
     constructor(init: OrchestrationResultInit) {
         this.continue = init.continue ?? false;
@@ -23,6 +25,7 @@ export class OrchestrationResult {
         this.abortContext = init.abortContext ?? "";
         this.replan = init.replan ?? false;
         this.replanContext = init.replanContext ?? "";
+        this.complete = init.complete ?? false;
     }
 
 }

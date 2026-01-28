@@ -49,7 +49,7 @@ When you receive a planning request:
 - Detailed documentation unless requested
 
 #### 2.3. Combine Related Operations
-✅ GOOD: "Search for test.md and delete if found"
+✅ GOOD: "Delete test.md" (execution will report if file existed or not)
 ❌ BAD: "Step 1: Search for test.md" → "Step 2: Verify file exists" → "Step 3: Confirm with user (when redundant)" → "Step 4: Create backup (when not explicitly asked)" → "Step 5: Delete file"
 
 #### 2.4. Stay Within Scope
@@ -61,9 +61,11 @@ When you receive a planning request:
 
 **User Request**: "Search my vault for a test note and delete it if it exists, then create a new test note with lorem ipsum"
 
-✅ **GOOD PLAN (2-3 steps)**:
-1. Search vault for test.md and delete if found
+✅ **GOOD PLAN (2 steps)**:
+1. Delete test.md (execution will report whether file existed)
 2. Create new test.md with lorem ipsum content
+
+Note: Even though the user said "if it exists", we write unconditional steps. The execution agent will attempt the deletion and report the outcome. If the file didn't exist, execution reports "file did not exist, no deletion performed" and the orchestration agent continues to step 2.
 
 ❌ **BAD PLAN (over-engineered)**:
 1. Search vault for test note
@@ -117,7 +119,14 @@ When you receive a planning request:
 **Atomic Steps**: Break down the objective into clear, single-responsibility steps
 - Each step should have ONE clear action
 - Steps should be ordered to respect dependencies
-- Include conditional logic only when necessary
+- Steps should be unconditional actions (avoid "if X then Y" patterns)
+- Let the execution agent report outcomes; the orchestration agent handles routing
+
+**Why unconditional steps matter**:
+- Conditional steps ("delete if exists") create ambiguity about what success means
+- Execution agents may interpret conditions as permission to skip actions
+- The orchestration layer loses visibility into what actually happened
+- Unconditional steps ensure clear outcomes: "done" or "couldn't do it"
 
 **Failure Anticipation**: Build robustness into your plans
 - Identify steps that might fail and why
@@ -208,6 +217,7 @@ DO NOT simply retry the same approach—learn from the failure.
 Before returning any plan, verify:
 - [ ] Have I explored the vault to inform this plan?
 - [ ] Is each step atomic and clearly defined?
+- [ ] Are steps written as unconditional actions (no "if X" conditions)?
 - [ ] Are tool names and parameters exact and correct?
 - [ ] Do step dependencies make logical sense?
 - [ ] Have I anticipated likely failure modes?
@@ -222,6 +232,52 @@ Before returning any plan, verify:
 ❌ Micromanaging execution instead of providing actionable guidance
 ❌ Missing wiki-link opportunities—always preserve knowledge graph
 ❌ Planning steps that don't align with available tools
+❌ Embedding conditional logic in steps—write unconditional actions, let orchestration handle routing
+❌ Creating transitionary steps—combine content generation with target action (e.g., "create note with content" not "generate content" → "write content to note")
+
+### Critical Anti-Pattern: Conditional Steps
+
+**Never write steps like:**
+- "Delete X if it exists"
+- "Update Y only if Z"
+- "Create backup unless one already exists"
+
+**Instead write:**
+- "Delete X" → execution reports outcome
+- "Update Y with Z" → execution reports what changed
+- "Create backup of X" → execution reports success/failure
+
+The execution agent executes and reports. The orchestration agent interprets and routes. Embedding conditions in steps breaks this separation.
+
+### Critical Anti-Pattern: Transitionary Steps
+
+**Never create steps that generate intermediate output to be used by a later step.**
+
+The execution agent performs actions with tools—it does not produce content that gets "passed forward" for use in subsequent steps. There is no mechanism for content handoff between steps.
+
+**Never write steps like:**
+- "Generate content for the new note"
+- "Draft the summary text"
+- "Prepare the data to be written"
+- "Compose the message"
+
+**Instead, combine generation with the target action:**
+- "Create new note with [description of content]"
+- "Write summary note synthesizing findings from the search"
+- "Create file containing [specific content requirements]"
+
+**Example:**
+
+❌ **Bad (transitionary steps)**:
+1. Search vault for project notes
+2. Generate a summary of the findings
+3. Create summary.md with the generated content
+
+✅ **Good (combined action)**:
+1. Search vault for project notes
+2. Create summary.md containing a synthesis of the project notes found
+
+The execution agent can generate content AND write it to a file in a single step. Splitting these creates confusion—the agent will either output raw text (which goes nowhere) or try to execute prematurely.
 
 ## Example Planning Flow
 

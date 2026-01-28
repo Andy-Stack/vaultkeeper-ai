@@ -50,7 +50,7 @@ export abstract class AIFunctionDefinitions {
     }
 
     public static orchestrationAgentDefinitions(): IAIFunctionDefinition[] {
-        return [CompleteStep, Replan, CancelPlan];
+        return [CompleteStep, Replan, CancelPlan, CompletePlan];
     }
 
     public static planningAgentDefinitions(): IAIFunctionDefinition[] {

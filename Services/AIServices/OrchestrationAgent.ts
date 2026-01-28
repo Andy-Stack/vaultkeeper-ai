@@ -48,6 +48,7 @@ export class OrchestrationAgent extends AIController {
             callbacks.onPlanUpdate(executionPlan);
 
             let currentStepIndex = 0;
+            let replanRequested = false;
             for (const [index, step] of executionPlan.executionSteps.entries()) {
                 currentStepIndex = index;
                 callbacks.onPlanStepUpdate(currentStepIndex);
@@ -102,11 +103,16 @@ export class OrchestrationAgent extends AIController {
                         role: Role.User,
                         content: `A replan was requested when attempting to execute Step ${index + 1}. Replan context: ${orchestrationResult.replanContext}`
                     }));
+                    replanRequested = true;
                     break;
                 }
             }
 
-            planCompleted = currentStepIndex >= executionPlan.executionSteps.length - 1;
+            planCompleted = !replanRequested && currentStepIndex >= executionPlan.executionSteps.length - 1;
+
+            if (planCompleted) {
+                callbacks.onPlanStepUpdate(executionPlan.executionSteps.length);
+            }
         }
 
         this.debugService?.log("OrchestrationAgent", "Planned workflow completed - requesting summary");

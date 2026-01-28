@@ -23,8 +23,13 @@ export class ExecutionAgent extends AIController {
 
     public async runExecutionAgent(step: ExecutionStep, callbacks: IChatServiceCallbacks): Promise<CompleteTaskArgs | undefined> {
         this.setAgentPromptAndTools();
+        this.debugService?.log("ExecutionAgent", `Starting ExecutionAgent (depth: ${this.executionDepth + 1}/${ExecutionAgent.MAX_AGENT_DEPTH})`);
 
         if (this.executionDepth === 0) {
+            this.debugService?.log("ExecutionAgent", `Executing step: ${step.instruction}`);
+            if (step.context) {
+                this.debugService?.log("ExecutionAgent", `Step context: ${step.context.substring(0, 100)}...`);
+            }
             this.conversation.contents.push(new ConversationContent({
                 role: Role.User,
                 content: replaceCopy(Copy.ExecuteStep, [step.instruction, step.context ?? ""])
@@ -32,6 +37,7 @@ export class ExecutionAgent extends AIController {
         }
 
         if (this.executionDepth >= ExecutionAgent.MAX_AGENT_DEPTH) {
+            this.debugService?.log("ExecutionAgent", `Max execution depth reached (${ExecutionAgent.MAX_AGENT_DEPTH})`);
             return;
         }
         this.executionDepth++;
@@ -51,10 +57,12 @@ export class ExecutionAgent extends AIController {
                     ));
                     return { shouldExit: false };
                 }
+                this.debugService?.log("ExecutionAgent", `Task completed (success: ${parseResult.data.success}): ${parseResult.data.description}`);
                 executionResult = parseResult.data;
                 return { shouldExit: true };
             }
 
+            this.debugService?.log("ExecutionAgent", `Executing function: ${functionCallName}`);
             this.updateThought(functionCall, callbacks);
             const functionResponse = await this.aiFunctionService.performAIFunction(functionCall);
             this.conversation.addFunctionResponse(functionResponse);
@@ -62,6 +70,7 @@ export class ExecutionAgent extends AIController {
         });
 
         if (!executionResult) {
+            this.debugService?.log("ExecutionAgent", "Task not completed - retrying");
             this.conversation.contents.push(new ConversationContent({
                 role: Role.User,
                 content: Copy.ExecuteSignal

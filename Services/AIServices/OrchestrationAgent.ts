@@ -22,6 +22,7 @@ export class OrchestrationAgent extends AIController {
     private orchestrationDepth: number = 0;
 
     public async runPlannedWorkflow(planRequest: ExecuteWorkflowArgs, callbacks: IChatServiceCallbacks): Promise<object> {
+        this.debugService?.log("OrchestrationAgent", `Starting planned workflow: ${planRequest.goal}`);
         const planningConversation: Conversation = new Conversation();
         planningConversation.contents.push(new ConversationContent({
             role: Role.User,
@@ -35,33 +36,41 @@ export class OrchestrationAgent extends AIController {
         while (!planCompleted) {
             callbacks.onPlanReset();
             callbacks.onPlanningStarted();
+            this.debugService?.log("OrchestrationAgent", "Spawning PlanningAgent to generate execution plan");
             const executionPlan = await planningAgent.runPlanningAgent(planningConversation, callbacks, false);
             callbacks.onPlanningFinished();
 
             if (!executionPlan) {
+                this.debugService?.log("OrchestrationAgent", "Planning failed - no execution plan generated");
                 return { message: Copy.PlanningFailedNoSteps };
             }
+            this.debugService?.log("OrchestrationAgent", `Execution plan received with ${executionPlan.executionSteps.length} steps`);
             callbacks.onPlanUpdate(executionPlan);
 
             let currentStepIndex = 0;
             for (const [index, step] of executionPlan.executionSteps.entries()) {
                 currentStepIndex = index;
                 callbacks.onPlanStepUpdate(currentStepIndex);
+                this.debugService?.log("OrchestrationAgent", `Executing step ${index + 1}/${executionPlan.executionSteps.length}: ${step.description}`);
 
+                this.debugService?.log("OrchestrationAgent", "Spawning ExecutionAgent for step");
                 const executionAgent = new ExecutionAgent();
                 executionAgent.resolveAIProvider();
                 const executionResult = await executionAgent.runExecutionAgent(step, callbacks);
 
                 if (!executionResult) {
+                    this.debugService?.log("OrchestrationAgent", `Step ${index + 1} failed to execute - workflow aborted`);
                     return { message: replaceCopy(Copy.WorkflowFailedAtStep, [step.description]) };
                 }
 
                 if (executionResult.success) {
+                    this.debugService?.log("OrchestrationAgent", `Step ${index + 1} succeeded: ${executionResult.description}`);
                     planningConversation.contents.push(new ConversationContent({
                         role: Role.User,
                         content: `Step ${index + 1} executed with the following result: ${executionResult.description}`
                     }));
                 } else {
+                    this.debugService?.log("OrchestrationAgent", `Step ${index + 1} failed: ${executionResult.description}`);
                     planningConversation.contents.push(new ConversationContent({
                         role: Role.User,
                         content: `Step ${index + 1} failed to execute to completion. Result: ${executionResult.description}`
@@ -72,20 +81,23 @@ export class OrchestrationAgent extends AIController {
                 const orchestrationResult = await this.runOrchestrationAgentLoop(planningConversation, callbacks);
 
                 if (orchestrationResult.continue) {
+                    this.debugService?.log("OrchestrationAgent", `Orchestration decision: CONTINUE${orchestrationResult.continueContext ? ' (with context)' : ''}`);
                     if (orchestrationResult.continueContext && index + 1 < executionPlan.executionSteps.length) {
                         const nextStep = executionPlan.executionSteps[index + 1];
-                        nextStep.context = nextStep.context 
+                        nextStep.context = nextStep.context
                             ? nextStep.context.concat("\n\n", orchestrationResult.continueContext)
                             : orchestrationResult.continueContext;
                     }
                     continue;
                 }
                 if (orchestrationResult.abort) {
+                    this.debugService?.log("OrchestrationAgent", `Orchestration decision: ABORT - ${orchestrationResult.abortContext}`);
                     return {
                         message: replaceCopy(Copy.WorkflowAborted, [orchestrationResult.abortContext]),
                     };
                 }
                 if (orchestrationResult.replan) {
+                    this.debugService?.log("OrchestrationAgent", `Orchestration decision: REPLAN - ${orchestrationResult.replanContext}`);
                     planningConversation.contents.push(new ConversationContent({
                         role: Role.User,
                         content: `A replan was requested when attempting to execute Step ${index + 1}. Replan context: ${orchestrationResult.replanContext}`
@@ -97,6 +109,7 @@ export class OrchestrationAgent extends AIController {
             planCompleted = currentStepIndex >= executionPlan.executionSteps.length - 1;
         }
 
+        this.debugService?.log("OrchestrationAgent", "Planned workflow completed - requesting summary");
         planningConversation.contents.push(new ConversationContent({
             role: Role.User,
             content: Copy.RequestPlanSummary
@@ -110,9 +123,11 @@ export class OrchestrationAgent extends AIController {
         this.setAgentPromptAndTools();
 
         if (this.orchestrationDepth >= OrchestrationAgent.MAX_AGENT_DEPTH) {
+            this.debugService?.log("Orchestration", "Max orchestration depth reached - aborting");
             return new OrchestrationResult({ abort: true, abortContext: "Max orchestration depth reached" });
         }
         this.orchestrationDepth++;
+        this.debugService?.log("Orchestration", `Starting orchestration loop (depth: ${this.orchestrationDepth}/${OrchestrationAgent.MAX_AGENT_DEPTH})`);
 
         let orchestrationResult: OrchestrationResult | undefined = undefined;
 
@@ -120,6 +135,7 @@ export class OrchestrationAgent extends AIController {
             const functionCallName = functionCall.name;
 
             if (!AIFunctionDefinitions.orchestrationAgentDefinitions().some(definition => isAIFunction(functionCallName, definition.name))) {
+                this.debugService?.log("Orchestration", `Invalid tool call denied: ${functionCallName}`);
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
                     { message: Copy.OrchestrationToolDenial },
@@ -146,6 +162,7 @@ export class OrchestrationAgent extends AIController {
                     ));
                     return { shouldExit: false };
                 }
+                this.debugService?.log("Orchestration", `CompleteStep called (confirmed: ${parseResult.data.confirm_completion})`);
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
                     { message: "Step Completed" },
@@ -165,6 +182,7 @@ export class OrchestrationAgent extends AIController {
                     ));
                     return { shouldExit: false };
                 }
+                this.debugService?.log("Orchestration", `Replan requested: ${parseResult.data.context}`);
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
                     { message: "Replan Requested" },
@@ -184,6 +202,7 @@ export class OrchestrationAgent extends AIController {
                     ));
                     return { shouldExit: false };
                 }
+                this.debugService?.log("Orchestration", `Plan cancellation requested: ${parseResult.data.context}`);
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
                     { message: "Plan Cancelled" },
@@ -197,6 +216,7 @@ export class OrchestrationAgent extends AIController {
         });
 
         if (!orchestrationResult) {
+            this.debugService?.log("Orchestration", "Orchestration signal required - retrying");
             planningConversation.contents.push(new ConversationContent({
                 role: Role.User,
                 content: Copy.OrchestrationSignalRequired

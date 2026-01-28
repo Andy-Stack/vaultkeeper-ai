@@ -42,14 +42,17 @@ export class AIController {
     protected async runAgentLoop(agentType: AgentType, conversation: Conversation, callbacks: IChatServiceCallbacks,
         handleFunctionCall: (functionCall: AIFunctionCall) => Promise<{ shouldExit: boolean }>
     ): Promise<void> {
+        this.debugService?.log("AgentLoop", `Starting ${agentType} agent loop`);
         let response = await this.streamRequestResponse(agentType, this.ensureCorrectConversationStructure(conversation), callbacks);
 
         this.saveConversation(agentType, conversation);
 
         while (response.functionCall || response.shouldContinue) {
             if (response.functionCall) {
+                this.debugService?.log("FunctionCall", `${agentType} received function call: ${response.functionCall.name}`);
                 const result = await handleFunctionCall(response.functionCall);
                 if (result.shouldExit) {
+                    this.debugService?.log("AgentLoop", `${agentType} exiting loop (shouldExit: true)`);
                     this.saveConversation(agentType, conversation);
                     return;
                 }
@@ -61,6 +64,7 @@ export class AIController {
 
             this.saveConversation(agentType, conversation);
         }
+        this.debugService?.log("AgentLoop", `${agentType} agent loop completed`);
     }
 
     protected async requestAgentResponse(conversation: Conversation, callbacks: IChatServiceCallbacks): Promise<string> {
@@ -134,6 +138,7 @@ export class AIController {
 
         for await (const chunk of this.ai.streamRequest(conversation)) {
             if (chunk.error && chunk.errorType) {
+                this.debugService?.log("StreamError", `AI stream error for ${agentType}: ${chunk.errorType}`);
                 conversationContent.content = chunk.error;
                 conversationContent.errorType = chunk.errorType;
                 callbacks.onStreamingUpdate(null);
@@ -141,6 +146,7 @@ export class AIController {
             }
 
             if (chunk.functionCall) {
+                this.debugService?.log("FunctionCall", `Function call captured: ${chunk.functionCall.name}`);
                 capturedFunctionCall = chunk.functionCall;
             }
 

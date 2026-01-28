@@ -17,8 +17,10 @@ export class MainAgent extends AIController {
 
     public async runMainAgent(conversation: Conversation, allowDestructiveActions: boolean, planningMode: boolean, callbacks: IChatServiceCallbacks) {
         await this.setAgentPromptAndTools(planningMode, allowDestructiveActions);
+        this.debugService?.log("MainAgent", `Starting MainAgent (planningMode: ${planningMode}, destructive: ${allowDestructiveActions})`);
 
         if (planningMode) {
+            this.debugService?.log("MainAgent", "Planning mode enabled - workflow execution available");
             conversation.contents.push(new ConversationContent({
                 role: Role.User,
                 content: "Planning mode is enabled, you should request planned execution when appropriate or if you do not have the required tools to complete the request",
@@ -29,10 +31,12 @@ export class MainAgent extends AIController {
         let result = await this.runMainAgentLoop(conversation, callbacks);
 
         while (result.planRequest && result.functionCall) {
+            this.debugService?.log("MainAgent", "Spawning OrchestrationAgent for planned workflow");
             const orchestrationAgent = new OrchestrationAgent();
             orchestrationAgent.resolveAIProvider();
             const workflowResult = await orchestrationAgent.runPlannedWorkflow(result.planRequest, callbacks);
-            
+            this.debugService?.log("MainAgent", "OrchestrationAgent workflow completed");
+
             conversation.addFunctionResponse(new AIFunctionResponse(
                 result.functionCall.name,
                 workflowResult,
@@ -54,6 +58,7 @@ export class MainAgent extends AIController {
         await this.runAgentLoop(AgentType.Main, conversation, callbacks, async functionCall => {
             const functionCallName = functionCall.name;
             if (isAIFunction(functionCallName, AIFunction.ExecuteWorkflow)) {
+                this.debugService?.log("MainAgent", "ExecuteWorkflow function detected - transitioning to orchestration");
                 const parseResult = ExecuteWorkflowArgsSchema.safeParse(functionCall.arguments);
                 if (!parseResult.success) {
                     conversation.addFunctionResponse(new AIFunctionResponse(
@@ -69,6 +74,7 @@ export class MainAgent extends AIController {
                 return { shouldExit: true };
             }
 
+            this.debugService?.log("MainAgent", `Executing function: ${functionCallName}`);
             this.updateThought(functionCall, callbacks);
             const functionResponse = await this.aiFunctionService.performAIFunction(functionCall);
             conversation.addFunctionResponse(functionResponse);

@@ -25,14 +25,17 @@ export class PlanningAgent extends AIController {
         let capturedPlan: ExecutionPlan | null = null;
 
         if (this.planningDepth >= PlanningAgent.MAX_AGENT_DEPTH) {
+            this.debugService?.log("PlanningAgent", `Max planning depth reached (${PlanningAgent.MAX_AGENT_DEPTH})`);
             return;
         }
         this.planningDepth++;
+        this.debugService?.log("PlanningAgent", `Starting PlanningAgent (isReplan: ${isReplan}, depth: ${this.planningDepth}/${PlanningAgent.MAX_AGENT_DEPTH})`);
 
         await this.runAgentLoop(AgentType.Planning, conversation, callbacks, async (functionCall) => {
             const functionCallName = functionCall.name;
 
             if (!AIFunctionDefinitions.planningAgentDefinitions().some(definition => isAIFunction(functionCallName, definition.name))) {
+                this.debugService?.log("PlanningAgent", `Invalid tool call denied: ${functionCallName}`);
                 conversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
                     { message: Copy.PlanningToolDenial },
@@ -51,8 +54,10 @@ export class PlanningAgent extends AIController {
                     ));
                     return { shouldExit: false };
                 }
+                this.debugService?.log("PlanningAgent", `Asking user question: ${parseResult.data.question}`);
                 this.updateThought(functionCall, callbacks);
                 const answer = await callbacks.onUserQuestion(parseResult.data.question);
+                this.debugService?.log("PlanningAgent", "User answer received");
                 conversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
                     { answer: answer },
@@ -71,6 +76,7 @@ export class PlanningAgent extends AIController {
                     ));
                     return { shouldExit: false };
                 }
+                this.debugService?.log("PlanningAgent", `Plan submitted successfully with ${parseResult.data.steps.length} steps`);
                 capturedPlan = new ExecutionPlan(parseResult.data, isReplan);
                 conversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
@@ -87,6 +93,7 @@ export class PlanningAgent extends AIController {
         });
 
         if (!capturedPlan) {
+            this.debugService?.log("PlanningAgent", "Plan submission failed - retrying");
             Exception.warn(`Failed to generate execution plan.\n${JSON.stringify(conversation, null, 2)}`);
             conversation.contents.push(new ConversationContent({
                 role: Role.User,

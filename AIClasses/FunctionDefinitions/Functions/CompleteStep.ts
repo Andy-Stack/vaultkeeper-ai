@@ -11,10 +11,14 @@ export const CompleteStep: IAIFunctionDefinition = {
   parameters: {
     type: "object",
     properties: {
+      context_for_next_step: {
+        type: "string",
+        description: "Optional contextual information needed for the next step's execution, derived from any relevant parts of the execution history so far. Analyze what the next step requires and provide only the pertinent information from previous steps (not just the most recent one). Examples: 'Files created: /notes/summary.md, /notes/details.md', 'Search found 5 entries in tags: work, personal', 'Current state: theme=dark, sidebar=collapsed'. Omit if the next step can execute independently without prior results."
+      },
       confirm_completion: {
-          type: "boolean",
-          description: "Safety flag that must be explicitly set to true to confirm the step completion is intentional. This prevents accidental completions.",
-          default: false
+        type: "boolean",
+        description: "Safety flag that must be explicitly set to true to confirm the step completion is intentional. This prevents accidental completions.",
+        default: false
       }
     },
     required: ["confirm_completion"]

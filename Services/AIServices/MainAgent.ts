@@ -11,6 +11,7 @@ import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
 import { OrchestrationAgent } from "./OrchestrationAgent";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
+import { DebugColor } from "Enums/DebugColor";
 
 export class MainAgent extends AIController {
 
@@ -84,6 +85,10 @@ export class MainAgent extends AIController {
         this.ai.systemPrompt = this.aiPrompt.systemInstruction();
         this.ai.userInstruction = await this.aiPrompt.userInstruction();
         this.ai.toolDefinitions = AIFunctionDefinitions.agentDefinitions(allowDestructiveActions, planningMode);
+    }
+
+    protected override setDebugColor(): void {
+        this.debugService?.setDebugColor(DebugColor.BLUE);
     }
     
 }

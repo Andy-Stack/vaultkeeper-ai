@@ -13,6 +13,7 @@ import { OrchestrationResult } from "Types/OrchestrationResult";
 import { AgentType } from "Enums/AgentType";
 import { AIFunction, isAIFunction } from "Enums/AIFunction";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
+import { DebugColor } from "Enums/DebugColor";
 
 export class OrchestrationAgent extends AIController {
     
@@ -71,6 +72,12 @@ export class OrchestrationAgent extends AIController {
                 const orchestrationResult = await this.runOrchestrationAgentLoop(planningConversation, callbacks);
 
                 if (orchestrationResult.continue) {
+                    if (orchestrationResult.continueContext && index + 1 < executionPlan.executionSteps.length) {
+                        const nextStep = executionPlan.executionSteps[index + 1];
+                        nextStep.context = nextStep.context 
+                            ? nextStep.context.concat("\n\n", orchestrationResult.continueContext)
+                            : orchestrationResult.continueContext;
+                    }
                     continue;
                 }
                 if (orchestrationResult.abort) {
@@ -144,7 +151,7 @@ export class OrchestrationAgent extends AIController {
                     { message: "Step Completed" },
                     functionCall.toolId
                 ));
-                orchestrationResult = new OrchestrationResult({ continue: true });
+                orchestrationResult = new OrchestrationResult({ continue: true, continueContext: parseResult.data.context_for_next_step });
                 return { shouldExit: true }
             }
 
@@ -212,6 +219,10 @@ export class OrchestrationAgent extends AIController {
         this.ai.systemPrompt = this.aiPrompt.orchestrationInstruction();
         this.ai.userInstruction = ""; // do not include user instruction for orchestration agent
         this.ai.toolDefinitions = AIFunctionDefinitions.orchestrationAgentDefinitions();
+    }
+
+    protected override setDebugColor(): void {
+        this.debugService?.setDebugColor(DebugColor.ORANGE);
     }
     
 }

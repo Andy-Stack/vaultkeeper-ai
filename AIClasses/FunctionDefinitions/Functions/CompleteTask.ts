@@ -22,6 +22,10 @@ export const CompleteTask: IAIFunctionDefinition = {
         description: {
           type: "string",
           description: "A summary of what was accomplished, any outputs produced, or what prevented completion."
+        },
+        context: {
+          type: "string",
+          description: "Optional contextual information that should be preserved or passed forward after task completion. Include any relevant state, findings, file paths, or intermediate results that might be useful for subsequent operations or for the user to understand what was done. Examples: 'Created 3 new notes in /Projects folder', 'Found configuration in settings.json', 'Modified files: note1.md, note2.md'"
         }
       },
       required: ["success", "description"]

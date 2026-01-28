@@ -2,7 +2,7 @@ import { TAbstractFile, TFile, TFolder } from "obsidian";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type { VaultService } from "./VaultService";
-import type { ISearchMatch } from "../Helpers/SearchTypes";
+import type { ISearchMatch } from "../Types/SearchTypes";
 import { Exception } from "Helpers/Exception";
 
 export class FileSystemService {

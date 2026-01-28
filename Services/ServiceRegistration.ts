@@ -38,6 +38,8 @@ import { ClaudeFileService } from "AIClasses/Claude/ClaudeFileService";
 import { GeminiFileService } from "AIClasses/Gemini/GeminiFileService";
 import { OpenAIFileService } from "AIClasses/OpenAI/OpenAIFileService";
 import { MainAgent } from "./AIServices/MainAgent";
+import { Environment } from "Enums/Environment";
+import { DebugService } from "./DebugService";
 
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
     RegisterSingleton<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin, plugin);
@@ -45,6 +47,10 @@ export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
 } 
 
 export function RegisterDependencies() {
+    if (process.env.NODE_ENV === Environment.DEV) {
+        RegisterTransient<DebugService | undefined>(Services.DebugService, () => new DebugService());
+    }
+
     RegisterSingleton<EventService>(Services.EventService, new EventService());
     RegisterSingleton<AbortService>(Services.AbortService, new AbortService());
     RegisterSingleton<HTMLService>(Services.HTMLService, new HTMLService());

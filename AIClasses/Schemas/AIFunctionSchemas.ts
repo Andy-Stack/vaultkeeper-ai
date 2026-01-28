@@ -75,12 +75,14 @@ export const CancelPlanArgsSchema = z.object({
 });
 
 export const CompleteStepArgsSchema = z.object({
+	context_for_next_step: z.string().optional(),
 	confirm_completion: z.boolean()
 });
 
 export const CompleteTaskArgsSchema = z.object({
 	success: z.boolean(),
-	description: z.string()
+	description: z.string(),
+	context: z.string().optional()
 });
 
 export const SubmitPlanArgsSchema = z.object({

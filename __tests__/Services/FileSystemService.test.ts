@@ -4,7 +4,7 @@ import { VaultService } from '../../Services/VaultService';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { TFile, TFolder, TAbstractFile } from 'obsidian';
-import type { ISearchMatch } from '../../Helpers/SearchTypes';
+import type { ISearchMatch } from '../../Types/SearchTypes';
 import { Exception } from '../../Helpers/Exception';
 
 // Helper function to create mock TFile

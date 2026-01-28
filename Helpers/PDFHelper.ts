@@ -1,5 +1,5 @@
 import { extractText, getDocumentProxy } from 'unpdf';
-import type { IPageText } from './SearchTypes';
+import type { IPageText } from '../Types/SearchTypes';
 import { Exception } from './Exception';
 
 export async function readPDF(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {

@@ -9,21 +9,26 @@ import { Copy } from "Enums/Copy";
 import { Role } from "Enums/Role";
 import { sanitizeFunctionCallContent } from "Helpers/ResponseHelper";
 import type { IChatServiceCallbacks } from "Services/ChatService";
-import { Resolve } from "Services/DependencyService";
+import { Resolve, TryResolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
 import type { AIFunctionService } from "./AIFunctionService";
+import type { DebugService } from "Services/DebugService";
+import { DebugColor } from "Enums/DebugColor";
 
 export class AIController {
     
     protected ai: IAIClass | undefined;
     protected readonly aiPrompt: IPrompt;
     protected readonly aiFunctionService: AIFunctionService;
+    protected readonly debugService: DebugService | undefined;
 
     private onSaveConversation?: (conversation: Conversation) => Promise<void>;
 
     public constructor() {
         this.aiPrompt = Resolve<IPrompt>(Services.IPrompt);
         this.aiFunctionService = Resolve<AIFunctionService>(Services.AIFunctionService);
+        this.debugService = TryResolve<DebugService>(Services.DebugService);
+        this.setDebugColor();
     }
 
     public resolveAIProvider() {
@@ -89,6 +94,10 @@ export class AIController {
         if (userMessage && typeof userMessage === "string") {
             callbacks.onThoughtUpdate(userMessage);
         }
+    }
+
+    protected setDebugColor() {
+        this.debugService?.setDebugColor(DebugColor.WHITE);
     }
 
     private async saveConversation(agentType: AgentType, conversation: Conversation) {

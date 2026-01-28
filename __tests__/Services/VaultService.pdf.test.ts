@@ -8,7 +8,7 @@ import { SettingsService, type IVaultkeeperAISettings } from '../../Services/Set
 import { AIProviderModel } from '../../Enums/ApiProvider';
 import { Exception } from '../../Helpers/Exception';
 import * as PDFHelper from '../../Helpers/PDFHelper';
-import type { IPageText } from '../../Helpers/SearchTypes';
+import type { IPageText } from '../../Types/SearchTypes';
 
 /**
  * PDF-SPECIFIC TESTS FOR VAULTSERVICE

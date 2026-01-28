@@ -29,6 +29,7 @@ If you cannot complete the task:
 - 2. Document specifically what blocked you
 - 3. Signal completion with a clear indication of failure and explanation of the blocker
 - 4. Do not leave work in a broken or half-finished state if avoidable
+- 5. If you deviated from the initial task instructions, justify why you did this
 
 ### Boundaries
 - You have no memory of previous conversations

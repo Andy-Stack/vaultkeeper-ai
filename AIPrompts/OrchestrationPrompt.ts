@@ -16,6 +16,7 @@ After reviewing the execution state, you must signal exactly one outcome:
 Signal this when:
 - The most recent step succeeded
 - The results align with what the plan expected
+- The results don't align with what the plan expected but the results have been reasonably justified
 - No adjustments are needed
 
 **Replan** — The plan needs adjustment.

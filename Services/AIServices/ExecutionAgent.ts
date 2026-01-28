@@ -11,6 +11,7 @@ import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResp
 import { Exception } from "Helpers/Exception";
 import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import { Copy, replaceCopy } from "Enums/Copy";
+import { DebugColor } from "Enums/DebugColor";
 
 export class ExecutionAgent extends AIController {
 
@@ -78,6 +79,10 @@ export class ExecutionAgent extends AIController {
         this.ai.systemPrompt = this.aiPrompt.executionInstruction();
         this.ai.userInstruction = ""; // do not include user instruction for execution agent
         this.ai.toolDefinitions = AIFunctionDefinitions.executionAgentDefinitions();
+    }
+
+    protected override setDebugColor(): void {
+        this.debugService?.setDebugColor(DebugColor.GREEN);
     }
 
 }

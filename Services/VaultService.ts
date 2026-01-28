@@ -5,7 +5,7 @@ import type VaultkeeperAIPlugin from "main";
 import { Path } from "Enums/Path";
 import { pathExtname, randomSample, shuffleArray } from "Helpers/Helpers";
 import { StringTools } from "Helpers/StringTools";
-import type { IPageText, ISearchMatch, ISearchSnippet } from "../Helpers/SearchTypes";
+import type { IPageText, ISearchMatch, ISearchSnippet } from "../Types/SearchTypes";
 import type { SanitiserService } from "./SanitiserService";
 import { FileEvent } from "Enums/FileEvent";
 import type { SettingsService } from "./SettingsService";

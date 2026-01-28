@@ -11,6 +11,7 @@ import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionD
 import { Copy } from "Enums/Copy";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
+import { DebugColor } from "Enums/DebugColor";
 
 export class PlanningAgent extends AIController {
  
@@ -105,6 +106,10 @@ export class PlanningAgent extends AIController {
         this.ai.systemPrompt = this.aiPrompt.planningInstruction();
         this.ai.userInstruction = await this.aiPrompt.userInstruction();
         this.ai.toolDefinitions = AIFunctionDefinitions.planningAgentDefinitions();
+    }
+
+    protected override setDebugColor(): void {
+        this.debugService?.setDebugColor(DebugColor.YELLOW);
     }
 
 }

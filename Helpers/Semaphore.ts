@@ -1,4 +1,5 @@
 export class Semaphore {
+
     private max: number;
     private count: number;
     private readonly waitAsync: boolean;
@@ -38,4 +39,5 @@ export class Semaphore {
             }
         }
     }
+    
 }

@@ -30,64 +30,73 @@
     chatContainer.scroll({ top: 0, behavior: "instant" });
   }
 
-  export function updateChatAreaLayout(behavior: ScrollBehavior | undefined, shouldSettle: boolean = false, isObserver: boolean = false) {
+  export function resetAutoScroll() {
+    autoScroll = true;
+  }
+
+  export function updateChatAreaLayout(behavior: ScrollBehavior | undefined, shouldSettle: boolean = false) {
     if (layoutUpdateTimeout) {
       clearTimeout(layoutUpdateTimeout);
+      layoutUpdateTimeout = null;
     }
 
-    const performLayoutCalculations = () => {
-      if (messageElements.length <= 0 || !chatAreaPaddingElement) {
-        if (chatAreaPaddingElement) {
-          chatAreaPaddingElement.style.padding = "0px";
-        }
+    const executeLayout = async () => {
+      await tick();
+
+      if (!chatAreaPaddingElement) {
         return;
       }
 
-      const gap = parseFloat(getComputedStyle(chatContainer).gap) || 0;
-      const paddingTop = parseFloat(getComputedStyle(chatContainer).paddingTop) || 0;
-      const paddingBottom = parseFloat(getComputedStyle(chatContainer).paddingBottom) || 0;
-
-      const messageElement = messageElements.sort((a, b) => a.index - b.index)[messageElements.length - 1];
-      let messageSpace = getOuterHeight(messageElement.element);
-
-      if (!shouldSettle) {
-        if (thoughtIndicatorElement) {
-          messageSpace += getOuterHeight(thoughtIndicatorElement) + gap;
-        }
-        if (streamingIndicatorElement) {
-          messageSpace += getOuterHeight(streamingIndicatorElement) + gap;
-        }
+      if (messageElements.length <= 0) {
+        chatAreaPaddingElement.style.paddingBottom = "0px";
+        return;
       }
 
-      let padding = chatContainer.offsetHeight - paddingTop - paddingBottom - messageSpace;
-      if (!shouldSettle) {
-        padding = Math.max(padding, 25);
-      }
-      chatAreaPaddingElement.style.paddingBottom = `${Math.max(0, padding)}px`;
-
-      tick().then(() => {
-        if (behavior && (autoScroll || shouldSettle)) {
-          chatContainer.scroll({ top: chatContainer.scrollHeight, behavior: behavior })
-        }
+      requestAnimationFrame(() => {
+        applyLayout(behavior, shouldSettle);
       });
     };
 
-    if (isObserver) { // instant updates for observers
-      performLayoutCalculations();
-    } else if (behavior === "instant" || shouldSettle) {
-      tick().then(() => {
-        requestAnimationFrame(() => {
-          performLayoutCalculations();
-        });
-      });
+    // Instant/settle executes immediately; smooth updates are debounced
+    if (behavior === "instant" || shouldSettle) {
+      executeLayout();
     } else {
-      layoutUpdateTimeout = setTimeout(() => {
-        tick().then(() => {
-          requestAnimationFrame(() => {
-            performLayoutCalculations();
-          });
-        });
-      }, 50);
+      layoutUpdateTimeout = setTimeout(executeLayout, 50);
+    }
+  }
+
+  function applyLayout(behavior: ScrollBehavior | undefined, shouldSettle: boolean) {
+    if (!chatAreaPaddingElement || messageElements.length <= 0) {
+      return;
+    }
+
+    const styles = getComputedStyle(chatContainer);
+    const gap = parseFloat(styles.gap) || 0;
+    const paddingTop = parseFloat(styles.paddingTop) || 0;
+    const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+
+    const sortedMessages = messageElements.sort((a, b) => a.index - b.index);
+    const lastMessage = sortedMessages[sortedMessages.length - 1];
+    let contentHeight = getOuterHeight(lastMessage.element);
+
+    if (!shouldSettle) {
+      if (thoughtIndicatorElement) {
+        contentHeight += getOuterHeight(thoughtIndicatorElement) + gap;
+      }
+      if (streamingIndicatorElement) {
+        contentHeight += getOuterHeight(streamingIndicatorElement) + gap;
+      }
+    }
+
+    const availableHeight = chatContainer.offsetHeight - paddingTop - paddingBottom;
+    let padding = shouldSettle
+      ? Math.max(0, availableHeight - contentHeight)
+      : Math.max(25, availableHeight - contentHeight);
+
+    chatAreaPaddingElement.style.paddingBottom = `${padding}px`;
+
+    if (behavior && (autoScroll || shouldSettle)) {
+      chatContainer.scroll({ top: chatContainer.scrollHeight, behavior });
     }
   }
 
@@ -174,7 +183,7 @@
 
   function observeResize(element: HTMLElement) {
     const observer = new ResizeObserver(() => {
-      updateChatAreaLayout("smooth", false, true);
+      updateChatAreaLayout("smooth");
     });
 
     observer.observe(element);

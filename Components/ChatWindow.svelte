@@ -106,6 +106,7 @@
       onSubmit: () => {
         isSubmitting = true;
         attachments = [];
+        chatArea.resetAutoScroll();
       },
       onStreamingUpdate: (streamingId) => {
         conversation = conversation;

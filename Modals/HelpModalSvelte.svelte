@@ -216,6 +216,7 @@
 		grid-template-columns: var(--size-4-2) 1fr var(--size-4-2);
 		max-height: 60vh;
 		min-height: 60vh;
+		margin: 10px;
 	}
 
 	.help-modal-top-bar {

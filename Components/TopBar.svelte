@@ -198,6 +198,7 @@
   #conversation-divider-1 {
     grid-row: 1;
     grid-column: 5;
+    margin: 0 5px;
   }
 
   #settings-button {

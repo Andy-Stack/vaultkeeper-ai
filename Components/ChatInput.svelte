@@ -550,7 +550,7 @@
     display: grid;
     grid-template-rows: auto auto auto auto var(--size-4-3) 1fr var(--size-4-3);
     grid-template-columns: var(--size-4-3) auto var(--size-4-2) 1fr var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
-    border-radius: var(--modal-radius);
+    border-radius: var(--radius-l);
     background-color: var(--background-primary);
   }
 
@@ -587,7 +587,7 @@
   #user-instruction-button {
     grid-row: 6;
     grid-column: 2;
-    border-radius: var(--button-radius);
+    border-radius: var(--radius-l);
     align-self: end;
     transition-duration: 0.5s;
   }
@@ -605,7 +605,7 @@
     grid-column: 4;
     height: 100%;
     max-height: 30vh;
-    border-radius: var(--input-radius);
+    border-radius: var(--radius-m);
     font-weight: var(--input-font-weight);
     border-width: var(--input-border-width);
     border-style: solid;
@@ -664,7 +664,7 @@
   #edit-mode-button {
     grid-row: 6;
     grid-column: 6;
-    border-radius: var(--button-radius);
+    border-radius: var(--radius-l);
     align-self: end;
     transition-duration: 0.5s;
   }
@@ -680,7 +680,7 @@
   #planning-mode-button {
     grid-row: 6;
     grid-column: 8;
-    border-radius: var(--button-radius);
+    border-radius: var(--radius-l);
     align-self: end;
     transition-duration: 0.5s;
   }
@@ -696,7 +696,7 @@
   #submit-button {
     grid-row: 6;
     grid-column: 10;
-    border-radius: var(--button-radius);
+    border-radius: var(--radius-l);
     padding-left: var(--size-4-5);
     padding-right: var(--size-4-5);
     align-self: end;

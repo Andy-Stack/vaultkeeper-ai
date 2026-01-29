@@ -240,6 +240,13 @@
     display: none; /* Hidden by default (desktop) */
 }
 
+/* Avoid the floating obsidian controls */
+@media (max-width: 600px) {
+    .diff-mobile-controls {
+        margin-bottom: 95px;
+    }
+}
+
 .diff-view-mobile .diff-mobile-controls {
     display: grid;
     grid-template-columns: 1fr 1fr;

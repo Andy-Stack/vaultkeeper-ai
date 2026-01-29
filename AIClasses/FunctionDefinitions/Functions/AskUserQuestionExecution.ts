@@ -4,22 +4,27 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 export const AskUserQuestionExecution: IAIFunctionDefinition = {
   name: AIFunction.AskUserQuestionExecution,
   description: `Asks the user a question during plan execution and waits for their response.
-This allows interactive execution where unexpected circumstances or ambiguous situations can be resolved with user feedback.
+Use this function to resolve ambiguity at the point of discovery rather than reporting uncertain outcomes.
 
-Call this function:
-- When you encounter situations during plan execution that require user input or decisions
-- When encountering unexpected file states or content that wasn't anticipated in the plan
-- When discovering conflicts or duplicates that require user decision
-- When handling errors or edge cases where multiple recovery strategies exist
-- When confirming destructive or irreversible operations before proceeding
-- When requesting missing information that only becomes apparent during execution
-- When choosing between alternatives discovered while processing`,
+Call this function when you discover:
+- Unexpected file states (file missing when expected to exist, or exists when expected to be absent)
+- Content that doesn't match what the plan assumed (different format, structure, or data)
+- Multiple valid interpretations of how to proceed
+- Conflicts or duplicates requiring a decision
+- Situations where proceeding could cause unintended consequences
+
+Do not call this function:
+- For routine confirmations when the path forward is clear
+- When the outcome is unambiguous (e.g., "file didn't exist" for a deletion is a clear success)
+- To ask about future steps or broader plan direction (that's the orchestrator's domain)
+
+Prefer asking over reporting ambiguity: If you would otherwise report an outcome that leaves the orchestrator uncertain about whether to continue or replan, ask the user instead.`,
   parameters: {
     type: "object",
     properties: {
       question: {
         type: "string",
-        description: "The question to ask the user. Should be clear, specific, and provide enough context for the user to give a meaningful answer. Include relevant details about the current execution state or what was discovered. Use markdown formatting for emphasis, lists, code snippets, or file paths to make the question easier to read. Example: 'While updating `src/utils/parser.ts`, I found an **existing function** `parseMarkdown()` that conflicts with the one I was about to create.\n\nOptions:\n1. Rename the new function to `parseMarkdownExtended()`\n2. Replace the existing function entirely\n3. Merge the functionality into the existing function\n\nWhich approach would you prefer?'"
+        description: "The question to ask the user. Structure your question with: (1) What you discovered, (2) Why it matters, (3) Clear options if applicable. Use markdown formatting for readability e.g. emphasis, lists, code snippets, or file paths to make the question easier to read. Example: 'I was instructed to update `projects/active.md`, but the file doesn't exist.\n\n**Options:**\n1. Create the file with the intended content\n2. Skip this step (the file may have been moved or renamed)\n3. Search for a similar file that might be the intended target\n\nHow should I proceed?'"
       },
       user_message: {
         type: "string",

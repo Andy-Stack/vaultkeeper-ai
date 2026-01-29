@@ -5,10 +5,14 @@ export const WriteVaultFile: IAIFunctionDefinition = {
     name: AIFunction.WriteVaultFile,
     description: `Writes content to a file, creating it if it doesn't exist or replacing its contents if it does.
 
-**When to use this tool:**
-- Creating new notes, documents, or files from scratch
-- Completely rewriting a file's contents (when most/all content needs to change)
-- Generating new files from templates or structured data`,
+Call this function:
+- When creating new notes, documents, or files from scratch
+- When completely rewriting a file's contents (when most/all content needs to change)
+- When generating new files from templates or structured data
+
+Do NOT use this function:
+- When making small, targeted edits to existing files
+- Before reading existing file content to avoid accidentally overwriting important data`,
     parameters: {
         type: "object",
         properties: {

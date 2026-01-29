@@ -4,8 +4,16 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 export const SubmitPlan: IAIFunctionDefinition = {
     name: AIFunction.SubmitPlan,
     description: `Submits an execution plan with ordered, actionable steps.
-Use this function after analyzing the goal and vault context to provide a structured
-plan that will be followed step-by-step. Each step should be clear and executable.`,
+
+Call this function:
+- After analyzing the goal and vault context to provide a structured plan
+- When you have a clear sequence of steps that will achieve the goal
+- When each step is clear, actionable, and executable
+
+Do NOT use this function:
+- Before exploring the vault context and understanding the current state
+- When you still need more information from the user
+- When the plan is incomplete or steps are unclear`,
 
     parameters: {
       type: "object",

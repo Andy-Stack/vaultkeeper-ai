@@ -3,15 +3,17 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 
 export const CompleteTask: IAIFunctionDefinition = {
     name: AIFunction.CompleteTask,
-    description: `Signals that you have finished executing all of your assigned instructions. This function MUST be called exactly once, only after you have fully completed or can no longer make progress on everything you were asked to do.
-  
-  Do NOT call this function:
-  - After completing individual actions or sub-tasks
-  - While you still have remaining work from your instructions
-  
-  Call this function only when:
-  - You have completed everything you were instructed to do (success: true)
-  - You have encountered a blocker that prevents further progress on your instructions (success: false)`,
+    description: `Signals that you have finished executing all of your assigned instructions.
+
+This function MUST be called exactly once, only after you have fully completed or can no longer make progress on everything you were asked to do.
+
+Call this function:
+- When you have completed everything you were instructed to do (success: true)
+- When you have encountered a blocker that prevents further progress on your instructions (success: false)
+
+Do NOT use this function:
+- After completing individual actions or sub-tasks
+- While you still have remaining work from your instructions`,
     parameters: {
       type: "object",
       properties: {

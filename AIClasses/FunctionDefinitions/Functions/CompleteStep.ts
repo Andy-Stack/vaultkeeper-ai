@@ -3,11 +3,16 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 
 export const CompleteStep: IAIFunctionDefinition = {
   name: AIFunction.CompleteStep,
-  description: `Signals that plan execution should proceed to the next step without modification. 
-   
-- Use this tool when the most recent step completed successfully and its results align with the plan's expectations.
-- This is the appropriate choice when everything is working as intended and no course correction is needed.
-- Do NOT use this if there were any failures, unexpected results, or if the plan needs adjustment based on new information.`,
+  description: `Signals that plan execution should proceed to the next step without modification.
+
+Call this function:
+- When the most recent step completed successfully and its results align with the plan's expectations
+- When everything is working as intended and no course correction is needed
+
+Do NOT use this function:
+- When there were any failures or unexpected results
+- When the plan needs adjustment based on new information
+- When you need to perform more work on the current step`,
   parameters: {
     type: "object",
     properties: {

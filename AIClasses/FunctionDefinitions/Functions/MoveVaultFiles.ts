@@ -4,12 +4,16 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 export const MoveVaultFiles: IAIFunctionDefinition = {
     name: AIFunction.MoveVaultFiles,
     description: `Moves or renames one or more files within the vault to new locations.
-Use this when reorganizing vault structure, moving files between folders, renaming
-files for better organization, or consolidating related notes into appropriate
-directories. This operation preserves file content while updating paths and names.
-If renaming within the same folder, source and destination folders will be identical
-with only the filename changing. For safety, consider reading files first to confirm you're
-moving the correct content, especially when performing batch operations.`,
+This operation preserves file content while updating paths and names.
+
+Call this function:
+- When reorganizing vault structure and moving files between folders
+- When renaming files for better organization (source and destination folders identical, only filename changes)
+- When consolidating related notes into appropriate directories
+- When archiving files to a different location instead of deleting them
+
+Do NOT use this function:
+- Before reading files to confirm you're moving the correct content (especially for batch operations)`,
     parameters: {
         type: "object",
         properties: {

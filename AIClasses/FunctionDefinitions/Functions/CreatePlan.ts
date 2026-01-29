@@ -7,20 +7,20 @@ export const ExecuteWorkflow: IAIFunctionDefinition = {
 
 When called, this tool hands off the goal to a planning and execution engine that operates independently. The system will analyze the goal, create a detailed plan, execute each step programmatically, handle any necessary replanning if steps fail, and return the final outcome. You do not need to manage or monitor the execution — the result will be returned to you once the workflow completes or if it fails irrecoverably.
 
-This is the appropriate choice when:
-- The user's request involves multiple coordinated operations or phases
-- The task requires vault exploration, analysis, or search before acting
-- The optimal approach is unclear and benefits from systematic planning
-- Work spans multiple vault areas or requires sequential dependencies
-- The task is substantial enough that delegating execution is more efficient than step-by-step guidance
+The workflow system specializes in breaking down complex tasks, conducting exploratory searches, managing dependencies, recovering from failures through replanning, and coordinating multi-step operations to completion.
 
-Do NOT use this tool for:
-- Simple, single-step operations you can perform directly (e.g., reading one file, creating one note)
-- Tasks where you already know the exact steps and can execute them yourself
-- Requests that require real-time user interaction or clarification during execution
-- Operations where partial results need to be shown to the user incrementally
+Call this function:
+- When the user's request involves multiple coordinated operations or phases
+- When the task requires vault exploration, analysis, or search before acting
+- When the optimal approach is unclear and benefits from systematic planning
+- When work spans multiple vault areas or requires sequential dependencies
+- When the task is substantial enough that delegating execution is more efficient than step-by-step guidance
 
-The workflow system specializes in breaking down complex tasks, conducting exploratory searches, managing dependencies, recovering from failures through replanning, and coordinating multi-step operations to completion.`,
+Do NOT use this function:
+- For simple, single-step operations you can perform directly (e.g., reading one file, creating one note)
+- When you already know the exact steps and can execute them yourself
+- For requests that require real-time user interaction or clarification during execution
+- When partial results need to be shown to the user incrementally`,
   parameters: {
     type: "object",
     properties: {

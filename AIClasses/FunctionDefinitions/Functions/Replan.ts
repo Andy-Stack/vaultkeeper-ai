@@ -5,11 +5,15 @@ export const Replan: IAIFunctionDefinition = {
   name: AIFunction.Replan,
   description: `Signals that the current plan needs to be revised before execution can continue.
 
-- A planned step fails and you need an alternative approach
-- Execution reveals the original plan was based on incorrect assumptions
-- The user provides new information mid-execution
-- You've completed part of the plan but the remaining steps are no longer valid
-- Do NOT use this if the failure is unrecoverable or if the goal is no longer achievable.`,
+Call this function:
+- When a planned step fails and you need an alternative approach
+- When execution reveals the original plan was based on incorrect assumptions
+- When the user provides new information mid-execution that changes the plan
+- When you've completed part of the plan but the remaining steps are no longer valid
+
+Do NOT use this function:
+- When the failure is unrecoverable or the goal is no longer achievable
+- When you can continue with the current plan without changes`,
   parameters: {
     type: "object",
     properties: {

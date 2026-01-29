@@ -4,16 +4,16 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 export const AskUserQuestionExecution: IAIFunctionDefinition = {
   name: AIFunction.AskUserQuestionExecution,
   description: `Asks the user a question during plan execution and waits for their response.
-Use this function when you encounter situations during plan execution that require user input or decisions.
 This allows interactive execution where unexpected circumstances or ambiguous situations can be resolved with user feedback.
 
-Common use cases:
-- Encountering unexpected file states or content that wasn't anticipated in the plan
-- Discovering conflicts or duplicates that require user decision
-- Handling errors or edge cases where multiple recovery strategies exist
-- Confirming destructive or irreversible operations before proceeding
-- Requesting missing information that only becomes apparent during execution
-- Choosing between alternatives discovered while processing`,
+Call this function:
+- When you encounter situations during plan execution that require user input or decisions
+- When encountering unexpected file states or content that wasn't anticipated in the plan
+- When discovering conflicts or duplicates that require user decision
+- When handling errors or edge cases where multiple recovery strategies exist
+- When confirming destructive or irreversible operations before proceeding
+- When requesting missing information that only becomes apparent during execution
+- When choosing between alternatives discovered while processing`,
   parameters: {
     type: "object",
     properties: {

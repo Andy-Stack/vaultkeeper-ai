@@ -7,13 +7,18 @@ export const PatchVaultFile: IAIFunctionDefinition = {
 
 This tool modifies specific sections of a file by matching exact content and replacing it with new content. It works by performing a direct string match and replace operation.
 
-**When to use this tool:**
-- Making small, targeted edits to large files (a few lines changed)
-- Edits in the middle of a file where you have clear surrounding context
-- Simple line additions, deletions, or replacements with minimal changes
+**CRITICAL:** The content to match must be EXACTLY as it appears in the file - including all whitespace, indentation, blank lines, and line breaks.
+
+Call this function:
+- When making small, targeted edits to large files (a few lines changed)
+- When making edits in the middle of a file where you have clear surrounding context
+- When making simple line additions, deletions, or replacements with minimal changes
 - When you know the exact content that needs to be changed
 
-**CRITICAL:** The content to match must be EXACTLY as it appears in the file - including all whitespace, indentation, blank lines, and line breaks.`,
+Do NOT use this function:
+- When rewriting most or all of a file's content
+- When you haven't read the file first to know the exact content to match
+- When the match might be ambiguous (appears multiple times in the file)`,
     parameters: {
         type: "object",
         properties: {

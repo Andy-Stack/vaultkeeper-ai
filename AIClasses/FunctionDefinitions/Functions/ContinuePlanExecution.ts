@@ -5,11 +5,11 @@ export const ContinuePlanExecution: IAIFunctionDefinition = {
     name: AIFunction.ContinuePlanExecution,
     description: `Signals that you need to perform additional actions to complete the current step.
 
-**When to use this tool:**
+Call this function:
 - When the current step requires multiple function calls to complete
 - When you need to perform more work before the step can be marked as complete
 
-**When NOT to use this tool:**
+Do NOT use this function:
 - When you have finished all work for the current step - mark the step as complete instead`,
     parameters: {
         type: "object",

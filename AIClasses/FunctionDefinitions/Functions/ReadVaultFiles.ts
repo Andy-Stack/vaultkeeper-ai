@@ -9,15 +9,19 @@ export const ReadVaultFiles: IAIFunctionDefinition = {
 and PDFs. When users ask about image or PDF files, USE THIS FUNCTION to
 read them—do not claim you cannot see images.**
 
-Call this when you need to access existing file content to answer questions,
-provide summaries, verify information, or gather context before making updates.
-Use proactively before updating files to understand current content and avoid
-data loss. Essential for any operation that references or builds upon existing notes.
+Supports text files (.md, .txt, etc.), images (.png, .jpg, .jpeg, etc), and PDFs (.pdf).
 
-For multiple files: Use when comparing content, gathering related context, or
-analyzing information across several documents.
+Call this function:
+- When you need to access existing file content to answer questions
+- When providing summaries or verifying information from specific files
+- Before updating files to understand current content and avoid data loss
+- When comparing content or gathering related context across multiple files
+- When analyzing information across several documents
+- When users ask about images or PDFs (this function allows you to see them)
 
-Supports text files (.md, .txt, etc.), images (.png, .jpg, .jpeg, etc), and PDFs (.pdf).`,
+Do NOT use this function:
+- When you need to search for files by content - search instead
+- When you need to browse directory structure - list directory contents instead`,
   parameters: {
     type: "object",
     properties: {

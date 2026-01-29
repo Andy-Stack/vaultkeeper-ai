@@ -5,12 +5,17 @@ export const SearchVaultFiles: IAIFunctionDefinition = {
   name: AIFunction.SearchVaultFiles,
   description: `Searches the content of all vault files using regex pattern matching.
 Returns files containing any of the search terms with contextual snippets showing where matches appear.
-Use this function when you need to:
-- Find specific concepts, keywords, or text within note contents
-- Locate content matching multiple patterns or phrases
-- Answer questions about what the user has written about a topic
-- Search across both file names and file contents simultaneously
-- Search for multiple related terms or variations in a single query`,
+
+Call this function:
+- When you need to find specific concepts, keywords, or text within note contents
+- When locating content matching multiple patterns or phrases
+- When answering questions about what the user has written about a topic
+- When searching across both file names and file contents simultaneously
+- When searching for multiple related terms or variations in a single query
+
+Do NOT use this function:
+- When you need to browse directory structure - list directory contents instead
+- When you already know the exact file path to read - read the file directly`,
   parameters: {
     type: "object",
     properties: {

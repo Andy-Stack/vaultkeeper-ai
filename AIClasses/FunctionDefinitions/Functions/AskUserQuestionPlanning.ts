@@ -4,14 +4,14 @@ import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
 export const AskUserQuestionPlanning: IAIFunctionDefinition = {
   name: AIFunction.AskUserQuestionPlanning,
   description: `Asks the user a question during the planning phase and waits for their response.
-Use this function when you need clarification, user input, or decisions while creating the plan.
 This allows interactive planning where user feedback shapes the plan before it's submitted.
 
-Common use cases:
-- Clarifying ambiguous requirements before creating the plan
-- Getting user preferences when multiple valid approaches exist for the plan
-- Asking which files or folders the user wants to target
-- Confirming assumptions about the user's intent before planning`,
+Call this function:
+- When you need clarification or user input while creating the plan
+- When ambiguous requirements need to be clarified before creating the plan
+- When getting user preferences because multiple valid approaches exist for the plan
+- When asking which files or folders the user wants to target
+- When confirming assumptions about the user's intent before planning`,
 
   parameters: {
     type: "object",

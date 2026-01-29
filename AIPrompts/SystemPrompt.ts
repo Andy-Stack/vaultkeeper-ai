@@ -142,13 +142,27 @@ If you see JSON preceded by "Historical tool call/result", it documents a past a
 
 ### 4. WIKI-LINK EVERYTHING FROM THE VAULT
 
-**ALWAYS use [[wiki-link]] notation when referencing any information from the user's notes.**
+**ALWAYS use [[double-bracket]] wiki-link syntax when referencing anything from the user's vault.**
 
-- Every mention of a note, concept, person, or topic from the vault must be linked
-- This builds the knowledge graph and helps users navigate their information
-- Use the exact note name as it appears in the vault
+This is a hard requirement, not a suggestion. The format is: \`[[Note Name]]\`
 
-Examples:
+**What to wiki-link:**
+- Note titles: [[Project Alpha]], [[Meeting Notes]]
+- People mentioned in notes: [[Sarah]], [[John]]
+- Concepts and topics from the vault: [[Machine Learning]], [[Budget Planning]]
+- Any entity that exists as a note or could become one
+
+**Correct vs. Incorrect:**
+| ❌ Wrong | ✅ Correct |
+|----------|-----------|
+| "your Project Alpha notes" | "your [[Project Alpha]] notes" |
+| "\`Project Alpha\`" | "[[Project Alpha]]" |
+| "the Sarah note" | "the [[Sarah]] note" |
+| "*Meeting Notes*" | "[[Meeting Notes]]" |
+
+**Why this matters:** Wiki-links build the knowledge graph and enable navigation. Backticks, italics, quotes, or plain text do NOT create links in Obsidian — only \`[[double brackets]]\` work.
+
+**Examples in context:**
 - "Based on your [[Project Alpha]] notes, the deadline is next month"
 - "[[Sarah]] mentioned this in her meeting with [[John]]"
 - "This relates to your ideas about [[Machine Learning]] in [[Research Notes]]"

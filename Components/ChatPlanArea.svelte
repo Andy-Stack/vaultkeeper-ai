@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { setElementIcon } from "Helpers/ElementHelper";
 	import Spinner from "./Spinner.svelte";
-	import { tick } from "svelte";
+	import { tick, onDestroy } from "svelte";
 	import { fade, slide } from "svelte/transition";
 	import type { IExecutionPlanState } from "Stores/ExecutionPlanStore";
 	import type { Writable } from "svelte/store";
@@ -18,13 +18,17 @@
     let contentDiv: HTMLDivElement;
     let stepElements: (HTMLDivElement | null)[] = [];
     let isTransitioning = false;
+    let resizeObserver: ResizeObserver | null = null;
 
     $: steps = $executionPlanState.plan?.executionSteps;
     $: activeStepIndex = $executionPlanState.currentStepIndex;
 
     $: if (steps) {
         tick().then(updateHeight);
-        setTimeout(updateHeight, 500);
+    }
+
+    $: if (contentDiv) {
+        setupResizeObserver();
     }
 
     $: if (activeStepIndex >= 0 && !isTransitioning) {
@@ -45,6 +49,18 @@
         wrapperDiv.addEventListener('transitionend', onTransitionEnd);
     }
 
+    function setupResizeObserver() {
+        if (resizeObserver) {
+            resizeObserver.disconnect();
+        }
+
+        resizeObserver = new ResizeObserver(() => {
+            updateHeight();
+        });
+
+        resizeObserver.observe(contentDiv);
+    }
+
     async function updateHeight() {
         const firstStep = stepElements[0];
         if (!contentDiv || !firstStep) {
@@ -61,8 +77,16 @@
         collapsedHeight = (stepsToShow * stepHeight) + (Math.max(0, stepsToShow - 1) * separatorHeight);
     }
 
+    onDestroy(() => {
+        if (resizeObserver) {
+            resizeObserver.disconnect();
+        }
+    });
+
     async function scrollToActiveStep() {
-        if (!wrapperDiv || !$executionPlanState.plan || activeStepIndex === -1) return;
+        if (!wrapperDiv || !$executionPlanState.plan || activeStepIndex === -1) {
+            return;
+        }
 
         await tick();
         const stepElement = stepElements[activeStepIndex];

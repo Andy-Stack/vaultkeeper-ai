@@ -74,7 +74,7 @@ export class MainAgent extends AIController {
                 return { shouldExit: true };
             }
 
-            this.debugService?.log("MainAgent", `Executing function: ${functionCallName}`);
+            this.debugService?.log("MainAgent", `Executing function: ${functionCall.name}`);
             this.updateThought(functionCall, callbacks);
             const functionResponse = await this.aiFunctionService.performAIFunction(functionCall);
             conversation.addFunctionResponse(functionResponse);

@@ -3,7 +3,7 @@ import { Services } from "Services/Services";
 import { SystemInstruction } from "./SystemPrompt";
 import type { FileSystemService } from "Services/FileSystemService";
 import type { SettingsService } from "Services/SettingsService";
-import { PlanningAgentSystemPrompt } from "AIPrompts/PlanningAgentSystemPrompt";
+import { PlanningPrompt } from "AIPrompts/PlanningPrompt";
 import { ExecutionPrompt } from "./ExecutionPrompt";
 import { OrchestrationPrompt } from "./OrchestrationPrompt";
 
@@ -34,7 +34,7 @@ export class AIPrompt implements IPrompt {
   }
 
   public planningInstruction(): string {
-    return PlanningAgentSystemPrompt;
+    return PlanningPrompt;
   }
 
   public executionInstruction(): string {

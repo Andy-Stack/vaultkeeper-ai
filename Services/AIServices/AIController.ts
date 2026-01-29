@@ -45,7 +45,7 @@ export class AIController {
         this.debugService?.log("AgentLoop", `Starting ${agentType} agent loop`);
         let response = await this.streamRequestResponse(agentType, this.ensureCorrectConversationStructure(conversation), callbacks);
 
-        this.saveConversation(agentType, conversation);
+        await this.saveConversation(agentType, conversation);
 
         while (response.functionCall || response.shouldContinue) {
             if (response.functionCall) {
@@ -53,7 +53,7 @@ export class AIController {
                 const result = await handleFunctionCall(response.functionCall);
                 if (result.shouldExit) {
                     this.debugService?.log("AgentLoop", `${agentType} exiting loop (shouldExit: true)`);
-                    this.saveConversation(agentType, conversation);
+                    await this.saveConversation(agentType, conversation);
                     return;
                 }
             } else {
@@ -62,7 +62,7 @@ export class AIController {
 
             response = await this.streamRequestResponse(agentType, this.ensureCorrectConversationStructure(conversation), callbacks);
 
-            this.saveConversation(agentType, conversation);
+            await this.saveConversation(agentType, conversation);
         }
         this.debugService?.log("AgentLoop", `${agentType} agent loop completed`);
     }

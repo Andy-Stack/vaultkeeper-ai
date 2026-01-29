@@ -31,13 +31,16 @@ export class OrchestrationAgent extends AIController {
 
         const planningAgent = new PlanningAgent();
         planningAgent.resolveAIProvider();
+
         let planCompleted = false;
+        let isReplan = false;
 
         while (!planCompleted) {
             callbacks.onPlanReset();
             callbacks.onPlanningStarted();
             this.debugService?.log("OrchestrationAgent", "Spawning PlanningAgent to generate execution plan");
-            const executionPlan = await planningAgent.runPlanningAgent(planningConversation, callbacks, false);
+            const executionPlan = await planningAgent.runPlanningAgent(planningConversation, callbacks, isReplan);
+            
             callbacks.onPlanningFinished();
 
             if (!executionPlan) {
@@ -45,6 +48,7 @@ export class OrchestrationAgent extends AIController {
                 return { message: Copy.PlanningFailedNoSteps };
             }
             this.debugService?.log("OrchestrationAgent", `Execution plan received with ${executionPlan.executionSteps.length} steps`);
+            
             callbacks.onPlanUpdate(executionPlan);
 
             let currentStepIndex = 0;
@@ -109,6 +113,7 @@ export class OrchestrationAgent extends AIController {
                     planCompleted = true;
                 }
             }
+            isReplan = true;
         }
 
         this.debugService?.log("OrchestrationAgent", "Planned workflow completed - requesting summary");
@@ -143,7 +148,7 @@ export class OrchestrationAgent extends AIController {
                     { message: Copy.OrchestrationToolDenial },
                     functionCall.toolId
                 ));
-                return { shouldExit: false };
+                return Promise.resolve({ shouldExit: false });
             }
 
             if (isAIFunction(functionCallName, AIFunction.CompleteStep)) {
@@ -154,7 +159,7 @@ export class OrchestrationAgent extends AIController {
                         { error: `Invalid arguments for ${AIFunction.CompleteStep}: ${parseResult.error.message}` },
                         functionCall.toolId
                     ));
-                    return { shouldExit: false };
+                    return Promise.resolve({ shouldExit: false });
                 }
                 if (!parseResult.data.confirm_completion) {
                     planningConversation.addFunctionResponse(new AIFunctionResponse(
@@ -162,7 +167,7 @@ export class OrchestrationAgent extends AIController {
                         { error: "Confirmation was false, no action taken" },
                         functionCall.toolId
                     ));
-                    return { shouldExit: false };
+                    return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `CompleteStep called (confirmed: ${parseResult.data.confirm_completion})`);
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
@@ -171,7 +176,7 @@ export class OrchestrationAgent extends AIController {
                     functionCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ continue: true, continueContext: parseResult.data.context_for_next_step });
-                return { shouldExit: true }
+                return Promise.resolve({ shouldExit: true });
             }
 
             if (isAIFunction(functionCallName, AIFunction.CompletePlan)) {
@@ -182,7 +187,7 @@ export class OrchestrationAgent extends AIController {
                         { error: `Invalid arguments for ${AIFunction.CompletePlan}: ${parseResult.error.message}` },
                         functionCall.toolId
                     ));
-                    return { shouldExit: false };
+                    return Promise.resolve({ shouldExit: false });
                 }
                 if (!parseResult.data.confirm_completion) {
                     planningConversation.addFunctionResponse(new AIFunctionResponse(
@@ -190,7 +195,7 @@ export class OrchestrationAgent extends AIController {
                         { error: "Confirmation was false, no action taken" },
                         functionCall.toolId
                     ));
-                    return { shouldExit: false };
+                    return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `CompletePlan called (confirmed: ${parseResult.data.confirm_completion})`);
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
@@ -199,7 +204,7 @@ export class OrchestrationAgent extends AIController {
                     functionCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ complete: true });
-                return { shouldExit: true }
+                return Promise.resolve({ shouldExit: true });
             }
 
             if (isAIFunction(functionCallName, AIFunction.Replan)) {
@@ -210,7 +215,7 @@ export class OrchestrationAgent extends AIController {
                         { error: `Invalid arguments for ${AIFunction.Replan}: ${parseResult.error.message}` },
                         functionCall.toolId
                     ));
-                    return { shouldExit: false };
+                    return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `Replan requested: ${parseResult.data.context}`);
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
@@ -219,7 +224,7 @@ export class OrchestrationAgent extends AIController {
                     functionCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ replan: true, replanContext: parseResult.data.context });
-                return { shouldExit: true }
+                return Promise.resolve({ shouldExit: false });
             }
 
             if (isAIFunction(functionCallName, AIFunction.CancelPlan)) {
@@ -230,7 +235,7 @@ export class OrchestrationAgent extends AIController {
                         { error: `Invalid arguments for ${AIFunction.CancelPlan}: ${parseResult.error.message}` },
                         functionCall.toolId
                     ));
-                    return { shouldExit: false };
+                    return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `Plan cancellation requested: ${parseResult.data.context}`);
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
@@ -239,10 +244,10 @@ export class OrchestrationAgent extends AIController {
                     functionCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ abort: true, abortContext: parseResult.data.context });
-                return { shouldExit: true }
+                return Promise.resolve({ shouldExit: true });
             }
 
-            return { shouldExit: false };
+            return Promise.resolve({ shouldExit: false });
         });
 
         if (!orchestrationResult) {
@@ -261,7 +266,7 @@ export class OrchestrationAgent extends AIController {
         return input.goal + context;
     }
 
-    private async setAgentPromptAndTools(): Promise<void> {
+    private setAgentPromptAndTools(): void {
         if (!this.ai) { // this shouldn't ever happen
             Exception.throw("Error: No AI provider has been set!");
         }

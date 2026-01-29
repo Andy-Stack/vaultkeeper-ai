@@ -62,7 +62,7 @@ export class ExecutionAgent extends AIController {
                 return { shouldExit: true };
             }
 
-            this.debugService?.log("ExecutionAgent", `Executing function: ${functionCallName}`);
+            this.debugService?.log("ExecutionAgent", `Executing function: ${functionCall.name}`);
             this.updateThought(functionCall, callbacks);
             const functionResponse = await this.aiFunctionService.performAIFunction(functionCall);
             this.conversation.addFunctionResponse(functionResponse);

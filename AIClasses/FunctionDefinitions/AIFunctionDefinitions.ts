@@ -12,10 +12,8 @@ import { SubmitPlan } from "./Functions/SubmitPlan";
 import { CancelPlan } from "./Functions/CancelPlan";
 import { AskUserQuestionPlanning } from "./Functions/AskUserQuestionPlanning";
 import { CompletePlan } from "./Functions/CompletePlan";
-import { AskUserQuestionExecution } from "./Functions/AskUserQuestionExecution";
-import { ContinuePlanExecution } from "./Functions/ContinuePlanExecution";
 import { CompleteTask } from "./Functions/CompleteTask";
-import { ExecuteWorkflow } from "./Functions/CreatePlan";
+import { ExecuteWorkflow } from "./Functions/ExecuteWorkflow";
 
 export abstract class AIFunctionDefinitions {
     
@@ -59,29 +57,6 @@ export abstract class AIFunctionDefinitions {
 
     public static executionAgentDefinitions(): IAIFunctionDefinition[] {
         return [...this.agentDefinitions(true, false), CompleteTask];
-    }
-
-    public static agentExecutionDefinitions() {
-        this.isGated = false;
-        return [
-            SearchVaultFiles,
-            ReadVaultFiles,
-            ListVaultFiles,
-            WriteVaultFile,
-            PatchVaultFile,
-            DeleteVaultFiles,
-            MoveVaultFiles,
-            AskUserQuestionExecution,
-            CompletePlan
-        ];
-    }
-
-    public static gatedDefinitions() {
-        this.isGated = true;
-        return [
-            ContinuePlanExecution,
-            CompleteStep
-        ];
     }
 
     public static compactSummaryForPlanningAgent(): string {

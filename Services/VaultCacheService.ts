@@ -106,12 +106,9 @@ export class VaultCacheService {
             break;
 
           case FileEvent.Delete:
-            if (shouldCacheOldPath) {
-              this.wikiLinks.removeWikiLink(file);
-              this.files.delete(args.oldPath);
-              const orphanedTags = this.mapping.deleteFromMapping(args.oldPath);
-              orphanedTags.forEach(tag => this.tags.delete(tag));
-            }
+            this.wikiLinks.removeWikiLink(file);
+            this.files.delete(file.path);
+            this.mapping.deleteFromMapping(file.path).forEach(tag => this.tags.delete(tag));
             break;
         }
         this.fuzzySortPrepareTags();
@@ -134,9 +131,7 @@ export class VaultCacheService {
             break;
 
           case FileEvent.Delete:
-            if (shouldCacheOldPath) {
-              this.folders.delete(args.oldPath);
-            }
+            this.folders.delete(file.path);
             break;
 
           case FileEvent.Modify:

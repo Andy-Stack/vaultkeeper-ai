@@ -121,11 +121,13 @@ export class AIFunctionService {
                     return new AIFunctionResponse(functionCall.name, {}, functionCall.toolId)
 
                 // multi-agent functions are handled elsewhere - this shouldn't really ever get hit
-                case AIFunction.CreatePlan:
+                case AIFunction.ExecuteWorkflow:
+                case AIFunction.ContinuePlanExecution:
                 case AIFunction.Replan:
                 case AIFunction.SubmitPlan:
                 case AIFunction.AskUserQuestionPlanning:
                 case AIFunction.AskUserQuestionExecution:
+                case AIFunction.CompleteTask:
                 case AIFunction.CompleteStep:
                 case AIFunction.CompletePlan:
                 case AIFunction.CancelPlan: {

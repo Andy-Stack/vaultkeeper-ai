@@ -9,7 +9,7 @@ export class DebugService {
     }
 
     public log(level: string, message: string): void {
-        console.log(`%c${level}: ${message}`, `color:${this.debugColor};`);
+        console.debug(`%c${level}: ${message}`, `color:${this.debugColor};`);
     }
 
 }

@@ -32,7 +32,8 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		mockAIControllerService = {
 			runMainAgent: vi.fn(),
-			setSaveCallback: vi.fn()
+			setSaveCallback: vi.fn(),
+			resolveAIProvider: vi.fn()
 		};
 
 		mockNamingService = {
@@ -57,7 +58,7 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		// Register dependencies
 		RegisterSingleton(Services.ConversationFileSystemService, mockConversationService);
-		RegisterSingleton(Services.AIControllerService, mockAIControllerService);
+		RegisterSingleton(Services.MainAgent, mockAIControllerService);
 		RegisterSingleton(Services.ConversationNamingService, mockNamingService);
 		RegisterSingleton(Services.EventService, mockEventService);
 		RegisterSingleton(Services.WorkSpaceService, mockWorkSpaceService);

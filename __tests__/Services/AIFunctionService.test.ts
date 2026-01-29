@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AIFunctionService } from '../../Services/AIFunctionService';
+import { AIFunctionService } from '../../Services/AIServices/AIFunctionService';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { AIFunction } from '../../Enums/AIFunction';

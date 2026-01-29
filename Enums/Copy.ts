@@ -22,6 +22,9 @@ export enum Copy {
     GeminiFlash_3_Preview = "Gemini 3 Flash Preview",
     GeminiPro_3_Preview = "Gemini 3 Pro Preview",
 
+    GPT_5_2_Instant = "GPT-5.2 Instant",
+    GPT_5_2_Thinking = "GPT-5.2 Thinking",
+    GPT_5_2_Pro = "GPT-5.2 Pro",
     GPT_5_1 = "GPT-5.1",
     GPT_5 = "GPT-5",
     GPT_5_Mini = "GPT-5 Mini",

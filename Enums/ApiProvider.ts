@@ -55,6 +55,9 @@ export enum AIProviderModel {
     GeminiPro_3_Preview = "gemini-3-pro-preview",
 
     // OpenAI models
+    GPT_5_2_Instant = "gpt-5.2-chat-latest",
+    GPT_5_2_Thinking = "gpt-5.2",
+    GPT_5_2_Pro = "gpt-5.2-pro",
     GPT_5_1 = "gpt-5.1",
     GPT_5 = "gpt-5",
     GPT_5_Mini = "gpt-5-mini",
@@ -68,7 +71,7 @@ export enum AIProviderModel {
     // Conversation naming models (aliases to existing models)
     ClaudeNamer = ClaudeHaiku_4_5,
     GeminiNamer = GeminiFlash_2_5_Lite,
-    OpenAINamer = GPT_5_Nano,
+    OpenAINamer = GPT_5_2_Instant,
 }
 
 export enum AIProviderURL {

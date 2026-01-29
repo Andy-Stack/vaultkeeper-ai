@@ -1163,7 +1163,7 @@ describe('Claude', () => {
                 yield { content: 'response', isComplete: true };
             });
 
-            const generator = claude.streamRequest(conversation, false);
+            const generator = claude.streamRequest(conversation);
 
             // Consume the generator
             for await (const chunk of generator) {
@@ -1209,7 +1209,7 @@ describe('Claude', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = claude.streamRequest(conversation, false);
+            const generator = claude.streamRequest(conversation);
 
             // Start consuming
             await generator.next();

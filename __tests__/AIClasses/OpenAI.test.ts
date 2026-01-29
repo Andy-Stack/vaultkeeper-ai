@@ -317,7 +317,7 @@ describe('OpenAI', () => {
                 yield { content: 'response', isComplete: true };
             });
 
-            const generator = openai.streamRequest(conversation, false);
+            const generator = openai.streamRequest(conversation);
 
             // Consume generator
             for await (const chunk of generator) {
@@ -351,7 +351,7 @@ describe('OpenAI', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = openai.streamRequest(conversation, false);
+            const generator = openai.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -411,7 +411,7 @@ describe('OpenAI', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = openai.streamRequest(conversation, false);
+            const generator = openai.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -440,7 +440,7 @@ describe('OpenAI', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = openai.streamRequest(conversation, false);
+            const generator = openai.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -483,7 +483,7 @@ describe('OpenAI', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = openai.streamRequest(conversation, false);
+            const generator = openai.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -506,7 +506,7 @@ describe('OpenAI', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = openai.streamRequest(conversation, false);
+            const generator = openai.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -537,7 +537,7 @@ describe('OpenAI', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = openai.streamRequest(conversation, false);
+            const generator = openai.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -582,7 +582,7 @@ describe('OpenAI', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = openai.streamRequest(conversation, false);
+            const generator = openai.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -627,7 +627,7 @@ describe('OpenAI', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = openai.streamRequest(conversation, false);
+            const generator = openai.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -681,7 +681,7 @@ describe('OpenAI', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = openai.streamRequest(conversation, false);
+            const generator = openai.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -714,7 +714,7 @@ describe('OpenAI', () => {
                     yield { content: 'done', isComplete: true };
                 });
 
-                const generator = openai.streamRequest(conversation, false);
+                const generator = openai.streamRequest(conversation);
                 for await (const chunk of generator) {}
 
                 const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -747,7 +747,7 @@ describe('OpenAI', () => {
                     yield { content: 'done', isComplete: true };
                 });
 
-                const generator = openai.streamRequest(conversation, false);
+                const generator = openai.streamRequest(conversation);
                 for await (const chunk of generator) {}
 
                 const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -804,7 +804,7 @@ describe('OpenAI', () => {
                     yield { content: 'done', isComplete: true };
                 });
 
-                const generator = openai.streamRequest(conversation, false);
+                const generator = openai.streamRequest(conversation);
                 for await (const chunk of generator) {}
 
                 const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -870,7 +870,7 @@ describe('OpenAI', () => {
                     yield { content: 'done', isComplete: true };
                 });
 
-                const generator = openai.streamRequest(conversation, false);
+                const generator = openai.streamRequest(conversation);
                 for await (const chunk of generator) {}
 
                 const callArgs = mockStreamingService.streamRequest.mock.calls[0];
@@ -951,7 +951,7 @@ describe('OpenAI', () => {
                 yield { content: 'response', isComplete: true };
             });
 
-            const generator = openai.streamRequest(conversation, false);
+            const generator = openai.streamRequest(conversation);
 
             for await (const chunk of generator) {
                 // Just consume
@@ -983,7 +983,7 @@ describe('OpenAI', () => {
                 yield { content: 'done', isComplete: true };
             });
 
-            const generator = openai.streamRequest(conversation, false);
+            const generator = openai.streamRequest(conversation);
             for await (const chunk of generator) {}
 
             const callArgs = mockStreamingService.streamRequest.mock.calls[0];

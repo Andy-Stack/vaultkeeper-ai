@@ -388,6 +388,12 @@
 		outline: none;
 	}
 
+	@media (max-width: 600px) {
+		.help-modal-container {
+			margin: 0px;
+		}
+	}
+
 	:global(.is-mobile) #help-modal-version-string-mobile {
 		display: block;
 		grid-row: 5;

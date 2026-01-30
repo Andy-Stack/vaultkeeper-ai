@@ -214,6 +214,7 @@
   #conversation-divider-2 {
     grid-row: 1;
     grid-column: 8;
+    margin: 0 5px;
   }
 
   #conversation-title {

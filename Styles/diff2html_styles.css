@@ -243,7 +243,7 @@
 /* Avoid the floating obsidian controls */
 @media (max-width: 600px) {
     .diff-mobile-controls {
-        margin-bottom: 95px;
+        margin-bottom: 85px;
     }
 }
 
@@ -256,8 +256,6 @@
     left: 0;
     right: 0;
     padding: var(--size-4-3);
-    background-color: var(--background-primary);
-    border-top: 1px solid var(--background-modifier-border);
     z-index: 10;
 }
 
@@ -298,4 +296,11 @@
 /* Adjust diff height on mobile to account for buttons */
 .diff-view-mobile .d2h-file-diff {
     max-height: calc(100cqh - 37px - 40px);
+}
+
+/* Avoid the floating obsidian controls */
+@media (max-width: 600px) {
+    .diff-view-mobile .d2h-file-diff {
+        max-height: calc(100cqh - 37px - 120px);
+    }
 }

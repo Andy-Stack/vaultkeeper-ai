@@ -1,5 +1,4 @@
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
-import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIPrompts/IPrompt";
 import type { Conversation } from "Conversations/Conversation";

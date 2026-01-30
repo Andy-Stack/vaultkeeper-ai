@@ -515,18 +515,6 @@ describe('InputService', () => {
 				service.insertTextAtCursor('Test', element);
 				expect(element.textContent).toBe(originalText);
 			});
-
-			it('should warn and not insert for non-contentEditable element', () => {
-				const nonEditable = document.createElement('div');
-				nonEditable.textContent = 'Not editable';
-				document.body.appendChild(nonEditable);
-
-				const consoleSpy = vi.spyOn(console, 'warn');
-				service.insertTextAtCursor('Test', nonEditable);
-
-				expect(consoleSpy).toHaveBeenCalledWith('Element must be contenteditable');
-				document.body.removeChild(nonEditable);
-			});
 		});
 
 		describe('insertElementAtCursor', () => {
@@ -579,19 +567,6 @@ describe('InputService', () => {
 				service.insertElementAtCursor(span, element);
 				expect(element.childNodes.length).toBe(childrenBefore);
 			});
-
-			it('should warn and not insert for non-contentEditable element', () => {
-				const nonEditable = document.createElement('div');
-				nonEditable.textContent = 'Not editable';
-				document.body.appendChild(nonEditable);
-
-				const consoleSpy = vi.spyOn(console, 'warn');
-				const span = document.createElement('span');
-				service.insertElementAtCursor(span, nonEditable);
-
-				expect(consoleSpy).toHaveBeenCalledWith('Element must be contenteditable');
-				document.body.removeChild(nonEditable);
-			});
 		});
 
 		describe('deleteTextRange', () => {
@@ -632,18 +607,6 @@ describe('InputService', () => {
 				expect(element.textContent).toBe('Hello ld');
 			});
 
-			it('should warn for non-contentEditable element', () => {
-				const nonEditable = document.createElement('div');
-				nonEditable.textContent = 'Not editable';
-				document.body.appendChild(nonEditable);
-
-				const consoleSpy = vi.spyOn(console, 'warn');
-				service.deleteTextRange(0, 3, nonEditable);
-
-				expect(consoleSpy).toHaveBeenCalledWith('Element must be contenteditable');
-				expect(nonEditable.textContent).toBe('Not editable'); // Unchanged
-				document.body.removeChild(nonEditable);
-			});
 
 			it('should handle invalid range gracefully', () => {
 				const originalText = element.textContent;

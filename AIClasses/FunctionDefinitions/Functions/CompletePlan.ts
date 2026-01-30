@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const CompletePlan: IAIFunctionDefinition = {
-  name: AIFunction.CompletePlan,
+export const CompletePlan: IAIToolDefinition = {
+  name: AITool.CompletePlan,
   description: `Marks the current execution plan as fully completed.
 
 Use this function when all steps in the plan have been successfully executed and

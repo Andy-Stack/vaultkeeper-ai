@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const SearchVaultFiles: IAIFunctionDefinition = {
-  name: AIFunction.SearchVaultFiles,
+export const SearchVaultFiles: IAIToolDefinition = {
+  name: AITool.SearchVaultFiles,
   description: `Searches the content of all vault files using regex pattern matching.
 Returns files containing any of the search terms with contextual snippets showing where matches appear.
 

@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const ContinuePlanExecution: IAIFunctionDefinition = {
-    name: AIFunction.ContinuePlanExecution,
+export const ContinuePlanExecution: IAIToolDefinition = {
+    name: AITool.ContinuePlanExecution,
     description: `Signals that you need to perform additional actions to complete the current step.
 
 Call this function:

@@ -410,7 +410,7 @@ describe('Gemini', () => {
             // Set system prompts before calling streamRequest
             gemini.systemPrompt = 'System instruction';
             gemini.userInstruction = 'User instruction';
-            gemini.aiFunctionDefinitions = [];
+            gemini.aiToolDefinitions = [];
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };

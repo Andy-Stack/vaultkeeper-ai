@@ -1,4 +1,4 @@
-export enum AIFunction {
+export enum AITool {
     SearchVaultFiles = "search_vault_files",
     ReadVaultFiles = "read_vault_files",
     WriteVaultFile = "write_vault_file",
@@ -25,14 +25,14 @@ export enum AIFunction {
     Unknown = "unknown"
 }
 
-export function fromString(functionName: string): AIFunction {
-    const enumValue = Object.values(AIFunction).find((value: string) => value === functionName);
+export function fromString(functionName: string): AITool {
+    const enumValue = Object.values(AITool).find((value: string) => value === functionName);
     if (enumValue) {
-        return enumValue as AIFunction;
+        return enumValue as AITool;
     }
-    return AIFunction.Unknown;
+    return AITool.Unknown;
 }
 
-export function isAIFunction(value: unknown, aiFunction: AIFunction): value is AIFunction {
-    return value === aiFunction;
+export function isAITool(value: unknown, aiTool: AITool): value is AITool {
+    return value === aiTool;
 }

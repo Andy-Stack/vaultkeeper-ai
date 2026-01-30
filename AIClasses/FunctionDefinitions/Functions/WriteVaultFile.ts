@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const WriteVaultFile: IAIFunctionDefinition = {
-    name: AIFunction.WriteVaultFile,
+export const WriteVaultFile: IAIToolDefinition = {
+    name: AITool.WriteVaultFile,
     description: `Writes content to a file, creating it if it doesn't exist or replacing its contents if it does.
 
 Call this function:

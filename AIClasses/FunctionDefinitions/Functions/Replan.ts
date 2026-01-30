@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const Replan: IAIFunctionDefinition = {
-  name: AIFunction.Replan,
+export const Replan: IAIToolDefinition = {
+  name: AITool.Replan,
   description: `Signals that the current plan needs to be revised before execution can continue.
 
 Call this function:

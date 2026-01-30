@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const AskUserQuestionPlanning: IAIFunctionDefinition = {
-  name: AIFunction.AskUserQuestionPlanning,
+export const AskUserQuestionPlanning: IAIToolDefinition = {
+  name: AITool.AskUserQuestionPlanning,
   description: `Asks the user a question during the planning phase and waits for their response.
 This allows interactive planning where user feedback shapes the plan before it's submitted.
 

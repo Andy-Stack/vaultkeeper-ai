@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const PatchVaultFile: IAIFunctionDefinition = {
-    name: AIFunction.PatchVaultFile,
+export const PatchVaultFile: IAIToolDefinition = {
+    name: AITool.PatchVaultFile,
     description: `Apply targeted changes to an existing file in the vault by finding and replacing specific content.
 
 This tool modifies specific sections of a file by matching exact content and replacing it with new content. It works by performing a direct string match and replace operation.

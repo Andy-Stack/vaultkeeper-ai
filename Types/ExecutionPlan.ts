@@ -1,5 +1,5 @@
 import type { ExecutionStep } from "./ExecutionStep";
-import type { SubmitPlanArgs } from "AIClasses/Schemas/AIFunctionSchemas";
+import type { SubmitPlanArgs } from "AIClasses/Schemas/AIToolSchemas";
 
 export class ExecutionPlan {
 

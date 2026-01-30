@@ -4,17 +4,17 @@ import type { Conversation } from "Conversations/Conversation";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Attachment } from "Conversations/Attachment";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
-import { AIFunctionCall } from "AIClasses/AIFunctionCall";
-import { fromString as aiFunctionFromString } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
-import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIFunctionTool, ResponsesAPIInput } from "./OpenAITypes";
+import { AIToolCall } from "AIClasses/AIToolCall";
+import { fromString as aiToolFromString } from "Enums/AITool";
+import type { IAIToolDefinition } from "AIClasses/FunctionDefinitions/IAIToolDefinition";
+import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIToolTool, ResponsesAPIInput } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
-import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
+import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export class OpenAI extends BaseAIClass {
 
@@ -43,7 +43,7 @@ export class OpenAI extends BaseAIClass {
 
         const tools = [{
             type: "web_search"
-        }, ...this.mapFunctionDefinitions(this.aiFunctionDefinitions)];
+        }, ...this.mapFunctionDefinitions(this.aiToolDefinitions)];
 
         const requestBody = {
             model: this.model(),
@@ -78,7 +78,7 @@ export class OpenAI extends BaseAIClass {
             const event = JSON.parse(chunk) as ResponseEvent;
 
             let text = "";
-            let functionCall: AIFunctionCall | undefined = undefined;
+            let functionCall: AIToolCall | undefined = undefined;
             let isComplete = false;
             let shouldContinue = false;
 
@@ -148,8 +148,8 @@ export class OpenAI extends BaseAIClass {
                         itemDoneEvent.item.arguments) {
                         try {
                             const args = JSON.parse(itemDoneEvent.item.arguments) as Record<string, unknown>;
-                            functionCall = new AIFunctionCall(
-                                aiFunctionFromString(itemDoneEvent.item.name),
+                            functionCall = new AIToolCall(
+                                aiToolFromString(itemDoneEvent.item.name),
                                 args as Record<string, object>,
                                 itemDoneEvent.item.call_id || itemDoneEvent.item_id,
                                 undefined  // thoughtSignature not used by OpenAI
@@ -305,8 +305,8 @@ export class OpenAI extends BaseAIClass {
         return results;
     }
 
-    protected mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): OpenAIFunctionTool[] {
-        return aiFunctionDefinitions.map((functionDefinition) => ({
+    protected mapFunctionDefinitions(aiToolDefinitions: IAIToolDefinition[]): OpenAIToolTool[] {
+        return aiToolDefinitions.map((functionDefinition) => ({
             type: "function",
             name: functionDefinition.name,
             description: functionDefinition.description,
@@ -354,16 +354,16 @@ export class OpenAI extends BaseAIClass {
 
     private buildOpenAIToolChoice(): string {
         // If no tools defined, fall back to auto
-        if (this.aiFunctionDefinitions.length === 0) {
+        if (this.aiToolDefinitions.length === 0) {
             return "auto";
         }
 
-        switch (this.aiFunctionUsageMode) {
-            case AIFunctionUsageMode.Auto:
+        switch (this.aiToolUsageMode) {
+            case AIToolUsageMode.Auto:
                 return "auto";
-            case AIFunctionUsageMode.Enabled:
+            case AIToolUsageMode.Enabled:
                 return "required";
-            case AIFunctionUsageMode.Disabled:
+            case AIToolUsageMode.Disabled:
                 return "none";
         }
     }

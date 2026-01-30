@@ -14,7 +14,7 @@ export class Services {
     static StreamingService = Symbol("StreamingService");
     static MarkdownService = Symbol("MarkdownService");
     static StreamingMarkdownService = Symbol("StreamingMarkdownService");
-    static AIFunctionService = Symbol("AIFunctionService");
+    static AIToolService = Symbol("AIToolService");
     static MainAgent = Symbol("MainAgent");
     static ChatService = Symbol("ChatService");
     static SanitiserService = Symbol("SanitiserService");

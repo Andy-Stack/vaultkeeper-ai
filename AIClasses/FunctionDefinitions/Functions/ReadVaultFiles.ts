@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const ReadVaultFiles: IAIFunctionDefinition = {
-  name: AIFunction.ReadVaultFiles,
+export const ReadVaultFiles: IAIToolDefinition = {
+  name: AITool.ReadVaultFiles,
   description: `Reads and returns the complete content of one or more files from the vault.
 
 **IMPORTANT: This function gives you the ability to SEE and ANALYZE images

@@ -1,4 +1,4 @@
-import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
+import type { IAIToolDefinition } from "AIClasses/FunctionDefinitions/IAIToolDefinition";
 
 /* SDK types are a bit complicated and verbose so define simpler interfaces */
 
@@ -73,11 +73,11 @@ export interface ResponseFailedEvent extends ResponseEvent {
     };
 }
 
-export interface OpenAIFunctionTool {
+export interface OpenAIToolTool {
     type: "function";
     name: string;
     description: string;
-    parameters: IAIFunctionDefinition["parameters"];
+    parameters: IAIToolDefinition["parameters"];
 }
 
 /**

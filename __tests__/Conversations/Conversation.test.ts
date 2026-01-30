@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
-import { AIFunctionResponse } from '../../AIClasses/FunctionDefinitions/AIFunctionResponse';
-import { AIFunction } from '../../Enums/AIFunction';
+import { AIToolResponse } from '../../AIClasses/FunctionDefinitions/AIToolResponse';
+import { AITool } from '../../Enums/AITool';
 
 describe('Conversation', () => {
 	describe('constructor', () => {
@@ -385,8 +385,8 @@ describe('Conversation', () => {
 		describe('read_vault_files with errors', () => {
 			it('should handle file not found errors without creating attachments', () => {
 				const conversation = new Conversation();
-				const functionResponse = new AIFunctionResponse(
-					AIFunction.ReadVaultFiles,
+				const functionResponse = new AIToolResponse(
+					AITool.ReadVaultFiles,
 					{
 						results: [
 							{ path: 'nonexistent.md', error: 'File does not exist: nonexistent.md' }
@@ -413,8 +413,8 @@ describe('Conversation', () => {
 
 			it('should handle mix of successful reads and errors', () => {
 				const conversation = new Conversation();
-				const functionResponse = new AIFunctionResponse(
-					AIFunction.ReadVaultFiles,
+				const functionResponse = new AIToolResponse(
+					AITool.ReadVaultFiles,
 					{
 						results: [
 							{ path: 'existing.md', type: 'md', contents: '# Hello' },
@@ -451,8 +451,8 @@ describe('Conversation', () => {
 
 			it('should not create attachments for error results with binary file extensions', () => {
 				const conversation = new Conversation();
-				const functionResponse = new AIFunctionResponse(
-					AIFunction.ReadVaultFiles,
+				const functionResponse = new AIToolResponse(
+					AITool.ReadVaultFiles,
 					{
 						results: [
 							{ path: 'image.png', error: 'File does not exist: image.png' }
@@ -476,8 +476,8 @@ describe('Conversation', () => {
 
 			it('should handle binary files with errors not creating invalid attachments', () => {
 				const conversation = new Conversation();
-				const functionResponse = new AIFunctionResponse(
-					AIFunction.ReadVaultFiles,
+				const functionResponse = new AIToolResponse(
+					AITool.ReadVaultFiles,
 					{
 						results: [
 							{ path: 'image.png', error: 'File does not exist: image.png' },
@@ -506,8 +506,8 @@ describe('Conversation', () => {
 		describe('read_vault_files without errors', () => {
 			it('should handle successful text file reads', () => {
 				const conversation = new Conversation();
-				const functionResponse = new AIFunctionResponse(
-					AIFunction.ReadVaultFiles,
+				const functionResponse = new AIToolResponse(
+					AITool.ReadVaultFiles,
 					{
 						results: [
 							{ path: 'file.md', type: 'md', contents: '# Title' }
@@ -525,8 +525,8 @@ describe('Conversation', () => {
 
 			it('should create attachments for binary files', () => {
 				const conversation = new Conversation();
-				const functionResponse = new AIFunctionResponse(
-					AIFunction.ReadVaultFiles,
+				const functionResponse = new AIToolResponse(
+					AITool.ReadVaultFiles,
 					{
 						results: [
 							{ path: 'image.png', type: 'png', contents: 'base64data...' }
@@ -547,8 +547,8 @@ describe('Conversation', () => {
 		describe('non-read_vault_files functions', () => {
 			it('should handle other functions normally', () => {
 				const conversation = new Conversation();
-				const functionResponse = new AIFunctionResponse(
-					AIFunction.WriteVaultFile,
+				const functionResponse = new AIToolResponse(
+					AITool.WriteVaultFile,
 					{ success: true },
 					'tool-123'
 				);

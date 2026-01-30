@@ -11,7 +11,7 @@ import { StreamingMarkdownService } from "./StreamingMarkdownService";
 import { FileSystemService } from "./FileSystemService";
 import { ConversationFileSystemService } from "./ConversationFileSystemService";
 import { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
-import { AIFunctionService } from "./AIServices/AIFunctionService";
+import { AIToolService } from "./AIServices/AIToolService";
 import { StreamingService } from "./StreamingService";
 import { WorkSpaceService } from "./WorkSpaceService";
 import { ChatService } from "./ChatService";
@@ -67,7 +67,7 @@ export function RegisterDependencies() {
     RegisterSingleton<ConversationNamingService>(Services.ConversationNamingService, new ConversationNamingService());
 
     RegisterSingleton<IPrompt>(Services.IPrompt, new AIPrompt());
-    RegisterSingleton<AIFunctionService>(Services.AIFunctionService, new AIFunctionService());
+    RegisterSingleton<AIToolService>(Services.AIToolService, new AIToolService());
     RegisterSingleton<MainAgent>(Services.MainAgent, new MainAgent());
     RegisterSingleton<StreamingService>(Services.StreamingService, new StreamingService());
     RegisterSingleton<ChatService>(Services.ChatService, new ChatService());

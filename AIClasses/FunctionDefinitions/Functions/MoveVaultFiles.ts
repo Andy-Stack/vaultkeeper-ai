@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const MoveVaultFiles: IAIFunctionDefinition = {
-    name: AIFunction.MoveVaultFiles,
+export const MoveVaultFiles: IAIToolDefinition = {
+    name: AITool.MoveVaultFiles,
     description: `Moves or renames one or more files within the vault to new locations.
 This operation preserves file content while updating paths and names.
 

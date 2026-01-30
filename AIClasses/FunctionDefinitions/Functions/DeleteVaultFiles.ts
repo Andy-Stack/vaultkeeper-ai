@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const DeleteVaultFiles: IAIFunctionDefinition = {
-    name: AIFunction.DeleteVaultFiles,
+export const DeleteVaultFiles: IAIToolDefinition = {
+    name: AITool.DeleteVaultFiles,
     description: `Permanently removes files and folders from the vault.
 
 IMPORTANT: This action is irreversible - always confirm the exact file path(s) before deletion.

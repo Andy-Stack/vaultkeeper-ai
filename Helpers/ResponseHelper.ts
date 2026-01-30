@@ -1,10 +1,10 @@
-import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
-import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
+import type { AIToolCall } from "AIClasses/AIToolCall";
+import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIToolTypes";
 import { StringTools } from "./StringTools";
 import { Exception } from "./Exception";
 
 // handle the rare event where a function call is also included in content (gemini sometimes does this)
-export function sanitizeFunctionCallContent(content: string, functionCall: AIFunctionCall | null): string {
+export function sanitizeFunctionCallContent(content: string, functionCall: AIToolCall | null): string {
     // Early returns for simple cases
     if (!functionCall || !content.trim()) {
         return content;

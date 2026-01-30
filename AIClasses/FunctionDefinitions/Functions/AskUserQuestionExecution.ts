@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const AskUserQuestionExecution: IAIFunctionDefinition = {
-  name: AIFunction.AskUserQuestionExecution,
+export const AskUserQuestionExecution: IAIToolDefinition = {
+  name: AITool.AskUserQuestionExecution,
   description: `Asks the user a question during plan execution and waits for their response.
 Use this function to resolve ambiguity at the point of discovery rather than reporting uncertain outcomes.
 

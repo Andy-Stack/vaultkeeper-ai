@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ExecutionAgent } from '../../Services/AIServices/ExecutionAgent';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import { AIFunction } from '../../Enums/AIFunction';
-import { AIFunctionCall } from '../../AIClasses/AIFunctionCall';
-import { AIFunctionResponse } from '../../AIClasses/FunctionDefinitions/AIFunctionResponse';
+import { AITool } from '../../Enums/AITool';
+import { AIToolCall } from '../../AIClasses/AIToolCall';
+import { AIToolResponse } from '../../AIClasses/FunctionDefinitions/AIToolResponse';
 import type { ExecutionStep } from '../../Types/ExecutionStep';
 
 /**
@@ -22,7 +22,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 	let service: ExecutionAgent;
 	let mockAI: any;
 	let mockPrompt: any;
-	let mockAIFunctionService: any;
+	let mockAIToolService: any;
 
 	const createMockCallbacks = () => ({
 		onSubmit: vi.fn(),
@@ -47,13 +47,13 @@ describe('ExecutionAgent - Unit Tests', () => {
 		};
 		RegisterSingleton(Services.IPrompt, mockPrompt);
 
-		// Mock AIFunctionService
-		mockAIFunctionService = {
-			performAIFunction: vi.fn().mockResolvedValue(
-				new AIFunctionResponse(AIFunction.SearchVaultFiles, { results: [] }, 'test-tool-id')
+		// Mock AIToolService
+		mockAIToolService = {
+			performAITool: vi.fn().mockResolvedValue(
+				new AIToolResponse(AITool.SearchVaultFiles, { results: [] }, 'test-tool-id')
 			)
 		};
-		RegisterSingleton(Services.AIFunctionService, mockAIFunctionService);
+		RegisterSingleton(Services.AIToolService, mockAIToolService);
 
 		// Mock IAIClass
 		mockAI = {
@@ -85,8 +85,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Task completed',
-					functionCall: new AIFunctionCall(
-						AIFunction.CompleteTask,
+					functionCall: new AIToolCall(
+						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Found 10 markdown files'
@@ -115,8 +115,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Task completed',
-					functionCall: new AIFunctionCall(
-						AIFunction.CompleteTask,
+					functionCall: new AIToolCall(
+						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Processed 5 files',
@@ -152,8 +152,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Done',
-					functionCall: new AIFunctionCall(
-						AIFunction.CompleteTask,
+					functionCall: new AIToolCall(
+						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Completed'
@@ -190,8 +190,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Task failed',
-					functionCall: new AIFunctionCall(
-						AIFunction.CompleteTask,
+					functionCall: new AIToolCall(
+						AITool.CompleteTask,
 						{
 							success: false,
 							description: 'No temporary files found'
@@ -220,8 +220,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Failed',
-					functionCall: new AIFunctionCall(
-						AIFunction.CompleteTask,
+					functionCall: new AIToolCall(
+						AITool.CompleteTask,
 						{
 							success: false,
 							description: 'Permission denied: cannot write to /protected/file.md',
@@ -259,8 +259,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Call search function
 					yield {
 						content: 'Searching',
-						functionCall: new AIFunctionCall(
-							AIFunction.SearchVaultFiles,
+						functionCall: new AIToolCall(
+							AITool.SearchVaultFiles,
 							{
 								search_terms: ['#important'],
 								user_message: 'Searching for tagged files'
@@ -273,8 +273,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Complete task
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Found 3 files with #important tag'
@@ -289,7 +289,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			service.resolveAIProvider();
 			const result = await service.runExecutionAgent(step, callbacks);
 
-			expect(mockAIFunctionService.performAIFunction).toHaveBeenCalled();
+			expect(mockAIToolService.performAITool).toHaveBeenCalled();
 			expect(result?.success).toBe(true);
 			expect(functionCallCount).toBe(2);
 		});
@@ -308,8 +308,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 				if (functionCallCount === 1) {
 					yield {
 						content: 'Reading',
-						functionCall: new AIFunctionCall(
-							AIFunction.ReadVaultFiles,
+						functionCall: new AIToolCall(
+							AITool.ReadVaultFiles,
 							{
 								file_paths: ['note.md'],
 								user_message: 'Reading file'
@@ -321,8 +321,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'File read successfully'
@@ -337,7 +337,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			service.resolveAIProvider();
 			const result = await service.runExecutionAgent(step, callbacks);
 
-			expect(mockAIFunctionService.performAIFunction).toHaveBeenCalled();
+			expect(mockAIToolService.performAITool).toHaveBeenCalled();
 			expect(result?.success).toBe(true);
 		});
 
@@ -355,8 +355,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 				if (functionCallCount === 1) {
 					yield {
 						content: 'Writing',
-						functionCall: new AIFunctionCall(
-							AIFunction.WriteVaultFile,
+						functionCall: new AIToolCall(
+							AITool.WriteVaultFile,
 							{
 								file_path: 'new-note.md',
 								content: '# New Note\n\nContent here',
@@ -369,8 +369,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'File created successfully'
@@ -385,7 +385,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			service.resolveAIProvider();
 			const result = await service.runExecutionAgent(step, callbacks);
 
-			expect(mockAIFunctionService.performAIFunction).toHaveBeenCalled();
+			expect(mockAIToolService.performAITool).toHaveBeenCalled();
 			expect(result?.success).toBe(true);
 		});
 
@@ -403,8 +403,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 				if (functionCallCount === 1) {
 					yield {
 						content: 'Searching',
-						functionCall: new AIFunctionCall(
-							AIFunction.SearchVaultFiles,
+						functionCall: new AIToolCall(
+							AITool.SearchVaultFiles,
 							{
 								search_terms: ['TODO'],
 								user_message: 'Searching'
@@ -416,8 +416,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else if (functionCallCount === 2) {
 					yield {
 						content: 'Reading',
-						functionCall: new AIFunctionCall(
-							AIFunction.ReadVaultFiles,
+						functionCall: new AIToolCall(
+							AITool.ReadVaultFiles,
 							{
 								file_paths: ['found.md'],
 								user_message: 'Reading'
@@ -429,8 +429,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else if (functionCallCount === 3) {
 					yield {
 						content: 'Writing',
-						functionCall: new AIFunctionCall(
-							AIFunction.PatchVaultFile,
+						functionCall: new AIToolCall(
+							AITool.PatchVaultFile,
 							{
 								file_path: 'found.md',
 								patch_operations: [],
@@ -443,8 +443,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Updated 1 file'
@@ -459,7 +459,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			service.resolveAIProvider();
 			const result = await service.runExecutionAgent(step, callbacks);
 
-			expect(mockAIFunctionService.performAIFunction).toHaveBeenCalledTimes(3);
+			expect(mockAIToolService.performAITool).toHaveBeenCalledTimes(3);
 			expect(result?.success).toBe(true);
 		});
 	});
@@ -486,8 +486,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Complete on retry
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Completed'
@@ -527,8 +527,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Complete on third attempt
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Finally completed'
@@ -574,8 +574,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Completed'
@@ -640,8 +640,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Complete on third attempt (max depth)
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Barely made it'
@@ -680,8 +680,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 
 				yield {
 					content: 'Done',
-					functionCall: new AIFunctionCall(
-						AIFunction.CompleteTask,
+					functionCall: new AIToolCall(
+						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Processed files from context'
@@ -710,8 +710,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Done',
-					functionCall: new AIFunctionCall(
-						AIFunction.CompleteTask,
+					functionCall: new AIToolCall(
+						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Task completed without context'
@@ -747,8 +747,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 
 				yield {
 					content: 'Done',
-					functionCall: new AIFunctionCall(
-						AIFunction.CompleteTask,
+					functionCall: new AIToolCall(
+						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Processed all files'
@@ -783,8 +783,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Invalid: missing description
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true
 								// Missing description field
@@ -797,8 +797,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Valid completion
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Valid completion'
@@ -832,8 +832,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Invalid: success is not boolean
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: 'yes',
 								description: 'Done'
@@ -846,8 +846,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Valid
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Done properly'
@@ -882,8 +882,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 				if (functionCallCount === 1) {
 					yield {
 						content: 'Searching',
-						functionCall: new AIFunctionCall(
-							AIFunction.SearchVaultFiles,
+						functionCall: new AIToolCall(
+							AITool.SearchVaultFiles,
 							{
 								search_terms: ['test'],
 								user_message: 'Searching for files'
@@ -895,8 +895,8 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Completed'

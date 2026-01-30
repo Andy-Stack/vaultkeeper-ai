@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AIFunctionService } from '../../Services/AIServices/AIFunctionService';
+import { AIToolService } from '../../Services/AIServices/AIToolService';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import { AIFunction } from '../../Enums/AIFunction';
+import { AITool } from '../../Enums/AITool';
 import { TFile } from 'obsidian';
 import { Exception } from '../../Helpers/Exception';
 import { AbortService } from '../../Services/AbortService';
 
 /**
- * INTEGRATION TESTS - AIFunctionService
+ * INTEGRATION TESTS - AIToolService
  *
  * Tests the AI function dispatcher with real FileSystemService integration.
  * Mocks only the Obsidian API layer (VaultService).
@@ -23,8 +23,8 @@ import { AbortService } from '../../Services/AbortService';
  * - RequestWebSearch (Gemini only)
  */
 
-describe('AIFunctionService - Integration Tests', () => {
-	let service: AIFunctionService;
+describe('AIToolService - Integration Tests', () => {
+	let service: AIToolService;
 	let mockFileSystemService: any;
 	let abortService: AbortService;
 
@@ -51,7 +51,7 @@ describe('AIFunctionService - Integration Tests', () => {
 		vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
 		// Create service - it will resolve the mock FileSystemService and real AbortService
-		service = new AIFunctionService();
+		service = new AIToolService();
 	});
 
 	afterEach(() => {
@@ -70,7 +70,7 @@ describe('AIFunctionService - Integration Tests', () => {
 		return file;
 	}
 
-	describe('performAIFunction - SearchVaultFiles', () => {
+	describe('performAITool - SearchVaultFiles', () => {
 		it('should return search results with snippets', async () => {
 			const mockMatches = [
 				{
@@ -90,13 +90,13 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			mockFileSystemService.searchVaultFiles.mockResolvedValue(mockMatches);
 
-			const result = await service.performAIFunction({
-				name: AIFunction.SearchVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.SearchVaultFiles,
 				arguments: { search_terms: ['test'], user_message: 'test search' },
 				toolId: 'tool_1'
 			} as any);
 
-			expect(result.name).toBe(AIFunction.SearchVaultFiles);
+			expect(result.name).toBe(AITool.SearchVaultFiles);
 			expect(result.toolId).toBe('tool_1');
 			expect(result.response).toEqual([{searchTerm: 'test', results: [
 				{
@@ -119,8 +119,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			// Mock returns empty array for empty search term
 			mockFileSystemService.searchVaultFiles.mockResolvedValue([]);
 
-			const result = await service.performAIFunction({
-				name: AIFunction.SearchVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.SearchVaultFiles,
 				arguments: { search_terms: [''], user_message: 'test search' },
 				toolId: 'tool_2'
 			} as any);
@@ -133,8 +133,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			// Mock returns empty array for whitespace search term
 			mockFileSystemService.searchVaultFiles.mockResolvedValue([]);
 
-			const result = await service.performAIFunction({
-				name: AIFunction.SearchVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.SearchVaultFiles,
 				arguments: { search_terms: ['   '], user_message: 'test search' },
 				toolId: 'tool_3'
 			} as any);
@@ -146,8 +146,8 @@ describe('AIFunctionService - Integration Tests', () => {
 		it('should return empty array when no matches found', async () => {
 			mockFileSystemService.searchVaultFiles.mockResolvedValue([]);
 
-			const result = await service.performAIFunction({
-				name: AIFunction.SearchVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.SearchVaultFiles,
 				arguments: { search_terms: ['nonexistent'], user_message: 'test search' },
 				toolId: 'tool_4'
 			} as any);
@@ -166,8 +166,8 @@ describe('AIFunctionService - Integration Tests', () => {
 
 			mockFileSystemService.searchVaultFiles.mockResolvedValue(mockMatches);
 
-			const result = await service.performAIFunction({
-				name: AIFunction.SearchVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.SearchVaultFiles,
 				arguments: { search_terms: ['single'], user_message: 'test search' },
 				toolId: 'tool_5'
 			} as any);
@@ -179,15 +179,15 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 	});
 
-	describe('performAIFunction - ReadVaultFiles', () => {
+	describe('performAITool - ReadVaultFiles', () => {
 		it('should read multiple files successfully', async () => {
 			mockFileSystemService.readFile
 				.mockResolvedValueOnce('Content of file 1')
 				.mockResolvedValueOnce('Content of file 2')
 				.mockResolvedValueOnce('Content of file 3');
 
-			const result = await service.performAIFunction({
-				name: AIFunction.ReadVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.ReadVaultFiles,
 				arguments: { file_paths: ['file1.md', 'file2.md', 'file3.md'], user_message: 'test search' },
 				toolId: 'tool_6'
 			} as any);
@@ -210,8 +210,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				.mockResolvedValueOnce(error1)
 				.mockResolvedValueOnce(error2);
 
-			const result = await service.performAIFunction({
-				name: AIFunction.ReadVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.ReadVaultFiles,
 				arguments: { file_paths: ['exists.md', 'missing1.md', 'missing2.md'], user_message: 'test search' },
 				toolId: 'tool_7'
 			} as any);
@@ -231,8 +231,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				.mockResolvedValueOnce(new Error('File not found'))
 				.mockResolvedValueOnce('Content B');
 
-			const result = await service.performAIFunction({
-				name: AIFunction.ReadVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.ReadVaultFiles,
 				arguments: { file_paths: ['a.md', 'missing.md', 'b.md'], user_message: 'test search' },
 				toolId: 'tool_8'
 			} as any);
@@ -244,8 +244,8 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 
 		it('should handle empty file list', async () => {
-			const result = await service.performAIFunction({
-				name: AIFunction.ReadVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.ReadVaultFiles,
 				arguments: { file_paths: [], user_message: 'test search' },
 				toolId: 'tool_9'
 			} as any);
@@ -256,8 +256,8 @@ describe('AIFunctionService - Integration Tests', () => {
 		it('should handle single file read', async () => {
 			mockFileSystemService.readFile.mockResolvedValue('Single file content');
 
-			const result = await service.performAIFunction({
-				name: AIFunction.ReadVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.ReadVaultFiles,
 				arguments: { file_paths: ['single.md'], user_message: 'test search' },
 				toolId: 'tool_10'
 			} as any);
@@ -267,12 +267,12 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 	});
 
-	describe('performAIFunction - WriteVaultFile', () => {
+	describe('performAITool - WriteVaultFile', () => {
 		it('should write file successfully', async () => {
 			mockFileSystemService.writeFile.mockResolvedValue(undefined);
 
-			const result = await service.performAIFunction({
-				name: AIFunction.WriteVaultFile,
+			const result = await service.performAITool({
+				name: AITool.WriteVaultFile,
 				arguments: {
 					file_path: 'notes/new-note.md',
 					content: '# New Note\n\nContent here',
@@ -292,8 +292,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			const error = new Error('Permission denied');
 			mockFileSystemService.writeFile.mockResolvedValue(error);
 
-			const result = await service.performAIFunction({
-				name: AIFunction.WriteVaultFile,
+			const result = await service.performAITool({
+				name: AITool.WriteVaultFile,
 				arguments: {
 					file_path: 'protected.md',
 					content: 'Content',
@@ -309,8 +309,8 @@ describe('AIFunctionService - Integration Tests', () => {
 		it('should normalize file path', async () => {
 			mockFileSystemService.writeFile.mockResolvedValue(undefined);
 
-			await service.performAIFunction({
-				name: AIFunction.WriteVaultFile,
+			await service.performAITool({
+				name: AITool.WriteVaultFile,
 				arguments: {
 					file_path: 'folder\\subfolder\\file.md',
 					content: 'Content',
@@ -329,8 +329,8 @@ describe('AIFunctionService - Integration Tests', () => {
 		it('should handle empty content', async () => {
 			mockFileSystemService.writeFile.mockResolvedValue(undefined);
 
-			const result = await service.performAIFunction({
-				name: AIFunction.WriteVaultFile,
+			const result = await service.performAITool({
+				name: AITool.WriteVaultFile,
 				arguments: {
 					file_path: 'empty.md',
 					content: '',
@@ -344,15 +344,15 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 	});
 
-	describe('performAIFunction - PatchVaultFile', () => {
+	describe('performAITool - PatchVaultFile', () => {
 		it('should apply patch successfully', async () => {
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('notes/test.md', 'test'));
 
 			const oldContent = 'old content';
 			const newContent = 'new content';
 
-			const result = await service.performAIFunction({
-				name: AIFunction.PatchVaultFile,
+			const result = await service.performAITool({
+				name: AITool.PatchVaultFile,
 				arguments: {
 					file_path: 'notes/test.md',
 					oldContent: oldContent,
@@ -373,8 +373,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			const oldContent = 'old content';
 			const newContent = 'new content';
 
-			const result = await service.performAIFunction({
-				name: AIFunction.PatchVaultFile,
+			const result = await service.performAITool({
+				name: AITool.PatchVaultFile,
 				arguments: {
 					file_path: 'notes/test.md',
 					oldContent: oldContent,
@@ -394,8 +394,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			const oldContent = 'old';
 			const newContent = 'new';
 
-			await service.performAIFunction({
-				name: AIFunction.PatchVaultFile,
+			await service.performAITool({
+				name: AITool.PatchVaultFile,
 				arguments: {
 					file_path: 'folder\\subfolder\\file.md',
 					oldContent: oldContent,
@@ -420,8 +420,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			const oldContent = 'old';
 			const newContent = 'new';
 
-			const result = await service.performAIFunction({
-				name: AIFunction.PatchVaultFile,
+			const result = await service.performAITool({
+				name: AITool.PatchVaultFile,
 				arguments: {
 					file_path: 'missing.md',
 					oldContent: oldContent,
@@ -441,8 +441,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			const oldContent = '# Title\nOld line 1\nContext line';
 			const newContent = '# Title\nNew line 1\nContext line';
 
-			const result = await service.performAIFunction({
-				name: AIFunction.PatchVaultFile,
+			const result = await service.performAITool({
+				name: AITool.PatchVaultFile,
 				arguments: {
 					file_path: 'complex.md',
 					oldContent: oldContent,
@@ -462,8 +462,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			const oldContent = '# Title\nExisting content';
 			const newContent = '# Title\nExisting content\nNew line 1\nNew line 2';
 
-			const result = await service.performAIFunction({
-				name: AIFunction.PatchVaultFile,
+			const result = await service.performAITool({
+				name: AITool.PatchVaultFile,
 				arguments: {
 					file_path: 'additions.md',
 					oldContent: oldContent,
@@ -482,8 +482,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			const oldContent = '# Title\nLine to remove 1\nLine to remove 2\nRemaining content';
 			const newContent = '# Title\nRemaining content';
 
-			const result = await service.performAIFunction({
-				name: AIFunction.PatchVaultFile,
+			const result = await service.performAITool({
+				name: AITool.PatchVaultFile,
 				arguments: {
 					file_path: 'deletions.md',
 					oldContent: oldContent,
@@ -503,8 +503,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			const oldContent = 'old';
 			const newContent = 'new';
 
-			const result = await service.performAIFunction({
-				name: AIFunction.PatchVaultFile,
+			const result = await service.performAITool({
+				name: AITool.PatchVaultFile,
 				arguments: {
 					file_path: 'protected.md',
 					oldContent: oldContent,
@@ -524,8 +524,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			const oldContent = 'old';
 			const newContent = 'new';
 
-			const result = await service.performAIFunction({
-				name: AIFunction.PatchVaultFile,
+			const result = await service.performAITool({
+				name: AITool.PatchVaultFile,
 				arguments: {
 					file_path: 'test.md',
 					oldContent: oldContent,
@@ -536,12 +536,12 @@ describe('AIFunctionService - Integration Tests', () => {
 			} as any);
 
 			expect(result.toolId).toBe('unique_tool_id_123');
-			expect(result.name).toBe(AIFunction.PatchVaultFile);
+			expect(result.name).toBe(AITool.PatchVaultFile);
 		});
 
 		it('should handle invalid arguments', async () => {
-			const result = await service.performAIFunction({
-				name: AIFunction.PatchVaultFile,
+			const result = await service.performAITool({
+				name: AITool.PatchVaultFile,
 				arguments: {
 					// missing required fields
 					file_path: 'test.md'
@@ -555,15 +555,15 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 	});
 
-	describe('performAIFunction - DeleteVaultFiles', () => {
+	describe('performAITool - DeleteVaultFiles', () => {
 		it('should delete multiple files successfully', async () => {
 			mockFileSystemService.deleteFile
 				.mockResolvedValueOnce({ success: true })
 				.mockResolvedValueOnce({ success: true })
 				.mockResolvedValueOnce({ success: true });
 
-			const result = await service.performAIFunction({
-				name: AIFunction.DeleteVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.DeleteVaultFiles,
 				arguments: {
 					file_paths: ['file1.md', 'file2.md', 'file3.md'],
 					confirm_deletion: true,
@@ -582,8 +582,8 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 
 		it('should reject deletion when confirmation is false', async () => {
-			const result = await service.performAIFunction({
-				name: AIFunction.DeleteVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.DeleteVaultFiles,
 				arguments: {
 					file_paths: ['file1.md', 'file2.md'],
 					confirm_deletion: false,
@@ -606,8 +606,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				.mockResolvedValueOnce(error)
 				.mockResolvedValueOnce(undefined); // void = success
 
-			const result = await service.performAIFunction({
-				name: AIFunction.DeleteVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.DeleteVaultFiles,
 				arguments: {
 					file_paths: ['a.md', 'missing.md', 'c.md'],
 					confirm_deletion: true,
@@ -628,8 +628,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				.mockResolvedValueOnce(new Error('Error 1'))
 				.mockResolvedValueOnce(new Error('Error 2'));
 
-			const result = await service.performAIFunction({
-				name: AIFunction.DeleteVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.DeleteVaultFiles,
 				arguments: {
 					file_paths: ['file1.md', 'file2.md'],
 					confirm_deletion: true,
@@ -644,8 +644,8 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 
 		it('should handle empty file list with confirmation', async () => {
-			const result = await service.performAIFunction({
-				name: AIFunction.DeleteVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.DeleteVaultFiles,
 				arguments: {
 					file_paths: [],
 					confirm_deletion: true,
@@ -658,15 +658,15 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 	});
 
-	describe('performAIFunction - MoveVaultFiles', () => {
+	describe('performAITool - MoveVaultFiles', () => {
 		it('should move multiple files successfully', async () => {
 			mockFileSystemService.moveFile
 				.mockResolvedValueOnce({ success: true })
 				.mockResolvedValueOnce({ success: true })
 				.mockResolvedValueOnce({ success: true });
 
-			const result = await service.performAIFunction({
-				name: AIFunction.MoveVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.MoveVaultFiles,
 				arguments: {
 					source_paths: ['a.md', 'b.md', 'c.md'],
 					destination_paths: ['dest/a.md', 'dest/b.md', 'dest/c.md'],
@@ -685,8 +685,8 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 
 		it('should reject when array lengths dont match', async () => {
-			const result = await service.performAIFunction({
-				name: AIFunction.MoveVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.MoveVaultFiles,
 				arguments: {
 					source_paths: ['a.md', 'b.md'],
 					destination_paths: ['dest/a.md'],
@@ -709,8 +709,8 @@ describe('AIFunctionService - Integration Tests', () => {
 				.mockResolvedValueOnce(error)
 				.mockResolvedValueOnce(undefined); // void = success
 
-			const result = await service.performAIFunction({
-				name: AIFunction.MoveVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.MoveVaultFiles,
 				arguments: {
 					source_paths: ['a.md', 'b.md', 'c.md'],
 					destination_paths: ['new/a.md', 'existing.md', 'new/c.md'],
@@ -729,8 +729,8 @@ describe('AIFunctionService - Integration Tests', () => {
 		it('should call moveFile with correct parameters', async () => {
 			mockFileSystemService.moveFile.mockResolvedValue(undefined); // void = success
 
-			await service.performAIFunction({
-				name: AIFunction.MoveVaultFiles,
+			await service.performAITool({
+				name: AITool.MoveVaultFiles,
 				arguments: {
 					source_paths: ['old/file.md'],
 					destination_paths: ['new/file.md'],
@@ -743,8 +743,8 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 
 		it('should handle empty arrays', async () => {
-			const result = await service.performAIFunction({
-				name: AIFunction.MoveVaultFiles,
+			const result = await service.performAITool({
+				name: AITool.MoveVaultFiles,
 				arguments: {
 					source_paths: [],
 					destination_paths: [],
@@ -757,22 +757,22 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 	});
 
-	describe('performAIFunction - RequestWebSearch', () => {
+	describe('performAITool - RequestWebSearch', () => {
 		it('should return empty object for Gemini web search', async () => {
-			const result = await service.performAIFunction({
-				name: AIFunction.RequestWebSearch,
+			const result = await service.performAITool({
+				name: AITool.RequestWebSearch,
 				arguments: {},
 				toolId: 'tool_25'
 			} as any);
 
-			expect(result.name).toBe(AIFunction.RequestWebSearch);
+			expect(result.name).toBe(AITool.RequestWebSearch);
 			expect(result.response).toEqual({});
 			expect(result.toolId).toBe('tool_25');
 		});
 
 		it('should handle web search without arguments', async () => {
-			const result = await service.performAIFunction({
-				name: AIFunction.RequestWebSearch,
+			const result = await service.performAITool({
+				name: AITool.RequestWebSearch,
 				arguments: {},
 				toolId: 'tool_26'
 			} as any);
@@ -781,9 +781,9 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 	});
 
-	describe('performAIFunction - Unknown Function', () => {
+	describe('performAITool - Unknown Function', () => {
 		it('should return unknown response for unknown function', async () => {
-			const result = await service.performAIFunction({
+			const result = await service.performAITool({
 				name: 'UnknownFunction' as any,
 				arguments: {},
 				toolId: 'tool_27'
@@ -794,7 +794,7 @@ describe('AIFunctionService - Integration Tests', () => {
 		});
 
 		it('should return unknown response for invalid function', async () => {
-			const result = await service.performAIFunction({
+			const result = await service.performAITool({
 				name: 'InvalidFunction' as any,
 				arguments: {},
 				toolId: 'tool_error'
@@ -816,8 +816,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			];
 			mockFileSystemService.searchVaultFiles.mockResolvedValue(mockMatches);
 
-			const searchResult = await service.performAIFunction({
-				name: AIFunction.SearchVaultFiles,
+			const searchResult = await service.performAITool({
+				name: AITool.SearchVaultFiles,
 				arguments: { search_terms: ['test'], user_message: 'test search' },
 				toolId: 'search_1'
 			} as any);
@@ -827,8 +827,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			// Then read
 			mockFileSystemService.readFile.mockResolvedValue('File content here');
 
-			const readResult = await service.performAIFunction({
-				name: AIFunction.ReadVaultFiles,
+			const readResult = await service.performAITool({
+				name: AITool.ReadVaultFiles,
 				arguments: { file_paths: [foundPath], user_message: 'test search' },
 				toolId: 'read_1'
 			} as any);
@@ -841,8 +841,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			// First write
 			mockFileSystemService.writeFile.mockResolvedValue(undefined);
 
-			const writeResult = await service.performAIFunction({
-				name: AIFunction.WriteVaultFile,
+			const writeResult = await service.performAITool({
+				name: AITool.WriteVaultFile,
 				arguments: {
 					file_path: 'temp.md',
 					content: 'Temporary content',
@@ -856,8 +856,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			// Then move
 			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
 
-			const moveResult = await service.performAIFunction({
-				name: AIFunction.MoveVaultFiles,
+			const moveResult = await service.performAITool({
+				name: AITool.MoveVaultFiles,
 				arguments: {
 					source_paths: ['temp.md'],
 					destination_paths: ['archive/temp.md'],
@@ -873,8 +873,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			// First read the file
 			mockFileSystemService.readFile.mockResolvedValue('# Original Title\n\nOriginal content');
 
-			const readResult = await service.performAIFunction({
-				name: AIFunction.ReadVaultFiles,
+			const readResult = await service.performAITool({
+				name: AITool.ReadVaultFiles,
 				arguments: { file_paths: ['document.md'], user_message: 'Reading file' },
 				toolId: 'read_2'
 			} as any);
@@ -887,8 +887,8 @@ describe('AIFunctionService - Integration Tests', () => {
 			const oldContent = '# Original Title';
 			const newContent = '# Updated Title';
 
-			const patchResult = await service.performAIFunction({
-				name: AIFunction.PatchVaultFile,
+			const patchResult = await service.performAITool({
+				name: AITool.PatchVaultFile,
 				arguments: {
 					file_path: 'document.md',
 					oldContent: oldContent,

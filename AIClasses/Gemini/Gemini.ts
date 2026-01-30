@@ -4,9 +4,9 @@ import type { Conversation } from "Conversations/Conversation";
 import type { Attachment } from "Conversations/Attachment";
 import { Role } from "Enums/Role";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
-import { AIFunctionCall } from "AIClasses/AIFunctionCall";
-import { fromString as aiFunctionFromString } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
+import { AIToolCall } from "AIClasses/AIToolCall";
+import { fromString as aiToolFromString } from "Enums/AITool";
+import type { IAIToolDefinition } from "AIClasses/FunctionDefinitions/IAIToolDefinition";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
 import { FinishReason } from "@google/genai";
@@ -17,7 +17,7 @@ import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import type { GeminiRetryInfo, GeminiErrorResponse } from "./GeminiTypes";
-import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
+import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export class Gemini extends BaseAIClass {
 
@@ -104,7 +104,7 @@ export class Gemini extends BaseAIClass {
                         information, recent events, news, or facts that may have changed.
                         After calling this, you will be able to perform web searches.`,
           },
-          ...this.mapFunctionDefinitions(this.aiFunctionDefinitions),
+          ...this.mapFunctionDefinitions(this.aiToolDefinitions),
         ]
       }
 
@@ -157,7 +157,7 @@ export class Gemini extends BaseAIClass {
       const data = JSON.parse(chunk) as { candidates?: Candidate[] };
 
       let text = "";
-      let functionCall: AIFunctionCall | undefined = undefined;
+      let functionCall: AIToolCall | undefined = undefined;
       const candidate = data.candidates?.[0];
 
       if (candidate) {
@@ -199,8 +199,8 @@ export class Gemini extends BaseAIClass {
 
       // If streaming is complete and we have accumulated a function call, return it
       if (isComplete && this.accumulatedFunctionName) {
-        functionCall = new AIFunctionCall(
-          aiFunctionFromString(this.accumulatedFunctionName),
+        functionCall = new AIToolCall(
+          aiToolFromString(this.accumulatedFunctionName),
           this.accumulatedFunctionArgs as Record<string, object>,
           undefined,  // toolId not used by Gemini
           this.accumulatedThoughtSignature || undefined
@@ -317,8 +317,8 @@ export class Gemini extends BaseAIClass {
     return results.filter(message => message.parts.length > 0);
   }
 
-  protected mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): FunctionDeclaration[] {
-    return aiFunctionDefinitions.map((functionDefinition) => ({
+  protected mapFunctionDefinitions(aiToolDefinitions: IAIToolDefinition[]): FunctionDeclaration[] {
+    return aiToolDefinitions.map((functionDefinition) => ({
       name: functionDefinition.name,
       description: functionDefinition.description,
       parameters: functionDefinition.parameters as FunctionDeclaration['parameters']
@@ -362,16 +362,16 @@ export class Gemini extends BaseAIClass {
 
   private buildGeminiToolConfig(): { function_calling_config: { mode: string } } {
     // If no tools defined, fall back to auto
-    if (this.aiFunctionDefinitions.length === 0) {
+    if (this.aiToolDefinitions.length === 0) {
       return { function_calling_config: { mode: "AUTO" } };
     }
 
-    switch (this.aiFunctionUsageMode) {
-      case AIFunctionUsageMode.Auto:
+    switch (this.aiToolUsageMode) {
+      case AIToolUsageMode.Auto:
         return { function_calling_config: { mode: "AUTO" } };
-      case AIFunctionUsageMode.Enabled:
+      case AIToolUsageMode.Enabled:
         return { function_calling_config: { mode: "ANY" } };
-      case AIFunctionUsageMode.Disabled:
+      case AIToolUsageMode.Disabled:
         return { function_calling_config: { mode: "NONE" } };
     }
   }

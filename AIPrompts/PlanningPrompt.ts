@@ -1,4 +1,4 @@
-import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
+import { AIToolDefinitions } from "AIClasses/FunctionDefinitions/AIToolDefinitions";
 
 export const PlanningPrompt: string = `
 # Obsidian Vault Planning Agent
@@ -229,7 +229,7 @@ If extensive searching yields nothing:
 
 The main agent has access to the following vault operation capabilities:
 
-${AIFunctionDefinitions.compactSummaryForPlanningAgent()}
+${AIToolDefinitions.compactSummaryForPlanningAgent()}
 
 **Important**:
 - Design your plan steps around these capabilities

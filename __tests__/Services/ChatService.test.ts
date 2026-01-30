@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ChatService } from '../../Services/ChatService';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import { AIFunction, fromString } from '../../Enums/AIFunction';
+import { AITool, fromString } from '../../Enums/AITool';
 import { AbortService } from '../../Services/AbortService';
 
 /**
@@ -117,20 +117,20 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 	});
 
 	describe('fromString', () => {
-		it('should convert valid function name strings to AIFunction enum', () => {
-			expect(fromString('search_vault_files')).toBe(AIFunction.SearchVaultFiles);
-			expect(fromString('read_vault_files')).toBe(AIFunction.ReadVaultFiles);
-			expect(fromString('write_vault_file')).toBe(AIFunction.WriteVaultFile);
-			expect(fromString('delete_vault_files')).toBe(AIFunction.DeleteVaultFiles);
-			expect(fromString('move_vault_files')).toBe(AIFunction.MoveVaultFiles);
-			expect(fromString('list_vault_files')).toBe(AIFunction.ListVaultFiles);
-			expect(fromString('request_web_search')).toBe(AIFunction.RequestWebSearch);
+		it('should convert valid function name strings to AITool enum', () => {
+			expect(fromString('search_vault_files')).toBe(AITool.SearchVaultFiles);
+			expect(fromString('read_vault_files')).toBe(AITool.ReadVaultFiles);
+			expect(fromString('write_vault_file')).toBe(AITool.WriteVaultFile);
+			expect(fromString('delete_vault_files')).toBe(AITool.DeleteVaultFiles);
+			expect(fromString('move_vault_files')).toBe(AITool.MoveVaultFiles);
+			expect(fromString('list_vault_files')).toBe(AITool.ListVaultFiles);
+			expect(fromString('request_web_search')).toBe(AITool.RequestWebSearch);
 		});
 
 		it('should return Unknown for unknown function names', () => {
-			expect(fromString('unknown_function')).toBe(AIFunction.Unknown);
-			expect(fromString('test_function')).toBe(AIFunction.Unknown);
-			expect(fromString('')).toBe(AIFunction.Unknown);
+			expect(fromString('unknown_function')).toBe(AITool.Unknown);
+			expect(fromString('test_function')).toBe(AITool.Unknown);
+			expect(fromString('')).toBe(AITool.Unknown);
 		});
 	});
 

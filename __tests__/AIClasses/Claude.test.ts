@@ -5,7 +5,7 @@ import { Services } from '../../Services/Services';
 import { StreamingService } from '../../Services/StreamingService';
 import type { IPrompt } from '../../AIPrompts/IPrompt';
 import type VaultkeeperAIPlugin from '../../main';
-import { AIFunctionDefinitions } from '../../AIClasses/FunctionDefinitions/AIFunctionDefinitions';
+import { AIToolDefinitions } from '../../AIClasses/FunctionDefinitions/AIToolDefinitions';
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
@@ -118,7 +118,7 @@ describe('Claude', () => {
             expect(plugin).toBe(mockPlugin);
             expect(settingsService).toBe(mockSettingsService);
             expect(streaming).toBe(mockStreamingService);
-            expect(AIFunctionDefinitions.agentDefinitions).toBeDefined();
+            expect(AIToolDefinitions.agentDefinitions).toBeDefined();
         });
     });
 
@@ -1157,7 +1157,7 @@ describe('Claude', () => {
             // Set system prompts before calling streamRequest
             claude.systemPrompt = 'System instruction';
             claude.userInstruction = 'User instruction';
-            claude.aiFunctionDefinitions = [];
+            claude.aiToolDefinitions = [];
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'response', isComplete: true };

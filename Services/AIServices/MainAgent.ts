@@ -1,18 +1,18 @@
 import type { Conversation } from "Conversations/Conversation";
 import type { IChatServiceCallbacks } from "../ChatService";
-import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
+import { AIToolDefinitions } from "AIClasses/FunctionDefinitions/AIToolDefinitions";
 import { Exception } from "Helpers/Exception";
-import { AIFunction, isAIFunction } from "Enums/AIFunction";
+import { AITool, isAITool } from "Enums/AITool";
 import { AgentType } from "Enums/AgentType";
 import { BaseAgent } from "./BaseAgent";
-import { ExecuteWorkflowArgsSchema, type ExecuteWorkflowArgs } from "AIClasses/Schemas/AIFunctionSchemas";
-import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
-import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
+import { ExecuteWorkflowArgsSchema, type ExecuteWorkflowArgs } from "AIClasses/Schemas/AIToolSchemas";
+import { AIToolResponse } from "AIClasses/FunctionDefinitions/AIToolResponse";
+import type { AIToolCall } from "AIClasses/AIToolCall";
 import { OrchestrationAgent } from "./OrchestrationAgent";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import { DebugColor } from "Enums/DebugColor";
-import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
+import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export class MainAgent extends BaseAgent {
 
@@ -38,7 +38,7 @@ export class MainAgent extends BaseAgent {
             const workflowResult = await orchestrationAgent.runPlannedWorkflow(result.planRequest, callbacks);
             this.debugService?.log("MainAgent", "OrchestrationAgent workflow completed");
 
-            conversation.addFunctionResponse(new AIFunctionResponse(
+            conversation.addFunctionResponse(new AIToolResponse(
                 result.functionCall.name,
                 workflowResult,
                 result.functionCall.toolId
@@ -51,20 +51,20 @@ export class MainAgent extends BaseAgent {
 
     // the main agent loop - may return an execution plan if the agent has requested a planned workflow
     private async runMainAgentLoop(conversation: Conversation, callbacks: IChatServiceCallbacks
-    ): Promise<{ planRequest: ExecuteWorkflowArgs | undefined, functionCall: AIFunctionCall | undefined }> {
+    ): Promise<{ planRequest: ExecuteWorkflowArgs | undefined, functionCall: AIToolCall | undefined }> {
         
         let planRequest: ExecuteWorkflowArgs | undefined;
-        let planFunctionCall: AIFunctionCall | undefined;
+        let planFunctionCall: AIToolCall | undefined;
 
         await this.runAgentLoop(AgentType.Main, conversation, callbacks, async functionCall => {
             const functionCallName = functionCall.name;
-            if (isAIFunction(functionCallName, AIFunction.ExecuteWorkflow)) {
+            if (isAITool(functionCallName, AITool.ExecuteWorkflow)) {
                 this.debugService?.log("MainAgent", "ExecuteWorkflow function detected - transitioning to orchestration");
                 const parseResult = ExecuteWorkflowArgsSchema.safeParse(functionCall.arguments);
                 if (!parseResult.success) {
-                    conversation.addFunctionResponse(new AIFunctionResponse(
+                    conversation.addFunctionResponse(new AIToolResponse(
                         functionCallName,
-                        { error: `Invalid arguments for ${AIFunction.ExecuteWorkflow}: ${parseResult.error.message}` },
+                        { error: `Invalid arguments for ${AITool.ExecuteWorkflow}: ${parseResult.error.message}` },
                         functionCall.toolId
                     ));
                     return { shouldExit: false };
@@ -77,7 +77,7 @@ export class MainAgent extends BaseAgent {
 
             this.debugService?.log("MainAgent", `Executing function: ${functionCall.name}`);
             this.updateThought(functionCall, callbacks);
-            const functionResponse = await this.aiFunctionService.performAIFunction(functionCall);
+            const functionResponse = await this.aiToolService.performAITool(functionCall);
             conversation.addFunctionResponse(functionResponse);
             return { shouldExit: false };
         });
@@ -89,10 +89,10 @@ export class MainAgent extends BaseAgent {
             Exception.throw("Error: No AI provider has been set!");
         }
         this.ai.agentType = AgentType.Main;
-        this.ai.aiFunctionUsageMode = AIFunctionUsageMode.Auto;
+        this.ai.aiToolUsageMode = AIToolUsageMode.Auto;
         this.ai.systemPrompt = this.aiPrompt.systemInstruction();
         this.ai.userInstruction = await this.aiPrompt.userInstruction();
-        this.ai.aiFunctionDefinitions = AIFunctionDefinitions.agentDefinitions(allowDestructiveActions, planningMode);
+        this.ai.aiToolDefinitions = AIToolDefinitions.agentDefinitions(allowDestructiveActions, planningMode);
     }
 
     protected override setDebugColor(): void {

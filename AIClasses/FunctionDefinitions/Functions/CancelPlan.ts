@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const CancelPlan: IAIFunctionDefinition = {
-  name: AIFunction.CancelPlan,
+export const CancelPlan: IAIToolDefinition = {
+  name: AITool.CancelPlan,
   description: `Terminates the current plan execution immediately and returns control to the main conversation loop.
 
 Use this function when plan execution cannot or should not continue.

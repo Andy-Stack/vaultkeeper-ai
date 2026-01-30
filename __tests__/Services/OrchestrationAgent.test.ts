@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { OrchestrationAgent } from '../../Services/AIServices/OrchestrationAgent';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import { AIFunction } from '../../Enums/AIFunction';
-import { AIFunctionResponse } from '../../AIClasses/FunctionDefinitions/AIFunctionResponse';
+import { AITool } from '../../Enums/AITool';
+import { AIToolResponse } from '../../AIClasses/FunctionDefinitions/AIToolResponse';
 
 /**
  * UNIT TESTS - OrchestrationAgent
@@ -20,7 +20,7 @@ describe('OrchestrationAgent - Unit Tests', () => {
 	let service: OrchestrationAgent;
 	let mockAI: any;
 	let mockPrompt: any;
-	let mockAIFunctionService: any;
+	let mockAIToolService: any;
 
 	beforeEach(() => {
 		// Mock IPrompt
@@ -33,13 +33,13 @@ describe('OrchestrationAgent - Unit Tests', () => {
 		};
 		RegisterSingleton(Services.IPrompt, mockPrompt);
 
-		// Mock AIFunctionService
-		mockAIFunctionService = {
-			performAIFunction: vi.fn().mockResolvedValue(
-				new AIFunctionResponse(AIFunction.SearchVaultFiles, { results: [] }, 'test-tool-id')
+		// Mock AIToolService
+		mockAIToolService = {
+			performAITool: vi.fn().mockResolvedValue(
+				new AIToolResponse(AITool.SearchVaultFiles, { results: [] }, 'test-tool-id')
 			)
 		};
-		RegisterSingleton(Services.AIFunctionService, mockAIFunctionService);
+		RegisterSingleton(Services.AIToolService, mockAIToolService);
 
 		// Mock IAIClass
 		mockAI = {

@@ -1,4 +1,4 @@
-import type { IAIFunctionDefinition } from "./IAIFunctionDefinition";
+import type { IAIToolDefinition } from "./IAIToolDefinition";
 import { SearchVaultFiles } from "./Functions/SearchVaultFiles";
 import { ReadVaultFiles } from "./Functions/ReadVaultFiles";
 import { WriteVaultFile } from "./Functions/WriteVaultFile";
@@ -15,14 +15,14 @@ import { CompletePlan } from "./Functions/CompletePlan";
 import { CompleteTask } from "./Functions/CompleteTask";
 import { ExecuteWorkflow } from "./Functions/ExecuteWorkflow";
 
-export abstract class AIFunctionDefinitions {
+export abstract class AIToolDefinitions {
     
     public static isGated: boolean = false;
 
     // Definitions list provides a list of function definitions that does not include any planning functions (used as reference in planning agent prompt)
     private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles];
 
-    public static agentDefinitions(destructive: boolean, planning: boolean): IAIFunctionDefinition[] {
+    public static agentDefinitions(destructive: boolean, planning: boolean): IAIToolDefinition[] {
         this.isGated = false;
         
         if (planning) {
@@ -47,15 +47,15 @@ export abstract class AIFunctionDefinitions {
         return actions;
     }
 
-    public static orchestrationAgentDefinitions(): IAIFunctionDefinition[] {
+    public static orchestrationAgentDefinitions(): IAIToolDefinition[] {
         return [CompleteStep, Replan, CancelPlan, CompletePlan];
     }
 
-    public static planningAgentDefinitions(): IAIFunctionDefinition[] {
+    public static planningAgentDefinitions(): IAIToolDefinition[] {
         return [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, AskUserQuestionPlanning, SubmitPlan];
     }
 
-    public static executionAgentDefinitions(): IAIFunctionDefinition[] {
+    public static executionAgentDefinitions(): IAIToolDefinition[] {
         return [...this.agentDefinitions(true, false), CompleteTask];
     }
 

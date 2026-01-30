@@ -1,4 +1,4 @@
-import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
+import type { AIToolCall } from "AIClasses/AIToolCall";
 import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIPrompts/IPrompt";
 import type { Conversation } from "Conversations/Conversation";
@@ -10,24 +10,24 @@ import { sanitizeFunctionCallContent } from "Helpers/ResponseHelper";
 import type { IChatServiceCallbacks } from "Services/ChatService";
 import { Resolve, TryResolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
-import type { AIFunctionService } from "./AIFunctionService";
+import type { AIToolService } from "./AIToolService";
 import type { DebugService } from "Services/DebugService";
 import { DebugColor } from "Enums/DebugColor";
 import { Exception } from "Helpers/Exception";
-import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
+import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export abstract class BaseAgent {
     
     protected ai: IAIClass | undefined;
     protected readonly aiPrompt: IPrompt;
-    protected readonly aiFunctionService: AIFunctionService;
+    protected readonly aiToolService: AIToolService;
     protected readonly debugService: DebugService | undefined;
 
     private onSaveConversation?: (conversation: Conversation) => Promise<void>;
 
     public constructor() {
         this.aiPrompt = Resolve<IPrompt>(Services.IPrompt);
-        this.aiFunctionService = Resolve<AIFunctionService>(Services.AIFunctionService);
+        this.aiToolService = Resolve<AIToolService>(Services.AIToolService);
         this.debugService = TryResolve<DebugService>(Services.DebugService);
         this.setDebugColor();
     }
@@ -41,7 +41,7 @@ export abstract class BaseAgent {
     }
 
     protected async runAgentLoop(agentType: AgentType, conversation: Conversation, callbacks: IChatServiceCallbacks,
-        handleFunctionCall: (functionCall: AIFunctionCall) => Promise<{ shouldExit: boolean }>
+        handleFunctionCall: (functionCall: AIToolCall) => Promise<{ shouldExit: boolean }>
     ): Promise<void> {
         this.debugService?.log("AgentLoop", `Starting ${agentType} agent loop`);
         let response = await this.streamRequestResponse(agentType, this.ensureCorrectConversationStructure(conversation), callbacks);
@@ -86,7 +86,7 @@ export abstract class BaseAgent {
         });
     }
 
-    protected updateThought(functionCall: AIFunctionCall | null, callbacks: IChatServiceCallbacks) {
+    protected updateThought(functionCall: AIToolCall | null, callbacks: IChatServiceCallbacks) {
         const userMessage = functionCall?.arguments.user_message;
         if (userMessage && typeof userMessage === "string") {
             callbacks.onThoughtUpdate(userMessage);
@@ -117,7 +117,7 @@ export abstract class BaseAgent {
     }
 
     private async streamRequestResponse(agentType: AgentType, conversation: Conversation, callbacks: IChatServiceCallbacks
-    ): Promise<{ functionCall: AIFunctionCall | null, shouldContinue: boolean }> {
+    ): Promise<{ functionCall: AIToolCall | null, shouldContinue: boolean }> {
         if (!this.ai) { // this should never happen
             return { functionCall: null, shouldContinue: false };
         }
@@ -126,7 +126,7 @@ export abstract class BaseAgent {
         conversation.contents.push(conversationContent);
 
         let accumulatedContent = "";
-        let capturedFunctionCall: AIFunctionCall | null = null;
+        let capturedFunctionCall: AIToolCall | null = null;
         let capturedShouldContinue = false;
 
         for await (const chunk of this.ai.streamRequest(conversation)) {
@@ -191,12 +191,12 @@ export abstract class BaseAgent {
             Exception.throw("Error: No AI provider has been set!");
         }
         
-        const aiFunctionUsageMode = this.ai.aiFunctionUsageMode;
-        this.ai.aiFunctionUsageMode = AIFunctionUsageMode.Disabled;
+        const aiToolUsageMode = this.ai.aiToolUsageMode;
+        this.ai.aiToolUsageMode = AIToolUsageMode.Disabled;
 
         const result = await callback();
 
-        this.ai.aiFunctionUsageMode = aiFunctionUsageMode;
+        this.ai.aiToolUsageMode = aiToolUsageMode;
         return result;
     }
 }

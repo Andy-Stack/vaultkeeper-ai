@@ -311,7 +311,7 @@ describe('OpenAI', () => {
             // Set system prompts before calling streamRequest
             openai.systemPrompt = 'System instruction';
             openai.userInstruction = 'User instruction';
-            openai.aiFunctionDefinitions = [];
+            openai.aiToolDefinitions = [];
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'response', isComplete: true };

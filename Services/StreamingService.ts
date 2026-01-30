@@ -1,4 +1,4 @@
-import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
+import type { AIToolCall } from "AIClasses/AIToolCall";
 import { Event } from "Enums/Event";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
@@ -13,7 +13,7 @@ export interface IStreamChunk {
   isComplete: boolean;
   error?: string;
   errorType?: ApiErrorType;
-  functionCall?: AIFunctionCall;
+  functionCall?: AIToolCall;
   shouldContinue?: boolean;
 }
 

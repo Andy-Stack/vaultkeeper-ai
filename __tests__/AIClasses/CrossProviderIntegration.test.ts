@@ -100,7 +100,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 displayContent: '',
                 functionCall: JSON.stringify({
                     functionCall: {
-                        id: 'call_abc123',  // AIFunctionCall.toConversationString() includes id in JSON
+                        id: 'call_abc123',  // AIToolCall.toConversationString() includes id in JSON
                         name: 'search_vault_files',
                         args: { query: 'meeting notes' }
                     }
@@ -122,13 +122,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
         it('should convert OpenAI function call (no thoughtSignature) to legacy text format', async () => {
             // Simulate a conversation started with OpenAI
-            const openaiFunctionCall = new ConversationContent({
+            const openaiToolCall = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
                 functionCall: JSON.stringify({
                     functionCall: {
-                        id: 'call_xyz789',  // AIFunctionCall.toConversationString() includes id in JSON
+                        id: 'call_xyz789',  // AIToolCall.toConversationString() includes id in JSON
                         name: 'read_file',
                         args: { path: 'project.md' }
                     }
@@ -138,7 +138,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 toolId: 'call_xyz789'
             });
 
-            const result = await (gemini as any).extractContents([openaiFunctionCall]);
+            const result = await (gemini as any).extractContents([openaiToolCall]);
 
             expect(result[0].parts[0].text).toContain('<!-- Historical tool call');
             expect(result[0].parts[0].text).toContain('"name": "read_file"');
@@ -231,7 +231,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 displayContent: '',
                 functionCall: JSON.stringify({
                             functionCall: {
-                                id: 'call_claude_123',  // AIFunctionCall.toConversationString() includes id
+                                id: 'call_claude_123',  // AIToolCall.toConversationString() includes id
                                 name: 'search_vault_files',
                                 args: { query: 'project' }
                             }
@@ -340,7 +340,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 displayContent: '',
                 functionCall: JSON.stringify({
                             functionCall: {
-                                id: 'call_openai_456',  // AIFunctionCall.toConversationString() includes id
+                                id: 'call_openai_456',  // AIToolCall.toConversationString() includes id
                                 name: 'list_files',
                                 args: {}
                             }
@@ -394,7 +394,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 displayContent: '',
                 functionCall: JSON.stringify({
                             functionCall: {
-                                id: 'call-1',  // AIFunctionCall.toConversationString() includes id
+                                id: 'call-1',  // AIToolCall.toConversationString() includes id
                                 name: 'func1',
                                 args: { a: 1 }
                             }
@@ -540,7 +540,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
         it('should handle OpenAI function call when switching to Claude', async () => {
             // Simulate a conversation started with OpenAI
-            const openaiFunctionCall = new ConversationContent({
+            const openaiToolCall = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
@@ -576,7 +576,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             // Now switch to Claude - it should read OpenAI's function call
             const claude = new Claude();
-            const result = await (claude as any).extractContents([openaiFunctionCall, openaiResponse]);
+            const result = await (claude as any).extractContents([openaiToolCall, openaiResponse]);
 
             // Claude should convert OpenAI's function call to its tool_use format
             expect(result).toHaveLength(2);
@@ -694,8 +694,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             expect(openaiResult.length).toBeGreaterThan(0);
             // Both function calls should be present in Responses API format
-            const openaiFunctionCalls = openaiResult.filter((r: any) => r.type === 'function_call');
-            expect(openaiFunctionCalls).toHaveLength(2);
+            const openaiToolCalls = openaiResult.filter((r: any) => r.type === 'function_call');
+            expect(openaiToolCalls).toHaveLength(2);
         });
 
         it('should handle function call with toolId but empty string', async () => {
@@ -760,7 +760,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
         it('should handle OpenAI function call when switching to Claude', async () => {
             // Detailed test already covered in "Claude ↔ OpenAI Switching"
             // This test focuses on verifying Claude properly interprets OpenAI's call_id
-            const openaiFunctionCall = new ConversationContent({
+            const openaiToolCall = new ConversationContent({
                 role: Role.Assistant,
                 content: 'Let me read that file for you',
                 displayContent: '',
@@ -777,7 +777,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             });
 
             const claude = new Claude();
-            const result = await (claude as any).extractContents([openaiFunctionCall]);
+            const result = await (claude as any).extractContents([openaiToolCall]);
 
             // Claude should preserve the OpenAI call_id in its tool_use format
             expect(result).toHaveLength(1);
@@ -794,7 +794,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
         it('should convert OpenAI function call (no thoughtSignature) to Gemini legacy format', async () => {
             // OpenAI function call should be converted to legacy text when sent to Gemini
-            const openaiFunctionCall = new ConversationContent({
+            const openaiToolCall = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
@@ -810,7 +810,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 toolId: 'call_abc'
             });
 
-            const result = await (gemini as any).extractContents([openaiFunctionCall]);
+            const result = await (gemini as any).extractContents([openaiToolCall]);
 
             // Gemini should convert to legacy format since there's no thoughtSignature
             expect(result).toHaveLength(1);
@@ -1499,10 +1499,10 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             );
             expect(claudeToolUses.length).toBe(3);
 
-            const openaiFunctionCalls = openaiResult.filter((r: any) =>
+            const openaiToolCalls = openaiResult.filter((r: any) =>
                 r.type === 'function_call' || r.type === 'message'
             );
-            expect(openaiFunctionCalls.length).toBeGreaterThan(0);
+            expect(openaiToolCalls.length).toBeGreaterThan(0);
 
             // Gemini should have 1 native call (with signature) and 2 legacy calls
             const geminiNativeCalls = geminiResult.filter((r: any) =>
@@ -1661,7 +1661,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
         it('should handle inconsistent state: toolId set but id missing from JSON (data corruption)', async () => {
             // Edge case: metadata field has toolId but the serialized JSON doesn't have id
-            // This should never happen in production (AIFunctionCall prevents this)
+            // This should never happen in production (AIToolCall prevents this)
             // but tests defensive behavior
             const content = new ConversationContent({
                 role: Role.Assistant,

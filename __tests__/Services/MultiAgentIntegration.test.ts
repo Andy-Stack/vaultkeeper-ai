@@ -8,9 +8,9 @@ import { Services } from '../../Services/Services';
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
-import { AIFunction } from '../../Enums/AIFunction';
-import { AIFunctionCall } from '../../AIClasses/AIFunctionCall';
-import { AIFunctionResponse } from '../../AIClasses/FunctionDefinitions/AIFunctionResponse';
+import { AITool } from '../../Enums/AITool';
+import { AIToolCall } from '../../AIClasses/AIToolCall';
+import { AIToolResponse } from '../../AIClasses/FunctionDefinitions/AIToolResponse';
 import type { ExecutionStep } from '../../Types/ExecutionStep';
 
 /**
@@ -30,7 +30,7 @@ import type { ExecutionStep } from '../../Types/ExecutionStep';
 describe('Multi-Agent Integration Tests', () => {
 	let mockAI: any;
 	let mockPrompt: any;
-	let mockAIFunctionService: any;
+	let mockAIToolService: any;
 
 	const createMockCallbacks = () => ({
 		onSubmit: vi.fn(),
@@ -57,13 +57,13 @@ describe('Multi-Agent Integration Tests', () => {
 		};
 		RegisterSingleton(Services.IPrompt, mockPrompt);
 
-		// Mock AIFunctionService
-		mockAIFunctionService = {
-			performAIFunction: vi.fn().mockResolvedValue(
-				new AIFunctionResponse(AIFunction.SearchVaultFiles, { results: ['file1.md', 'file2.md'] }, 'test-tool-id')
+		// Mock AIToolService
+		mockAIToolService = {
+			performAITool: vi.fn().mockResolvedValue(
+				new AIToolResponse(AITool.SearchVaultFiles, { results: ['file1.md', 'file2.md'] }, 'test-tool-id')
 			)
 		};
-		RegisterSingleton(Services.AIFunctionService, mockAIFunctionService);
+		RegisterSingleton(Services.AIToolService, mockAIToolService);
 
 		// Mock IAIClass
 		mockAI = {
@@ -123,8 +123,8 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Plan',
-					functionCall: new AIFunctionCall(
-						AIFunction.SubmitPlan,
+					functionCall: new AIToolCall(
+						AITool.SubmitPlan,
 						{
 							steps: [
 								{
@@ -159,8 +159,8 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Replan',
-					functionCall: new AIFunctionCall(
-						AIFunction.SubmitPlan,
+					functionCall: new AIToolCall(
+						AITool.SubmitPlan,
 						{
 							steps: [
 								{
@@ -201,8 +201,8 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Done',
-					functionCall: new AIFunctionCall(
-						AIFunction.CompleteTask,
+					functionCall: new AIToolCall(
+						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Task completed'
@@ -232,8 +232,8 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Failed',
-					functionCall: new AIFunctionCall(
-						AIFunction.CompleteTask,
+					functionCall: new AIToolCall(
+						AITool.CompleteTask,
 						{
 							success: false,
 							description: 'Task failed'
@@ -264,8 +264,8 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Done',
-					functionCall: new AIFunctionCall(
-						AIFunction.CompleteTask,
+					functionCall: new AIToolCall(
+						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Processed with context',
@@ -400,8 +400,8 @@ describe('Multi-Agent Integration Tests', () => {
 					searchCalled = true;
 					yield {
 						content: 'Searching',
-						functionCall: new AIFunctionCall(
-							AIFunction.SearchVaultFiles,
+						functionCall: new AIToolCall(
+							AITool.SearchVaultFiles,
 							{
 								search_terms: ['test'],
 								user_message: 'Searching'
@@ -413,8 +413,8 @@ describe('Multi-Agent Integration Tests', () => {
 				} else {
 					yield {
 						content: 'Plan',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -433,7 +433,7 @@ describe('Multi-Agent Integration Tests', () => {
 			service.resolveAIProvider();
 			const result = await service.runPlanningAgent(conversation, callbacks, false);
 
-			expect(mockAIFunctionService.performAIFunction).toHaveBeenCalled();
+			expect(mockAIToolService.performAITool).toHaveBeenCalled();
 			expect(result).toBeDefined();
 		});
 
@@ -451,8 +451,8 @@ describe('Multi-Agent Integration Tests', () => {
 				if (functionCallCount === 1) {
 					yield {
 						content: 'Searching',
-						functionCall: new AIFunctionCall(
-							AIFunction.SearchVaultFiles,
+						functionCall: new AIToolCall(
+							AITool.SearchVaultFiles,
 							{
 								search_terms: ['test'],
 								user_message: 'Searching'
@@ -464,8 +464,8 @@ describe('Multi-Agent Integration Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Found and processed files'
@@ -480,7 +480,7 @@ describe('Multi-Agent Integration Tests', () => {
 			service.resolveAIProvider();
 			const result = await service.runExecutionAgent(step, callbacks);
 
-			expect(mockAIFunctionService.performAIFunction).toHaveBeenCalled();
+			expect(mockAIToolService.performAITool).toHaveBeenCalled();
 			expect(result?.success).toBe(true);
 		});
 	});

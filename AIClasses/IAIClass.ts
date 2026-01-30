@@ -1,18 +1,18 @@
 import type { IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import type { Attachment } from "Conversations/Attachment";
-import type { IAIFunctionDefinition } from "./FunctionDefinitions/IAIFunctionDefinition";
+import type { IAIToolDefinition } from "./FunctionDefinitions/IAIToolDefinition";
 import type { AIProvider } from "Enums/ApiProvider";
 import type { AgentType } from "Enums/AgentType";
-import type { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
+import type { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export interface IAIClass {
     get currentProvider(): AIProvider;
     set agentType(agentType: AgentType);
     set systemPrompt(systemPrompt: string);
     set userInstruction(userInstruction: string);
-    set aiFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]);
-    set aiFunctionUsageMode(mode: AIFunctionUsageMode);
+    set aiToolDefinitions(aiToolDefinitions: IAIToolDefinition[]);
+    set aiToolUsageMode(mode: AIToolUsageMode);
 
     streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown>;
     formatBinaryFiles(attachments: Attachment[]): string;

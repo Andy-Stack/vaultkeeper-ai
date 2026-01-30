@@ -1,10 +1,10 @@
 // Platform agnostic class for function responses
 
-import type { AIFunction } from "Enums/AIFunction";
+import type { AITool } from "Enums/AITool";
 
 // Used by AI providers to format function execution results for API calls
-export class AIFunctionResponse {
-    public readonly name: AIFunction;
+export class AIToolResponse {
+    public readonly name: AITool;
     public readonly response: object;
     public readonly toolId?: string;
 
@@ -29,7 +29,7 @@ export class AIFunctionResponse {
 
     **User's Suggestion:**`;
 
-    constructor(name: AIFunction, response: object, toolId?: string) {
+    constructor(name: AITool, response: object, toolId?: string) {
         this.name = name;
         this.response = response;
         this.toolId = toolId;

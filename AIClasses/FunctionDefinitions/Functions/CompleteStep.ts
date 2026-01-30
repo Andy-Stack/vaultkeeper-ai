@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const CompleteStep: IAIFunctionDefinition = {
-  name: AIFunction.CompleteStep,
+export const CompleteStep: IAIToolDefinition = {
+  name: AITool.CompleteStep,
   description: `Signals that plan execution should proceed to the next step without modification.
 
 Call this function:

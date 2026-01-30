@@ -15,7 +15,7 @@ import { DiffService } from "./DiffService";
 import * as path from "path-browserify";
 import { Event } from "Enums/Event";
 import { AbortService } from "./AbortService";
-import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
+import { AIToolResponse } from "AIClasses/FunctionDefinitions/AIToolResponse";
 import { FileType, isBinaryFile, isFileType } from "Enums/FileType";
 import { readPDF } from "Helpers/PDFHelper";
 
@@ -524,9 +524,9 @@ export class VaultService {
                     return await performChange();
                 }
 
-                let response = AIFunctionResponse.UserRejectionMessage;
+                let response = AIToolResponse.UserRejectionMessage;
                 if (result.suggestion) {
-                    response = `${AIFunctionResponse.UserSuggestionMessage}\n${result.suggestion}`;
+                    response = `${AIToolResponse.UserSuggestionMessage}\n${result.suggestion}`;
                 }
                 return Exception.new(response);
             } catch (error) {

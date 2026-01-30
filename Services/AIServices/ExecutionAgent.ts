@@ -5,14 +5,14 @@ import { Conversation } from "Conversations/Conversation";
 import type { IChatServiceCallbacks } from "Services/ChatService";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
-import { AIFunction, isAIFunction } from "Enums/AIFunction";
-import { CompleteTaskArgsSchema, type CompleteTaskArgs } from "AIClasses/Schemas/AIFunctionSchemas";
-import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
+import { AITool, isAITool } from "Enums/AITool";
+import { CompleteTaskArgsSchema, type CompleteTaskArgs } from "AIClasses/Schemas/AIToolSchemas";
+import { AIToolResponse } from "AIClasses/FunctionDefinitions/AIToolResponse";
 import { Exception } from "Helpers/Exception";
-import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
+import { AIToolDefinitions } from "AIClasses/FunctionDefinitions/AIToolDefinitions";
 import { Copy, replaceCopy } from "Enums/Copy";
 import { DebugColor } from "Enums/DebugColor";
-import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
+import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export class ExecutionAgent extends BaseAgent {
 
@@ -48,12 +48,12 @@ export class ExecutionAgent extends BaseAgent {
         await this.runAgentLoop(AgentType.Execution, this.conversation, callbacks, async functionCall => {
             const functionCallName = functionCall.name;
 
-            if (isAIFunction(functionCallName, AIFunction.CompleteTask)) {
+            if (isAITool(functionCallName, AITool.CompleteTask)) {
                 const parseResult = CompleteTaskArgsSchema.safeParse(functionCall.arguments);
                 if (!parseResult.success) {
-                    this.conversation.addFunctionResponse(new AIFunctionResponse(
+                    this.conversation.addFunctionResponse(new AIToolResponse(
                         functionCallName,
-                        { error: `Invalid arguments for ${AIFunction.CompleteTask}: ${parseResult.error.message}` },
+                        { error: `Invalid arguments for ${AITool.CompleteTask}: ${parseResult.error.message}` },
                         functionCall.toolId
                     ));
                     return { shouldExit: false };
@@ -66,7 +66,7 @@ export class ExecutionAgent extends BaseAgent {
 
             this.debugService?.log("ExecutionAgent", `Executing function: ${functionCall.name}`);
             this.updateThought(functionCall, callbacks);
-            const functionResponse = await this.aiFunctionService.performAIFunction(functionCall);
+            const functionResponse = await this.aiToolService.performAITool(functionCall);
             this.conversation.addFunctionResponse(functionResponse);
             return { shouldExit: false };
         });
@@ -87,10 +87,10 @@ export class ExecutionAgent extends BaseAgent {
             Exception.throw("Error: No AI provider has been set!");
         }
         this.ai.agentType = AgentType.Execution;
-        this.ai.aiFunctionUsageMode = AIFunctionUsageMode.Enabled;
+        this.ai.aiToolUsageMode = AIToolUsageMode.Enabled;
         this.ai.systemPrompt = this.aiPrompt.executionInstruction();
         this.ai.userInstruction = ""; // do not include user instruction for execution agent
-        this.ai.aiFunctionDefinitions = AIFunctionDefinitions.executionAgentDefinitions();
+        this.ai.aiToolDefinitions = AIToolDefinitions.executionAgentDefinitions();
     }
 
     protected override setDebugColor(): void {

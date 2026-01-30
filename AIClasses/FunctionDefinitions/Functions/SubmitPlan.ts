@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const SubmitPlan: IAIFunctionDefinition = {
-    name: AIFunction.SubmitPlan,
+export const SubmitPlan: IAIToolDefinition = {
+    name: AITool.SubmitPlan,
     description: `Submits an execution plan with ordered, actionable steps.
 
 Call this function:

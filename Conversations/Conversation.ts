@@ -1,9 +1,9 @@
 import { StringTools } from "Helpers/StringTools";
 import { ConversationContent } from "./ConversationContent";
 import { Attachment } from "./Attachment";
-import type { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
+import type { AIToolResponse } from "AIClasses/FunctionDefinitions/AIToolResponse";
 import { Role } from "Enums/Role";
-import { AIFunction } from "Enums/AIFunction";
+import { AITool } from "Enums/AITool";
 import { isTextFile, toFileType } from "Enums/FileType";
 import { FileTypeToMimeType } from "Enums/FileTypeMimeTypeMapping";
 
@@ -27,8 +27,8 @@ export class Conversation {
         return this.contents.some(c => c.attachments.length > 0);
     }
 
-    public addFunctionResponse(functionResponse: AIFunctionResponse): void {
-        if (functionResponse.name !== AIFunction.ReadVaultFiles) {
+    public addFunctionResponse(functionResponse: AIToolResponse): void {
+        if (functionResponse.name !== AITool.ReadVaultFiles) {
             const functionResponseString = functionResponse.toConversationString();
             this.contents.push(new ConversationContent({
                 role: Role.User,

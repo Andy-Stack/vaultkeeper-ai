@@ -4,18 +4,18 @@ import type { IAIClass } from "AIClasses/IAIClass";
 import { type IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import type { AIProvider } from "Enums/ApiProvider";
-import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
+import type { IAIToolDefinition } from "AIClasses/FunctionDefinitions/IAIToolDefinition";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Attachment } from "Conversations/Attachment";
 import type { SettingsService } from "Services/SettingsService";
 import type { StreamingService } from "Services/StreamingService";
-import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIFunctionTypes";
+import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIToolTypes";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import type { AbortService } from "Services/AbortService";
 import type { IAIFileService } from "./IAIFileService";
 import { AgentType } from "Enums/AgentType";
-import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
+import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export abstract class BaseAIClass implements IAIClass {
 
@@ -29,8 +29,8 @@ export abstract class BaseAIClass implements IAIClass {
     private _systemPrompt: string = "";
     private _userInstruction: string = "";
     private _agentType: AgentType = AgentType.Main;
-    private _aiFunctionDefinitions: IAIFunctionDefinition[] = [];
-    private _aiFunctionUsageMode: AIFunctionUsageMode = AIFunctionUsageMode.Auto;
+    private _aiToolDefinitions: IAIToolDefinition[] = [];
+    private _aiToolUsageMode: AIToolUsageMode = AIToolUsageMode.Auto;
 
     protected constructor(provider: AIProvider) {
         this.provider = provider;
@@ -62,12 +62,12 @@ export abstract class BaseAIClass implements IAIClass {
         return this._userInstruction;
     }
 
-    public get aiFunctionDefinitions(): IAIFunctionDefinition[] {
-        return this._aiFunctionDefinitions;
+    public get aiToolDefinitions(): IAIToolDefinition[] {
+        return this._aiToolDefinitions;
     }
 
-    public set aiFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]) {
-        this._aiFunctionDefinitions = aiFunctionDefinitions;
+    public set aiToolDefinitions(aiToolDefinitions: IAIToolDefinition[]) {
+        this._aiToolDefinitions = aiToolDefinitions;
     }
 
     public get agentType() {
@@ -78,12 +78,12 @@ export abstract class BaseAIClass implements IAIClass {
         this._agentType = agentType;
     }
 
-    public get aiFunctionUsageMode(): AIFunctionUsageMode {
-        return this._aiFunctionUsageMode;
+    public get aiToolUsageMode(): AIToolUsageMode {
+        return this._aiToolUsageMode;
     }
 
-    public set aiFunctionUsageMode(mode: AIFunctionUsageMode) {
-        this._aiFunctionUsageMode = mode;
+    public set aiToolUsageMode(mode: AIToolUsageMode) {
+        this._aiToolUsageMode = mode;
     }
 
     public abstract streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown>;
@@ -92,7 +92,7 @@ export abstract class BaseAIClass implements IAIClass {
 
     protected abstract parseStreamChunk(chunk: string): IStreamChunk;
     protected abstract extractContents(conversationContent: ConversationContent[]): unknown;
-    protected abstract mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): object;
+    protected abstract mapFunctionDefinitions(aiToolDefinitions: IAIToolDefinition[]): object;
 
     protected model(): string {
         switch (this._agentType) {

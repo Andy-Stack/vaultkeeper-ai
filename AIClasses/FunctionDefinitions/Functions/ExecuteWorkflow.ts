@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const ExecuteWorkflow: IAIFunctionDefinition = {
-  name: AIFunction.ExecuteWorkflow,
+export const ExecuteWorkflow: IAIToolDefinition = {
+  name: AITool.ExecuteWorkflow,
   description: `Delegates a complex goal to a specialized workflow system that will autonomously plan, execute, and return the completed result.
 
 When called, this tool hands off the goal to a planning and execution engine that operates independently. The system will analyze the goal, create a detailed plan, execute each step programmatically, handle any necessary replanning if steps fail, and return the final outcome. You do not need to manage or monitor the execution — the result will be returned to you once the workflow completes or if it fails irrecoverably.

@@ -1,13 +1,13 @@
-import { AIFunction } from "Enums/AIFunction";
+import { AITool } from "Enums/AITool";
 
 // platform agnostic function call class used to execute the requested function
-export class AIFunctionCall {
-    public readonly name: AIFunction;
+export class AIToolCall {
+    public readonly name: AITool;
     public readonly arguments: Record<string, unknown>;
     public readonly toolId?: string;
     public readonly thoughtSignature?: string;
 
-    constructor(name: AIFunction, args: Record<string, unknown>, toolId?: string, thoughtSignature?: string) {
+    constructor(name: AITool, args: Record<string, unknown>, toolId?: string, thoughtSignature?: string) {
         this.name = name;
         this.arguments = args;
         this.toolId = toolId;

@@ -3,9 +3,9 @@ import type { IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import type { Attachment } from "Conversations/Attachment";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
-import { AIFunctionCall } from "AIClasses/AIFunctionCall";
-import { fromString as aiFunctionFromString } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "AIClasses/FunctionDefinitions/IAIFunctionDefinition";
+import { AIToolCall } from "AIClasses/AIToolCall";
+import { fromString as aiToolFromString } from "Enums/AITool";
+import type { IAIToolDefinition } from "AIClasses/FunctionDefinitions/IAIToolDefinition";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import type { RawMessageStreamEvent, ContentBlockParam, Tool, TextBlockParam, ToolUnion, WebSearchTool20250305 } from '@anthropic-ai/sdk/resources/messages';
@@ -15,7 +15,7 @@ import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
-import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
+import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export class Claude extends BaseAIClass {
 
@@ -69,7 +69,7 @@ export class Claude extends BaseAIClass {
         };
 
         const tools: ToolUnion[] = this.addCacheControlToTools([
-            webSearchTool, ...this.mapFunctionDefinitions(this.aiFunctionDefinitions)]);
+            webSearchTool, ...this.mapFunctionDefinitions(this.aiToolDefinitions)]);
 
         const requestBody = {
             model: this.model(),
@@ -103,7 +103,7 @@ export class Claude extends BaseAIClass {
             const data = JSON.parse(chunk) as RawMessageStreamEvent;
 
             let text = "";
-            let functionCall: AIFunctionCall | undefined = undefined;
+            let functionCall: AIToolCall | undefined = undefined;
             let isComplete = false;
             let shouldContinue = false;
 
@@ -135,8 +135,8 @@ export class Claude extends BaseAIClass {
                 if (this.accumulatedFunctionName && this.accumulatedFunctionArgs) {
                     try {
                         const args = JSON.parse(this.accumulatedFunctionArgs) as Record<string, unknown>;
-                        functionCall = new AIFunctionCall(
-                            aiFunctionFromString(this.accumulatedFunctionName),
+                        functionCall = new AIToolCall(
+                            aiToolFromString(this.accumulatedFunctionName),
                             args as Record<string, object>,
                             this.accumulatedFunctionId || undefined,
                             undefined  // thoughtSignature not used by Claude
@@ -268,8 +268,8 @@ export class Claude extends BaseAIClass {
         return results.filter(message => message.content.length > 0);
     }
 
-    protected mapFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]): Tool[] {
-        return aiFunctionDefinitions.map((functionDefinition) => ({
+    protected mapFunctionDefinitions(aiToolDefinitions: IAIToolDefinition[]): Tool[] {
+        return aiToolDefinitions.map((functionDefinition) => ({
             name: functionDefinition.name,
             description: functionDefinition.description,
             input_schema: {
@@ -369,16 +369,16 @@ export class Claude extends BaseAIClass {
 
     private buildClaudeToolChoice(): { type: string } {
         // If no tools defined, fall back to auto
-        if (this.aiFunctionDefinitions.length === 0) {
+        if (this.aiToolDefinitions.length === 0) {
             return { type: "auto" };
         }
 
-        switch (this.aiFunctionUsageMode) {
-            case AIFunctionUsageMode.Auto:
+        switch (this.aiToolUsageMode) {
+            case AIToolUsageMode.Auto:
                 return { type: "auto" };
-            case AIFunctionUsageMode.Enabled:
+            case AIToolUsageMode.Enabled:
                 return { type: "any" };
-            case AIFunctionUsageMode.Disabled:
+            case AIToolUsageMode.Disabled:
                 return { type: "none" };
         }
     }

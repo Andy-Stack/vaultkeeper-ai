@@ -5,9 +5,9 @@ import { Services } from '../../Services/Services';
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
-import { AIFunction } from '../../Enums/AIFunction';
-import { AIFunctionCall } from '../../AIClasses/AIFunctionCall';
-import { AIFunctionResponse } from '../../AIClasses/FunctionDefinitions/AIFunctionResponse';
+import { AITool } from '../../Enums/AITool';
+import { AIToolCall } from '../../AIClasses/AIToolCall';
+import { AIToolResponse } from '../../AIClasses/FunctionDefinitions/AIToolResponse';
 
 /**
  * UNIT TESTS - PlanningAgent
@@ -24,7 +24,7 @@ describe('PlanningAgent - Unit Tests', () => {
 	let service: PlanningAgent;
 	let mockAI: any;
 	let mockPrompt: any;
-	let mockAIFunctionService: any;
+	let mockAIToolService: any;
 
 	const createMockCallbacks = () => ({
 		onSubmit: vi.fn(),
@@ -49,13 +49,13 @@ describe('PlanningAgent - Unit Tests', () => {
 		};
 		RegisterSingleton(Services.IPrompt, mockPrompt);
 
-		// Mock AIFunctionService
-		mockAIFunctionService = {
-			performAIFunction: vi.fn().mockResolvedValue(
-				new AIFunctionResponse(AIFunction.SearchVaultFiles, { results: [] }, 'test-tool-id')
+		// Mock AIToolService
+		mockAIToolService = {
+			performAITool: vi.fn().mockResolvedValue(
+				new AIToolResponse(AITool.SearchVaultFiles, { results: [] }, 'test-tool-id')
 			)
 		};
-		RegisterSingleton(Services.AIFunctionService, mockAIFunctionService);
+		RegisterSingleton(Services.AIToolService, mockAIToolService);
 
 		// Mock IAIClass
 		mockAI = {
@@ -88,8 +88,8 @@ describe('PlanningAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Creating plan',
-					functionCall: new AIFunctionCall(
-						AIFunction.SubmitPlan,
+					functionCall: new AIToolCall(
+						AITool.SubmitPlan,
 						{
 							steps: [
 								{
@@ -135,8 +135,8 @@ describe('PlanningAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Plan',
-					functionCall: new AIFunctionCall(
-						AIFunction.SubmitPlan,
+					functionCall: new AIToolCall(
+						AITool.SubmitPlan,
 						{
 							steps: [
 								{
@@ -169,8 +169,8 @@ describe('PlanningAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Replan',
-					functionCall: new AIFunctionCall(
-						AIFunction.SubmitPlan,
+					functionCall: new AIToolCall(
+						AITool.SubmitPlan,
 						{
 							steps: [
 								{
@@ -210,8 +210,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Invalid: missing required fields
 					yield {
 						content: 'Invalid plan',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -228,8 +228,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Valid plan
 					yield {
 						content: 'Valid plan',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -274,8 +274,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Submit plan on retry
 					yield {
 						content: 'Plan ready',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -318,8 +318,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Ask user question
 					yield {
 						content: 'Question',
-						functionCall: new AIFunctionCall(
-							AIFunction.AskUserQuestionPlanning,
+						functionCall: new AIToolCall(
+							AITool.AskUserQuestionPlanning,
 							{
 								question: 'What topic should I search for?',
 								user_message: 'Asking user for clarification'
@@ -332,8 +332,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Submit plan with user's answer incorporated
 					yield {
 						content: 'Plan with answer',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -376,8 +376,8 @@ describe('PlanningAgent - Unit Tests', () => {
 				if (functionCallCount === 1) {
 					yield {
 						content: 'Q1',
-						functionCall: new AIFunctionCall(
-							AIFunction.AskUserQuestionPlanning,
+						functionCall: new AIToolCall(
+							AITool.AskUserQuestionPlanning,
 							{
 								question: 'What file type?',
 								user_message: 'Asking about file type'
@@ -389,8 +389,8 @@ describe('PlanningAgent - Unit Tests', () => {
 				} else if (functionCallCount === 2) {
 					yield {
 						content: 'Q2',
-						functionCall: new AIFunctionCall(
-							AIFunction.AskUserQuestionPlanning,
+						functionCall: new AIToolCall(
+							AITool.AskUserQuestionPlanning,
 							{
 								question: 'Which folder?',
 								user_message: 'Asking about folder'
@@ -402,8 +402,8 @@ describe('PlanningAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Plan',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -442,8 +442,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Invalid: missing question
 					yield {
 						content: 'Invalid',
-						functionCall: new AIFunctionCall(
-							AIFunction.AskUserQuestionPlanning,
+						functionCall: new AIToolCall(
+							AITool.AskUserQuestionPlanning,
 							{
 								// Missing question field
 								user_message: 'Message'
@@ -456,8 +456,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Valid plan
 					yield {
 						content: 'Plan',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -496,8 +496,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					searchCalled = true;
 					yield {
 						content: 'Searching',
-						functionCall: new AIFunctionCall(
-							AIFunction.SearchVaultFiles,
+						functionCall: new AIToolCall(
+							AITool.SearchVaultFiles,
 							{
 								search_terms: ['test'],
 								user_message: 'Searching'
@@ -509,8 +509,8 @@ describe('PlanningAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Plan',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -529,7 +529,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			service.resolveAIProvider();
 			const result = await service.runPlanningAgent(conversation, callbacks, false);
 
-			expect(mockAIFunctionService.performAIFunction).toHaveBeenCalled();
+			expect(mockAIToolService.performAITool).toHaveBeenCalled();
 			expect(result).toBeDefined();
 		});
 
@@ -548,8 +548,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					readCalled = true;
 					yield {
 						content: 'Reading',
-						functionCall: new AIFunctionCall(
-							AIFunction.ReadVaultFiles,
+						functionCall: new AIToolCall(
+							AITool.ReadVaultFiles,
 							{
 								file_paths: ['test.md'],
 								user_message: 'Reading'
@@ -561,8 +561,8 @@ describe('PlanningAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Plan',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -581,7 +581,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			service.resolveAIProvider();
 			const result = await service.runPlanningAgent(conversation, callbacks, false);
 
-			expect(mockAIFunctionService.performAIFunction).toHaveBeenCalled();
+			expect(mockAIToolService.performAITool).toHaveBeenCalled();
 			expect(result).toBeDefined();
 		});
 
@@ -601,8 +601,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Try to write file (not allowed in planning)
 					yield {
 						content: 'Writing',
-						functionCall: new AIFunctionCall(
-							AIFunction.WriteVaultFile,
+						functionCall: new AIToolCall(
+							AITool.WriteVaultFile,
 							{
 								file_path: 'test.md',
 								content: 'content'
@@ -615,8 +615,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Submit valid plan
 					yield {
 						content: 'Plan',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -636,8 +636,8 @@ describe('PlanningAgent - Unit Tests', () => {
 			const result = await service.runPlanningAgent(conversation, callbacks, false);
 
 			// WriteVaultFile should be denied, not executed
-			expect(mockAIFunctionService.performAIFunction).not.toHaveBeenCalledWith(
-				expect.objectContaining({ name: AIFunction.WriteVaultFile })
+			expect(mockAIToolService.performAITool).not.toHaveBeenCalledWith(
+				expect.objectContaining({ name: AITool.WriteVaultFile })
 			);
 			expect(result).toBeDefined();
 			expect(attemptCount).toBeGreaterThan(1);
@@ -659,8 +659,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Try to complete task (execution agent tool)
 					yield {
 						content: 'Completing',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteTask,
+						functionCall: new AIToolCall(
+							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Done'
@@ -672,8 +672,8 @@ describe('PlanningAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Plan',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -711,8 +711,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Try to complete step (orchestration agent tool)
 					yield {
 						content: 'Completing',
-						functionCall: new AIFunctionCall(
-							AIFunction.CompleteStep,
+						functionCall: new AIToolCall(
+							AITool.CompleteStep,
 							{
 								confirm_completion: true
 							},
@@ -723,8 +723,8 @@ describe('PlanningAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Plan',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -796,8 +796,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Submit plan on third attempt (just before max depth)
 					yield {
 						content: 'Plan',
-						functionCall: new AIFunctionCall(
-							AIFunction.SubmitPlan,
+						functionCall: new AIToolCall(
+							AITool.SubmitPlan,
 							{
 								steps: [
 									{
@@ -834,8 +834,8 @@ describe('PlanningAgent - Unit Tests', () => {
 				// Empty plan is valid according to schema
 				yield {
 					content: 'Empty plan',
-					functionCall: new AIFunctionCall(
-						AIFunction.SubmitPlan,
+					functionCall: new AIToolCall(
+						AITool.SubmitPlan,
 						{
 							steps: []
 						},
@@ -883,8 +883,8 @@ describe('PlanningAgent - Unit Tests', () => {
 					if (hasRetryMessage) {
 						yield {
 							content: 'Plan',
-							functionCall: new AIFunctionCall(
-								AIFunction.SubmitPlan,
+							functionCall: new AIToolCall(
+								AITool.SubmitPlan,
 								{
 									steps: [
 										{

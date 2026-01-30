@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const ListVaultFiles: IAIFunctionDefinition = {
-    name: AIFunction.ListVaultFiles,
+export const ListVaultFiles: IAIToolDefinition = {
+    name: AITool.ListVaultFiles,
     description: `Lists files and directories in the vault's directory structure.
 Returns a structured view of the vault's organization including file names, paths, and directory hierarchy.
 

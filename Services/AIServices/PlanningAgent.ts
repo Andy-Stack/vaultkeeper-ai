@@ -1,18 +1,18 @@
 import { Conversation } from "Conversations/Conversation";
 import { BaseAgent } from "./BaseAgent";
-import { AskUserQuestionPlanningArgsSchema, SubmitPlanArgsSchema } from "AIClasses/Schemas/AIFunctionSchemas";
+import { AskUserQuestionPlanningArgsSchema, SubmitPlanArgsSchema } from "AIClasses/Schemas/AIToolSchemas";
 import { Exception } from "Helpers/Exception";
 import type { IChatServiceCallbacks } from "Services/ChatService";
 import { AgentType } from "Enums/AgentType";
-import { AIFunction, isAIFunction } from "Enums/AIFunction";
-import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
+import { AITool, isAITool } from "Enums/AITool";
+import { AIToolResponse } from "AIClasses/FunctionDefinitions/AIToolResponse";
 import { ExecutionPlan } from "Types/ExecutionPlan";
-import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
+import { AIToolDefinitions } from "AIClasses/FunctionDefinitions/AIToolDefinitions";
 import { Copy } from "Enums/Copy";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import { DebugColor } from "Enums/DebugColor";
-import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
+import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export class PlanningAgent extends BaseAgent {
  
@@ -35,9 +35,9 @@ export class PlanningAgent extends BaseAgent {
         await this.runAgentLoop(AgentType.Planning, conversation, callbacks, async (functionCall) => {
             const functionCallName = functionCall.name;
 
-            if (!AIFunctionDefinitions.planningAgentDefinitions().some(definition => isAIFunction(functionCallName, definition.name))) {
+            if (!AIToolDefinitions.planningAgentDefinitions().some(definition => isAITool(functionCallName, definition.name))) {
                 this.debugService?.log("PlanningAgent", `Invalid tool call denied: ${functionCallName}`);
-                conversation.addFunctionResponse(new AIFunctionResponse(
+                conversation.addFunctionResponse(new AIToolResponse(
                     functionCallName,
                     { message: Copy.PlanningToolDenial },
                     functionCall.toolId
@@ -45,12 +45,12 @@ export class PlanningAgent extends BaseAgent {
                 return { shouldExit: false };
             }
 
-            if (isAIFunction(functionCallName, AIFunction.AskUserQuestionPlanning)) {
+            if (isAITool(functionCallName, AITool.AskUserQuestionPlanning)) {
                 const parseResult = AskUserQuestionPlanningArgsSchema.safeParse(functionCall.arguments);
                 if (!parseResult.success) {
-                    conversation.addFunctionResponse(new AIFunctionResponse(
+                    conversation.addFunctionResponse(new AIToolResponse(
                         functionCallName,
-                        { error: `Invalid arguments for ${AIFunction.AskUserQuestionPlanning}: ${parseResult.error.message}` },
+                        { error: `Invalid arguments for ${AITool.AskUserQuestionPlanning}: ${parseResult.error.message}` },
                         functionCall.toolId
                     ));
                     return { shouldExit: false };
@@ -59,7 +59,7 @@ export class PlanningAgent extends BaseAgent {
                 this.updateThought(functionCall, callbacks);
                 const answer = await callbacks.onUserQuestion(parseResult.data.question);
                 this.debugService?.log("PlanningAgent", "User answer received");
-                conversation.addFunctionResponse(new AIFunctionResponse(
+                conversation.addFunctionResponse(new AIToolResponse(
                     functionCallName,
                     { answer: answer },
                     functionCall.toolId
@@ -67,19 +67,19 @@ export class PlanningAgent extends BaseAgent {
                 return { shouldExit: false };
             }
 
-            if (isAIFunction(functionCallName, AIFunction.SubmitPlan)) {
+            if (isAITool(functionCallName, AITool.SubmitPlan)) {
                 const parseResult = SubmitPlanArgsSchema.safeParse(functionCall.arguments);
                 if (!parseResult.success) {
-                    conversation.addFunctionResponse(new AIFunctionResponse(
+                    conversation.addFunctionResponse(new AIToolResponse(
                         functionCallName,
-                        { error: `Invalid arguments for ${AIFunction.SubmitPlan}: ${parseResult.error.message}` },
+                        { error: `Invalid arguments for ${AITool.SubmitPlan}: ${parseResult.error.message}` },
                         functionCall.toolId
                     ));
                     return { shouldExit: false };
                 }
                 this.debugService?.log("PlanningAgent", `Plan submitted successfully with ${parseResult.data.steps.length} steps`);
                 capturedPlan = new ExecutionPlan(parseResult.data, isReplan);
-                conversation.addFunctionResponse(new AIFunctionResponse(
+                conversation.addFunctionResponse(new AIToolResponse(
                     functionCallName,
                     { message: Copy.PlanReceived },
                     functionCall.toolId
@@ -88,7 +88,7 @@ export class PlanningAgent extends BaseAgent {
             }
 
             this.updateThought(functionCall, callbacks);
-            const functionResponse = await this.aiFunctionService.performAIFunction(functionCall);
+            const functionResponse = await this.aiToolService.performAITool(functionCall);
             conversation.addFunctionResponse(functionResponse);
             return { shouldExit: false };
         });
@@ -111,10 +111,10 @@ export class PlanningAgent extends BaseAgent {
             Exception.throw("Error: No AI provider has been set!");
         }
         this.ai.agentType = AgentType.Planning;
-        this.ai.aiFunctionUsageMode = AIFunctionUsageMode.Enabled;
+        this.ai.aiToolUsageMode = AIToolUsageMode.Enabled;
         this.ai.systemPrompt = this.aiPrompt.planningInstruction();
         this.ai.userInstruction = await this.aiPrompt.userInstruction();
-        this.ai.aiFunctionDefinitions = AIFunctionDefinitions.planningAgentDefinitions();
+        this.ai.aiToolDefinitions = AIToolDefinitions.planningAgentDefinitions();
     }
 
     protected override setDebugColor(): void {

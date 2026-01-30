@@ -1,4 +1,4 @@
-import { CancelPlanArgsSchema, CompletePlanArgsSchema, CompleteStepArgsSchema, ReplanArgsSchema, type ExecuteWorkflowArgs } from "AIClasses/Schemas/AIFunctionSchemas";
+import { CancelPlanArgsSchema, CompletePlanArgsSchema, CompleteStepArgsSchema, ReplanArgsSchema, type ExecuteWorkflowArgs } from "AIClasses/Schemas/AIToolSchemas";
 import { BaseAgent } from "./BaseAgent";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
@@ -8,13 +8,13 @@ import { Copy, replaceCopy } from "Enums/Copy";
 import { Conversation } from "Conversations/Conversation";
 import { PlanningAgent } from "./PlanningAgent";
 import { Exception } from "Helpers/Exception";
-import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
+import { AIToolDefinitions } from "AIClasses/FunctionDefinitions/AIToolDefinitions";
 import { OrchestrationResult } from "Types/OrchestrationResult";
 import { AgentType } from "Enums/AgentType";
-import { AIFunction, isAIFunction } from "Enums/AIFunction";
-import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
+import { AITool, isAITool } from "Enums/AITool";
+import { AIToolResponse } from "AIClasses/FunctionDefinitions/AIToolResponse";
 import { DebugColor } from "Enums/DebugColor";
-import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
+import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export class OrchestrationAgent extends BaseAgent {
     
@@ -142,9 +142,9 @@ export class OrchestrationAgent extends BaseAgent {
         await this.runAgentLoop(AgentType.Orchestration, planningConversation, callbacks, async functionCall => {
             const functionCallName = functionCall.name;
 
-            if (!AIFunctionDefinitions.orchestrationAgentDefinitions().some(definition => isAIFunction(functionCallName, definition.name))) {
+            if (!AIToolDefinitions.orchestrationAgentDefinitions().some(definition => isAITool(functionCallName, definition.name))) {
                 this.debugService?.log("Orchestration", `Invalid tool call denied: ${functionCallName}`);
-                planningConversation.addFunctionResponse(new AIFunctionResponse(
+                planningConversation.addFunctionResponse(new AIToolResponse(
                     functionCallName,
                     { message: Copy.OrchestrationToolDenial },
                     functionCall.toolId
@@ -152,18 +152,18 @@ export class OrchestrationAgent extends BaseAgent {
                 return Promise.resolve({ shouldExit: false });
             }
 
-            if (isAIFunction(functionCallName, AIFunction.CompleteStep)) {
+            if (isAITool(functionCallName, AITool.CompleteStep)) {
                 const parseResult = CompleteStepArgsSchema.safeParse(functionCall.arguments);
                 if (!parseResult.success) {
-                    planningConversation.addFunctionResponse(new AIFunctionResponse(
+                    planningConversation.addFunctionResponse(new AIToolResponse(
                         functionCallName,
-                        { error: `Invalid arguments for ${AIFunction.CompleteStep}: ${parseResult.error.message}` },
+                        { error: `Invalid arguments for ${AITool.CompleteStep}: ${parseResult.error.message}` },
                         functionCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
                 if (!parseResult.data.confirm_completion) {
-                    planningConversation.addFunctionResponse(new AIFunctionResponse(
+                    planningConversation.addFunctionResponse(new AIToolResponse(
                         functionCallName,
                         { error: "Confirmation was false, no action taken" },
                         functionCall.toolId
@@ -172,7 +172,7 @@ export class OrchestrationAgent extends BaseAgent {
                 }
                 this.debugService?.log("Orchestration", `CompleteStep called (confirmed: ${parseResult.data.confirm_completion})`);
                 this.updateThought(functionCall, callbacks);
-                planningConversation.addFunctionResponse(new AIFunctionResponse(
+                planningConversation.addFunctionResponse(new AIToolResponse(
                     functionCallName,
                     { message: "Step Completed" },
                     functionCall.toolId
@@ -181,18 +181,18 @@ export class OrchestrationAgent extends BaseAgent {
                 return Promise.resolve({ shouldExit: true });
             }
 
-            if (isAIFunction(functionCallName, AIFunction.CompletePlan)) {
+            if (isAITool(functionCallName, AITool.CompletePlan)) {
                 const parseResult = CompletePlanArgsSchema.safeParse(functionCall.arguments);
                 if (!parseResult.success) {
-                    planningConversation.addFunctionResponse(new AIFunctionResponse(
+                    planningConversation.addFunctionResponse(new AIToolResponse(
                         functionCallName,
-                        { error: `Invalid arguments for ${AIFunction.CompletePlan}: ${parseResult.error.message}` },
+                        { error: `Invalid arguments for ${AITool.CompletePlan}: ${parseResult.error.message}` },
                         functionCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
                 if (!parseResult.data.confirm_completion) {
-                    planningConversation.addFunctionResponse(new AIFunctionResponse(
+                    planningConversation.addFunctionResponse(new AIToolResponse(
                         functionCallName,
                         { error: "Confirmation was false, no action taken" },
                         functionCall.toolId
@@ -201,7 +201,7 @@ export class OrchestrationAgent extends BaseAgent {
                 }
                 this.debugService?.log("Orchestration", `CompletePlan called (confirmed: ${parseResult.data.confirm_completion})`);
                 this.updateThought(functionCall, callbacks);
-                planningConversation.addFunctionResponse(new AIFunctionResponse(
+                planningConversation.addFunctionResponse(new AIToolResponse(
                     functionCallName,
                     { message: "Plan Completed" },
                     functionCall.toolId
@@ -210,19 +210,19 @@ export class OrchestrationAgent extends BaseAgent {
                 return Promise.resolve({ shouldExit: true });
             }
 
-            if (isAIFunction(functionCallName, AIFunction.Replan)) {
+            if (isAITool(functionCallName, AITool.Replan)) {
                 const parseResult = ReplanArgsSchema.safeParse(functionCall.arguments);
                 if (!parseResult.success) {
-                    planningConversation.addFunctionResponse(new AIFunctionResponse(
+                    planningConversation.addFunctionResponse(new AIToolResponse(
                         functionCallName,
-                        { error: `Invalid arguments for ${AIFunction.Replan}: ${parseResult.error.message}` },
+                        { error: `Invalid arguments for ${AITool.Replan}: ${parseResult.error.message}` },
                         functionCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `Replan requested: ${parseResult.data.context}`);
                 this.updateThought(functionCall, callbacks);
-                planningConversation.addFunctionResponse(new AIFunctionResponse(
+                planningConversation.addFunctionResponse(new AIToolResponse(
                     functionCallName,
                     { message: "Replan Requested" },
                     functionCall.toolId
@@ -231,19 +231,19 @@ export class OrchestrationAgent extends BaseAgent {
                 return Promise.resolve({ shouldExit: false });
             }
 
-            if (isAIFunction(functionCallName, AIFunction.CancelPlan)) {
+            if (isAITool(functionCallName, AITool.CancelPlan)) {
                 const parseResult = CancelPlanArgsSchema.safeParse(functionCall.arguments);
                 if (!parseResult.success) {
-                    planningConversation.addFunctionResponse(new AIFunctionResponse(
+                    planningConversation.addFunctionResponse(new AIToolResponse(
                         functionCallName,
-                        { error: `Invalid arguments for ${AIFunction.CancelPlan}: ${parseResult.error.message}` },
+                        { error: `Invalid arguments for ${AITool.CancelPlan}: ${parseResult.error.message}` },
                         functionCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `Plan cancellation requested: ${parseResult.data.context}`);
                 this.updateThought(functionCall, callbacks);
-                planningConversation.addFunctionResponse(new AIFunctionResponse(
+                planningConversation.addFunctionResponse(new AIToolResponse(
                     functionCallName,
                     { message: "Plan Cancelled" },
                     functionCall.toolId
@@ -276,10 +276,10 @@ export class OrchestrationAgent extends BaseAgent {
             Exception.throw("Error: No AI provider has been set!");
         }
         this.ai.agentType = AgentType.Orchestration;
-        this.ai.aiFunctionUsageMode = AIFunctionUsageMode.Enabled;
+        this.ai.aiToolUsageMode = AIToolUsageMode.Enabled;
         this.ai.systemPrompt = this.aiPrompt.orchestrationInstruction();
         this.ai.userInstruction = ""; // do not include user instruction for orchestration agent
-        this.ai.aiFunctionDefinitions = AIFunctionDefinitions.orchestrationAgentDefinitions();
+        this.ai.aiToolDefinitions = AIToolDefinitions.orchestrationAgentDefinitions();
     }
 
     protected override setDebugColor(): void {

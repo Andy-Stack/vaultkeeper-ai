@@ -5,9 +5,9 @@ import { Services } from '../../Services/Services';
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
-import { AIFunction } from '../../Enums/AIFunction';
-import { AIFunctionCall } from '../../AIClasses/AIFunctionCall';
-import { AIFunctionResponse } from '../../AIClasses/FunctionDefinitions/AIFunctionResponse';
+import { AITool } from '../../Enums/AITool';
+import { AIToolCall } from '../../AIClasses/AIToolCall';
+import { AIToolResponse } from '../../AIClasses/FunctionDefinitions/AIToolResponse';
 
 /**
  * INTEGRATION TESTS - AIControllerService
@@ -24,7 +24,7 @@ describe('AIControllerService - Integration Tests', () => {
 	let service: MainAgent;
 	let mockAI: any;
 	let mockPrompt: any;
-	let mockAIFunctionService: any;
+	let mockAIToolService: any;
 
 	beforeEach(() => {
 		// Mock IPrompt
@@ -35,13 +35,13 @@ describe('AIControllerService - Integration Tests', () => {
 		};
 		RegisterSingleton(Services.IPrompt, mockPrompt);
 
-		// Mock AIFunctionService
-		mockAIFunctionService = {
-			performAIFunction: vi.fn().mockResolvedValue(
-				new AIFunctionResponse(AIFunction.SearchVaultFiles, { results: [] }, 'test-tool-id')
+		// Mock AIToolService
+		mockAIToolService = {
+			performAITool: vi.fn().mockResolvedValue(
+				new AIToolResponse(AITool.SearchVaultFiles, { results: [] }, 'test-tool-id')
 			)
 		};
-		RegisterSingleton(Services.AIFunctionService, mockAIFunctionService);
+		RegisterSingleton(Services.AIToolService, mockAIToolService);
 
 		// Mock IAIClass
 		mockAI = {
@@ -190,8 +190,8 @@ describe('AIControllerService - Integration Tests', () => {
 					// First call returns a function call
 					yield {
 						content: 'Let me search',
-						functionCall: new AIFunctionCall(
-							AIFunction.SearchVaultFiles,
+						functionCall: new AIToolCall(
+							AITool.SearchVaultFiles,
 							{ search_terms: ['test'], user_message: 'Searching' },
 							'tool-1'
 						),
@@ -207,7 +207,7 @@ describe('AIControllerService - Integration Tests', () => {
 			await service.runMainAgent(conversation, true, false, callbacks);
 
 			// Verify function was called
-			expect(mockAIFunctionService.performAIFunction).toHaveBeenCalledTimes(1);
+			expect(mockAIToolService.performAITool).toHaveBeenCalledTimes(1);
 			expect(callCount).toBe(2);
 		});
 
@@ -235,8 +235,8 @@ describe('AIControllerService - Integration Tests', () => {
 				if (callCount === 1) {
 					yield {
 						content: '',
-						functionCall: new AIFunctionCall(
-							AIFunction.SearchVaultFiles,
+						functionCall: new AIToolCall(
+							AITool.SearchVaultFiles,
 							{ search_terms: ['notes'], user_message: 'Searching for notes' },
 							'tool-1'
 						),
@@ -349,8 +349,8 @@ describe('AIControllerService - Integration Tests', () => {
 				if (callCount === 1) {
 					yield {
 						content: '',
-						functionCall: new AIFunctionCall(
-							AIFunction.SearchVaultFiles,
+						functionCall: new AIToolCall(
+							AITool.SearchVaultFiles,
 							{ search_terms: ['test'], user_message: 'Searching' },
 							'tool-1'
 						),

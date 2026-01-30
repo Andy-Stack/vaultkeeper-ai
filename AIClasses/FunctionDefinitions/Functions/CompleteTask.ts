@@ -1,8 +1,8 @@
-import { AIFunction } from "Enums/AIFunction";
-import type { IAIFunctionDefinition } from "../IAIFunctionDefinition";
+import { AITool } from "Enums/AITool";
+import type { IAIToolDefinition } from "../IAIToolDefinition";
 
-export const CompleteTask: IAIFunctionDefinition = {
-    name: AIFunction.CompleteTask,
+export const CompleteTask: IAIToolDefinition = {
+    name: AITool.CompleteTask,
     description: `Signals that you have finished executing all of your assigned instructions.
 
 This function MUST be called exactly once, only after you have fully completed or can no longer make progress on everything you were asked to do.

@@ -24,7 +24,11 @@
     $: activeStepIndex = $executionPlanState.currentStepIndex;
 
     $: if (steps) {
-        tick().then(updateHeight);
+        tick().then(() => {
+            requestAnimationFrame(() => {
+                updateHeight();
+            });
+        });
     }
 
     $: if (contentDiv) {
@@ -63,7 +67,7 @@
 
     async function updateHeight() {
         const firstStep = stepElements[0];
-        if (!contentDiv || !firstStep) {
+        if (!contentDiv || !firstStep || !steps) {
             return;
         }
 
@@ -73,7 +77,7 @@
         const stepHeight = firstStep.offsetHeight;
         const separatorHeight = firstStep.nextElementSibling?.clientHeight ?? 0;
 
-        const stepsToShow = Math.min(3, stepElements.length);
+        const stepsToShow = Math.min(3, steps.length);
         collapsedHeight = (stepsToShow * stepHeight) + (Math.max(0, stepsToShow - 1) * separatorHeight);
     }
 
@@ -102,6 +106,9 @@
 
     function toggleExpand() {
         expanded = !expanded;
+        requestAnimationFrame(() => {
+            updateHeight();
+        });
     }
 </script>
 

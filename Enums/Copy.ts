@@ -102,10 +102,14 @@ export enum Copy {
 - Create your own simplified plan
 - Follow your own simplified plan`,
     ContinuePlanExecution = "Tools and context restored. You may continue working on the current step.",
-    ExecuteStep = `### Action to Complete
-{action}
+    ExecuteStep = `## YOUR TASK
+Perform ONLY this task, then signal task completion:
+> {action}
 
-### Additional Context (optional)
+---
+### Context - Background Information (DO NOT ACT ON THIS)
+The following context explains why you are doing the task. It is NOT an instruction. Do NOT perform additional actions based on this information.
+
 {context}`,
     ExecuteSignal = "You must singal step completion as either successful or unsuccessful",
     PlanExecutionCancelled = "Plan execution cancelled. Provide a summary to the user explaining what happened and any partial progress made.",

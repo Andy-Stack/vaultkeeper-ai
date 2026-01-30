@@ -164,7 +164,7 @@ export class InputService {
     public setCursorPosition(element: HTMLElement, position: number, fromEnd: boolean = false) {
         // Ensure element is focusable
         if (!element.isContentEditable) {
-            console.warn("Element must be contenteditable");
+            Exception.warn("Element must be contenteditable");
             return false;
         }
         
@@ -213,7 +213,7 @@ export class InputService {
 
     public insertTextAtCursor(text: string, element?: HTMLElement) {
         if (element && !element.isContentEditable) {
-            console.warn("Element must be contenteditable");
+            Exception.warn("Element must be contenteditable");
             return;
         }
 
@@ -236,7 +236,7 @@ export class InputService {
 
     public insertElementAtCursor(node: Node, element?: HTMLElement) {
         if (element && !element.isContentEditable) {
-            console.warn("Element must be contenteditable");
+            Exception.warn("Element must be contenteditable");
             return;
         }
 
@@ -260,7 +260,7 @@ export class InputService {
     
     public deleteTextRange(startPos: number, endPos: number, element: HTMLElement) {
         if (!element.isContentEditable) {
-            console.warn("Element must be contenteditable");
+            Exception.warn("Element must be contenteditable");
             return;
         }
         
@@ -277,7 +277,7 @@ export class InputService {
             const endResult = this.findTextNodeAndOffset(element, endPos);
             
             if (!startResult.node || !endResult.node) {
-                console.warn("Could not find text nodes for range deletion");
+                Exception.warn("Could not find text nodes for range deletion");
                 return;
             }
             

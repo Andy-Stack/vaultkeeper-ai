@@ -14,8 +14,10 @@ import { Services } from "Services/Services";
 import type { AIFunctionService } from "./AIFunctionService";
 import type { DebugService } from "Services/DebugService";
 import { DebugColor } from "Enums/DebugColor";
+import { Exception } from "Helpers/Exception";
+import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
 
-export class AIController {
+export abstract class BaseAgent {
     
     protected ai: IAIClass | undefined;
     protected readonly aiPrompt: IPrompt;
@@ -67,30 +69,22 @@ export class AIController {
         this.debugService?.log("AgentLoop", `${agentType} agent loop completed`);
     }
 
-    protected async requestAgentResponse(conversation: Conversation, callbacks: IChatServiceCallbacks): Promise<string> {
-        const response = await this.streamRequestResponse(AgentType.Main, this.ensureCorrectConversationStructure(conversation), callbacks);
+    protected async requestAgentResponse(agentType: AgentType, conversation: Conversation, callbacks: IChatServiceCallbacks): Promise<string> {
+        return await this.withToolCallingDisabled(async () => {
+            await this.streamRequestResponse(agentType, this.ensureCorrectConversationStructure(conversation), callbacks);
 
-        if (response.functionCall) {
-            conversation.addFunctionResponse(new AIFunctionResponse(
-                response.functionCall.name,
-                { error: Copy.TextResponseToolDenial },
-                response.functionCall.toolId
-            ));
-            return await this.requestAgentResponse(conversation, callbacks);
-        }
+            const lastContent = conversation.contents[conversation.contents.length - 1];
+            const textResponse = lastContent?.content?.trim() ?? "";
 
-        const lastContent = conversation.contents[conversation.contents.length - 1];
-        const textResponse = lastContent?.content?.trim() ?? "";
-
-        if (textResponse === "") {
-            conversation.contents.push(new ConversationContent({
-                role: Role.User,
-                content: Copy.TextResponseRequired
-            }));
-            return await this.requestAgentResponse(conversation, callbacks);
-        }
-
-        return textResponse;
+            if (textResponse === "") {
+                conversation.contents.push(new ConversationContent({
+                    role: Role.User,
+                    content: Copy.TextResponseRequired
+                }));
+                return await this.requestAgentResponse(agentType, conversation, callbacks);
+            }
+            return textResponse;
+        });
     }
 
     protected updateThought(functionCall: AIFunctionCall | null, callbacks: IChatServiceCallbacks) {
@@ -191,5 +185,19 @@ export class AIController {
         callbacks.onStreamingUpdate(null);
 
         return { functionCall: capturedFunctionCall, shouldContinue: capturedShouldContinue };
+    }
+
+    private async withToolCallingDisabled<T>(callback: () => Promise<T>): Promise<T> {
+        if (!this.ai) { // this shouldn't ever happen
+            Exception.throw("Error: No AI provider has been set!");
+        }
+        
+        const aiFunctionUsageMode = this.ai.aiFunctionUsageMode;
+        this.ai.aiFunctionUsageMode = AIFunctionUsageMode.Disabled;
+
+        const result = await callback();
+
+        this.ai.aiFunctionUsageMode = aiFunctionUsageMode;
+        return result;
     }
 }

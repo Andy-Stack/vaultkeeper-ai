@@ -85,9 +85,10 @@ export class ChatService {
 				await this.saveConversation(conversation);
 				callbacks.onStreamingUpdate(conversationContent.timestamp.getTime().toString());
 
+				let namingPromise: Promise<void> | undefined;
 				if (firstMessage) {
 					this.onNameChanged?.(conversation.title); // on change for initial conversation name
-					void this.namingService.requestName(conversation, formattedRequest, this.onNameChanged)
+					namingPromise = this.namingService.requestName(conversation, formattedRequest, this.onNameChanged);
 				}
 
 				if (attachments.length > 0) {
@@ -107,6 +108,11 @@ export class ChatService {
 				callbacks.onStreamingUpdate(null);
 
 				await this.mainAgent.runMainAgent(conversation, allowDestructiveActions, planningMode, callbacks);
+
+				if (namingPromise) {
+					const timeout = new Promise<void>(resolve => setTimeout(resolve, 5000));
+					await Promise.race([namingPromise, timeout]);
+				}
 			});
 		} catch (error) {
 			if (!AbortService.isAbortError(error)) {

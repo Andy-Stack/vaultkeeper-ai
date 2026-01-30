@@ -17,6 +17,7 @@ import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import type { GeminiRetryInfo, GeminiErrorResponse } from "./GeminiTypes";
+import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
 
 export class Gemini extends BaseAIClass {
 
@@ -103,11 +104,11 @@ export class Gemini extends BaseAIClass {
                         information, recent events, news, or facts that may have changed.
                         After calling this, you will be able to perform web searches.`,
           },
-          ...this.mapFunctionDefinitions(this.toolDefinitions),
+          ...this.mapFunctionDefinitions(this.aiFunctionDefinitions),
         ]
       }
 
-    const requestBody = {
+    const requestBody: Record<string, unknown> = {
       system_instruction: {
         parts: [
           {
@@ -136,6 +137,11 @@ export class Gemini extends BaseAIClass {
       contents: contents,
       tools: [tools]
     };
+
+    // Only include tool_config when actually sending function declarations (not for google_search)
+    if (!requestWebSearch) {
+      requestBody.tool_config = this.buildGeminiToolConfig();
+    }
 
     yield* this.streamingService.streamRequest(
       `${AIProviderURL.Gemini}/${this.model()}:streamGenerateContent?key=${this.apiKey}&alt=sse`,
@@ -352,6 +358,22 @@ export class Gemini extends BaseAIClass {
     }
 
     return JSON.stringify(parts);
+  }
+
+  private buildGeminiToolConfig(): { function_calling_config: { mode: string } } {
+    // If no tools defined, fall back to auto
+    if (this.aiFunctionDefinitions.length === 0) {
+      return { function_calling_config: { mode: "AUTO" } };
+    }
+
+    switch (this.aiFunctionUsageMode) {
+      case AIFunctionUsageMode.Auto:
+        return { function_calling_config: { mode: "AUTO" } };
+      case AIFunctionUsageMode.Enabled:
+        return { function_calling_config: { mode: "ANY" } };
+      case AIFunctionUsageMode.Disabled:
+        return { function_calling_config: { mode: "NONE" } };
+    }
   }
 
   private extractRetryDelay(error: ApiError): number | undefined {

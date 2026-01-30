@@ -34,35 +34,21 @@
     autoScroll = true;
   }
 
-  export function updateChatAreaLayout(behavior: ScrollBehavior | undefined, shouldSettle: boolean = false) {
-    if (layoutUpdateTimeout) {
-      clearTimeout(layoutUpdateTimeout);
-      layoutUpdateTimeout = null;
+  export async function updateChatAreaLayout(behavior: ScrollBehavior | undefined, shouldSettle: boolean = false) {
+    await tick();
+
+    if (!chatAreaPaddingElement) {
+      return;
     }
 
-    const executeLayout = async () => {
-      await tick();
-
-      if (!chatAreaPaddingElement) {
-        return;
-      }
-
-      if (messageElements.length <= 0) {
-        chatAreaPaddingElement.style.paddingBottom = "0px";
-        return;
-      }
-
-      requestAnimationFrame(() => {
-        applyLayout(behavior, shouldSettle);
-      });
-    };
-
-    // Instant/settle executes immediately; smooth updates are debounced
-    if (behavior === "instant" || shouldSettle) {
-      executeLayout();
-    } else {
-      layoutUpdateTimeout = setTimeout(executeLayout, 50);
+    if (messageElements.length <= 0) {
+      chatAreaPaddingElement.style.paddingBottom = "0px";
+      return;
     }
+
+    requestAnimationFrame(() => {
+      applyLayout(behavior, shouldSettle);
+    });
   }
 
   function applyLayout(behavior: ScrollBehavior | undefined, shouldSettle: boolean) {
@@ -112,7 +98,6 @@
   let messageElements: { index: number, element: HTMLElement }[] = [];
   let lastProcessedContent: Map<string, string> = new Map<string, string>();
   let currentStreamFinalized: boolean = false;
-  let layoutUpdateTimeout: NodeJS.Timeout | null = null;
 
   function getGreetingByTime(): string {
     const hour = new Date().getHours();

@@ -4,13 +4,15 @@ import type { Attachment } from "Conversations/Attachment";
 import type { IAIFunctionDefinition } from "./FunctionDefinitions/IAIFunctionDefinition";
 import type { AIProvider } from "Enums/ApiProvider";
 import type { AgentType } from "Enums/AgentType";
+import type { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
 
 export interface IAIClass {
     get currentProvider(): AIProvider;
     set agentType(agentType: AgentType);
     set systemPrompt(systemPrompt: string);
     set userInstruction(userInstruction: string);
-    set toolDefinitions(toolDefinitions: IAIFunctionDefinition[]);
+    set aiFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]);
+    set aiFunctionUsageMode(mode: AIFunctionUsageMode);
 
     streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown>;
     formatBinaryFiles(attachments: Attachment[]): string;

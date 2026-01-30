@@ -15,6 +15,7 @@ import { Services } from "./Services";
 import { Selector } from "Enums/Selector";
 import type { HTMLService } from "./HTMLService";
 import type { VaultCacheService } from "./VaultCacheService";
+import { Exception } from "Helpers/Exception";
 
 interface IStreamingState {
     element: HTMLElement;
@@ -70,7 +71,7 @@ export class StreamingMarkdownService {
             const result = this.processor.processSync(preprocessed);
             return String(result);
         } catch (error) {
-            console.warn("Markdown processing failed:", error);
+            Exception.warn(`Markdown processing failed:\n${error}`);
             return this.getFallbackHTML(text);
         }
     }
@@ -117,7 +118,7 @@ export class StreamingMarkdownService {
                 this.htmlService.setHTMLContent(state.element, html);
                 state.lastProcessedLength = state.buffer.length;
             } catch (error) {
-                console.warn("Streaming render failed:", error);
+                Exception.warn(`Streaming render failed:\n${error}`);
             }
 
             this.renderTimeouts.delete(messageId);

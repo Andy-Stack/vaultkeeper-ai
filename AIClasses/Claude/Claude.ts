@@ -15,6 +15,7 @@ import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
+import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
 
 export class Claude extends BaseAIClass {
 
@@ -68,7 +69,7 @@ export class Claude extends BaseAIClass {
         };
 
         const tools: ToolUnion[] = this.addCacheControlToTools([
-            webSearchTool, ...this.mapFunctionDefinitions(this.toolDefinitions)]);
+            webSearchTool, ...this.mapFunctionDefinitions(this.aiFunctionDefinitions)]);
 
         const requestBody = {
             model: this.model(),
@@ -76,6 +77,7 @@ export class Claude extends BaseAIClass {
             system: systemPrompt,
             messages: messages,
             tools: tools,
+            tool_choice: this.buildClaudeToolChoice(),
             stream: true
         };
 
@@ -363,6 +365,22 @@ export class Claude extends BaseAIClass {
         } as ContentBlockParam;
 
         return cachedMessages;
+    }
+
+    private buildClaudeToolChoice(): { type: string } {
+        // If no tools defined, fall back to auto
+        if (this.aiFunctionDefinitions.length === 0) {
+            return { type: "auto" };
+        }
+
+        switch (this.aiFunctionUsageMode) {
+            case AIFunctionUsageMode.Auto:
+                return { type: "auto" };
+            case AIFunctionUsageMode.Enabled:
+                return { type: "any" };
+            case AIFunctionUsageMode.Disabled:
+                return { type: "none" };
+        }
     }
 
     private extractRetryDelay(error: ApiError): number | undefined {

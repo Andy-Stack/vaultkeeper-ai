@@ -1,5 +1,5 @@
 import { Conversation } from "Conversations/Conversation";
-import { AIController } from "./AIController";
+import { BaseAgent } from "./BaseAgent";
 import { AskUserQuestionPlanningArgsSchema, SubmitPlanArgsSchema } from "AIClasses/Schemas/AIFunctionSchemas";
 import { Exception } from "Helpers/Exception";
 import type { IChatServiceCallbacks } from "Services/ChatService";
@@ -12,8 +12,9 @@ import { Copy } from "Enums/Copy";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import { DebugColor } from "Enums/DebugColor";
+import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
 
-export class PlanningAgent extends AIController {
+export class PlanningAgent extends BaseAgent {
  
     private static readonly MAX_AGENT_DEPTH = 3;
 
@@ -110,9 +111,10 @@ export class PlanningAgent extends AIController {
             Exception.throw("Error: No AI provider has been set!");
         }
         this.ai.agentType = AgentType.Planning;
+        this.ai.aiFunctionUsageMode = AIFunctionUsageMode.Enabled;
         this.ai.systemPrompt = this.aiPrompt.planningInstruction();
         this.ai.userInstruction = await this.aiPrompt.userInstruction();
-        this.ai.toolDefinitions = AIFunctionDefinitions.planningAgentDefinitions();
+        this.ai.aiFunctionDefinitions = AIFunctionDefinitions.planningAgentDefinitions();
     }
 
     protected override setDebugColor(): void {

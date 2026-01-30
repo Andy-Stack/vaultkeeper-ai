@@ -1,5 +1,5 @@
 import type { ExecutionStep } from "Types/ExecutionStep";
-import { AIController } from "./AIController";
+import { BaseAgent } from "./BaseAgent";
 import { AgentType } from "Enums/AgentType";
 import { Conversation } from "Conversations/Conversation";
 import type { IChatServiceCallbacks } from "Services/ChatService";
@@ -12,8 +12,9 @@ import { Exception } from "Helpers/Exception";
 import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionDefinitions";
 import { Copy, replaceCopy } from "Enums/Copy";
 import { DebugColor } from "Enums/DebugColor";
+import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
 
-export class ExecutionAgent extends AIController {
+export class ExecutionAgent extends BaseAgent {
 
     private static readonly MAX_AGENT_DEPTH: number = 3;
 
@@ -58,6 +59,7 @@ export class ExecutionAgent extends AIController {
                     return { shouldExit: false };
                 }
                 this.debugService?.log("ExecutionAgent", `Task completed (success: ${parseResult.data.success}): ${parseResult.data.description}`);
+                this.updateThought(functionCall, callbacks);
                 executionResult = parseResult.data;
                 return { shouldExit: true };
             }
@@ -85,9 +87,10 @@ export class ExecutionAgent extends AIController {
             Exception.throw("Error: No AI provider has been set!");
         }
         this.ai.agentType = AgentType.Execution;
+        this.ai.aiFunctionUsageMode = AIFunctionUsageMode.Enabled;
         this.ai.systemPrompt = this.aiPrompt.executionInstruction();
         this.ai.userInstruction = ""; // do not include user instruction for execution agent
-        this.ai.toolDefinitions = AIFunctionDefinitions.executionAgentDefinitions();
+        this.ai.aiFunctionDefinitions = AIFunctionDefinitions.executionAgentDefinitions();
     }
 
     protected override setDebugColor(): void {

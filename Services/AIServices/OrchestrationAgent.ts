@@ -1,5 +1,5 @@
 import { CancelPlanArgsSchema, CompletePlanArgsSchema, CompleteStepArgsSchema, ReplanArgsSchema, type ExecuteWorkflowArgs } from "AIClasses/Schemas/AIFunctionSchemas";
-import { AIController } from "./AIController";
+import { BaseAgent } from "./BaseAgent";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import type { IChatServiceCallbacks } from "Services/ChatService";
@@ -14,8 +14,9 @@ import { AgentType } from "Enums/AgentType";
 import { AIFunction, isAIFunction } from "Enums/AIFunction";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import { DebugColor } from "Enums/DebugColor";
+import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
 
-export class OrchestrationAgent extends AIController {
+export class OrchestrationAgent extends BaseAgent {
     
     private static readonly MAX_AGENT_DEPTH: number = 3;
 
@@ -121,7 +122,7 @@ export class OrchestrationAgent extends AIController {
             role: Role.User,
             content: Copy.RequestPlanSummary
         }));
-        const orchestrationSummary = await this.requestAgentResponse(planningConversation, callbacks);
+        const orchestrationSummary = await this.requestAgentResponse(AgentType.Orchestration, planningConversation, callbacks);
 
         return { planExecutionSummary: orchestrationSummary };
     }
@@ -170,6 +171,7 @@ export class OrchestrationAgent extends AIController {
                     return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `CompleteStep called (confirmed: ${parseResult.data.confirm_completion})`);
+                this.updateThought(functionCall, callbacks);
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
                     { message: "Step Completed" },
@@ -198,6 +200,7 @@ export class OrchestrationAgent extends AIController {
                     return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `CompletePlan called (confirmed: ${parseResult.data.confirm_completion})`);
+                this.updateThought(functionCall, callbacks);
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
                     { message: "Plan Completed" },
@@ -218,6 +221,7 @@ export class OrchestrationAgent extends AIController {
                     return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `Replan requested: ${parseResult.data.context}`);
+                this.updateThought(functionCall, callbacks);
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
                     { message: "Replan Requested" },
@@ -238,6 +242,7 @@ export class OrchestrationAgent extends AIController {
                     return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `Plan cancellation requested: ${parseResult.data.context}`);
+                this.updateThought(functionCall, callbacks);
                 planningConversation.addFunctionResponse(new AIFunctionResponse(
                     functionCallName,
                     { message: "Plan Cancelled" },
@@ -271,9 +276,10 @@ export class OrchestrationAgent extends AIController {
             Exception.throw("Error: No AI provider has been set!");
         }
         this.ai.agentType = AgentType.Orchestration;
+        this.ai.aiFunctionUsageMode = AIFunctionUsageMode.Enabled;
         this.ai.systemPrompt = this.aiPrompt.orchestrationInstruction();
         this.ai.userInstruction = ""; // do not include user instruction for orchestration agent
-        this.ai.toolDefinitions = AIFunctionDefinitions.orchestrationAgentDefinitions();
+        this.ai.aiFunctionDefinitions = AIFunctionDefinitions.orchestrationAgentDefinitions();
     }
 
     protected override setDebugColor(): void {

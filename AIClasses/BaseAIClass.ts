@@ -15,6 +15,7 @@ import { ApiError, ApiErrorType } from "Types/ApiError";
 import type { AbortService } from "Services/AbortService";
 import type { IAIFileService } from "./IAIFileService";
 import { AgentType } from "Enums/AgentType";
+import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
 
 export abstract class BaseAIClass implements IAIClass {
 
@@ -28,7 +29,8 @@ export abstract class BaseAIClass implements IAIClass {
     private _systemPrompt: string = "";
     private _userInstruction: string = "";
     private _agentType: AgentType = AgentType.Main;
-    private _toolDefinitions: IAIFunctionDefinition[] = [];
+    private _aiFunctionDefinitions: IAIFunctionDefinition[] = [];
+    private _aiFunctionUsageMode: AIFunctionUsageMode = AIFunctionUsageMode.Auto;
 
     protected constructor(provider: AIProvider) {
         this.provider = provider;
@@ -60,12 +62,12 @@ export abstract class BaseAIClass implements IAIClass {
         return this._userInstruction;
     }
 
-    public get toolDefinitions(): IAIFunctionDefinition[] {
-        return this._toolDefinitions;
+    public get aiFunctionDefinitions(): IAIFunctionDefinition[] {
+        return this._aiFunctionDefinitions;
     }
 
-    public set toolDefinitions(toolDefinitions: IAIFunctionDefinition[]) {
-        this._toolDefinitions = toolDefinitions;
+    public set aiFunctionDefinitions(aiFunctionDefinitions: IAIFunctionDefinition[]) {
+        this._aiFunctionDefinitions = aiFunctionDefinitions;
     }
 
     public get agentType() {
@@ -74,6 +76,14 @@ export abstract class BaseAIClass implements IAIClass {
 
     public set agentType(agentType: AgentType) {
         this._agentType = agentType;
+    }
+
+    public get aiFunctionUsageMode(): AIFunctionUsageMode {
+        return this._aiFunctionUsageMode;
+    }
+
+    public set aiFunctionUsageMode(mode: AIFunctionUsageMode) {
+        this._aiFunctionUsageMode = mode;
     }
 
     public abstract streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown>;

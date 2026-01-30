@@ -1157,7 +1157,7 @@ describe('Claude', () => {
             // Set system prompts before calling streamRequest
             claude.systemPrompt = 'System instruction';
             claude.userInstruction = 'User instruction';
-            claude.toolDefinitions = [];
+            claude.aiFunctionDefinitions = [];
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'response', isComplete: true };

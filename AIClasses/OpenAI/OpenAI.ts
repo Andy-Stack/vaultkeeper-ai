@@ -14,6 +14,7 @@ import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
+import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
 
 export class OpenAI extends BaseAIClass {
 
@@ -42,13 +43,14 @@ export class OpenAI extends BaseAIClass {
 
         const tools = [{
             type: "web_search"
-        }, ...this.mapFunctionDefinitions(this.toolDefinitions)];
+        }, ...this.mapFunctionDefinitions(this.aiFunctionDefinitions)];
 
         const requestBody = {
             model: this.model(),
             instructions: systemPrompt,
             input: input,
             tools: tools,
+            tool_choice: this.buildOpenAIToolChoice(),
             stream: true
         };
 
@@ -350,13 +352,29 @@ export class OpenAI extends BaseAIClass {
         }]);
     }
 
+    private buildOpenAIToolChoice(): string {
+        // If no tools defined, fall back to auto
+        if (this.aiFunctionDefinitions.length === 0) {
+            return "auto";
+        }
+
+        switch (this.aiFunctionUsageMode) {
+            case AIFunctionUsageMode.Auto:
+                return "auto";
+            case AIFunctionUsageMode.Enabled:
+                return "required";
+            case AIFunctionUsageMode.Disabled:
+                return "none";
+        }
+    }
+
     private extractRetryDelay(error: ApiError): number | undefined {
         if (error.info.type !== ApiErrorType.RATE_LIMIT || !error.info.responseHeaders) {
             return undefined;
         }
-        
+
         const headers = error.info.responseHeaders;
-        
+
         // 1. Prefer standard Retry-After header (seconds or HTTP-date)
         const retryAfter = headers.get('retry-after');
         if (retryAfter) {
@@ -365,16 +383,16 @@ export class OpenAI extends BaseAIClass {
                 return Math.max(0, seconds);
             }
         }
-        
+
         // 2. Fallback to provider-specific headers (e.g., OpenAI)
-        const resetHeader = 
+        const resetHeader =
             headers.get('x-ratelimit-reset-requests') ??
             headers.get('x-ratelimit-reset-tokens');
-        
+
         if (resetHeader) {
             return this.parseDurationToSeconds(resetHeader);
         }
-        
+
         return undefined;
     }
 

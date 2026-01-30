@@ -4,7 +4,7 @@ import { AIFunctionDefinitions } from "AIClasses/FunctionDefinitions/AIFunctionD
 import { Exception } from "Helpers/Exception";
 import { AIFunction, isAIFunction } from "Enums/AIFunction";
 import { AgentType } from "Enums/AgentType";
-import { AIController } from "./AIController";
+import { BaseAgent } from "./BaseAgent";
 import { ExecuteWorkflowArgsSchema, type ExecuteWorkflowArgs } from "AIClasses/Schemas/AIFunctionSchemas";
 import { AIFunctionResponse } from "AIClasses/FunctionDefinitions/AIFunctionResponse";
 import type { AIFunctionCall } from "AIClasses/AIFunctionCall";
@@ -12,8 +12,9 @@ import { OrchestrationAgent } from "./OrchestrationAgent";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import { DebugColor } from "Enums/DebugColor";
+import { AIFunctionUsageMode } from "Enums/AIFunctionUsageMode";
 
-export class MainAgent extends AIController {
+export class MainAgent extends BaseAgent {
 
     public async runMainAgent(conversation: Conversation, allowDestructiveActions: boolean, planningMode: boolean, callbacks: IChatServiceCallbacks) {
         await this.setAgentPromptAndTools(planningMode, allowDestructiveActions);
@@ -88,9 +89,10 @@ export class MainAgent extends AIController {
             Exception.throw("Error: No AI provider has been set!");
         }
         this.ai.agentType = AgentType.Main;
+        this.ai.aiFunctionUsageMode = AIFunctionUsageMode.Auto;
         this.ai.systemPrompt = this.aiPrompt.systemInstruction();
         this.ai.userInstruction = await this.aiPrompt.userInstruction();
-        this.ai.toolDefinitions = AIFunctionDefinitions.agentDefinitions(allowDestructiveActions, planningMode);
+        this.ai.aiFunctionDefinitions = AIFunctionDefinitions.agentDefinitions(allowDestructiveActions, planningMode);
     }
 
     protected override setDebugColor(): void {

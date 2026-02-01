@@ -228,7 +228,7 @@ export class OrchestrationAgent extends BaseAgent {
                     functionCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ replan: true, replanContext: parseResult.data.context });
-                return Promise.resolve({ shouldExit: false });
+                return Promise.resolve({ shouldExit: true });
             }
 
             if (isAITool(functionCallName, AITool.CancelPlan)) {

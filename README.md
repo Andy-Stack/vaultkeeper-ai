@@ -114,7 +114,7 @@ The diff viewer ensures you're always in control of what changes are made to you
 
 ### Planning Mode
 
-Planning Mode introduces a two-agent workflow that separates task planning from execution. When enabled, a specialized planning agent first analyzes your vault and creates a detailed strategy before the main agent executes any changes.
+Planning Mode introduces a three-agent workflow that separates task planning, orchestration, and execution. When enabled, specialized agents collaborate to analyze your vault, create a detailed strategy, and execute changes with intelligent oversight between each step.
 
 **How It Works**
 
@@ -123,18 +123,14 @@ Planning Mode introduces a two-agent workflow that separates task planning from 
 3. **Planning Phase**: The planning agent analyzes your vault, exploring existing notes, organizational patterns, and relevant content
 4. **Clarifying Questions**: The planning agent may ask you questions to better understand your requirements
 5. **Plan Display**: A step-by-step plan appears above the chat showing what will be done
-6. **Execution Phase**: The main agent executes each step, with progress tracked visually
+6. **Execution Phase**: For each step, an execution agent performs the task while an orchestration agent monitors progress and decides whether to continue, adapt, or replan
 7. **Completion**: All steps are marked complete when finished
 
-**Planning Agent Capabilities**
+**The Three Agents**
 
-During the planning phase, the planning agent can:
-- Search and read files in your vault
-- Analyze organizational patterns and naming conventions
-- Ask you clarifying questions with markdown-formatted prompts
-- Create detailed, ordered execution steps
-
-The planning agent **cannot** modify files directly - it only gathers information and strategizes.
+- **Planning Agent**: Explores your vault (read-only) and creates the execution strategy. Can search files, read content, and ask clarifying questions, but cannot modify anything.
+- **Execution Agent**: Performs individual steps from the plan. Has full access to vault operations (when in Agent Mode) and completes each task independently.
+- **Orchestration Agent**: Monitors progress between steps. After each step completes, it evaluates the result and decides whether to continue to the next step, request a replan, or abort the workflow. It can also pass context to subsequent steps based on what was learned.
 
 **Plan Visualization**
 
@@ -154,7 +150,7 @@ Planning mode is especially useful for:
 
 **Replanning**
 
-If issues arise during execution, the agent can request a replan. This returns to the planning phase with context about what's already been completed, allowing the plan to adapt to new information.
+If issues arise during execution, the orchestration agent can request a replan. This returns to the planning phase with full context about what's already been completed and what went wrong, allowing the plan to intelligently adapt to new information discovered during execution.
 
 ### Reference System
 

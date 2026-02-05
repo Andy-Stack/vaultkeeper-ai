@@ -179,6 +179,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeSonnet_4_5, text: Copy.ClaudeSonnet_4_5 });
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeSonnet_4, text: Copy.ClaudeSonnet_4 });
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeSonnet_3_7, text: Copy.ClaudeSonnet_3_7 });
+			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeOpus_4_6, text: Copy.ClaudeOpus_4_6 });
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeOpus_4_5, text: Copy.ClaudeOpus_4_5 });
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeOpus_4_1, text: Copy.ClaudeOpus_4_1 });
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeOpus_4, text: Copy.ClaudeOpus_4 });

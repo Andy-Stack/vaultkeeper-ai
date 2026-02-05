@@ -42,6 +42,7 @@ export enum AIProviderModel {
     ClaudeSonnet_4_5 = "claude-sonnet-4-5-20250929",
     ClaudeSonnet_4 = "claude-sonnet-4-20250514",
     ClaudeSonnet_3_7 = "claude-3-7-sonnet-20250219",
+    ClaudeOpus_4_6 = "claude-opus-4-6",
     ClaudeOpus_4_5 = "claude-opus-4-5-20251101",
     ClaudeOpus_4_1 = "claude-opus-4-1-20250805",
     ClaudeOpus_4 = "claude-opus-4-20250514",

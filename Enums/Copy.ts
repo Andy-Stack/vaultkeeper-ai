@@ -11,6 +11,7 @@ export enum Copy {
     ClaudeSonnet_4_5 = "Claude Sonnet 4.5",
     ClaudeSonnet_4 = "Claude Sonnet 4",
     ClaudeSonnet_3_7 = "Claude Sonnet 3.7",
+    ClaudeOpus_4_6 = "Claude Opus 4.6",
     ClaudeOpus_4_5 = "Claude Opus 4.5",
     ClaudeOpus_4_1 = "Claude Opus 4.1",
     ClaudeOpus_4 = "Claude Opus 4",

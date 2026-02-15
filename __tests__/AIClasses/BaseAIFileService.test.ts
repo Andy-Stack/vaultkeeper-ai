@@ -5,6 +5,7 @@ import { Attachment } from '../../Conversations/Attachment';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { AbortService } from '../../Services/AbortService';
+import { StringTools } from '../../Helpers/StringTools';
 
 /**
  * Concrete implementation for testing BaseAIFileService
@@ -36,6 +37,9 @@ describe('BaseAIFileService', () => {
 	let abortService: AbortService;
 
 	beforeEach(() => {
+		// Mock StringTools.resizeB64Image to avoid browser environment issues in tests
+		vi.spyOn(StringTools, 'resizeB64Image').mockImplementation(async (base64: string) => base64);
+
 		// Mock SettingsService
 		const mockSettingsService = {
 			settings: {

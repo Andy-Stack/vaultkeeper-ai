@@ -1002,6 +1002,7 @@ describe('OpenAI', () => {
                 fileName: 'report.pdf',
                 mimeType: 'application/pdf',
                 base64: 'base64encodedcontent',
+                getMimeType: () => 'application/pdf',
                 getFileID: () => 'file-123',
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1028,6 +1029,7 @@ describe('OpenAI', () => {
                 fileName: 'photo.jpg',
                 mimeType: 'image/jpeg',
                 base64: 'base64imagedata',
+                getMimeType: () => 'image/jpeg',
                 getFileID: () => 'file-456',
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1054,6 +1056,7 @@ describe('OpenAI', () => {
                 fileName: 'diagram.png',
                 mimeType: 'image/png',
                 base64: 'base64pngdata',
+                getMimeType: () => 'image/png',
                 getFileID: () => 'file-789',
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1079,6 +1082,7 @@ describe('OpenAI', () => {
                 fileName: 'modern.webp',
                 mimeType: 'image/webp',
                 base64: 'base64webpdata',
+                getMimeType: () => 'image/webp',
                 getFileID: () => 'file-webp',
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1104,6 +1108,7 @@ describe('OpenAI', () => {
                 fileName: 'photo.gif',
                 mimeType: 'image/gif',
                 base64: 'base64gifdata',
+                getMimeType: () => 'image/gif',
                 getFileID: () => 'file-gif',
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1125,6 +1130,7 @@ describe('OpenAI', () => {
                 fileName: 'failed.pdf',
                 mimeType: 'application/pdf',
                 base64: 'base64data',
+                getMimeType: () => 'application/pdf',
                 getFileID: () => undefined, // Upload failed
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1144,6 +1150,7 @@ describe('OpenAI', () => {
                     fileName: 'doc.pdf',
                     mimeType: 'application/pdf',
                     base64: 'pdfdata',
+                    getMimeType: () => 'application/pdf',
                     getFileID: () => 'file-pdf',
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1152,6 +1159,7 @@ describe('OpenAI', () => {
                     fileName: 'image.jpg',
                     mimeType: 'image/jpeg',
                     base64: 'jpegdata',
+                    getMimeType: () => 'image/jpeg',
                     getFileID: () => 'file-jpg',
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1160,6 +1168,7 @@ describe('OpenAI', () => {
                     fileName: 'screenshot.png',
                     mimeType: 'image/png',
                     base64: 'pngdata',
+                    getMimeType: () => 'image/png',
                     getFileID: () => 'file-png',
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1207,6 +1216,7 @@ describe('OpenAI', () => {
                     fileName: 'good.jpg',
                     mimeType: 'image/jpeg',
                     base64: 'jpegdata',
+                    getMimeType: () => 'image/jpeg',
                     getFileID: () => 'file-jpg',
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1215,6 +1225,7 @@ describe('OpenAI', () => {
                     fileName: 'bad.bmp',
                     mimeType: 'image/bmp',
                     base64: 'bmpdata',
+                    getMimeType: () => 'image/bmp',
                     getFileID: () => 'file-bmp',
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1223,6 +1234,7 @@ describe('OpenAI', () => {
                     fileName: 'doc.pdf',
                     mimeType: 'application/pdf',
                     base64: 'pdfdata',
+                    getMimeType: () => 'application/pdf',
                     getFileID: () => 'file-pdf',
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1257,6 +1269,7 @@ describe('OpenAI', () => {
                     fileName: 'success.pdf',
                     mimeType: 'application/pdf',
                     base64: 'pdfdata',
+                    getMimeType: () => 'application/pdf',
                     getFileID: () => 'file-success',
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1265,6 +1278,7 @@ describe('OpenAI', () => {
                     fileName: 'failed.jpg',
                     mimeType: 'image/jpeg',
                     base64: 'jpegdata',
+                    getMimeType: () => 'image/jpeg',
                     getFileID: () => undefined, // Upload failed
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1301,6 +1315,7 @@ describe('OpenAI', () => {
                     fileName: 'failed1.pdf',
                     mimeType: 'application/pdf',
                     base64: 'data1',
+                    getMimeType: () => 'application/pdf',
                     getFileID: () => undefined,
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1309,6 +1324,7 @@ describe('OpenAI', () => {
                     fileName: 'failed2.jpg',
                     mimeType: 'image/jpeg',
                     base64: 'data2',
+                    getMimeType: () => 'image/jpeg',
                     getFileID: () => undefined,
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()

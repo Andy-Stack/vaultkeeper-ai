@@ -776,6 +776,7 @@ describe('Claude', () => {
                 fileName: 'test-image.png',
                 mimeType: 'image/png',
                 base64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+                getMimeType: vi.fn(() => 'image/png'),
                 getFileID: vi.fn(() => 'file_123'), // Mock file ID
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -808,6 +809,7 @@ describe('Claude', () => {
                 fileName: 'document.pdf',
                 mimeType: 'application/pdf',
                 base64: 'JVBERi0xLjQKJeLjz9MK',
+                getMimeType: vi.fn(() => 'application/pdf'),
                 getFileID: vi.fn(() => 'file_456'), // Mock file ID
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1227,6 +1229,7 @@ describe('Claude', () => {
                 fileName: 'report.pdf',
                 mimeType: 'application/pdf',
                 base64: 'base64encodedcontent',
+                getMimeType: vi.fn(() => 'application/pdf'),
                 getFileID: vi.fn(() => 'file_pdf_123'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1254,6 +1257,7 @@ describe('Claude', () => {
                 fileName: 'photo.jpg',
                 mimeType: 'image/jpeg',
                 base64: 'base64imagedata',
+                getMimeType: vi.fn(() => 'image/jpeg'),
                 getFileID: vi.fn(() => 'file_img_jpeg'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1281,6 +1285,7 @@ describe('Claude', () => {
                 fileName: 'diagram.png',
                 mimeType: 'image/png',
                 base64: 'base64pngdata',
+                getMimeType: vi.fn(() => 'image/png'),
                 getFileID: vi.fn(() => 'file_img_png'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1304,6 +1309,7 @@ describe('Claude', () => {
                 fileName: 'animation.gif',
                 mimeType: 'image/gif',
                 base64: 'base64gifdata',
+                getMimeType: vi.fn(() => 'image/gif'),
                 getFileID: vi.fn(() => 'file_img_gif'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1327,6 +1333,7 @@ describe('Claude', () => {
                 fileName: 'modern.webp',
                 mimeType: 'image/webp',
                 base64: 'base64webpdata',
+                getMimeType: vi.fn(() => 'image/webp'),
                 getFileID: vi.fn(() => 'file_img_webp'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1350,6 +1357,7 @@ describe('Claude', () => {
                 fileName: 'photo.bmp',
                 mimeType: 'image/bmp',
                 base64: 'base64bmpdata',
+                getMimeType: vi.fn(() => 'image/bmp'),
                 getFileID: vi.fn(() => 'file_img_bmp'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1371,6 +1379,7 @@ describe('Claude', () => {
                     fileName: 'doc.pdf',
                     mimeType: 'application/pdf',
                     base64: 'pdfdata',
+                    getMimeType: vi.fn(() => 'application/pdf'),
                     getFileID: vi.fn(() => 'file_1'),
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1379,6 +1388,7 @@ describe('Claude', () => {
                     fileName: 'image.jpg',
                     mimeType: 'image/jpeg',
                     base64: 'jpegdata',
+                    getMimeType: vi.fn(() => 'image/jpeg'),
                     getFileID: vi.fn(() => 'file_2'),
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1387,6 +1397,7 @@ describe('Claude', () => {
                     fileName: 'screenshot.png',
                     mimeType: 'image/png',
                     base64: 'pngdata',
+                    getMimeType: vi.fn(() => 'image/png'),
                     getFileID: vi.fn(() => 'file_3'),
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1435,6 +1446,7 @@ describe('Claude', () => {
                     fileName: 'good.jpg',
                     mimeType: 'image/jpeg',
                     base64: 'jpegdata',
+                    getMimeType: vi.fn(() => 'image/jpeg'),
                     getFileID: vi.fn(() => 'file_good'),
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1443,6 +1455,7 @@ describe('Claude', () => {
                     fileName: 'bad.bmp',
                     mimeType: 'image/bmp',
                     base64: 'bmpdata',
+                    getMimeType: vi.fn(() => 'image/bmp'),
                     getFileID: vi.fn(() => 'file_bad'),
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1451,6 +1464,7 @@ describe('Claude', () => {
                     fileName: 'doc.pdf',
                     mimeType: 'application/pdf',
                     base64: 'pdfdata',
+                    getMimeType: vi.fn(() => 'application/pdf'),
                     getFileID: vi.fn(() => 'file_pdf'),
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1479,6 +1493,7 @@ describe('Claude', () => {
                 fileName: 'image.png',
                 mimeType: 'image/png',
                 base64: 'imagedata',
+                getMimeType: vi.fn(() => 'image/png'),
                 getFileID: vi.fn(() => undefined), // No file ID
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1497,6 +1512,7 @@ describe('Claude', () => {
                     fileName: 'document.PDF',
                     mimeType: 'application/pdf',
                     base64: 'pdfdata',
+                    getMimeType: vi.fn(() => 'application/pdf'),
                     getFileID: vi.fn(() => 'file_pdf_upper'),
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1505,6 +1521,7 @@ describe('Claude', () => {
                     fileName: 'photo.JPG',
                     mimeType: 'image/jpeg',
                     base64: 'jpegdata',
+                    getMimeType: vi.fn(() => 'image/jpeg'),
                     getFileID: vi.fn(() => 'file_jpg_upper'),
                     setFileID: vi.fn(),
                     deleteFileID: vi.fn()
@@ -1535,6 +1552,7 @@ describe('Claude', () => {
                 fileName: 'report (final) v2.pdf',
                 mimeType: 'application/pdf',
                 base64: 'pdfdata',
+                getMimeType: vi.fn(() => 'application/pdf'),
                 getFileID: vi.fn(() => 'file_special'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()
@@ -1551,6 +1569,7 @@ describe('Claude', () => {
                 fileName: 'photo.jpeg',
                 mimeType: 'image/jpeg',
                 base64: 'jpegdata',
+                getMimeType: vi.fn(() => 'image/jpeg'),
                 getFileID: vi.fn(() => 'file_jpeg_ext'),
                 setFileID: vi.fn(),
                 deleteFileID: vi.fn()

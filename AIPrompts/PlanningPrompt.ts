@@ -1,4 +1,4 @@
-import { AIToolDefinitions } from "AIClasses/FunctionDefinitions/AIToolDefinitions";
+import { AIToolDefinitions } from "AIClasses/ToolDefinitions/AIToolDefinitions";
 
 export const PlanningPrompt: string = `
 # Obsidian Vault Planning Agent

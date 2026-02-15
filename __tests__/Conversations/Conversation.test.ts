@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
-import { AIToolResponse } from '../../AIClasses/FunctionDefinitions/AIToolResponse';
+import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
 import { AITool } from '../../Enums/AITool';
 
 describe('Conversation', () => {

@@ -5,7 +5,7 @@ import { Services } from '../../Services/Services';
 import { StreamingService } from '../../Services/StreamingService';
 import type { IPrompt } from '../../AIPrompts/IPrompt';
 import type VaultkeeperAIPlugin from '../../main';
-import { AIToolDefinitions } from '../../AIClasses/FunctionDefinitions/AIToolDefinitions';
+import { AIToolDefinitions } from '../../AIClasses/ToolDefinitions/AIToolDefinitions';
 import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';

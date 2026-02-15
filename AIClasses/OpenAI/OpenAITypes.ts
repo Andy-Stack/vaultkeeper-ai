@@ -1,4 +1,4 @@
-import type { IAIToolDefinition } from "AIClasses/FunctionDefinitions/IAIToolDefinition";
+import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
 
 /* SDK types are a bit complicated and verbose so define simpler interfaces */
 

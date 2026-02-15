@@ -4,7 +4,7 @@ import type { IAIClass } from "AIClasses/IAIClass";
 import { type IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import type { AIProvider } from "Enums/ApiProvider";
-import type { IAIToolDefinition } from "AIClasses/FunctionDefinitions/IAIToolDefinition";
+import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Attachment } from "Conversations/Attachment";
 import type { SettingsService } from "Services/SettingsService";

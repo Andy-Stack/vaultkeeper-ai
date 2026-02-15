@@ -1,7 +1,7 @@
 import type { IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
 import type { Attachment } from "Conversations/Attachment";
-import type { IAIToolDefinition } from "./FunctionDefinitions/IAIToolDefinition";
+import type { IAIToolDefinition } from "./ToolDefinitions/IAIToolDefinition";
 import type { AIProvider } from "Enums/ApiProvider";
 import type { AgentType } from "Enums/AgentType";
 import type { AIToolUsageMode } from "Enums/AIToolUsageMode";

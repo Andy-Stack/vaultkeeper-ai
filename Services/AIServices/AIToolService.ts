@@ -2,7 +2,7 @@ import { Resolve } from "../DependencyService";
 import { Services } from "../Services";
 import type { FileSystemService } from "../FileSystemService";
 import { AITool, fromString } from "Enums/AITool";
-import { AIToolResponse } from "AIClasses/FunctionDefinitions/AIToolResponse";
+import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import type { AIToolCall } from "AIClasses/AIToolCall";
 import type { ISearchMatch } from "../../Types/SearchTypes";
 import { AbortService } from "../AbortService";

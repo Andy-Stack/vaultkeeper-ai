@@ -4,7 +4,7 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { AITool } from '../../Enums/AITool';
 import { AIToolCall } from '../../AIClasses/AIToolCall';
-import { AIToolResponse } from '../../AIClasses/FunctionDefinitions/AIToolResponse';
+import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
 import type { ExecutionStep } from '../../Types/ExecutionStep';
 
 /**

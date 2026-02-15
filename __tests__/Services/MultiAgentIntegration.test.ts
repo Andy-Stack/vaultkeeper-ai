@@ -10,7 +10,7 @@ import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { AITool } from '../../Enums/AITool';
 import { AIToolCall } from '../../AIClasses/AIToolCall';
-import { AIToolResponse } from '../../AIClasses/FunctionDefinitions/AIToolResponse';
+import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
 import type { ExecutionStep } from '../../Types/ExecutionStep';
 
 /**

@@ -1,19 +1,19 @@
 import type { IAIToolDefinition } from "./IAIToolDefinition";
-import { SearchVaultFiles } from "./Functions/SearchVaultFiles";
-import { ReadVaultFiles } from "./Functions/ReadVaultFiles";
-import { WriteVaultFile } from "./Functions/WriteVaultFile";
-import { DeleteVaultFiles } from "./Functions/DeleteVaultFiles";
-import { MoveVaultFiles } from "./Functions/MoveVaultFiles";
-import { ListVaultFiles } from "./Functions/ListVaultFiles";
-import { PatchVaultFile } from "./Functions/PatchVaultFile";
-import { Replan } from "./Functions/Replan";
-import { CompleteStep } from "./Functions/CompleteStep";
-import { SubmitPlan } from "./Functions/SubmitPlan";
-import { CancelPlan } from "./Functions/CancelPlan";
-import { AskUserQuestionPlanning } from "./Functions/AskUserQuestionPlanning";
-import { CompletePlan } from "./Functions/CompletePlan";
-import { CompleteTask } from "./Functions/CompleteTask";
-import { ExecuteWorkflow } from "./Functions/ExecuteWorkflow";
+import { SearchVaultFiles } from "./Tools/SearchVaultFiles";
+import { ReadVaultFiles } from "./Tools/ReadVaultFiles";
+import { WriteVaultFile } from "./Tools/WriteVaultFile";
+import { DeleteVaultFiles } from "./Tools/DeleteVaultFiles";
+import { MoveVaultFiles } from "./Tools/MoveVaultFiles";
+import { ListVaultFiles } from "./Tools/ListVaultFiles";
+import { PatchVaultFile } from "./Tools/PatchVaultFile";
+import { Replan } from "./Tools/Replan";
+import { CompleteStep } from "./Tools/CompleteStep";
+import { SubmitPlan } from "./Tools/SubmitPlan";
+import { CancelPlan } from "./Tools/CancelPlan";
+import { AskUserQuestionPlanning } from "./Tools/AskUserQuestionPlanning";
+import { CompletePlan } from "./Tools/CompletePlan";
+import { CompleteTask } from "./Tools/CompleteTask";
+import { ExecuteWorkflow } from "./Tools/ExecuteWorkflow";
 
 export abstract class AIToolDefinitions {
     

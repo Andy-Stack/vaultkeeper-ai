@@ -8,11 +8,11 @@ import { Copy, replaceCopy } from "Enums/Copy";
 import { Conversation } from "Conversations/Conversation";
 import { PlanningAgent } from "./PlanningAgent";
 import { Exception } from "Helpers/Exception";
-import { AIToolDefinitions } from "AIClasses/FunctionDefinitions/AIToolDefinitions";
+import { AIToolDefinitions } from "AIClasses/ToolDefinitions/AIToolDefinitions";
 import { OrchestrationResult } from "Types/OrchestrationResult";
 import { AgentType } from "Enums/AgentType";
 import { AITool, isAITool } from "Enums/AITool";
-import { AIToolResponse } from "AIClasses/FunctionDefinitions/AIToolResponse";
+import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import { DebugColor } from "Enums/DebugColor";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 

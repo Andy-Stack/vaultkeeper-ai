@@ -15,7 +15,7 @@ import { DiffService } from "./DiffService";
 import * as path from "path-browserify";
 import { Event } from "Enums/Event";
 import { AbortService } from "./AbortService";
-import { AIToolResponse } from "AIClasses/FunctionDefinitions/AIToolResponse";
+import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import { FileType, isBinaryFile, isFileType } from "Enums/FileType";
 import { readPDF } from "Helpers/PDFHelper";
 

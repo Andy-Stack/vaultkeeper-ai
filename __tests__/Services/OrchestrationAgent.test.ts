@@ -3,7 +3,7 @@ import { OrchestrationAgent } from '../../Services/AIServices/OrchestrationAgent
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { AITool } from '../../Enums/AITool';
-import { AIToolResponse } from '../../AIClasses/FunctionDefinitions/AIToolResponse';
+import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
 
 /**
  * UNIT TESTS - OrchestrationAgent

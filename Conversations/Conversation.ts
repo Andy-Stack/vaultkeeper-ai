@@ -1,7 +1,7 @@
 import { StringTools } from "Helpers/StringTools";
 import { ConversationContent } from "./ConversationContent";
 import { Attachment } from "./Attachment";
-import type { AIToolResponse } from "AIClasses/FunctionDefinitions/AIToolResponse";
+import type { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import { Role } from "Enums/Role";
 import { AITool } from "Enums/AITool";
 import { isTextFile, toFileType } from "Enums/FileType";

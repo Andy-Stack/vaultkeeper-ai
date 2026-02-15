@@ -1,12 +1,12 @@
 import type { Conversation } from "Conversations/Conversation";
 import type { IChatServiceCallbacks } from "../ChatService";
-import { AIToolDefinitions } from "AIClasses/FunctionDefinitions/AIToolDefinitions";
+import { AIToolDefinitions } from "AIClasses/ToolDefinitions/AIToolDefinitions";
 import { Exception } from "Helpers/Exception";
 import { AITool, isAITool } from "Enums/AITool";
 import { AgentType } from "Enums/AgentType";
 import { BaseAgent } from "./BaseAgent";
 import { ExecuteWorkflowArgsSchema, type ExecuteWorkflowArgs } from "AIClasses/Schemas/AIToolSchemas";
-import { AIToolResponse } from "AIClasses/FunctionDefinitions/AIToolResponse";
+import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import type { AIToolCall } from "AIClasses/AIToolCall";
 import { OrchestrationAgent } from "./OrchestrationAgent";
 import { ConversationContent } from "Conversations/ConversationContent";

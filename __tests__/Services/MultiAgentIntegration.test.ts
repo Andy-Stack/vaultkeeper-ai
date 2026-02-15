@@ -123,7 +123,7 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Plan',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.SubmitPlan,
 						{
 							steps: [
@@ -159,7 +159,7 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Replan',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.SubmitPlan,
 						{
 							steps: [
@@ -201,7 +201,7 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Done',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
@@ -232,7 +232,7 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Failed',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: false,
@@ -264,7 +264,7 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Done',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
@@ -400,7 +400,7 @@ describe('Multi-Agent Integration Tests', () => {
 					searchCalled = true;
 					yield {
 						content: 'Searching',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SearchVaultFiles,
 							{
 								search_terms: ['test'],
@@ -413,7 +413,7 @@ describe('Multi-Agent Integration Tests', () => {
 				} else {
 					yield {
 						content: 'Plan',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -445,13 +445,13 @@ describe('Multi-Agent Integration Tests', () => {
 			};
 			const callbacks = createMockCallbacks();
 
-			let functionCallCount = 0;
+			let toolCallCount = 0;
 			mockAI.streamRequest.mockImplementation(async function* () {
-				functionCallCount++;
-				if (functionCallCount === 1) {
+				toolCallCount++;
+				if (toolCallCount === 1) {
 					yield {
 						content: 'Searching',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SearchVaultFiles,
 							{
 								search_terms: ['test'],
@@ -464,7 +464,7 @@ describe('Multi-Agent Integration Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,

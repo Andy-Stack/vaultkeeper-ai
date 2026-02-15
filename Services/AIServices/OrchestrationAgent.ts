@@ -139,114 +139,114 @@ export class OrchestrationAgent extends BaseAgent {
 
         let orchestrationResult: OrchestrationResult | undefined = undefined;
 
-        await this.runAgentLoop(AgentType.Orchestration, planningConversation, callbacks, async functionCall => {
-            const functionCallName = functionCall.name;
+        await this.runAgentLoop(AgentType.Orchestration, planningConversation, callbacks, async toolCall => {
+            const toolCallName = toolCall.name;
 
-            if (!AIToolDefinitions.orchestrationAgentDefinitions().some(definition => isAITool(functionCallName, definition.name))) {
-                this.debugService?.log("Orchestration", `Invalid tool call denied: ${functionCallName}`);
+            if (!AIToolDefinitions.orchestrationAgentDefinitions().some(definition => isAITool(toolCallName, definition.name))) {
+                this.debugService?.log("Orchestration", `Invalid tool call denied: ${toolCallName}`);
                 planningConversation.addFunctionResponse(new AIToolResponse(
-                    functionCallName,
+                    toolCallName,
                     { message: Copy.OrchestrationToolDenial },
-                    functionCall.toolId
+                    toolCall.toolId
                 ));
                 return Promise.resolve({ shouldExit: false });
             }
 
-            if (isAITool(functionCallName, AITool.CompleteStep)) {
-                const parseResult = CompleteStepArgsSchema.safeParse(functionCall.arguments);
+            if (isAITool(toolCallName, AITool.CompleteStep)) {
+                const parseResult = CompleteStepArgsSchema.safeParse(toolCall.arguments);
                 if (!parseResult.success) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
-                        functionCallName,
+                        toolCallName,
                         { error: `Invalid arguments for ${AITool.CompleteStep}: ${parseResult.error.message}` },
-                        functionCall.toolId
+                        toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
                 if (!parseResult.data.confirm_completion) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
-                        functionCallName,
+                        toolCallName,
                         { error: "Confirmation was false, no action taken" },
-                        functionCall.toolId
+                        toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `CompleteStep called (confirmed: ${parseResult.data.confirm_completion})`);
-                this.updateThought(functionCall, callbacks);
+                this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
-                    functionCallName,
+                    toolCallName,
                     { message: "Step Completed" },
-                    functionCall.toolId
+                    toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ continue: true, continueContext: parseResult.data.context_for_next_step });
                 return Promise.resolve({ shouldExit: true });
             }
 
-            if (isAITool(functionCallName, AITool.CompletePlan)) {
-                const parseResult = CompletePlanArgsSchema.safeParse(functionCall.arguments);
+            if (isAITool(toolCallName, AITool.CompletePlan)) {
+                const parseResult = CompletePlanArgsSchema.safeParse(toolCall.arguments);
                 if (!parseResult.success) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
-                        functionCallName,
+                        toolCallName,
                         { error: `Invalid arguments for ${AITool.CompletePlan}: ${parseResult.error.message}` },
-                        functionCall.toolId
+                        toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
                 if (!parseResult.data.confirm_completion) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
-                        functionCallName,
+                        toolCallName,
                         { error: "Confirmation was false, no action taken" },
-                        functionCall.toolId
+                        toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `CompletePlan called (confirmed: ${parseResult.data.confirm_completion})`);
-                this.updateThought(functionCall, callbacks);
+                this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
-                    functionCallName,
+                    toolCallName,
                     { message: "Plan Completed" },
-                    functionCall.toolId
+                    toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ complete: true });
                 return Promise.resolve({ shouldExit: true });
             }
 
-            if (isAITool(functionCallName, AITool.Replan)) {
-                const parseResult = ReplanArgsSchema.safeParse(functionCall.arguments);
+            if (isAITool(toolCallName, AITool.Replan)) {
+                const parseResult = ReplanArgsSchema.safeParse(toolCall.arguments);
                 if (!parseResult.success) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
-                        functionCallName,
+                        toolCallName,
                         { error: `Invalid arguments for ${AITool.Replan}: ${parseResult.error.message}` },
-                        functionCall.toolId
+                        toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `Replan requested: ${parseResult.data.context}`);
-                this.updateThought(functionCall, callbacks);
+                this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
-                    functionCallName,
+                    toolCallName,
                     { message: "Replan Requested" },
-                    functionCall.toolId
+                    toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ replan: true, replanContext: parseResult.data.context });
                 return Promise.resolve({ shouldExit: true });
             }
 
-            if (isAITool(functionCallName, AITool.CancelPlan)) {
-                const parseResult = CancelPlanArgsSchema.safeParse(functionCall.arguments);
+            if (isAITool(toolCallName, AITool.CancelPlan)) {
+                const parseResult = CancelPlanArgsSchema.safeParse(toolCall.arguments);
                 if (!parseResult.success) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
-                        functionCallName,
+                        toolCallName,
                         { error: `Invalid arguments for ${AITool.CancelPlan}: ${parseResult.error.message}` },
-                        functionCall.toolId
+                        toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
                 this.debugService?.log("Orchestration", `Plan cancellation requested: ${parseResult.data.context}`);
-                this.updateThought(functionCall, callbacks);
+                this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
-                    functionCallName,
+                    toolCallName,
                     { message: "Plan Cancelled" },
-                    functionCall.toolId
+                    toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ abort: true, abortContext: parseResult.data.context });
                 return Promise.resolve({ shouldExit: true });

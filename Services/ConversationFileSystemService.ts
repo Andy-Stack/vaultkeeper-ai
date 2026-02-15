@@ -71,7 +71,7 @@ export class ConversationFileSystemService {
                     timestamp: content.timestamp.toISOString(),
                     content: content.content,
                     displayContent: content.displayContent,
-                    functionCall: content.functionCall,
+                    toolCall: content.toolCall,
                     functionResponse: content.functionResponse,
                     attachments: content.attachments.map(att => ({
                         fileName: att.fileName,
@@ -278,7 +278,7 @@ export class ConversationFileSystemService {
                     timestamp: new Date(content.timestamp),
                     content: content.content,
                     displayContent: content.displayContent,
-                    functionCall: content.functionCall,
+                    toolCall: content.toolCall,
                     functionResponse: content.functionResponse,
                     attachments: attachments,
                     references: references,

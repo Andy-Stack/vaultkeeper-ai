@@ -31,7 +31,7 @@ export class MainAgent extends BaseAgent {
 
         let result = await this.runMainAgentLoop(conversation, callbacks);
 
-        while (result.planRequest && result.functionCall) {
+        while (result.planRequest && result.toolCall) {
             this.debugService?.log("MainAgent", "Spawning OrchestrationAgent for planned workflow");
             const orchestrationAgent = new OrchestrationAgent();
             orchestrationAgent.resolveAIProvider();
@@ -39,9 +39,9 @@ export class MainAgent extends BaseAgent {
             this.debugService?.log("MainAgent", "OrchestrationAgent workflow completed");
 
             conversation.addFunctionResponse(new AIToolResponse(
-                result.functionCall.name,
+                result.toolCall.name,
                 workflowResult,
-                result.functionCall.toolId
+                result.toolCall.toolId
             ));
 
             await this.setAgentPromptAndTools(planningMode, allowDestructiveActions);
@@ -51,37 +51,37 @@ export class MainAgent extends BaseAgent {
 
     // the main agent loop - may return an execution plan if the agent has requested a planned workflow
     private async runMainAgentLoop(conversation: Conversation, callbacks: IChatServiceCallbacks
-    ): Promise<{ planRequest: ExecuteWorkflowArgs | undefined, functionCall: AIToolCall | undefined }> {
+    ): Promise<{ planRequest: ExecuteWorkflowArgs | undefined, toolCall: AIToolCall | undefined }> {
         
         let planRequest: ExecuteWorkflowArgs | undefined;
-        let planFunctionCall: AIToolCall | undefined;
+        let planToolCall: AIToolCall | undefined;
 
-        await this.runAgentLoop(AgentType.Main, conversation, callbacks, async functionCall => {
-            const functionCallName = functionCall.name;
-            if (isAITool(functionCallName, AITool.ExecuteWorkflow)) {
+        await this.runAgentLoop(AgentType.Main, conversation, callbacks, async toolCall => {
+            const toolCallName = toolCall.name;
+            if (isAITool(toolCallName, AITool.ExecuteWorkflow)) {
                 this.debugService?.log("MainAgent", "ExecuteWorkflow function detected - transitioning to orchestration");
-                const parseResult = ExecuteWorkflowArgsSchema.safeParse(functionCall.arguments);
+                const parseResult = ExecuteWorkflowArgsSchema.safeParse(toolCall.arguments);
                 if (!parseResult.success) {
                     conversation.addFunctionResponse(new AIToolResponse(
-                        functionCallName,
+                        toolCallName,
                         { error: `Invalid arguments for ${AITool.ExecuteWorkflow}: ${parseResult.error.message}` },
-                        functionCall.toolId
+                        toolCall.toolId
                     ));
                     return { shouldExit: false };
                 }
                 planRequest = parseResult.data;
-                planFunctionCall = functionCall;
-                this.updateThought(functionCall, callbacks);
+                planToolCall = toolCall;
+                this.updateThought(toolCall, callbacks);
                 return { shouldExit: true };
             }
 
-            this.debugService?.log("MainAgent", `Executing function: ${functionCall.name}`);
-            this.updateThought(functionCall, callbacks);
-            const functionResponse = await this.aiToolService.performAITool(functionCall);
+            this.debugService?.log("MainAgent", `Executing function: ${toolCall.name}`);
+            this.updateThought(toolCall, callbacks);
+            const functionResponse = await this.aiToolService.performAITool(toolCall);
             conversation.addFunctionResponse(functionResponse);
             return { shouldExit: false };
         });
-        return { planRequest: planRequest, functionCall: planFunctionCall };
+        return { planRequest: planRequest, toolCall: planToolCall };
     }
 
     private async setAgentPromptAndTools(planningMode: boolean, allowDestructiveActions: boolean): Promise<void> {

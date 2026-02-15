@@ -12,7 +12,7 @@ export interface ResponseOutputTextDelta extends ResponseEvent {
     delta: string;
 }
 
-export interface ResponseFunctionCallArgumentsDone extends ResponseEvent {
+export interface ResponseToolCallArgumentsDone extends ResponseEvent {
     type: "response.function_call_arguments.done";
     item_id: string;
     name: string;
@@ -92,7 +92,7 @@ export interface ResponsesAPIMessageInput {
 }
 
 // Function call item (reconstructed from storage or appended from response.output)
-export interface ResponsesAPIFunctionCallInput {
+export interface ResponsesAPIToolCallInput {
     type: "function_call";
     call_id: string;
     name: string;
@@ -100,7 +100,7 @@ export interface ResponsesAPIFunctionCallInput {
 }
 
 // Function call output (result of executing a function)
-export interface ResponsesAPIFunctionCallOutputInput {
+export interface ResponsesAPIToolCallOutputInput {
     type: "function_call_output";
     call_id: string;
     output: string; // JSON string
@@ -109,8 +109,8 @@ export interface ResponsesAPIFunctionCallOutputInput {
 // Union type for all possible input items
 export type ResponsesAPIInput =
     | ResponsesAPIMessageInput
-    | ResponsesAPIFunctionCallInput
-    | ResponsesAPIFunctionCallOutputInput;
+    | ResponsesAPIToolCallInput
+    | ResponsesAPIToolCallOutputInput;
 
 /**
  * File API Types

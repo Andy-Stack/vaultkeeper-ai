@@ -171,7 +171,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 		it('should serialize function calls correctly', async () => {
 			const conversation = createTestConversation('With Function Call');
-			const functionCall = {
+			const toolCall = {
 				name: 'test_function',
 				arguments: { arg1: 'value1' }
 			};
@@ -180,7 +180,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 				new ConversationContent({
 					role: Role.Assistant,
 					content: 'Function call',
-					functionCall: JSON.stringify(functionCall),
+					toolCall: JSON.stringify(toolCall),
 					timestamp: new Date('2024-01-01T10:02:00Z'),
 					toolId: 'tool_123'
 				})
@@ -189,12 +189,12 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			await service.saveConversation(conversation);
 
 			const savedData = mockFileSystemService.writeObjectToFile.mock.calls[0][1];
-			const functionCallContent = savedData.contents[2];
+			const toolCallContent = savedData.contents[2];
 
-			expect(functionCallContent).toMatchObject({
+			expect(toolCallContent).toMatchObject({
 				role: Role.Assistant,
 				content: 'Function call',
-				functionCall: JSON.stringify(functionCall),
+				toolCall: JSON.stringify(toolCall),
 				timestamp: '2024-01-01T10:02:00.000Z',
 				toolId: 'tool_123'
 			});
@@ -368,10 +368,10 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 							role: Role.User,
 							content: 'Message 1',
 							promptContent: '',
-							functionCall: '',
+							toolCall: '',
 							timestamp: '2024-01-01T10:00:00.000Z',
-							isFunctionCall: false,
-							isFunctionCallResponse: false,
+							isToolCall: false,
+							isToolCallResponse: false,
 							isProviderSpecificContent: false
 						}
 					]
@@ -385,10 +385,10 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 							role: Role.User,
 							content: 'Message 2',
 							promptContent: '',
-							functionCall: '',
+							toolCall: '',
 							timestamp: '2024-01-02T10:00:00.000Z',
-							isFunctionCall: false,
-							isFunctionCallResponse: false,
+							isToolCall: false,
+							isToolCallResponse: false,
 							isProviderSpecificContent: false
 						}
 					]
@@ -419,20 +419,20 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						role: Role.User,
 						content: 'Hello',
 						promptContent: '',
-						functionCall: '',
+						toolCall: '',
 						timestamp: '2024-01-01T10:00:00.000Z',
-						isFunctionCall: false,
-						isFunctionCallResponse: false,
+						isToolCall: false,
+						isToolCallResponse: false,
 						isProviderSpecificContent: false
 					},
 					{
 						role: Role.Assistant,
 						content: 'Hi!',
 						promptContent: '',
-						functionCall: '',
+						toolCall: '',
 						timestamp: '2024-01-01T10:01:00.000Z',
-						isFunctionCall: false,
-						isFunctionCallResponse: false,
+						isToolCall: false,
+						isToolCallResponse: false,
 						isProviderSpecificContent: false
 					}
 				]
@@ -499,7 +499,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 					{
 						role: Role.Assistant,
 						content: 'Calling function',
-						functionCall: JSON.stringify({ name: 'test_func', arguments: {} }),
+						toolCall: JSON.stringify({ name: 'test_func', arguments: {} }),
 						timestamp: '2024-01-01T10:00:00.000Z',
 						toolId: 'tool_1',
 						attachments: [],
@@ -519,8 +519,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 			const conversations = await service.getAllConversations();
 
-			expect(conversations[0].contents[0].functionCall).toBeDefined();
-			expect(JSON.parse(conversations[0].contents[0].functionCall!)).toEqual({
+			expect(conversations[0].contents[0].toolCall).toBeDefined();
+			expect(JSON.parse(conversations[0].contents[0].toolCall!)).toEqual({
 				name: 'test_func',
 				arguments: {}
 			});
@@ -648,7 +648,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 				new ConversationContent({
 					role: Role.Assistant,
 					content: 'Function',
-					functionCall: JSON.stringify({ name: 'test', arguments: { arg: 'val' } }),
+					toolCall: JSON.stringify({ name: 'test', arguments: { arg: 'val' } }),
 					timestamp: new Date('2024-01-01T10:05:00Z'),
 					toolId: 'tool_xyz'
 				}),
@@ -678,8 +678,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			// Verify all data preserved
 			expect(reconstructed.title).toBe(original.title);
 			expect(reconstructed.contents).toHaveLength(4);
-			expect(reconstructed.contents[2].functionCall).toBeDefined();
-			expect(JSON.parse(reconstructed.contents[2].functionCall!)).toEqual({
+			expect(reconstructed.contents[2].toolCall).toBeDefined();
+			expect(JSON.parse(reconstructed.contents[2].toolCall!)).toEqual({
 				name: 'test',
 				arguments: { arg: 'val' }
 			});

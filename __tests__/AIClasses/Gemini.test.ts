@@ -252,9 +252,9 @@ describe('Gemini', () => {
 
             expect(result.isComplete).toBe(true);
             expect(result.shouldContinue).toBe(true);
-            expect(result.functionCall).toBeDefined();
-            expect(result.functionCall?.name).toBe('search_vault_files');
-            expect(result.functionCall?.arguments).toEqual({ query: 'test' });
+            expect(result.toolCall).toBeDefined();
+            expect(result.toolCall?.name).toBe('search_vault_files');
+            expect(result.toolCall?.arguments).toEqual({ query: 'test' });
         });
 
         it('should finalize function call with thoughtSignature on completion', () => {
@@ -274,10 +274,10 @@ describe('Gemini', () => {
 
             expect(result.isComplete).toBe(true);
             expect(result.shouldContinue).toBe(true);
-            expect(result.functionCall).toBeDefined();
-            expect(result.functionCall?.name).toBe('search_vault_files');
-            expect(result.functionCall?.arguments).toEqual({ query: 'test' });
-            expect(result.functionCall?.thoughtSignature).toBe(signature);
+            expect(result.toolCall).toBeDefined();
+            expect(result.toolCall?.name).toBe('search_vault_files');
+            expect(result.toolCall?.arguments).toEqual({ query: 'test' });
+            expect(result.toolCall?.thoughtSignature).toBe(signature);
         });
 
         it('should finalize function call without thoughtSignature when not accumulated', () => {
@@ -294,8 +294,8 @@ describe('Gemini', () => {
 
             const result = (gemini as any).parseStreamChunk(chunk);
 
-            expect(result.functionCall).toBeDefined();
-            expect(result.functionCall?.thoughtSignature).toBeUndefined();
+            expect(result.toolCall).toBeDefined();
+            expect(result.toolCall?.thoughtSignature).toBeUndefined();
         });
 
         it('should detect completion with STOP finish reason', () => {
@@ -430,12 +430,12 @@ describe('Gemini', () => {
         });
 
         it('should convert function call to Gemini format (with signature from Gemini)', async () => {
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
@@ -445,7 +445,7 @@ describe('Gemini', () => {
                 thoughtSignature: 'geminiSignatureFromAPI=='  // Has signature from Gemini
             });
 
-            const result = await (gemini as any).extractContents([functionCallContent]);
+            const result = await (gemini as any).extractContents([toolCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].role).toBe(Role.Model);
@@ -461,12 +461,12 @@ describe('Gemini', () => {
 
         it('should convert function call with thoughtSignature to Gemini format with signature', async () => {
             const signature = 'geminiSignature==';
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
@@ -476,7 +476,7 @@ describe('Gemini', () => {
                 thoughtSignature: signature
             });
 
-            const result = await (gemini as any).extractContents([functionCallContent]);
+            const result = await (gemini as any).extractContents([toolCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].role).toBe(Role.Model);
@@ -491,12 +491,12 @@ describe('Gemini', () => {
         });
 
         it('should fall back to legacy text format for function call without thoughtSignature (cross-provider)', async () => {
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'toolu_01234567',  // toolId indicates this came from Claude/OpenAI
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -507,7 +507,7 @@ describe('Gemini', () => {
                 // No thoughtSignature (came from Claude/OpenAI)
             });
 
-            const result = await (gemini as any).extractContents([functionCallContent]);
+            const result = await (gemini as any).extractContents([toolCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].role).toBe(Role.Model);
@@ -520,12 +520,12 @@ describe('Gemini', () => {
         });
 
         it('should use native format for Gemini function call without thoughtSignature', async () => {
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         // No id field - this is a native Gemini function call
                         name: 'read_file',
                         args: { path: 'note.md' }
@@ -536,7 +536,7 @@ describe('Gemini', () => {
                 // No thoughtSignature (normal Gemini call without extended thinking)
             });
 
-            const result = await (gemini as any).extractContents([functionCallContent]);
+            const result = await (gemini as any).extractContents([toolCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].parts[0]).toHaveProperty('functionCall');
@@ -546,12 +546,12 @@ describe('Gemini', () => {
         });
 
         it('should convert function response to Gemini format', async () => {
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call-123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -575,7 +575,7 @@ describe('Gemini', () => {
                 toolId: 'call-123'
             });
 
-            const result = await (gemini as any).extractContents([functionCallContent, functionResponseContent]);
+            const result = await (gemini as any).extractContents([toolCallContent, functionResponseContent]);
 
             expect(result).toHaveLength(2);
             expect(result[1].parts).toHaveLength(1);
@@ -589,12 +589,12 @@ describe('Gemini', () => {
         });
 
         it('should fall back to legacy text format for function response without id (cross-provider)', async () => {
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_legacy1',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -617,7 +617,7 @@ describe('Gemini', () => {
                 toolId: 'call_legacy1'
             });
 
-            const result = await (gemini as any).extractContents([functionCallContent, functionResponseContent]);
+            const result = await (gemini as any).extractContents([toolCallContent, functionResponseContent]);
 
             expect(result).toHaveLength(2);
             expect(result[1].parts).toHaveLength(1);
@@ -630,12 +630,12 @@ describe('Gemini', () => {
         });
 
         it('should fall back to legacy text format for function response with empty id', async () => {
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_legacy2',
                         name: 'read_file',
                         args: { path: 'test.md' }
@@ -659,7 +659,7 @@ describe('Gemini', () => {
                 toolId: 'call_legacy2'
             });
 
-            const result = await (gemini as any).extractContents([functionCallContent, functionResponseContent]);
+            const result = await (gemini as any).extractContents([toolCallContent, functionResponseContent]);
 
             expect(result).toHaveLength(2);
             expect(result[1].parts[0]).toHaveProperty('text');
@@ -676,7 +676,7 @@ describe('Gemini', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: 'invalid json {',
+                toolCall: 'invalid json {',
                 timestamp: new Date(),
                 shouldDisplayContent: false
             });
@@ -695,12 +695,12 @@ describe('Gemini', () => {
         it('should handle invalid JSON in function response gracefully', async () => {
             const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_invalid',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -717,7 +717,7 @@ describe('Gemini', () => {
                 toolId: 'call_invalid'
             });
 
-            const result = await (gemini as any).extractContents([functionCallContent, invalidContent]);
+            const result = await (gemini as any).extractContents([toolCallContent, invalidContent]);
 
             // Should fallback to text
             expect(result).toHaveLength(2);
@@ -750,8 +750,8 @@ describe('Gemini', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
@@ -778,8 +778,8 @@ describe('Gemini', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
@@ -822,8 +822,8 @@ describe('Gemini', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
@@ -855,8 +855,8 @@ describe('Gemini', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             name: 'search_vault_files',
                             args: { query: 'test1' }
                         }
@@ -870,8 +870,8 @@ describe('Gemini', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             name: 'read_file',
                             args: { path: 'test.md' }
                         }
@@ -894,16 +894,16 @@ describe('Gemini', () => {
     });
 
     describe('Helper Methods', () => {
-        describe('convertFunctionCallToText', () => {
+        describe('convertToolCallToText', () => {
             it('should convert function call to legacy text format', async () => {
                 const parsedContent = {
-                    functionCall: {
+                    toolCall: {
                         name: 'search_vault_files',
                         args: { query: 'test notes' }
                     }
                 };
 
-                const result = (gemini as any).convertFunctionCallToText(parsedContent);
+                const result = (gemini as any).convertToolCallToText(parsedContent);
 
                 expect(result).toContain('<!-- Historical tool call');
                 expect(result).toContain('This action was ALREADY COMPLETED');
@@ -914,7 +914,7 @@ describe('Gemini', () => {
 
             it('should format complex arguments correctly', () => {
                 const parsedContent = {
-                    functionCall: {
+                    toolCall: {
                         name: 'write_file',
                         args: {
                             path: 'note.md',
@@ -924,7 +924,7 @@ describe('Gemini', () => {
                     }
                 };
 
-                const result = (gemini as any).convertFunctionCallToText(parsedContent);
+                const result = (gemini as any).convertToolCallToText(parsedContent);
 
                 expect(result).toContain('<!-- Historical tool call');
                 expect(result).toContain('"name": "write_file"');
@@ -938,13 +938,13 @@ describe('Gemini', () => {
 
             it('should handle function call with empty args', () => {
                 const parsedContent = {
-                    functionCall: {
+                    toolCall: {
                         name: 'list_files',
                         args: {}
                     }
                 };
 
-                const result = (gemini as any).convertFunctionCallToText(parsedContent);
+                const result = (gemini as any).convertToolCallToText(parsedContent);
 
                 const expected = `<!-- Historical tool call. This action was ALREADY COMPLETED.
      Use your native function calling for any NEW operations. -->

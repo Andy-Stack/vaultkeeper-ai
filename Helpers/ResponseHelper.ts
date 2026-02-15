@@ -1,12 +1,12 @@
 import type { AIToolCall } from "AIClasses/AIToolCall";
-import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIToolTypes";
+import type { StoredToolCall, StoredFunctionResponse } from "AIClasses/Schemas/AIToolTypes";
 import { StringTools } from "./StringTools";
 import { Exception } from "./Exception";
 
 // handle the rare event where a function call is also included in content (gemini sometimes does this)
-export function sanitizeFunctionCallContent(content: string, functionCall: AIToolCall | null): string {
+export function sanitizeToolCallContent(content: string, toolCall: AIToolCall | null): string {
     // Early returns for simple cases
-    if (!functionCall || !content.trim()) {
+    if (!toolCall || !content.trim()) {
         return content;
     }
 
@@ -15,14 +15,14 @@ export function sanitizeFunctionCallContent(content: string, functionCall: AIToo
         return content;
     }
 
-    const functionCallString = functionCall.toConversationString();
+    const toolCallString = toolCall.toConversationString();
     let sanitized = content;
 
     // Step 1: Remove markdown code blocks that might contain the function call
     // Pattern matches ```json\n...\n``` or ```\n...\n```
     sanitized = sanitized.replace(/```(?:json)?\s*\n?([\s\S]*?)\n?```/g, (match: string, codeContent: string) => {
         // If the code block contains our function call, remove it entirely
-        if (codeContent.trim() === functionCallString.trim()) {
+        if (codeContent.trim() === toolCallString.trim()) {
             return '';
         }
         // Otherwise keep the code block
@@ -30,12 +30,12 @@ export function sanitizeFunctionCallContent(content: string, functionCall: AIToo
     });
 
     // Step 2: Remove exact JSON match (handles compact JSON)
-    sanitized = sanitized.replace(functionCallString, '').trim();
+    sanitized = sanitized.replace(toolCallString, '').trim();
 
     // Step 3: Handle pretty-printed variations by normalizing both strings
     try {
-        const functionCallObj: unknown = JSON.parse(functionCallString);
-        const normalizedTarget = JSON.stringify(functionCallObj);
+        const toolCallObj: unknown = JSON.parse(toolCallString);
+        const normalizedTarget = JSON.stringify(toolCallObj);
         
         // Find and remove any JSON that matches when normalized
         // This regex finds JSON objects/arrays in the text
@@ -62,13 +62,13 @@ export function sanitizeFunctionCallContent(content: string, functionCall: AIToo
     return sanitized;
 }
 
-export function parseFunctionCall(functionCallJson: string): StoredFunctionCall | null {
-    if (!StringTools.isValidJson(functionCallJson)) {
-        Exception.log(`Invalid JSON in functionCall field:\n${functionCallJson}`);
+export function parseToolCall(toolCallJson: string): StoredToolCall | null {
+    if (!StringTools.isValidJson(toolCallJson)) {
+        Exception.log(`Invalid JSON in toolCall field:\n${toolCallJson}`);
         return null;
     }
     try {
-        return JSON.parse(functionCallJson) as StoredFunctionCall;
+        return JSON.parse(toolCallJson) as StoredToolCall;
     } catch (error) {
         Exception.log(error);
         return null;

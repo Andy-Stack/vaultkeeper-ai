@@ -29,96 +29,96 @@ export class AIToolService {
         this.abortService = Resolve<AbortService>(Services.AbortService);
     }
 
-    public async performAITool(functionCall: AIToolCall): Promise<AIToolResponse> {
+    public async performAITool(toolCall: AIToolCall): Promise<AIToolResponse> {
         return await this.abortService.abortableOperation(async () => {
-            switch (functionCall.name) {
+            switch (toolCall.name) {
                 case AITool.SearchVaultFiles: {
-                    const parseResult = SearchVaultFilesArgsSchema.safeParse(functionCall.arguments);
+                    const parseResult = SearchVaultFilesArgsSchema.safeParse(toolCall.arguments);
                     if (!parseResult.success) {
                         return new AIToolResponse(
-                            functionCall.name,
+                            toolCall.name,
                             { error: `Invalid arguments for ${AITool.SearchVaultFiles}: ${parseResult.error.message}` },
-                            functionCall.toolId
+                            toolCall.toolId
                         );
                     }
-                    return new AIToolResponse(functionCall.name, await this.searchVaultFiles(parseResult.data.search_terms), functionCall.toolId);
+                    return new AIToolResponse(toolCall.name, await this.searchVaultFiles(parseResult.data.search_terms), toolCall.toolId);
                 }
     
                 case AITool.ReadVaultFiles: {
-                    const parseResult = ReadVaultFilesArgsSchema.safeParse(functionCall.arguments);
+                    const parseResult = ReadVaultFilesArgsSchema.safeParse(toolCall.arguments);
                     if (!parseResult.success) {
                         return new AIToolResponse(
-                            functionCall.name,
+                            toolCall.name,
                             { error: `Invalid arguments for ${AITool.ReadVaultFiles}: ${parseResult.error.message}` },
-                            functionCall.toolId
+                            toolCall.toolId
                         );
                     }
-                    return new AIToolResponse(functionCall.name, await this.readVaultFiles(parseResult.data.file_paths), functionCall.toolId);
+                    return new AIToolResponse(toolCall.name, await this.readVaultFiles(parseResult.data.file_paths), toolCall.toolId);
                 }
     
                 case AITool.WriteVaultFile: {
-                    const parseResult = WriteVaultFileArgsSchema.safeParse(functionCall.arguments);
+                    const parseResult = WriteVaultFileArgsSchema.safeParse(toolCall.arguments);
                     if (!parseResult.success) {
                         return new AIToolResponse(
-                            functionCall.name,
+                            toolCall.name,
                             { error: `Invalid arguments for ${AITool.WriteVaultFile}: ${parseResult.error.message}` },
-                            functionCall.toolId
+                            toolCall.toolId
                         );
                     }
-                    return new AIToolResponse(functionCall.name, await this.writeVaultFile(parseResult.data.file_path, parseResult.data.content), functionCall.toolId);
+                    return new AIToolResponse(toolCall.name, await this.writeVaultFile(parseResult.data.file_path, parseResult.data.content), toolCall.toolId);
                 }
 
                 case AITool.PatchVaultFile: {
-                    const parseResult = PatchVaultFileArgsSchema.safeParse(functionCall.arguments);
+                    const parseResult = PatchVaultFileArgsSchema.safeParse(toolCall.arguments);
                     if (!parseResult.success) {
                         return new AIToolResponse(
-                            functionCall.name,
+                            toolCall.name,
                             { error: `Invalid arguments for ${AITool.PatchVaultFile}: ${parseResult.error.message}` },
-                            functionCall.toolId
+                            toolCall.toolId
                         );
                     }
-                    return new AIToolResponse(functionCall.name, await this.patchVaultFile(parseResult.data.file_path, parseResult.data.oldContent, parseResult.data.newContent), functionCall.toolId);
+                    return new AIToolResponse(toolCall.name, await this.patchVaultFile(parseResult.data.file_path, parseResult.data.oldContent, parseResult.data.newContent), toolCall.toolId);
                 }
     
                 case AITool.DeleteVaultFiles: {
-                    const parseResult = DeleteVaultFilesArgsSchema.safeParse(functionCall.arguments);
+                    const parseResult = DeleteVaultFilesArgsSchema.safeParse(toolCall.arguments);
                     if (!parseResult.success) {
                         return new AIToolResponse(
-                            functionCall.name,
+                            toolCall.name,
                             { error: `Invalid arguments for ${AITool.DeleteVaultFiles}: ${parseResult.error.message}` },
-                            functionCall.toolId
+                            toolCall.toolId
                         );
                     }
-                    return new AIToolResponse(functionCall.name, await this.deleteVaultFiles(parseResult.data.file_paths, parseResult.data.confirm_deletion), functionCall.toolId);
+                    return new AIToolResponse(toolCall.name, await this.deleteVaultFiles(parseResult.data.file_paths, parseResult.data.confirm_deletion), toolCall.toolId);
                 }
     
                 case AITool.MoveVaultFiles: {
-                    const parseResult = MoveVaultFilesArgsSchema.safeParse(functionCall.arguments);
+                    const parseResult = MoveVaultFilesArgsSchema.safeParse(toolCall.arguments);
                     if (!parseResult.success) {
                         return new AIToolResponse(
-                            functionCall.name,
+                            toolCall.name,
                             { error: `Invalid arguments for ${AITool.MoveVaultFiles}: ${parseResult.error.message}` },
-                            functionCall.toolId
+                            toolCall.toolId
                         );
                     }
-                    return new AIToolResponse(functionCall.name, await this.moveVaultFiles(parseResult.data.source_paths, parseResult.data.destination_paths), functionCall.toolId);
+                    return new AIToolResponse(toolCall.name, await this.moveVaultFiles(parseResult.data.source_paths, parseResult.data.destination_paths), toolCall.toolId);
                 }
     
                 case AITool.ListVaultFiles: {
-                    const parseResult = ListVaultFilesArgsSchema.safeParse(functionCall.arguments);
+                    const parseResult = ListVaultFilesArgsSchema.safeParse(toolCall.arguments);
                     if (!parseResult.success) {
                         return new AIToolResponse(
-                            functionCall.name,
+                            toolCall.name,
                             { error: `Invalid arguments for ${AITool.ListVaultFiles}: ${parseResult.error.message}` },
-                            functionCall.toolId
+                            toolCall.toolId
                         );
                     }
-                    return new AIToolResponse(functionCall.name, await this.ListVaultFiles(parseResult.data.path, parseResult.data.recursive), functionCall.toolId);
+                    return new AIToolResponse(toolCall.name, await this.ListVaultFiles(parseResult.data.path, parseResult.data.recursive), toolCall.toolId);
                 }
     
                 // This is only used by gemini
                 case AITool.RequestWebSearch:
-                    return new AIToolResponse(functionCall.name, {}, functionCall.toolId)
+                    return new AIToolResponse(toolCall.name, {}, toolCall.toolId)
 
                 // multi-agent functions are handled elsewhere - this shouldn't really ever get hit
                 case AITool.ExecuteWorkflow:
@@ -131,23 +131,23 @@ export class AIToolService {
                 case AITool.CompleteStep:
                 case AITool.CompletePlan:
                 case AITool.CancelPlan: {
-                    Exception.log(`Multi-agent function ${functionCall.name} should not be handled by AIToolService`);
+                    Exception.log(`Multi-agent function ${toolCall.name} should not be handled by AIToolService`);
                     return new AIToolResponse(
-                        functionCall.name,
-                        { error: `Failed to execute ${functionCall.name}.` },
-                        functionCall.toolId
+                        toolCall.name,
+                        { error: `Failed to execute ${toolCall.name}.` },
+                        toolCall.toolId
                     );
                 }
 
                 case AITool.Unknown:
                 default: {
-                    const functionCallName = fromString(functionCall.name);
-                    const error = `Unknown function request ${functionCallName}`
+                    const toolCallName = fromString(toolCall.name);
+                    const error = `Unknown function request ${toolCallName}`
                     Exception.log(error);
                     return new AIToolResponse(
-                        functionCallName,
+                        toolCallName,
                         { error: error },
-                        functionCall.toolId
+                        toolCall.toolId
                     );
                 }
             }

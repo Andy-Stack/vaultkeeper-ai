@@ -13,7 +13,7 @@ import { ApiError, ApiErrorType } from "Types/ApiError";
 import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
-import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
+import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export class OpenAI extends BaseAIClass {
@@ -78,7 +78,7 @@ export class OpenAI extends BaseAIClass {
             const event = JSON.parse(chunk) as ResponseEvent;
 
             let text = "";
-            let functionCall: AIToolCall | undefined = undefined;
+            let toolCall: AIToolCall | undefined = undefined;
             let isComplete = false;
             let shouldContinue = false;
 
@@ -148,7 +148,7 @@ export class OpenAI extends BaseAIClass {
                         itemDoneEvent.item.arguments) {
                         try {
                             const args = JSON.parse(itemDoneEvent.item.arguments) as Record<string, unknown>;
-                            functionCall = new AIToolCall(
+                            toolCall = new AIToolCall(
                                 aiToolFromString(itemDoneEvent.item.name),
                                 args as Record<string, object>,
                                 itemDoneEvent.item.call_id || itemDoneEvent.item_id,
@@ -185,7 +185,7 @@ export class OpenAI extends BaseAIClass {
             return {
                 content: text,
                 isComplete: isComplete,
-                functionCall: functionCall,
+                toolCall: toolCall,
                 shouldContinue: shouldContinue,
             };
         } catch (error) {
@@ -200,12 +200,12 @@ export class OpenAI extends BaseAIClass {
             const contentToExtract = content.content ?? "";
 
             // Case 1: Assistant message with function call
-            if (content.functionCall) {
-                const parsedContent = parseFunctionCall(content.functionCall);
+            if (content.toolCall) {
+                const parsedContent = parseToolCall(content.toolCall);
 
                 if (parsedContent) {
                     // Check if function call has required id field (for OpenAI Responses API)
-                    if (parsedContent.functionCall.id && parsedContent.functionCall.id.trim() !== "") {
+                    if (parsedContent.toolCall.id && parsedContent.toolCall.id.trim() !== "") {
                         // Add assistant text message if present
                         if (contentToExtract.trim() !== "") {
                             results.push({
@@ -217,13 +217,13 @@ export class OpenAI extends BaseAIClass {
                         // Add function call as separate input item
                         results.push({
                             type: "function_call",
-                            call_id: parsedContent.functionCall.id,
-                            name: parsedContent.functionCall.name,
-                            arguments: JSON.stringify(parsedContent.functionCall.args)
+                            call_id: parsedContent.toolCall.id,
+                            name: parsedContent.toolCall.name,
+                            arguments: JSON.stringify(parsedContent.toolCall.args)
                         });
                     } else {
                         // No id (from other provider or legacy) - convert to text message
-                        const legacyText = this.convertFunctionCallToText(parsedContent);
+                        const legacyText = this.convertToolCallToText(parsedContent);
                         const messageContent = contentToExtract.trim();
                         const combinedContent = messageContent !== ""
                             ? `${messageContent}\n\n${legacyText}`

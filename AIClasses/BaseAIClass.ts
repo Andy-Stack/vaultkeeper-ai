@@ -9,7 +9,7 @@ import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Attachment } from "Conversations/Attachment";
 import type { SettingsService } from "Services/SettingsService";
 import type { StreamingService } from "Services/StreamingService";
-import type { StoredFunctionCall, StoredFunctionResponse } from "AIClasses/Schemas/AIToolTypes";
+import type { StoredToolCall, StoredFunctionResponse } from "AIClasses/Schemas/AIToolTypes";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import type { AbortService } from "Services/AbortService";
@@ -109,24 +109,24 @@ export abstract class BaseAIClass implements IAIClass {
 
     protected filterConversationContents(conversationContent: ConversationContent[]): ConversationContent[] {
         return conversationContent.filter((content, index, array) => {
-            if (!content.content && !content.functionCall && !content.functionResponse && (!content.attachments || content.attachments.length === 0)) {
+            if (!content.content && !content.toolCall && !content.functionResponse && (!content.attachments || content.attachments.length === 0)) {
                 return false; // Filter out empty content
             }
 
             if (content.functionResponse) { // Filter out 'lone' function responses
                 const previousItem = array[index - 1];
-                const hasValidCall = previousItem && previousItem.functionCall && content.toolId === previousItem.toolId;
+                const hasValidCall = previousItem && previousItem.toolCall && content.toolId === previousItem.toolId;
                 if (!hasValidCall) {
                     Exception.warn(`[Filter Debug] Filtered orphaned function response at index ${index}/${array.length}:\n` +
                         `  ToolId: ${content.toolId}\n` +
-                        `  Previous item has functionCall: ${previousItem?.functionCall ? 'yes' : 'no'}\n` +
+                        `  Previous item has toolCall: ${previousItem?.toolCall ? 'yes' : 'no'}\n` +
                         `  Previous item toolId: ${previousItem?.toolId}\n` +
                         `  Response: ${content.functionResponse}`);
                 }
                 return hasValidCall;
             }
 
-            if (!content.functionCall) {
+            if (!content.toolCall) {
                 return true; // Keep non-function-calls
             }
 
@@ -142,7 +142,7 @@ export abstract class BaseAIClass implements IAIClass {
                     `  ToolId: ${content.toolId}\n` +
                     `  Next item has functionResponse: ${nextItem?.functionResponse ? 'yes' : 'no'}\n` +
                     `  Next item toolId: ${nextItem?.toolId}\n` +
-                    `  Call: ${content.functionCall}`);
+                    `  Call: ${content.toolCall}`);
             }
             return hasValidResponse;
         });
@@ -202,10 +202,10 @@ export abstract class BaseAIClass implements IAIClass {
      * Converts a function call to legacy text format for cross-provider compatibility.
      * Used when a provider doesn't have the required ID field (e.g., Gemini → Claude/OpenAI).
      */
-    protected convertFunctionCallToText(parsedContent: StoredFunctionCall): string {
+    protected convertToolCallToText(parsedContent: StoredToolCall): string {
         const formattedJson = JSON.stringify({
-            name: parsedContent.functionCall.name,
-            args: parsedContent.functionCall.args
+            name: parsedContent.toolCall.name,
+            args: parsedContent.toolCall.args
         }, null, 2);
 
         return `<!-- Historical tool call. This action was ALREADY COMPLETED.

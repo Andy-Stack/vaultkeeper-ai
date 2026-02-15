@@ -14,8 +14,8 @@ export type JSONSchemaProperty = {
 
 //Stored function call format used across all AI providers
 // This is the format saved to conversation history when a function is called
-export interface StoredFunctionCall {
-	functionCall: {
+export interface StoredToolCall {
+	toolCall: {
 		id: string;
 		name: string;
 		args: Record<string, unknown>;

@@ -14,7 +14,7 @@ import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { ApiError, ApiErrorType } from "Types/ApiError";
-import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
+import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export class Claude extends BaseAIClass {
@@ -103,7 +103,7 @@ export class Claude extends BaseAIClass {
             const data = JSON.parse(chunk) as RawMessageStreamEvent;
 
             let text = "";
-            let functionCall: AIToolCall | undefined = undefined;
+            let toolCall: AIToolCall | undefined = undefined;
             let isComplete = false;
             let shouldContinue = false;
 
@@ -135,7 +135,7 @@ export class Claude extends BaseAIClass {
                 if (this.accumulatedFunctionName && this.accumulatedFunctionArgs) {
                     try {
                         const args = JSON.parse(this.accumulatedFunctionArgs) as Record<string, unknown>;
-                        functionCall = new AIToolCall(
+                        toolCall = new AIToolCall(
                             aiToolFromString(this.accumulatedFunctionName),
                             args as Record<string, object>,
                             this.accumulatedFunctionId || undefined,
@@ -169,7 +169,7 @@ export class Claude extends BaseAIClass {
             return {
                 content: text,
                 isComplete: isComplete,
-                functionCall: functionCall,
+                toolCall: toolCall,
                 shouldContinue: shouldContinue,
             };
         } catch (error) {
@@ -192,21 +192,21 @@ export class Claude extends BaseAIClass {
             }
 
             // Add function call if present
-            if (content.functionCall) {
-                const parsedContent = parseFunctionCall(content.functionCall);
+            if (content.toolCall) {
+                const parsedContent = parseToolCall(content.toolCall);
 
                 if (parsedContent) {
-                    if (parsedContent.functionCall.id && parsedContent.functionCall.id.trim() !== "") {
+                    if (parsedContent.toolCall.id && parsedContent.toolCall.id.trim() !== "") {
                         contentBlocks.push({
                             type: "tool_use",
-                            id: parsedContent.functionCall.id,
-                            name: parsedContent.functionCall.name,
-                            input: parsedContent.functionCall.args
+                            id: parsedContent.toolCall.id,
+                            name: parsedContent.toolCall.name,
+                            input: parsedContent.toolCall.args
                         });
                     } else {
                         contentBlocks.push({
                             type: "text",
-                            text: this.convertFunctionCallToText(parsedContent)
+                            text: this.convertToolCallToText(parsedContent)
                         });
                     }
                 } else {

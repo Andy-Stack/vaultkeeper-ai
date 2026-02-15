@@ -146,10 +146,10 @@ describe('OpenAI', () => {
 
             expect(result.isComplete).toBe(false);
             expect(result.shouldContinue).toBe(true);
-            expect(result.functionCall).toBeDefined();
-            expect(result.functionCall?.name).toBe('search_vault_files');
-            expect(result.functionCall?.arguments).toEqual({ query: 'test' });
-            expect(result.functionCall?.toolId).toBe('call_123');
+            expect(result.toolCall).toBeDefined();
+            expect(result.toolCall?.name).toBe('search_vault_files');
+            expect(result.toolCall?.arguments).toEqual({ query: 'test' });
+            expect(result.toolCall?.toolId).toBe('call_123');
         });
 
         it('should handle response.done event', () => {
@@ -231,7 +231,7 @@ describe('OpenAI', () => {
 
             const result = (openai as any).parseStreamChunk(chunk);
 
-            expect(result.functionCall).toBeUndefined();
+            expect(result.toolCall).toBeUndefined();
             expect(exceptionSpy).toHaveBeenCalled();
         });
 
@@ -258,7 +258,7 @@ describe('OpenAI', () => {
 
             expect(result.content).toBe('');
             expect(result.isComplete).toBe(false);
-            expect(result.functionCall).toBeUndefined();
+            expect(result.toolCall).toBeUndefined();
         });
 
         it('should handle response.refusal.delta events', () => {
@@ -334,18 +334,18 @@ describe('OpenAI', () => {
 
         it('should convert function call to Responses API format', async () => {
             const conversation = new Conversation();
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: 'Let me search',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 })
             });
-            conversation.contents.push(functionCallContent);
+            conversation.contents.push(toolCallContent);
 
             mockStreamingService.streamRequest.mockImplementation(async function* () {
                 yield { content: 'done', isComplete: true };
@@ -378,12 +378,12 @@ describe('OpenAI', () => {
         it('should convert function response to function_call_output format', async () => {
             const conversation = new Conversation();
 
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -391,7 +391,7 @@ describe('OpenAI', () => {
                 }),
                 toolId: 'call_123'
             });
-            conversation.contents.push(functionCallContent);
+            conversation.contents.push(toolCallContent);
 
             const responseContent = JSON.stringify({
                 id: 'call_123',
@@ -432,7 +432,7 @@ describe('OpenAI', () => {
             const conversation = new Conversation();
             const invalidContent = new ConversationContent({
                 role: Role.Assistant,
-                functionCall: 'invalid json {'
+                toolCall: 'invalid json {'
             });
             conversation.contents.push(invalidContent);
 
@@ -457,12 +457,12 @@ describe('OpenAI', () => {
 
             const conversation = new Conversation();
 
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_invalid',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -470,7 +470,7 @@ describe('OpenAI', () => {
                 }),
                 toolId: 'call_invalid'
             });
-            conversation.contents.push(functionCallContent);
+            conversation.contents.push(toolCallContent);
 
             const invalidContent = new ConversationContent({
                 role: Role.User,
@@ -522,8 +522,8 @@ describe('OpenAI', () => {
             // Function call without response (orphaned)
             const orphanedCall = new ConversationContent({
                 role: Role.Assistant,
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_orphaned',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -553,17 +553,17 @@ describe('OpenAI', () => {
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Search for files' }));
             // Function call with response (not orphaned)
-            const functionCall = new ConversationContent({
+            const toolCall = new ConversationContent({
                 role: Role.Assistant,
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
                 })
             });
-            conversation.contents.push(functionCall);
+            conversation.contents.push(toolCall);
             // Corresponding function response
             const responseContent = JSON.stringify({
                 id: 'call_123',
@@ -613,8 +613,8 @@ describe('OpenAI', () => {
             // Function call as most recent item (should be included)
             const latestCall = new ConversationContent({
                 role: Role.Assistant,
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_latest',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -653,8 +653,8 @@ describe('OpenAI', () => {
             // Orphaned function call #1
             const orphan1 = new ConversationContent({
                 role: Role.Assistant,
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_orphan1',
                         name: 'search_vault_files',
                         args: { query: 'test1' }
@@ -666,8 +666,8 @@ describe('OpenAI', () => {
             // Orphaned function call #2
             const orphan2 = new ConversationContent({
                 role: Role.Assistant,
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_orphan2',
                         name: 'read_file',
                         args: { path: 'test.md' }
@@ -697,18 +697,18 @@ describe('OpenAI', () => {
         describe('Responses API Format Edge Cases', () => {
             it('should handle assistant message with both text and function call', async () => {
                 const conversation = new Conversation();
-                const functionCallContent = new ConversationContent({
+                const toolCallContent = new ConversationContent({
                     role: Role.Assistant,
                     content: 'I will search for that.',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'call_123',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
                     })
                 });
-                conversation.contents.push(functionCallContent);
+                conversation.contents.push(toolCallContent);
 
                 mockStreamingService.streamRequest.mockImplementation(async function* () {
                     yield { content: 'done', isComplete: true };
@@ -731,17 +731,17 @@ describe('OpenAI', () => {
 
             it('should handle function call with empty text content', async () => {
                 const conversation = new Conversation();
-                const functionCallContent = new ConversationContent({
+                const toolCallContent = new ConversationContent({
                     role: Role.Assistant,
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'call_123',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
                     })
                 });
-                conversation.contents.push(functionCallContent);
+                conversation.contents.push(toolCallContent);
 
                 mockStreamingService.streamRequest.mockImplementation(async function* () {
                     yield { content: 'done', isComplete: true };
@@ -766,12 +766,12 @@ describe('OpenAI', () => {
             it('should handle complex function response objects', async () => {
                 const conversation = new Conversation();
 
-                const functionCallContent = new ConversationContent({
+                const toolCallContent = new ConversationContent({
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'call_123',
                             name: 'search_vault_files',
                             args: { query: 'test' }
@@ -779,7 +779,7 @@ describe('OpenAI', () => {
                     }),
                     toolId: 'call_123'
                 });
-                conversation.contents.push(functionCallContent);
+                conversation.contents.push(toolCallContent);
 
                 const complexResponse = {
                     files: ['file1.txt', 'file2.md'],
@@ -824,8 +824,8 @@ describe('OpenAI', () => {
                 // First function call
                 conversation.contents.push(new ConversationContent({
                     role: Role.Assistant,
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'call_1',
                             name: 'search_vault_files',
                             args: { query: 'test' }
@@ -847,8 +847,8 @@ describe('OpenAI', () => {
                 conversation.contents.push(new ConversationContent({
                     role: Role.Assistant,
                     content: 'Let me read that file',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'call_2',
                             name: 'read_file',
                             args: { path: 'file1.txt' }

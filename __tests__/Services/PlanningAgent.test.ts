@@ -88,7 +88,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Creating plan',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.SubmitPlan,
 						{
 							steps: [
@@ -135,7 +135,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Plan',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.SubmitPlan,
 						{
 							steps: [
@@ -169,7 +169,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Replan',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.SubmitPlan,
 						{
 							steps: [
@@ -210,7 +210,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Invalid: missing required fields
 					yield {
 						content: 'Invalid plan',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -228,7 +228,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Valid plan
 					yield {
 						content: 'Valid plan',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -274,7 +274,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Submit plan on retry
 					yield {
 						content: 'Plan ready',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -310,15 +310,15 @@ describe('PlanningAgent - Unit Tests', () => {
 				content: 'Search for relevant notes'
 			}));
 
-			let functionCallCount = 0;
+			let toolCallCount = 0;
 
 			mockAI.streamRequest.mockImplementation(async function* () {
-				functionCallCount++;
-				if (functionCallCount === 1) {
+				toolCallCount++;
+				if (toolCallCount === 1) {
 					// Ask user question
 					yield {
 						content: 'Question',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.AskUserQuestionPlanning,
 							{
 								question: 'What topic should I search for?',
@@ -332,7 +332,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Submit plan with user's answer incorporated
 					yield {
 						content: 'Plan with answer',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -354,7 +354,7 @@ describe('PlanningAgent - Unit Tests', () => {
 
 			expect(callbacks.onUserQuestion).toHaveBeenCalledWith('What topic should I search for?');
 			expect(result).toBeDefined();
-			expect(functionCallCount).toBe(2);
+			expect(toolCallCount).toBe(2);
 		});
 
 		it('should handle multiple user questions in planning', async () => {
@@ -369,14 +369,14 @@ describe('PlanningAgent - Unit Tests', () => {
 				content: 'Organize files'
 			}));
 
-			let functionCallCount = 0;
+			let toolCallCount = 0;
 
 			mockAI.streamRequest.mockImplementation(async function* () {
-				functionCallCount++;
-				if (functionCallCount === 1) {
+				toolCallCount++;
+				if (toolCallCount === 1) {
 					yield {
 						content: 'Q1',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.AskUserQuestionPlanning,
 							{
 								question: 'What file type?',
@@ -386,10 +386,10 @@ describe('PlanningAgent - Unit Tests', () => {
 						),
 						isComplete: true
 					};
-				} else if (functionCallCount === 2) {
+				} else if (toolCallCount === 2) {
 					yield {
 						content: 'Q2',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.AskUserQuestionPlanning,
 							{
 								question: 'Which folder?',
@@ -402,7 +402,7 @@ describe('PlanningAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Plan',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -442,7 +442,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Invalid: missing question
 					yield {
 						content: 'Invalid',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.AskUserQuestionPlanning,
 							{
 								// Missing question field
@@ -456,7 +456,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Valid plan
 					yield {
 						content: 'Plan',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -496,7 +496,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					searchCalled = true;
 					yield {
 						content: 'Searching',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SearchVaultFiles,
 							{
 								search_terms: ['test'],
@@ -509,7 +509,7 @@ describe('PlanningAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Plan',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -548,7 +548,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					readCalled = true;
 					yield {
 						content: 'Reading',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.ReadVaultFiles,
 							{
 								file_paths: ['test.md'],
@@ -561,7 +561,7 @@ describe('PlanningAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Plan',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -601,7 +601,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Try to write file (not allowed in planning)
 					yield {
 						content: 'Writing',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.WriteVaultFile,
 							{
 								file_path: 'test.md',
@@ -615,7 +615,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Submit valid plan
 					yield {
 						content: 'Plan',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -659,7 +659,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Try to complete task (execution agent tool)
 					yield {
 						content: 'Completing',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
@@ -672,7 +672,7 @@ describe('PlanningAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Plan',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -711,7 +711,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Try to complete step (orchestration agent tool)
 					yield {
 						content: 'Completing',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteStep,
 							{
 								confirm_completion: true
@@ -723,7 +723,7 @@ describe('PlanningAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Plan',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -796,7 +796,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Submit plan on third attempt (just before max depth)
 					yield {
 						content: 'Plan',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -834,7 +834,7 @@ describe('PlanningAgent - Unit Tests', () => {
 				// Empty plan is valid according to schema
 				yield {
 					content: 'Empty plan',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.SubmitPlan,
 						{
 							steps: []
@@ -883,7 +883,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					if (hasRetryMessage) {
 						yield {
 							content: 'Plan',
-							functionCall: new AIToolCall(
+							toolCall: new AIToolCall(
 								AITool.SubmitPlan,
 								{
 									steps: [

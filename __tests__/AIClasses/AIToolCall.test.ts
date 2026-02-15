@@ -5,68 +5,68 @@ import { AITool } from '../../Enums/AITool';
 describe('AIToolCall', () => {
 	describe('constructor', () => {
 		it('should create instance with name and arguments only', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test' }
 			);
 
-			expect(functionCall.name).toBe(AITool.SearchVaultFiles);
-			expect(functionCall.arguments).toEqual({ query: 'test' });
-			expect(functionCall.toolId).toBeUndefined();
-			expect(functionCall.thoughtSignature).toBeUndefined();
+			expect(toolCall.name).toBe(AITool.SearchVaultFiles);
+			expect(toolCall.arguments).toEqual({ query: 'test' });
+			expect(toolCall.toolId).toBeUndefined();
+			expect(toolCall.thoughtSignature).toBeUndefined();
 		});
 
 		it('should create instance with name, arguments, and toolId', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.ReadVaultFiles,
 				{ path: 'test.md' },
 				'tool-123'
 			);
 
-			expect(functionCall.name).toBe(AITool.ReadVaultFiles);
-			expect(functionCall.arguments).toEqual({ path: 'test.md' });
-			expect(functionCall.toolId).toBe('tool-123');
-			expect(functionCall.thoughtSignature).toBeUndefined();
+			expect(toolCall.name).toBe(AITool.ReadVaultFiles);
+			expect(toolCall.arguments).toEqual({ path: 'test.md' });
+			expect(toolCall.toolId).toBe('tool-123');
+			expect(toolCall.thoughtSignature).toBeUndefined();
 		});
 
 		it('should create instance with all four parameters including thoughtSignature', () => {
 			const signature = 'base64EncodedSignature==';
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'notes' },
 				undefined,
 				signature
 			);
 
-			expect(functionCall.name).toBe(AITool.SearchVaultFiles);
-			expect(functionCall.arguments).toEqual({ query: 'notes' });
-			expect(functionCall.toolId).toBeUndefined();
-			expect(functionCall.thoughtSignature).toBe(signature);
+			expect(toolCall.name).toBe(AITool.SearchVaultFiles);
+			expect(toolCall.arguments).toEqual({ query: 'notes' });
+			expect(toolCall.toolId).toBeUndefined();
+			expect(toolCall.thoughtSignature).toBe(signature);
 		});
 
 		it('should create instance with toolId and thoughtSignature', () => {
 			const signature = 'aGVsbG8gd29ybGQ=';
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.WriteVaultFile,
 				{ path: 'note.md', content: 'Hello' },
 				'tool-456',
 				signature
 			);
 
-			expect(functionCall.name).toBe(AITool.WriteVaultFile);
-			expect(functionCall.arguments).toEqual({ path: 'note.md', content: 'Hello' });
-			expect(functionCall.toolId).toBe('tool-456');
-			expect(functionCall.thoughtSignature).toBe(signature);
+			expect(toolCall.name).toBe(AITool.WriteVaultFile);
+			expect(toolCall.arguments).toEqual({ path: 'note.md', content: 'Hello' });
+			expect(toolCall.toolId).toBe('tool-456');
+			expect(toolCall.thoughtSignature).toBe(signature);
 		});
 
 		it('should handle empty arguments object', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{}
 			);
 
-			expect(functionCall.name).toBe(AITool.SearchVaultFiles);
-			expect(functionCall.arguments).toEqual({});
+			expect(toolCall.name).toBe(AITool.SearchVaultFiles);
+			expect(toolCall.arguments).toEqual({});
 		});
 
 		it('should handle complex nested arguments', () => {
@@ -78,27 +78,27 @@ describe('AIToolCall', () => {
 				limit: 10
 			};
 
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				complexArgs
 			);
 
-			expect(functionCall.arguments).toEqual(complexArgs);
+			expect(toolCall.arguments).toEqual(complexArgs);
 		});
 	});
 
 	describe('toConversationString', () => {
 		it('should serialize to JSON with only name and args when no optional fields', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test' }
 			);
 
-			const serialized = functionCall.toConversationString();
+			const serialized = toolCall.toConversationString();
 			const parsed = JSON.parse(serialized);
 
 			expect(parsed).toEqual({
-				functionCall: {
+				toolCall: {
 					name: AITool.SearchVaultFiles,
 					args: { query: 'test' },
 					id: undefined,
@@ -108,17 +108,17 @@ describe('AIToolCall', () => {
 		});
 
 		it('should serialize with toolId when present', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.ReadVaultFiles,
 				{ path: 'note.md' },
 				'tool-789'
 			);
 
-			const serialized = functionCall.toConversationString();
+			const serialized = toolCall.toConversationString();
 			const parsed = JSON.parse(serialized);
 
 			expect(parsed).toEqual({
-				functionCall: {
+				toolCall: {
 					name: AITool.ReadVaultFiles,
 					args: { path: 'note.md' },
 					id: 'tool-789',
@@ -129,18 +129,18 @@ describe('AIToolCall', () => {
 
 		it('should serialize with thoughtSignature when present', () => {
 			const signature = 'dGVzdFNpZ25hdHVyZQ==';
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'notes' },
 				undefined,
 				signature
 			);
 
-			const serialized = functionCall.toConversationString();
+			const serialized = toolCall.toConversationString();
 			const parsed = JSON.parse(serialized);
 
 			expect(parsed).toEqual({
-				functionCall: {
+				toolCall: {
 					name: AITool.SearchVaultFiles,
 					args: { query: 'notes' },
 					id: undefined,
@@ -151,18 +151,18 @@ describe('AIToolCall', () => {
 
 		it('should serialize with both toolId and thoughtSignature when present', () => {
 			const signature = 'YW5vdGhlclNpZ25hdHVyZQ==';
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.WriteVaultFile,
 				{ path: 'file.md', content: 'content' },
 				'tool-999',
 				signature
 			);
 
-			const serialized = functionCall.toConversationString();
+			const serialized = toolCall.toConversationString();
 			const parsed = JSON.parse(serialized);
 
 			expect(parsed).toEqual({
-				functionCall: {
+				toolCall: {
 					name: AITool.WriteVaultFile,
 					args: { path: 'file.md', content: 'content' },
 					id: 'tool-999',
@@ -172,136 +172,136 @@ describe('AIToolCall', () => {
 		});
 
 		it('should produce valid JSON string', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test' },
 				'tool-123',
 				'c2lnbmF0dXJl'
 			);
 
-			const serialized = functionCall.toConversationString();
+			const serialized = toolCall.toConversationString();
 
 			expect(() => JSON.parse(serialized)).not.toThrow();
 		});
 
 		it('should handle special characters in arguments', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test "quotes" and \'apostrophes\' and\nnewlines' }
 			);
 
-			const serialized = functionCall.toConversationString();
+			const serialized = toolCall.toConversationString();
 			const parsed = JSON.parse(serialized);
 
-			expect(parsed.functionCall.args.query).toBe('test "quotes" and \'apostrophes\' and\nnewlines');
+			expect(parsed.toolCall.args.query).toBe('test "quotes" and \'apostrophes\' and\nnewlines');
 		});
 
 		it('should handle empty string thoughtSignature', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test' },
 				undefined,
 				''
 			);
 
-			const serialized = functionCall.toConversationString();
+			const serialized = toolCall.toConversationString();
 			const parsed = JSON.parse(serialized);
 
-			expect(parsed.functionCall.thoughtSignature).toBe('');
+			expect(parsed.toolCall.thoughtSignature).toBe('');
 		});
 	});
 
 	describe('properties', () => {
 		it('should have immutable name property', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test' }
 			);
 
 			// Readonly is enforced at TypeScript compile time
 			// At runtime, the properties are accessible
-			expect(functionCall.name).toBe(AITool.SearchVaultFiles);
+			expect(toolCall.name).toBe(AITool.SearchVaultFiles);
 		});
 
 		it('should have immutable arguments property', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test' }
 			);
 
-			expect(functionCall.arguments).toEqual({ query: 'test' });
+			expect(toolCall.arguments).toEqual({ query: 'test' });
 		});
 
 		it('should have immutable toolId property', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test' },
 				'tool-123'
 			);
 
-			expect(functionCall.toolId).toBe('tool-123');
+			expect(toolCall.toolId).toBe('tool-123');
 		});
 
 		it('should have immutable thoughtSignature property', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test' },
 				undefined,
 				'signature'
 			);
 
-			expect(functionCall.thoughtSignature).toBe('signature');
+			expect(toolCall.thoughtSignature).toBe('signature');
 		});
 	});
 
 	describe('edge cases', () => {
 		it('should handle very long thoughtSignature (realistic base64)', () => {
 			const longSignature = 'A'.repeat(10000);
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test' },
 				undefined,
 				longSignature
 			);
 
-			expect(functionCall.thoughtSignature).toBe(longSignature);
-			expect(functionCall.thoughtSignature).toHaveLength(10000);
+			expect(toolCall.thoughtSignature).toBe(longSignature);
+			expect(toolCall.thoughtSignature).toHaveLength(10000);
 		});
 
 		it('should handle thoughtSignature with base64 special characters', () => {
 			const base64Signature = 'SGVsbG8gV29ybGQ+Pz8/Pz8+Pg==';
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test' },
 				undefined,
 				base64Signature
 			);
 
-			expect(functionCall.thoughtSignature).toBe(base64Signature);
+			expect(toolCall.thoughtSignature).toBe(base64Signature);
 		});
 
 		it('should handle undefined toolId and defined thoughtSignature', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test' },
 				undefined,
 				'signature'
 			);
 
-			expect(functionCall.toolId).toBeUndefined();
-			expect(functionCall.thoughtSignature).toBe('signature');
+			expect(toolCall.toolId).toBeUndefined();
+			expect(toolCall.thoughtSignature).toBe('signature');
 		});
 
 		it('should handle defined toolId and undefined thoughtSignature', () => {
-			const functionCall = new AIToolCall(
+			const toolCall = new AIToolCall(
 				AITool.SearchVaultFiles,
 				{ query: 'test' },
 				'tool-123',
 				undefined
 			);
 
-			expect(functionCall.toolId).toBe('tool-123');
-			expect(functionCall.thoughtSignature).toBeUndefined();
+			expect(toolCall.toolId).toBe('tool-123');
+			expect(toolCall.thoughtSignature).toBeUndefined();
 		});
 	});
 });

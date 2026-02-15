@@ -10,7 +10,7 @@ describe('ConversationContent', () => {
 				role: Role.User,
 				content: 'Hello',
 				displayContent: 'Hello Display',
-				functionCall: 'functionCall',
+				toolCall: 'toolCall',
 				functionResponse: 'functionResponse',
 				timestamp,
 				attachments: [],
@@ -21,7 +21,7 @@ describe('ConversationContent', () => {
 			expect(content.role).toBe(Role.User);
 			expect(content.content).toBe('Hello');
 			expect(content.displayContent).toBe('Hello Display');
-			expect(content.functionCall).toBe('functionCall');
+			expect(content.toolCall).toBe('toolCall');
 			expect(content.functionResponse).toBe('functionResponse');
 			expect(content.timestamp).toBe(timestamp);
 			expect(content.attachments).toEqual([]);
@@ -36,7 +36,7 @@ describe('ConversationContent', () => {
 				role: Role.User,
 				content: 'Hello',
 				displayContent: 'Hello Display',
-				functionCall: 'functionCall',
+				toolCall: 'toolCall',
 				functionResponse: 'functionResponse',
 				timestamp,
 				attachments: [],
@@ -48,7 +48,7 @@ describe('ConversationContent', () => {
 			expect(content.role).toBe(Role.User);
 			expect(content.content).toBe('Hello');
 			expect(content.displayContent).toBe('Hello Display');
-			expect(content.functionCall).toBe('functionCall');
+			expect(content.toolCall).toBe('toolCall');
 			expect(content.functionResponse).toBe('functionResponse');
 			expect(content.timestamp).toBe(timestamp);
 			expect(content.attachments).toEqual([]);
@@ -63,7 +63,7 @@ describe('ConversationContent', () => {
 			expect(content.role).toBe(Role.Assistant);
 			expect(content.content).toBeUndefined();
 			expect(content.displayContent).toBeUndefined();
-			expect(content.functionCall).toBeUndefined();
+			expect(content.toolCall).toBeUndefined();
 			expect(content.functionResponse).toBeUndefined();
 			expect(content.timestamp).toBeInstanceOf(Date);
 			expect(content.attachments).toEqual([]);
@@ -85,13 +85,13 @@ describe('ConversationContent', () => {
 			const content = new ConversationContent({
 				role: Role.User,
 				content: 'Hello',
-				functionCall: 'someFunction'
+				toolCall: 'someFunction'
 			});
 
 			expect(content.role).toBe(Role.User);
 			expect(content.content).toBe('Hello');
 			expect(content.displayContent).toBeUndefined();
-			expect(content.functionCall).toBe('someFunction');
+			expect(content.toolCall).toBe('someFunction');
 			expect(content.functionResponse).toBeUndefined();
 			expect(content.timestamp).toBeInstanceOf(Date);
 			expect(content.attachments).toEqual([]);
@@ -106,7 +106,7 @@ describe('ConversationContent', () => {
 
 			expect(content.role).toBe(Role.User);
 			expect(content.content).toBe('What is the weather?');
-			expect(content.functionCall).toBeUndefined();
+			expect(content.toolCall).toBeUndefined();
 			expect(content.functionResponse).toBeUndefined();
 		});
 
@@ -123,13 +123,13 @@ describe('ConversationContent', () => {
 		it('should create function call content', () => {
 			const content = new ConversationContent({
 				role: Role.Assistant,
-				functionCall: 'readFile',
+				toolCall: 'readFile',
 				timestamp: new Date(),
 				toolId: 'call-1'
 			});
 
 			expect(content.role).toBe(Role.Assistant);
-			expect(content.functionCall).toBe('readFile');
+			expect(content.toolCall).toBe('readFile');
 			expect(content.functionResponse).toBeUndefined();
 			expect(content.toolId).toBe('call-1');
 		});
@@ -146,7 +146,7 @@ describe('ConversationContent', () => {
 			expect(content.role).toBe(Role.User);
 			expect(content.content).toBe('File contents here');
 			expect(content.functionResponse).toBe('File contents here');
-			expect(content.functionCall).toBeUndefined();
+			expect(content.toolCall).toBeUndefined();
 			expect(content.toolId).toBe('call-1');
 		});
 
@@ -213,7 +213,7 @@ describe('ConversationContent', () => {
 				timestamp: '2024-01-01T00:00:00.000Z',
 				content: 'Hello',
 				displayContent: 'Hello Display',
-				functionCall: '',
+				toolCall: '',
 				functionResponse: '',
 				attachments: [],
 				shouldDisplayContent: true
@@ -235,7 +235,7 @@ describe('ConversationContent', () => {
 			const validData = {
 				role: 'assistant',
 				timestamp: '2024-01-01T00:00:00.000Z',
-				functionCall: 'readFile',
+				toolCall: 'readFile',
 				toolId: 'tool-123'
 			};
 
@@ -246,7 +246,7 @@ describe('ConversationContent', () => {
 			const validData = {
 				role: 'assistant',
 				timestamp: '2024-01-01T00:00:00.000Z',
-				functionCall: 'readFile',
+				toolCall: 'readFile',
 				thoughtSignature: 'base64Signature=='
 			};
 
@@ -257,7 +257,7 @@ describe('ConversationContent', () => {
 			const validData = {
 				role: 'assistant',
 				timestamp: '2024-01-01T00:00:00.000Z',
-				functionCall: 'readFile',
+				toolCall: 'readFile',
 				toolId: 'tool-123',
 				thoughtSignature: 'base64Signature=='
 			};
@@ -345,11 +345,11 @@ describe('ConversationContent', () => {
 			expect(ConversationContent.isConversationContentData(invalidData)).toBe(false);
 		});
 
-		it('should return false when functionCall is not a string', () => {
+		it('should return false when toolCall is not a string', () => {
 			const invalidData = {
 				role: 'user',
 				timestamp: '2024-01-01T00:00:00.000Z',
-				functionCall: null
+				toolCall: null
 			};
 
 			expect(ConversationContent.isConversationContentData(invalidData)).toBe(false);
@@ -411,7 +411,7 @@ describe('ConversationContent', () => {
 				timestamp: '',
 				content: '',
 				displayContent: '',
-				functionCall: '',
+				toolCall: '',
 				functionResponse: ''
 			};
 
@@ -441,11 +441,11 @@ describe('ConversationContent', () => {
 			expect(content.displayContent).toBe('modified');
 		});
 
-		it('should allow functionCall to be modified', () => {
+		it('should allow toolCall to be modified', () => {
 			const content = new ConversationContent({ role: Role.Assistant });
-			content.functionCall = 'readFile';
+			content.toolCall = 'readFile';
 
-			expect(content.functionCall).toBe('readFile');
+			expect(content.toolCall).toBe('readFile');
 		});
 
 		it('should allow functionResponse to be modified', () => {

@@ -16,7 +16,7 @@ export class AIToolCall {
 
     public toConversationString() {
         return JSON.stringify({
-            functionCall: {
+            toolCall: {
                 name: this.name,
                 args: this.arguments,
                 id: this.toolId,

@@ -15,7 +15,7 @@ import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
-import { parseFunctionCall, parseFunctionResponse } from "Helpers/ResponseHelper";
+import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import type { GeminiRetryInfo, GeminiErrorResponse } from "./GeminiTypes";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
@@ -157,7 +157,7 @@ export class Gemini extends BaseAIClass {
       const data = JSON.parse(chunk) as { candidates?: Candidate[] };
 
       let text = "";
-      let functionCall: AIToolCall | undefined = undefined;
+      let toolCall: AIToolCall | undefined = undefined;
       const candidate = data.candidates?.[0];
 
       if (candidate) {
@@ -199,7 +199,7 @@ export class Gemini extends BaseAIClass {
 
       // If streaming is complete and we have accumulated a function call, return it
       if (isComplete && this.accumulatedFunctionName) {
-        functionCall = new AIToolCall(
+        toolCall = new AIToolCall(
           aiToolFromString(this.accumulatedFunctionName),
           this.accumulatedFunctionArgs as Record<string, object>,
           undefined,  // toolId not used by Gemini
@@ -210,7 +210,7 @@ export class Gemini extends BaseAIClass {
       return {
         content: text,
         isComplete: isComplete,
-        functionCall: functionCall,
+        toolCall: toolCall,
         shouldContinue: shouldContinue,
       };
     } catch (error) {
@@ -231,25 +231,25 @@ export class Gemini extends BaseAIClass {
         }
 
         // Add function call if present
-        if (content.functionCall) {
-          const parsedContent = parseFunctionCall(content.functionCall);
+        if (content.toolCall) {
+          const parsedContent = parseToolCall(content.toolCall);
 
           if (parsedContent) {
             // Check if this is a cross-provider function call (has toolId in the stored format)
             // Gemini never uses toolId, so presence of toolId indicates Claude/OpenAI origin
-            const isCrossProvider = parsedContent.functionCall.id && parsedContent.functionCall.id.trim() !== "";
+            const isCrossProvider = parsedContent.toolCall.id && parsedContent.toolCall.id.trim() !== "";
 
             if (isCrossProvider) {
               // Cross-provider function call (from Claude/OpenAI) - use legacy text format
               parts.push({
-                text: this.convertFunctionCallToText(parsedContent)
+                text: this.convertToolCallToText(parsedContent)
               });
             } else {
               // Native Gemini function call - use proper function call format
               const part: Part = {
                 functionCall: {
-                  name: parsedContent.functionCall.name,
-                  args: parsedContent.functionCall.args
+                  name: parsedContent.toolCall.name,
+                  args: parsedContent.toolCall.args
                 }
               };
               // Include thoughtSignature if present (optional Gemini feature)

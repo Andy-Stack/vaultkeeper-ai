@@ -136,7 +136,7 @@ describe('Claude', () => {
 
             expect(result.content).toBe('Hello world');
             expect(result.isComplete).toBe(false);
-            expect(result.functionCall).toBeUndefined();
+            expect(result.toolCall).toBeUndefined();
         });
 
         it('should detect tool_use start in content_block_start', () => {
@@ -189,10 +189,10 @@ describe('Claude', () => {
                 type: 'content_block_stop'
             }));
 
-            expect(result.functionCall).toBeDefined();
-            expect(result.functionCall?.name).toBe('search_vault_files');
-            expect(result.functionCall?.arguments).toEqual({ query: 'test' });
-            expect(result.functionCall?.toolId).toBe('tool_123');
+            expect(result.toolCall).toBeDefined();
+            expect(result.toolCall?.name).toBe('search_vault_files');
+            expect(result.toolCall?.arguments).toEqual({ query: 'test' });
+            expect(result.toolCall?.toolId).toBe('tool_123');
         });
 
         it('should handle content_block_stop and finalize function call', () => {
@@ -207,10 +207,10 @@ describe('Claude', () => {
 
             const result = (claude as any).parseStreamChunk(chunk);
 
-            expect(result.functionCall).toBeDefined();
-            expect(result.functionCall?.name).toBe('search_vault_files');
-            expect(result.functionCall?.arguments).toEqual({ param: 'value' });
-            expect(result.functionCall?.toolId).toBe('func_456');
+            expect(result.toolCall).toBeDefined();
+            expect(result.toolCall?.name).toBe('search_vault_files');
+            expect(result.toolCall?.arguments).toEqual({ param: 'value' });
+            expect(result.toolCall?.toolId).toBe('func_456');
 
             // Should reset accumulation
             expect((claude as any).accumulatedFunctionName).toBeNull();
@@ -266,7 +266,7 @@ describe('Claude', () => {
 
             const result = (claude as any).parseStreamChunk(chunk);
 
-            expect(result.functionCall).toBeUndefined();
+            expect(result.toolCall).toBeUndefined();
             expect(exceptionSpy).toHaveBeenCalled();
 
             exceptionSpy.mockRestore();
@@ -302,12 +302,12 @@ describe('Claude', () => {
         });
 
         it('should convert function call to tool_use format', async () => {
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -317,7 +317,7 @@ describe('Claude', () => {
                 shouldDisplayContent: false
             });
 
-            const result = await (claude as any).extractContents([functionCallContent]);
+            const result = await (claude as any).extractContents([toolCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
@@ -330,12 +330,12 @@ describe('Claude', () => {
         });
 
         it('should convert function response to tool_result format', async () => {
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -358,7 +358,7 @@ describe('Claude', () => {
                 toolId: 'call_123'
             });
 
-            const result = await (claude as any).extractContents([functionCallContent, functionResponseContent]);
+            const result = await (claude as any).extractContents([toolCallContent, functionResponseContent]);
 
             expect(result).toHaveLength(2);
             expect(result[1].content).toHaveLength(1);
@@ -376,7 +376,7 @@ describe('Claude', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: 'invalid json {',
+                toolCall: 'invalid json {',
                 timestamp: new Date(),
                 shouldDisplayContent: false
             });
@@ -395,12 +395,12 @@ describe('Claude', () => {
         it('should handle invalid JSON in function response gracefully', async () => {
             const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_invalid',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -417,7 +417,7 @@ describe('Claude', () => {
                 toolId: 'call_invalid'
             });
 
-            const result = await (claude as any).extractContents([functionCallContent, invalidContent]);
+            const result = await (claude as any).extractContents([toolCallContent, invalidContent]);
 
             // Should fallback to text
             expect(result).toHaveLength(2);
@@ -448,8 +448,8 @@ describe('Claude', () => {
                 role: Role.Assistant,
                 content: 'Let me search for that',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_456',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -468,12 +468,12 @@ describe('Claude', () => {
         });
 
         it('should convert function call without ID to legacy text format', async () => {
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                         // No ID field
@@ -483,7 +483,7 @@ describe('Claude', () => {
                 shouldDisplayContent: false
             });
 
-            const result = await (claude as any).extractContents([functionCallContent]);
+            const result = await (claude as any).extractContents([toolCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
@@ -500,12 +500,12 @@ describe('Claude', () => {
         });
 
         it('should convert function call with empty ID to legacy text format', async () => {
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: '',  // Empty ID
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -515,7 +515,7 @@ describe('Claude', () => {
                 shouldDisplayContent: false
             });
 
-            const result = await (claude as any).extractContents([functionCallContent]);
+            const result = await (claude as any).extractContents([toolCallContent]);
 
             expect(result).toHaveLength(1);
             expect(result[0].content).toHaveLength(1);
@@ -532,12 +532,12 @@ describe('Claude', () => {
         });
 
         it('should convert function response without ID to legacy text format', async () => {
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_legacy',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -561,7 +561,7 @@ describe('Claude', () => {
                 toolId: 'call_legacy'
             });
 
-            const result = await (claude as any).extractContents([functionCallContent, functionResponseContent]);
+            const result = await (claude as any).extractContents([toolCallContent, functionResponseContent]);
 
             expect(result).toHaveLength(2);
             expect(result[1].content).toHaveLength(1);
@@ -578,12 +578,12 @@ describe('Claude', () => {
         });
 
         it('should convert function response with empty ID to legacy text format', async () => {
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_empty',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -607,7 +607,7 @@ describe('Claude', () => {
                 toolId: 'call_empty'
             });
 
-            const result = await (claude as any).extractContents([functionCallContent, functionResponseContent]);
+            const result = await (claude as any).extractContents([toolCallContent, functionResponseContent]);
 
             expect(result).toHaveLength(2);
             expect(result[1].content).toHaveLength(1);
@@ -631,8 +631,8 @@ describe('Claude', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'call_orphaned',
                             name: 'search_vault_files',
                             args: { query: 'test' }
@@ -660,8 +660,8 @@ describe('Claude', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'call_123',
                             name: 'search_vault_files',
                             args: { query: 'test' }
@@ -704,8 +704,8 @@ describe('Claude', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'call_latest',
                             name: 'search_vault_files',
                             args: { query: 'test' }
@@ -732,8 +732,8 @@ describe('Claude', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'call_orphan1',
                             name: 'search_vault_files',
                             args: { query: 'test1' }
@@ -748,8 +748,8 @@ describe('Claude', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'call_orphan2',
                             name: 'read_file',
                             args: { path: 'test.md' }

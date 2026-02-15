@@ -32,63 +32,63 @@ export class PlanningAgent extends BaseAgent {
         this.planningDepth++;
         this.debugService?.log("PlanningAgent", `Starting PlanningAgent (isReplan: ${isReplan}, depth: ${this.planningDepth}/${PlanningAgent.MAX_AGENT_DEPTH})`);
 
-        await this.runAgentLoop(AgentType.Planning, conversation, callbacks, async (functionCall) => {
-            const functionCallName = functionCall.name;
+        await this.runAgentLoop(AgentType.Planning, conversation, callbacks, async (toolCall) => {
+            const toolCallName = toolCall.name;
 
-            if (!AIToolDefinitions.planningAgentDefinitions().some(definition => isAITool(functionCallName, definition.name))) {
-                this.debugService?.log("PlanningAgent", `Invalid tool call denied: ${functionCallName}`);
+            if (!AIToolDefinitions.planningAgentDefinitions().some(definition => isAITool(toolCallName, definition.name))) {
+                this.debugService?.log("PlanningAgent", `Invalid tool call denied: ${toolCallName}`);
                 conversation.addFunctionResponse(new AIToolResponse(
-                    functionCallName,
+                    toolCallName,
                     { message: Copy.PlanningToolDenial },
-                    functionCall.toolId
+                    toolCall.toolId
                 ));
                 return { shouldExit: false };
             }
 
-            if (isAITool(functionCallName, AITool.AskUserQuestionPlanning)) {
-                const parseResult = AskUserQuestionPlanningArgsSchema.safeParse(functionCall.arguments);
+            if (isAITool(toolCallName, AITool.AskUserQuestionPlanning)) {
+                const parseResult = AskUserQuestionPlanningArgsSchema.safeParse(toolCall.arguments);
                 if (!parseResult.success) {
                     conversation.addFunctionResponse(new AIToolResponse(
-                        functionCallName,
+                        toolCallName,
                         { error: `Invalid arguments for ${AITool.AskUserQuestionPlanning}: ${parseResult.error.message}` },
-                        functionCall.toolId
+                        toolCall.toolId
                     ));
                     return { shouldExit: false };
                 }
                 this.debugService?.log("PlanningAgent", `Asking user question: ${parseResult.data.question}`);
-                this.updateThought(functionCall, callbacks);
+                this.updateThought(toolCall, callbacks);
                 const answer = await callbacks.onUserQuestion(parseResult.data.question);
                 this.debugService?.log("PlanningAgent", "User answer received");
                 conversation.addFunctionResponse(new AIToolResponse(
-                    functionCallName,
+                    toolCallName,
                     { answer: answer },
-                    functionCall.toolId
+                    toolCall.toolId
                 ));
                 return { shouldExit: false };
             }
 
-            if (isAITool(functionCallName, AITool.SubmitPlan)) {
-                const parseResult = SubmitPlanArgsSchema.safeParse(functionCall.arguments);
+            if (isAITool(toolCallName, AITool.SubmitPlan)) {
+                const parseResult = SubmitPlanArgsSchema.safeParse(toolCall.arguments);
                 if (!parseResult.success) {
                     conversation.addFunctionResponse(new AIToolResponse(
-                        functionCallName,
+                        toolCallName,
                         { error: `Invalid arguments for ${AITool.SubmitPlan}: ${parseResult.error.message}` },
-                        functionCall.toolId
+                        toolCall.toolId
                     ));
                     return { shouldExit: false };
                 }
                 this.debugService?.log("PlanningAgent", `Plan submitted successfully with ${parseResult.data.steps.length} steps`);
                 capturedPlan = new ExecutionPlan(parseResult.data, isReplan);
                 conversation.addFunctionResponse(new AIToolResponse(
-                    functionCallName,
+                    toolCallName,
                     { message: Copy.PlanReceived },
-                    functionCall.toolId
+                    toolCall.toolId
                 ));
                 return { shouldExit: true };
             }
 
-            this.updateThought(functionCall, callbacks);
-            const functionResponse = await this.aiToolService.performAITool(functionCall);
+            this.updateThought(toolCall, callbacks);
+            const functionResponse = await this.aiToolService.performAITool(toolCall);
             conversation.addFunctionResponse(functionResponse);
             return { shouldExit: false };
         });

@@ -407,7 +407,7 @@ describe('StreamingService', () => {
 
 		it('should pass function call from parser', async () => {
 			const chunks = [
-				'data: {"content":"","done":false,"functionCall":{"name":"test_func","args":{}}}\n',
+				'data: {"content":"","done":false,"toolCall":{"name":"test_func","args":{}}}\n',
 				'data: {"content":"Done","done":true}\n'
 			];
 
@@ -416,12 +416,12 @@ describe('StreamingService', () => {
 				body: createMockStream(chunks)
 			});
 
-			const parserWithFunctionCall = (chunk: string): IStreamChunk => {
+			const parserWithToolCall = (chunk: string): IStreamChunk => {
 				const data = JSON.parse(chunk);
 				return {
 					content: data.content || '',
 					isComplete: data.done || false,
-					functionCall: data.functionCall
+					toolCall: data.toolCall
 				};
 			};
 
@@ -429,12 +429,12 @@ describe('StreamingService', () => {
 			for await (const chunk of service.streamRequest(
 				'https://api.example.com/stream',
 				{},
-				parserWithFunctionCall
+				parserWithToolCall
 			)) {
 				results.push(chunk);
 			}
 
-			expect(results[0].functionCall).toEqual({ name: 'test_func', args: {} });
+			expect(results[0].toolCall).toEqual({ name: 'test_func', args: {} });
 		});
 	});
 

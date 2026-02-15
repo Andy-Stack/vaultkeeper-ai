@@ -6,7 +6,7 @@ import { ConversationContent } from "Conversations/ConversationContent";
 import { AgentType } from "Enums/AgentType";
 import { Copy } from "Enums/Copy";
 import { Role } from "Enums/Role";
-import { sanitizeFunctionCallContent } from "Helpers/ResponseHelper";
+import { sanitizeToolCallContent } from "Helpers/ResponseHelper";
 import type { IChatServiceCallbacks } from "Services/ChatService";
 import { Resolve, TryResolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
@@ -41,17 +41,17 @@ export abstract class BaseAgent {
     }
 
     protected async runAgentLoop(agentType: AgentType, conversation: Conversation, callbacks: IChatServiceCallbacks,
-        handleFunctionCall: (functionCall: AIToolCall) => Promise<{ shouldExit: boolean }>
+        handleToolCall: (toolCall: AIToolCall) => Promise<{ shouldExit: boolean }>
     ): Promise<void> {
         this.debugService?.log("AgentLoop", `Starting ${agentType} agent loop`);
         let response = await this.streamRequestResponse(agentType, this.ensureCorrectConversationStructure(conversation), callbacks);
 
         await this.saveConversation(agentType, conversation);
 
-        while (response.functionCall || response.shouldContinue) {
-            if (response.functionCall) {
-                this.debugService?.log("FunctionCall", `${agentType} received function call: ${response.functionCall.name}`);
-                const result = await handleFunctionCall(response.functionCall);
+        while (response.toolCall || response.shouldContinue) {
+            if (response.toolCall) {
+                this.debugService?.log("ToolCall", `${agentType} received function call: ${response.toolCall.name}`);
+                const result = await handleToolCall(response.toolCall);
                 if (result.shouldExit) {
                     this.debugService?.log("AgentLoop", `${agentType} exiting loop (shouldExit: true)`);
                     await this.saveConversation(agentType, conversation);
@@ -86,8 +86,8 @@ export abstract class BaseAgent {
         });
     }
 
-    protected updateThought(functionCall: AIToolCall | null, callbacks: IChatServiceCallbacks) {
-        const userMessage = functionCall?.arguments.user_message;
+    protected updateThought(toolCall: AIToolCall | null, callbacks: IChatServiceCallbacks) {
+        const userMessage = toolCall?.arguments.user_message;
         if (userMessage && typeof userMessage === "string") {
             callbacks.onThoughtUpdate(userMessage);
         }
@@ -117,16 +117,16 @@ export abstract class BaseAgent {
     }
 
     private async streamRequestResponse(agentType: AgentType, conversation: Conversation, callbacks: IChatServiceCallbacks
-    ): Promise<{ functionCall: AIToolCall | null, shouldContinue: boolean }> {
+    ): Promise<{ toolCall: AIToolCall | null, shouldContinue: boolean }> {
         if (!this.ai) { // this should never happen
-            return { functionCall: null, shouldContinue: false };
+            return { toolCall: null, shouldContinue: false };
         }
 
         const conversationContent = new ConversationContent({ role: Role.Assistant });
         conversation.contents.push(conversationContent);
 
         let accumulatedContent = "";
-        let capturedFunctionCall: AIToolCall | null = null;
+        let capturedToolCall: AIToolCall | null = null;
         let capturedShouldContinue = false;
 
         for await (const chunk of this.ai.streamRequest(conversation)) {
@@ -138,9 +138,9 @@ export abstract class BaseAgent {
                 break;
             }
 
-            if (chunk.functionCall) {
-                this.debugService?.log("FunctionCall", `Function call captured: ${chunk.functionCall.name}`);
-                capturedFunctionCall = chunk.functionCall;
+            if (chunk.toolCall) {
+                this.debugService?.log("ToolCall", `Function call captured: ${chunk.toolCall.name}`);
+                capturedToolCall = chunk.toolCall;
             }
 
             if (chunk.shouldContinue) {
@@ -157,18 +157,18 @@ export abstract class BaseAgent {
             }
 
             if (chunk.isComplete) {
-                const sanitizedContent = sanitizeFunctionCallContent(accumulatedContent, capturedFunctionCall);
+                const sanitizedContent = sanitizeToolCallContent(accumulatedContent, capturedToolCall);
 
-                if (sanitizedContent.trim() === "" && !capturedFunctionCall) {
+                if (sanitizedContent.trim() === "" && !capturedToolCall) {
                     conversation.contents.pop();
                 } else {
                     conversationContent.content = sanitizedContent;
-                    if (capturedFunctionCall) {
-                        conversationContent.functionCall = capturedFunctionCall.toConversationString();
-                        conversationContent.toolId = capturedFunctionCall.toolId;
+                    if (capturedToolCall) {
+                        conversationContent.toolCall = capturedToolCall.toConversationString();
+                        conversationContent.toolId = capturedToolCall.toolId;
                         conversationContent.shouldDisplayContent = sanitizedContent.trim() !== "";
-                        if (capturedFunctionCall.thoughtSignature) {
-                            conversationContent.thoughtSignature = capturedFunctionCall.thoughtSignature;
+                        if (capturedToolCall.thoughtSignature) {
+                            conversationContent.thoughtSignature = capturedToolCall.thoughtSignature;
                         }
                     }
                 }
@@ -183,7 +183,7 @@ export abstract class BaseAgent {
 
         callbacks.onStreamingUpdate(null);
 
-        return { functionCall: capturedFunctionCall, shouldContinue: capturedShouldContinue };
+        return { toolCall: capturedToolCall, shouldContinue: capturedShouldContinue };
     }
 
     private async withToolCallingDisabled<T>(callback: () => Promise<T>): Promise<T> {

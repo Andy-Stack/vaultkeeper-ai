@@ -45,28 +45,28 @@ export class ExecutionAgent extends BaseAgent {
 
         let executionResult: CompleteTaskArgs | undefined = undefined;
 
-        await this.runAgentLoop(AgentType.Execution, this.conversation, callbacks, async functionCall => {
-            const functionCallName = functionCall.name;
+        await this.runAgentLoop(AgentType.Execution, this.conversation, callbacks, async toolCall => {
+            const toolCallName = toolCall.name;
 
-            if (isAITool(functionCallName, AITool.CompleteTask)) {
-                const parseResult = CompleteTaskArgsSchema.safeParse(functionCall.arguments);
+            if (isAITool(toolCallName, AITool.CompleteTask)) {
+                const parseResult = CompleteTaskArgsSchema.safeParse(toolCall.arguments);
                 if (!parseResult.success) {
                     this.conversation.addFunctionResponse(new AIToolResponse(
-                        functionCallName,
+                        toolCallName,
                         { error: `Invalid arguments for ${AITool.CompleteTask}: ${parseResult.error.message}` },
-                        functionCall.toolId
+                        toolCall.toolId
                     ));
                     return { shouldExit: false };
                 }
                 this.debugService?.log("ExecutionAgent", `Task completed (success: ${parseResult.data.success}): ${parseResult.data.description}`);
-                this.updateThought(functionCall, callbacks);
+                this.updateThought(toolCall, callbacks);
                 executionResult = parseResult.data;
                 return { shouldExit: true };
             }
 
-            this.debugService?.log("ExecutionAgent", `Executing function: ${functionCall.name}`);
-            this.updateThought(functionCall, callbacks);
-            const functionResponse = await this.aiToolService.performAITool(functionCall);
+            this.debugService?.log("ExecutionAgent", `Executing function: ${toolCall.name}`);
+            this.updateThought(toolCall, callbacks);
+            const functionResponse = await this.aiToolService.performAITool(toolCall);
             this.conversation.addFunctionResponse(functionResponse);
             return { shouldExit: false };
         });

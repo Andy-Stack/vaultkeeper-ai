@@ -85,7 +85,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Task completed',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
@@ -115,7 +115,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Task completed',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
@@ -152,7 +152,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Done',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
@@ -190,7 +190,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Task failed',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: false,
@@ -220,7 +220,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Failed',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: false,
@@ -251,15 +251,15 @@ describe('ExecutionAgent - Unit Tests', () => {
 				instruction: 'Search for files with tag #important'
 			};
 
-			let functionCallCount = 0;
+			let toolCallCount = 0;
 
 			mockAI.streamRequest.mockImplementation(async function* () {
-				functionCallCount++;
-				if (functionCallCount === 1) {
+				toolCallCount++;
+				if (toolCallCount === 1) {
 					// Call search function
 					yield {
 						content: 'Searching',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SearchVaultFiles,
 							{
 								search_terms: ['#important'],
@@ -273,7 +273,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Complete task
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
@@ -291,7 +291,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 
 			expect(mockAIToolService.performAITool).toHaveBeenCalled();
 			expect(result?.success).toBe(true);
-			expect(functionCallCount).toBe(2);
+			expect(toolCallCount).toBe(2);
 		});
 
 		it('should call ReadVaultFiles during execution', async () => {
@@ -301,14 +301,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 				instruction: 'Read contents of note.md'
 			};
 
-			let functionCallCount = 0;
+			let toolCallCount = 0;
 
 			mockAI.streamRequest.mockImplementation(async function* () {
-				functionCallCount++;
-				if (functionCallCount === 1) {
+				toolCallCount++;
+				if (toolCallCount === 1) {
 					yield {
 						content: 'Reading',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.ReadVaultFiles,
 							{
 								file_paths: ['note.md'],
@@ -321,7 +321,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
@@ -348,14 +348,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 				instruction: 'Create new file with content'
 			};
 
-			let functionCallCount = 0;
+			let toolCallCount = 0;
 
 			mockAI.streamRequest.mockImplementation(async function* () {
-				functionCallCount++;
-				if (functionCallCount === 1) {
+				toolCallCount++;
+				if (toolCallCount === 1) {
 					yield {
 						content: 'Writing',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.WriteVaultFile,
 							{
 								file_path: 'new-note.md',
@@ -369,7 +369,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
@@ -396,14 +396,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 				instruction: 'Search, read, and update files'
 			};
 
-			let functionCallCount = 0;
+			let toolCallCount = 0;
 
 			mockAI.streamRequest.mockImplementation(async function* () {
-				functionCallCount++;
-				if (functionCallCount === 1) {
+				toolCallCount++;
+				if (toolCallCount === 1) {
 					yield {
 						content: 'Searching',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SearchVaultFiles,
 							{
 								search_terms: ['TODO'],
@@ -413,10 +413,10 @@ describe('ExecutionAgent - Unit Tests', () => {
 						),
 						isComplete: true
 					};
-				} else if (functionCallCount === 2) {
+				} else if (toolCallCount === 2) {
 					yield {
 						content: 'Reading',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.ReadVaultFiles,
 							{
 								file_paths: ['found.md'],
@@ -426,10 +426,10 @@ describe('ExecutionAgent - Unit Tests', () => {
 						),
 						isComplete: true
 					};
-				} else if (functionCallCount === 3) {
+				} else if (toolCallCount === 3) {
 					yield {
 						content: 'Writing',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.PatchVaultFile,
 							{
 								file_path: 'found.md',
@@ -443,7 +443,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
@@ -486,7 +486,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Complete on retry
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
@@ -527,7 +527,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Complete on third attempt
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
@@ -574,7 +574,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
@@ -640,7 +640,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Complete on third attempt (max depth)
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
@@ -680,7 +680,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 
 				yield {
 					content: 'Done',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
@@ -710,7 +710,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Done',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
@@ -747,7 +747,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 
 				yield {
 					content: 'Done',
-					functionCall: new AIToolCall(
+					toolCall: new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
@@ -783,7 +783,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Invalid: missing description
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true
@@ -797,7 +797,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Valid completion
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
@@ -832,7 +832,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Invalid: success is not boolean
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: 'yes',
@@ -846,7 +846,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Valid
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
@@ -875,14 +875,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 				instruction: 'Do task with updates'
 			};
 
-			let functionCallCount = 0;
+			let toolCallCount = 0;
 
 			mockAI.streamRequest.mockImplementation(async function* () {
-				functionCallCount++;
-				if (functionCallCount === 1) {
+				toolCallCount++;
+				if (toolCallCount === 1) {
 					yield {
 						content: 'Searching',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SearchVaultFiles,
 							{
 								search_terms: ['test'],
@@ -895,7 +895,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,

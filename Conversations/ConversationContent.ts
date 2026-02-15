@@ -9,7 +9,7 @@ type ConversationContentInit = {
     timestamp?: Date;
     content?: string;
     displayContent?: string;
-    functionCall?: string;
+    toolCall?: string;
     functionResponse?: string;
     attachments?: Attachment[];
     references?: Reference[];
@@ -24,7 +24,7 @@ export class ConversationContent {
     public timestamp: Date;
     public content: string | undefined;
     public displayContent: string | undefined;
-    public functionCall: string | undefined;
+    public toolCall: string | undefined;
     public functionResponse: string | undefined;
     public attachments: Attachment[];
     public references: Reference[];
@@ -41,7 +41,7 @@ export class ConversationContent {
      * @param init.timestamp - Timestamp of the message (defaults to now)
      * @param init.content - The content to be displayed and/or sent to the AI provider
      * @param init.displayContent - Display content is used when content needs to be formatted differently when displayed versus as a prompt
-     * @param init.functionCall - JSON string of the function call data (only set for function/tool calls)
+     * @param init.toolCall - JSON string of the function call data (only set for function/tool calls)
      * @param init.functionResponse - JSON string of the function call response data (only set for function/tool responses)
      * @param init.attachments - Array of file attachments associated with this message (defaults to empty array)
      * @param init.references - Array of file references, used to display attachment's to the user associated with attachments
@@ -55,7 +55,7 @@ export class ConversationContent {
         this.timestamp = init.timestamp ?? new Date();
         this.content = init.content;
         this.displayContent = init.displayContent;
-        this.functionCall = init.functionCall;
+        this.toolCall = init.toolCall;
         this.functionResponse = init.functionResponse;
         this.attachments = init.attachments ?? [];
         this.references = init.references ?? [];
@@ -77,7 +77,7 @@ export class ConversationContent {
         timestamp: string;
         content?: string;
         displayContent?: string;
-        functionCall?: string;
+        toolCall?: string;
         functionResponse?: string;
         attachments?: unknown[];
         references?: unknown[];
@@ -96,7 +96,7 @@ export class ConversationContent {
 
             (!("content" in data) || typeof data.content === "string") &&
             (!("displayContent" in data) || typeof data.displayContent === "string") &&
-            (!("functionCall" in data) || typeof data.functionCall === "string") &&
+            (!("toolCall" in data) || typeof data.toolCall === "string") &&
             (!("functionResponse" in data) || typeof data.functionResponse === "string") &&
             (!("attachments" in data) || Array.isArray(data.attachments)) &&
             (!("references" in data) || Array.isArray(data.references)) &&

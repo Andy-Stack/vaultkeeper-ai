@@ -190,7 +190,7 @@ describe('AIControllerService - Integration Tests', () => {
 					// First call returns a function call
 					yield {
 						content: 'Let me search',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SearchVaultFiles,
 							{ search_terms: ['test'], user_message: 'Searching' },
 							'tool-1'
@@ -235,7 +235,7 @@ describe('AIControllerService - Integration Tests', () => {
 				if (callCount === 1) {
 					yield {
 						content: '',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SearchVaultFiles,
 							{ search_terms: ['notes'], user_message: 'Searching for notes' },
 							'tool-1'
@@ -349,7 +349,7 @@ describe('AIControllerService - Integration Tests', () => {
 				if (callCount === 1) {
 					yield {
 						content: '',
-						functionCall: new AIToolCall(
+						toolCall: new AIToolCall(
 							AITool.SearchVaultFiles,
 							{ search_terms: ['test'], user_message: 'Searching' },
 							'tool-1'

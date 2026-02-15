@@ -8,7 +8,7 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { AbortService } from '../../Services/AbortService';
 import { AIProvider } from '../../Enums/ApiProvider';
-import { parseFunctionCall, parseFunctionResponse } from '../../Helpers/ResponseHelper';
+import { parseToolCall, parseFunctionResponse } from '../../Helpers/ResponseHelper';
 
 /**
  * BaseAIClass Shared Method Tests
@@ -81,62 +81,62 @@ describe('BaseAIClass Shared Methods', () => {
         DeregisterAllServices();
     });
 
-    describe('parseFunctionCall', () => {
+    describe('parseToolCall', () => {
         it('should parse Claude-style function call (with id)', () => {
             const claudeCall = JSON.stringify({
-                functionCall: {
+                toolCall: {
                     id: 'toolu_123',
                     name: 'search_vault_files',
                     args: { query: 'test' }
                 }
             });
 
-            const result = parseFunctionCall(claudeCall);
+            const result = parseToolCall(claudeCall);
 
             expect(result).toBeDefined();
-            expect(result!.functionCall.id).toBe('toolu_123');
-            expect(result!.functionCall.name).toBe('search_vault_files');
-            expect(result!.functionCall.args).toEqual({ query: 'test' });
+            expect(result!.toolCall.id).toBe('toolu_123');
+            expect(result!.toolCall.name).toBe('search_vault_files');
+            expect(result!.toolCall.args).toEqual({ query: 'test' });
         });
 
         it('should parse OpenAI-style function call (with id)', () => {
             const openaiCall = JSON.stringify({
-                functionCall: {
+                toolCall: {
                     id: 'call_abc',
                     name: 'read_file',
                     args: { path: 'note.md' }
                 }
             });
 
-            const result = parseFunctionCall(openaiCall);
+            const result = parseToolCall(openaiCall);
 
             expect(result).toBeDefined();
-            expect(result!.functionCall.id).toBe('call_abc');
-            expect(result!.functionCall.name).toBe('read_file');
-            expect(result!.functionCall.args).toEqual({ path: 'note.md' });
+            expect(result!.toolCall.id).toBe('call_abc');
+            expect(result!.toolCall.name).toBe('read_file');
+            expect(result!.toolCall.args).toEqual({ path: 'note.md' });
         });
 
         it('should parse Gemini-style function call (no id)', () => {
             const geminiCall = JSON.stringify({
-                functionCall: {
+                toolCall: {
                     name: 'search_vault_files',
                     args: { query: 'gemini test' }
                 }
             });
 
-            const result = parseFunctionCall(geminiCall);
+            const result = parseToolCall(geminiCall);
 
             expect(result).toBeDefined();
-            expect(result!.functionCall.name).toBe('search_vault_files');
-            expect(result!.functionCall.args).toEqual({ query: 'gemini test' });
+            expect(result!.toolCall.name).toBe('search_vault_files');
+            expect(result!.toolCall.args).toEqual({ query: 'gemini test' });
             // ID may be undefined for Gemini
-            expect(result!.functionCall.id).toBeUndefined();
+            expect(result!.toolCall.id).toBeUndefined();
         });
 
         it('should handle invalid JSON gracefully', () => {
             const invalidJson = 'not valid json {';
 
-            const result = parseFunctionCall(invalidJson);
+            const result = parseToolCall(invalidJson);
 
             expect(result).toBeNull();
         });
@@ -144,37 +144,37 @@ describe('BaseAIClass Shared Methods', () => {
         it('should handle missing required fields', () => {
             // Missing 'name' field
             const missingName = JSON.stringify({
-                functionCall: {
+                toolCall: {
                     id: 'test-id',
                     args: { query: 'test' }
                 }
             });
 
-            const result = parseFunctionCall(missingName);
+            const result = parseToolCall(missingName);
 
             // Should still parse, but may have undefined name
             expect(result).toBeDefined();
-            expect(result!.functionCall.id).toBe('test-id');
+            expect(result!.toolCall.id).toBe('test-id');
         });
 
         it('should handle empty args object', () => {
             const emptyArgs = JSON.stringify({
-                functionCall: {
+                toolCall: {
                     id: 'test-id',
                     name: 'list_files',
                     args: {}
                 }
             });
 
-            const result = parseFunctionCall(emptyArgs);
+            const result = parseToolCall(emptyArgs);
 
             expect(result).toBeDefined();
-            expect(result!.functionCall.args).toEqual({});
+            expect(result!.toolCall.args).toEqual({});
         });
 
         it('should handle complex nested args', () => {
             const complexArgs = JSON.stringify({
-                functionCall: {
+                toolCall: {
                     id: 'test-id',
                     name: 'search',
                     args: {
@@ -187,11 +187,11 @@ describe('BaseAIClass Shared Methods', () => {
                 }
             });
 
-            const result = parseFunctionCall(complexArgs);
+            const result = parseToolCall(complexArgs);
 
             expect(result).toBeDefined();
-            expect((result!.functionCall.args as any).filters.tags).toHaveLength(2);
-            expect((result!.functionCall.args as any).options.limit).toBe(10);
+            expect((result!.toolCall.args as any).filters.tags).toHaveLength(2);
+            expect((result!.toolCall.args as any).options.limit).toBe(10);
         });
     });
 
@@ -300,8 +300,8 @@ describe('BaseAIClass Shared Methods', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'toolu_orphan',
                             name: 'search',
                             args: {}
@@ -330,8 +330,8 @@ describe('BaseAIClass Shared Methods', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'call_recent',
                             name: 'search',
                             args: {}
@@ -345,7 +345,7 @@ describe('BaseAIClass Shared Methods', () => {
 
             // Most recent call should be included
             expect(result).toHaveLength(2);
-            expect(result[1].functionCall).toBeDefined();
+            expect(result[1].toolCall).toBeDefined();
         });
 
         it('should handle function call with response correctly', () => {
@@ -357,8 +357,8 @@ describe('BaseAIClass Shared Methods', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: {
+                    toolCall: JSON.stringify({
+                        toolCall: {
                             id: 'call_with_response',
                             name: 'search',
                             args: { query: 'test' }
@@ -397,8 +397,8 @@ describe('BaseAIClass Shared Methods', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: { id: 'orphan1', name: 'search', args: {} }
+                    toolCall: JSON.stringify({
+                        toolCall: { id: 'orphan1', name: 'search', args: {} }
                     }),
                     toolId: 'orphan1'
                 }),
@@ -410,8 +410,8 @@ describe('BaseAIClass Shared Methods', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    functionCall: JSON.stringify({
-                        functionCall: { id: 'complete1', name: 'read', args: {} }
+                    toolCall: JSON.stringify({
+                        toolCall: { id: 'complete1', name: 'read', args: {} }
                     }),
                     toolId: 'complete1'
                 }),
@@ -438,7 +438,7 @@ describe('BaseAIClass Shared Methods', () => {
             expect(result).toHaveLength(5);
             expect(result[0].content).toBe('Start');
             expect(result[1].content).toBe('Middle');
-            expect(result[2].functionCall).toBeDefined();
+            expect(result[2].toolCall).toBeDefined();
             expect(result[3].functionResponse).toBeDefined();
             expect(result[4].content).toBe('End');
         });
@@ -446,20 +446,20 @@ describe('BaseAIClass Shared Methods', () => {
 
     describe('Cross-Provider Consistency', () => {
         it('should parse same function call JSON consistently across providers', () => {
-            const sharedFunctionCall = JSON.stringify({
-                functionCall: {
+            const sharedToolCall = JSON.stringify({
+                toolCall: {
                     id: 'shared-123',
                     name: 'search_vault_files',
                     args: { query: 'consistent test' }
                 }
             });
 
-            const result = parseFunctionCall(sharedFunctionCall);
+            const result = parseToolCall(sharedToolCall);
 
             // All providers should parse to the same structure using the shared helper
             expect(result).toBeDefined();
-            expect(result!.functionCall.name).toBe('search_vault_files');
-            expect(result!.functionCall.args).toEqual({ query: 'consistent test' });
+            expect(result!.toolCall.name).toBe('search_vault_files');
+            expect(result!.toolCall.args).toEqual({ query: 'consistent test' });
         });
 
         it('should filter conversations consistently across providers', () => {

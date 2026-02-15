@@ -94,12 +94,12 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
     describe('Claude/OpenAI → Gemini Switching', () => {
         it('should convert Claude function call (no thoughtSignature) to legacy text format', async () => {
             // Simulate a conversation started with Claude that made a function call
-            const claudeFunctionCall = new ConversationContent({
+            const claudeToolCall = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_abc123',  // AIToolCall.toConversationString() includes id in JSON
                         name: 'search_vault_files',
                         args: { query: 'meeting notes' }
@@ -110,7 +110,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 toolId: 'call_abc123'
             });
 
-            const result = await (gemini as any).extractContents([claudeFunctionCall]);
+            const result = await (gemini as any).extractContents([claudeToolCall]);
 
             expect(result).toHaveLength(1);
             expect(result[0].parts[0]).toHaveProperty('text');
@@ -126,8 +126,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_xyz789',  // AIToolCall.toConversationString() includes id in JSON
                         name: 'read_file',
                         args: { path: 'project.md' }
@@ -148,12 +148,12 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
         it('should convert function response without id to legacy text format', async () => {
             // Function responses from Claude/OpenAI may not have the id field in content
-            const functionCallContent = new ConversationContent({
+            const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_cross1',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -176,7 +176,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 functionResponse: responseContent,
                 toolId: 'call_cross1'
             });
-            const result = await (gemini as any).extractContents([functionCallContent, claudeResponse]);
+            const result = await (gemini as any).extractContents([toolCallContent, claudeResponse]);
 
             expect(result[1].parts[0]).toHaveProperty('text');
             expect(result[1].parts[0].text).toContain('<!-- Historical tool result');
@@ -191,12 +191,12 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
         it('should handle Gemini function call with thoughtSignature when switching providers', async () => {
             // This test verifies the data structure is preserved
             // In actual usage, Claude/OpenAI would ignore the thoughtSignature field
-            const geminiFunctionCall = new ConversationContent({
+            const geminiToolCall = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
@@ -207,13 +207,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             });
 
             // Verify the signature is stored in ConversationContent
-            expect(geminiFunctionCall.thoughtSignature).toBe('geminiThoughtSignature==');
+            expect(geminiToolCall.thoughtSignature).toBe('geminiThoughtSignature==');
 
             // When this conversation is sent to Claude/OpenAI, they'll see the function call
             // but ignore the thoughtSignature field (which is fine)
-            const functionCallData = JSON.parse(geminiFunctionCall.functionCall!);
-            expect(functionCallData.functionCall.name).toBe('search_vault_files');
-            expect(functionCallData.functionCall.args).toEqual({ query: 'test' });
+            const toolCallData = JSON.parse(geminiToolCall.toolCall!);
+            expect(toolCallData.toolCall.name).toBe('search_vault_files');
+            expect(toolCallData.toolCall.args).toEqual({ query: 'test' });
         });
     });
 
@@ -229,8 +229,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'call_claude_123',  // AIToolCall.toConversationString() includes id
                                 name: 'search_vault_files',
                                 args: { query: 'project' }
@@ -273,8 +273,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 name: 'read_file',
                                 args: { path: 'project.md' }
                             }
@@ -313,18 +313,18 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(result.length).toBeGreaterThan(0);
 
             // Find the Claude function call - should be legacy text
-            const claudeFunctionCall = result.find((r: any) =>
+            const claudeToolCall = result.find((r: any) =>
                 r.parts[0]?.text?.includes('<!-- Historical tool call') &&
                 r.parts[0]?.text?.includes('"name": "search_vault_files"')
             );
-            expect(claudeFunctionCall).toBeDefined();
+            expect(claudeToolCall).toBeDefined();
 
             // Find the Gemini function call - should have proper format with signature
-            const geminiFunctionCall = result.find((r: any) =>
+            const geminiToolCall = result.find((r: any) =>
                 r.parts[0]?.functionCall?.name === 'read_file' &&
                 r.parts[0]?.thoughtSignature === 'geminiSignature123=='
             );
-            expect(geminiFunctionCall).toBeDefined();
+            expect(geminiToolCall).toBeDefined();
         });
 
         it('should handle conversation switching from provider without signatures to Gemini', async () => {
@@ -338,8 +338,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'call_openai_456',  // AIToolCall.toConversationString() includes id
                                 name: 'list_files',
                                 args: {}
@@ -392,8 +392,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'call-1',  // AIToolCall.toConversationString() includes id
                                 name: 'func1',
                                 args: { a: 1 }
@@ -428,8 +428,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: { name: 'func2', args: { b: 2 } }
+                toolCall: JSON.stringify({
+                            toolCall: { name: 'func2', args: { b: 2 } }
                         }),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
@@ -485,12 +485,12 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
     describe('Claude ↔ OpenAI Switching', () => {
         it('should handle Claude function call when switching to OpenAI', async () => {
             // Simulate a conversation started with Claude that made a function call
-            const claudeFunctionCall = new ConversationContent({
+            const claudeToolCall = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'toolu_abc123',  // Claude's tool_use ID
                         name: 'search_vault_files',
                         args: { query: 'meeting notes' }
@@ -521,7 +521,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             // Now switch to OpenAI - it should read Claude's function call
             const openai = new OpenAI();
-            const result = await (openai as any).extractContents([claudeFunctionCall, claudeResponse]);
+            const result = await (openai as any).extractContents([claudeToolCall, claudeResponse]);
 
             // OpenAI should convert Claude's function call to its Responses API format
             expect(result).toHaveLength(2);
@@ -544,8 +544,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_xyz789',  // OpenAI's call_id
                         name: 'read_file',
                         args: { path: 'project.md' }
@@ -605,8 +605,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'toolu_1',
                                 name: 'search_vault_files',
                                 args: { query: 'test' }
@@ -647,8 +647,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'call_2',
                                 name: 'read_file',
                                 args: { path: 'file1.md' }
@@ -704,8 +704,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: '',  // Empty string
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -735,8 +735,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: '   ',  // Whitespace only
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -764,8 +764,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: 'Let me read that file for you',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_openai_123',
                         name: 'read_file',
                         args: { path: 'notes.md' }
@@ -798,8 +798,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_abc',
                         name: 'search_vault_files',
                         args: { query: 'project notes' }
@@ -827,8 +827,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
@@ -871,12 +871,12 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             // REGRESSION TEST: Bug discovered where Gemini → OpenAI switching failed
             // because OpenAI tried to use undefined call_id
             // Gemini function call with thoughtSignature but no id
-            const geminiFunctionCall = new ConversationContent({
+            const geminiToolCall = new ConversationContent({
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
@@ -907,7 +907,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             // OpenAI should convert to legacy text format (not try to use undefined call_id)
             const openai = new OpenAI();
-            const result = await (openai as any).extractContents([geminiFunctionCall, geminiResponse]);
+            const result = await (openai as any).extractContents([geminiToolCall, geminiResponse]);
 
             // Should have 2 items (both converted to messages)
             expect(result).toHaveLength(2);
@@ -938,8 +938,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'call_xyz',
                                 name: 'search_vault_files',
                                 args: { query: 'test' }
@@ -987,9 +987,9 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             const openai = new OpenAI();
             const openaiResult = await (openai as any).extractContents(conversation);
             expect(openaiResult.length).toBeGreaterThan(0);
-            const functionCall = openaiResult.find((r: any) => r.type === 'function_call');
-            expect(functionCall).toBeDefined();
-            expect(functionCall.call_id).toBe('call_xyz');
+            const toolCall = openaiResult.find((r: any) => r.type === 'function_call');
+            expect(toolCall).toBeDefined();
+            expect(toolCall.call_id).toBe('call_xyz');
         });
     });
 
@@ -1005,8 +1005,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'toolu_1',
                                 name: 'search_vault_files',
                                 args: { query: 'notes' }
@@ -1043,8 +1043,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'call_2',
                                 name: 'read_file',
                                 args: { path: 'note1.md' }
@@ -1108,8 +1108,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 name: 'search_vault_files',
                                 args: { query: 'project' }
                             }
@@ -1146,8 +1146,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'toolu_2',
                                 name: 'read_file',
                                 args: { path: 'project.md' }
@@ -1184,8 +1184,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'call_3',
                                 name: 'write_file',
                                 args: { path: 'summary.md', content: 'Summary here' }
@@ -1225,10 +1225,10 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(openaiResult.length).toBeGreaterThan(0);
 
             // Verify all three function calls are present in each provider's view
-            const geminiFunctionCalls = geminiResult.filter((r: any) =>
+            const geminiToolCalls = geminiResult.filter((r: any) =>
                 r.parts[0]?.functionCall || r.parts[0]?.text?.includes('<!-- Historical tool call')
             );
-            expect(geminiFunctionCalls.length).toBe(3);
+            expect(geminiToolCalls.length).toBe(3);
 
             const claudeToolUses = claudeResult.filter((r: any) =>
                 r.content.some((c: any) => c.type === 'tool_use' || c.text?.includes('<!-- Historical tool call'))
@@ -1246,8 +1246,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'toolu_round',
                                 name: 'search_vault_files',
                                 args: { query: 'test', limit: 5 }
@@ -1315,8 +1315,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'call_round',
                                 name: 'search_vault_files',
                                 args: { query: 'openai test' }
@@ -1377,8 +1377,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: 'Searching...',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'toolu_step1',
                                 name: 'search_vault_files',
                                 args: { query: 'workflow' }
@@ -1414,8 +1414,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: 'Reading file...',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'call_step2',
                                 name: 'read_file',
                                 args: { path: 'workflow.md' }
@@ -1451,8 +1451,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 name: 'list_files',
                                 args: { path: '/' }
                             }
@@ -1525,8 +1525,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: { name: 'test_func', args: {} }  // No id = native Gemini
+                toolCall: JSON.stringify({
+                    toolCall: { name: 'test_func', args: {} }  // No id = native Gemini
                 }),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
@@ -1546,8 +1546,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: { name: 'test_func', args: {} }  // No id = native Gemini
+                toolCall: JSON.stringify({
+                    toolCall: { name: 'test_func', args: {} }  // No id = native Gemini
                 }),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
@@ -1571,8 +1571,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.Assistant,
                         content: '',
                         displayContent: '',
-                        functionCall: JSON.stringify({
-                            functionCall: {
+                        toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'toolu_123',  // id field indicates Claude/OpenAI origin
                                 name: 'func1',
                                 args: {}
@@ -1620,8 +1620,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: {
+                toolCall: JSON.stringify({
+                    toolCall: {
                         id: 'tool-123',  // ID in the JSON indicates cross-provider origin
                         name: 'test_func',
                         args: { query: 'test' }
@@ -1667,8 +1667,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                    functionCall: { name: 'test_func', args: { query: 'test' } }  // No id field!
+                toolCall: JSON.stringify({
+                    toolCall: { name: 'test_func', args: { query: 'test' } }  // No id field!
                 }),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
@@ -1698,8 +1698,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                functionCall: JSON.stringify({
-                            functionCall: {
+                toolCall: JSON.stringify({
+                            toolCall: {
                                 id: 'call-123',
                                 name: 'search_vault_files',
                                 args: { query: 'test' }

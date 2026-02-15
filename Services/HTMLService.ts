@@ -23,7 +23,6 @@ export class HTMLService {
         return fragment;
     }
 
-
     // Creates a temporary container, parses HTML, and returns the container.
     // Useful for parsing HTML when you need to traverse the resulting DOM structure.
     public parseHTMLToContainer(htmlString: string): HTMLDivElement {

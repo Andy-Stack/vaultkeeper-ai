@@ -48,7 +48,7 @@ export abstract class BaseAIFileService implements IAIFileService {
 		}
 		attachment.deleteFileID(this.provider);
 
-		const fileID = await this.uploadFileToAPI(attachment.base64, attachment.mimeType, attachment.fileName);
+		const fileID = await this.uploadFileToAPI(await attachment.getBase64(), attachment.getMimeType(), attachment.fileName);
 
 		if (fileID.trim() === "") {
 			return; // We tried, the agent will be notified of the failure

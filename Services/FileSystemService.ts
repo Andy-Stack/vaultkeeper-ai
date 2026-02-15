@@ -51,6 +51,14 @@ export class FileSystemService {
         return await this.vaultService.modify(file, content, allowAccessToPluginRoot, requiresConfirmation);
     }
 
+    public async writeBinaryFile(filePath: string, data: ArrayBuffer, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
+        const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
+        if (file == null || !(file instanceof TFile)) {
+            return await this.vaultService.createBinary(filePath, data, allowAccessToPluginRoot);
+        }
+        return await this.vaultService.modifyBinary(file, data, allowAccessToPluginRoot);
+    }
+
     public async patchFile(filePath: string, oldContent: string, newContent: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 

@@ -107,3 +107,42 @@ export function toMimeType(mimeType: string): MimeType {
 export function isKnownMimeType(value: string): value is MimeType {
     return Object.values(MimeType).includes(value as MimeType) && value !== MimeType.UNKNOWN.toString();
 }
+
+export function isImageMimeType(mimeType: MimeType) {
+    return mimeType === MimeType.IMAGE_AVIF ||
+        mimeType === MimeType.IMAGE_BMP ||
+        mimeType === MimeType.IMAGE_GIF ||
+        mimeType === MimeType.IMAGE_JPEG ||
+        mimeType === MimeType.IMAGE_PNG ||
+        mimeType === MimeType.IMAGE_SVG ||
+        mimeType === MimeType.IMAGE_WEBP;
+}
+
+export function isTextMimeType(mimeType: MimeType): boolean {
+    if (mimeType === MimeType.APPLICATION_PDF || mimeType === MimeType.UNKNOWN) {
+        return false;
+    }
+
+    if (mimeType.startsWith("text/")) {
+        return true;
+    }
+
+    const textApplicationTypes = [
+        MimeType.APPLICATION_JSON,
+        MimeType.APPLICATION_XML,
+        MimeType.APPLICATION_RTF,
+        MimeType.APPLICATION_YAML,
+        MimeType.APPLICATION_TOML,
+        MimeType.APPLICATION_TEX,
+        MimeType.APPLICATION_LATEX,
+        MimeType.APPLICATION_MAKEFILE,
+        MimeType.APPLICATION_GRADLE,
+        MimeType.APPLICATION_DOCKERFILE,
+        MimeType.APPLICATION_PYTHON_CODE,
+        MimeType.APPLICATION_JAVASCRIPT,
+        MimeType.APPLICATION_TYPESCRIPT,
+        MimeType.APPLICATION_SH
+    ];
+
+    return textApplicationTypes.includes(mimeType);
+}

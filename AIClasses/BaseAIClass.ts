@@ -42,7 +42,7 @@ export abstract class BaseAIClass implements IAIClass {
         this.apiKey = this.settingsService.getApiKeyForProvider(provider);
     }
 
-    get currentProvider(): AIProvider {
+    public get currentProvider(): AIProvider {
         return this.provider;
     }
 

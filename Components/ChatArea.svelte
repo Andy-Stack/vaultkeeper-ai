@@ -81,7 +81,7 @@
 
     chatAreaPaddingElement.style.paddingBottom = `${padding}px`;
 
-    if (behavior && (autoScroll || shouldSettle)) {
+    if (behavior && autoScroll) {
       chatContainer.scroll({ top: chatContainer.scrollHeight, behavior });
     }
   }

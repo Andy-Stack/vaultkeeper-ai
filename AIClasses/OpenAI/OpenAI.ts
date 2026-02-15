@@ -323,7 +323,7 @@ export class OpenAI extends BaseAIClass {
                 continue; // Skip - upload failed, error message added in extractContents()
             }
 
-            const mimeType = toMimeType(attachment.mimeType);
+            const mimeType = toMimeType(attachment.getMimeType());
 
             let isPlainText = false;
 

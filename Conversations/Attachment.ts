@@ -1,25 +1,44 @@
 import type { AIProvider } from "Enums/ApiProvider";
 import { isAudioFile, isImageFile, isKnownFileType, isTextFile, isVideoFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
-import { toMimeType } from "Enums/MimeType";
+import { isImageMimeType, isTextMimeType, MimeType, toMimeType } from "Enums/MimeType";
+import { StringTools } from "Helpers/StringTools";
 
 export class Attachment {
-    
+
     public fileName: string;
     public mimeType: string;
-    public base64: string;
     public fileID: Partial<Record<AIProvider, string>>;
+    public base64: string;
+    public filePath?: string;
 
     constructor(
         fileName: string,
         mimeType: string,
         base64: string,
-        fileID: Partial<Record<AIProvider, string>> = {}
+        fileID: Partial<Record<AIProvider, string>> = {},
+        filePath?: string
     ) {
         this.fileName = fileName;
         this.mimeType = mimeType;
-        this.base64 = base64;
         this.fileID = fileID;
+        this.base64 = base64;
+        this.filePath = filePath;
+    }
+
+    public getMimeType(): string {
+        const mimeTypeEnum = toMimeType(this.mimeType);
+        if (isTextMimeType(mimeTypeEnum)) {
+            return MimeType.TEXT_PLAIN;
+        }
+        return this.mimeType;
+    }
+
+    public async getBase64(): Promise<string> {
+        if (isImageMimeType(toMimeType(this.mimeType))) {
+            return await StringTools.resizeB64Image(this.base64, this.mimeType);
+        }
+        return this.base64;
     }
     
     public getFileID(provider: AIProvider): string | undefined {
@@ -70,7 +89,7 @@ export class Attachment {
     public static isAttachmentData(this: void, data: unknown): data is {
         fileName: string;
         mimeType: string;
-        base64: string;
+        filePath: string;
         fileID?: Partial<Record<AIProvider, string>>;
     } {
         return (
@@ -78,10 +97,10 @@ export class Attachment {
             typeof data === "object" &&
             "fileName" in data &&
             "mimeType" in data &&
-            "base64" in data &&
+            "filePath" in data &&
             typeof data.fileName === "string" &&
             typeof data.mimeType === "string" &&
-            typeof data.base64 === "string" &&
+            typeof data.filePath === "string" &&
             (!("fileID" in data) || typeof data.fileID === "object")
         );
     }

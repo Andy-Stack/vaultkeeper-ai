@@ -1,3 +1,5 @@
+import { Exception } from "./Exception";
+
 export abstract class StringTools {
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment -- regex-parser is a CommonJS module without ESM support
@@ -67,6 +69,58 @@ export abstract class StringTools {
             bytes[i] = binaryString.charCodeAt(i);
         }
         return bytes;
+    }
+
+    public static async computeSHA256Hash(base64: string): Promise<string> {
+        const bytes = this.toBytes(base64);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', bytes);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    public static async resizeB64Image(base64: string, mimeType: string, maxWidth: number = 1000, maxHeight: number = 1000): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth || height > maxHeight) {
+                    const aspectRatio = width / height;
+                    if (width > height) {
+                        width = maxWidth;
+                        height = maxWidth / aspectRatio;
+                    } else {
+                        height = maxHeight;
+                        width = maxHeight * aspectRatio;
+                    }
+                }
+
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                const context = canvas.getContext("2d");
+
+                if (!context) {
+                    reject(Exception.new("Failed to get canvas context"));
+                    return;
+                }
+
+                context.drawImage(img, 0, 0, width, height);
+
+                const dataURL = canvas.toDataURL(mimeType, 0.92);
+                const base64Only = dataURL.split(',')[1];
+                resolve(base64Only);
+            };
+
+            img.onerror = () => reject(Exception.new("Failed to load image"));
+
+            if (!base64.startsWith('data:')) {
+                base64 = `data:${mimeType};base64,${base64}`;
+            }
+            img.src = base64;
+        });
     }
 
 } 

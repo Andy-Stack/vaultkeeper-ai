@@ -230,6 +230,38 @@ export class VaultService {
         }
     }
 
+    public async createBinary(filePath: string, data: ArrayBuffer, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
+        filePath = this.sanitiserService.sanitize(filePath);
+        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
+            Exception.log(`Plugin attempted to create a binary file that is in the exclusion list: ${filePath}`);
+            return Exception.new(`Failed to create file, permission denied: ${filePath}`);
+        }
+
+        try {
+            await this.createDirectories(filePath, allowAccessToPluginRoot);
+            return await this.vault.createBinary(filePath, data);
+        } catch (error) {
+            Exception.log(error);
+            return Exception.new(error);
+        }
+    }
+
+    public async modifyBinary(file: TFile, data: ArrayBuffer, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
+        const filePath = this.sanitiserService.sanitize(file.path);
+        if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
+            Exception.log(`Plugin attempted to modify a binary file that is in the exclusion list: ${filePath}`);
+            return Exception.new(`File does not exist: ${filePath}`);
+        }
+
+        try {
+            await this.vault.modifyBinary(file, data);
+            return file;
+        } catch (error) {
+            Exception.log(error);
+            return Exception.new(error);
+        }
+    }
+
     public async createFolder(path: string, allowAccessToPluginRoot: boolean = false): Promise<TFolder | Error> {
         path = this.sanitiserService.sanitize(path);
         if (this.isExclusion(path, allowAccessToPluginRoot)) {

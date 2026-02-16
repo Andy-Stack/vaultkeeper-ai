@@ -34,6 +34,14 @@
     selectedItems = selectedItems;
   }
 
+  function toggleAll(state: boolean) {
+    selectedItems.clear();
+    if (state) {
+      selectedItems = new Set(items.map(item => item.id));
+    }
+    selectedItems = selectedItems;
+  }
+
   function handleDelete() {
     if (selectedItems.size === 0) {
       return;
@@ -80,30 +88,43 @@
   </div>
   <div class="conversation-history-modal-content">
     {#if filteredItems.length === 0}
-    <p class="history-empty-state" in:fade={{ duration: 200 }}>
-      {Copy.NoConversationsFound}
-    </p>
+      <p class="history-empty-state" in:fade={{ duration: 200 }}>
+        {Copy.NoConversationsFound}
+      </p>
     {:else}
-    {#each filteredItems as item (item.id)}
-      <div class="history-list-modal-content" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }}>
-        <div
-          class="history-list-modal-clickable"
-          on:click={(e) => handleConversationClick(item.id, e)}
-          on:keydown={(e) => e.key === 'Enter' && handleConversationClick(item.id, e)}
-          role="button"
-          tabindex="0">
-          <span class="history-list-modal-date">{item.date}</span>
-          <span class="history-list-modal-separator">|</span>
-          <span class="history-list-modal-title">{item.title}</span>
-        </div>
+      <div class="history-list-modal-list" transition:fade={{ duration: 200 }}>
+        <span class="history-list-modal-date history-list-modal-header">Date</span>
+        <span class="history-list-modal-separator history-list-modal-header">|</span>
+        <span class="history-list-modal-title history-list-modal-header">Title</span>
         <input
           type="checkbox"
           class="history-list-modal-checkbox"
-          checked={selectedItems.has(item.id)}
-          on:change={() => toggleSelection(item.id)}
+          on:change={(event) => toggleAll(event.currentTarget.checked)}
         />
+        {#each filteredItems as item (item.id)}
+          <span class="history-list-modal-date history-list-modal-clickable"
+            on:click={(e) => handleConversationClick(item.id, e)}
+            on:keydown={(e) => e.key === 'Enter' && handleConversationClick(item.id, e)}
+            role="button"
+            tabindex="0">{item.date}</span>
+          <span class="history-list-modal-separator history-list-modal-clickable"
+            on:click={(e) => handleConversationClick(item.id, e)}
+            on:keydown={(e) => e.key === 'Enter' && handleConversationClick(item.id, e)}
+            role="button"
+            tabindex="0">|</span>
+          <span class="history-list-modal-title history-list-modal-clickable"
+            on:click={(e) => handleConversationClick(item.id, e)}
+            on:keydown={(e) => e.key === 'Enter' && handleConversationClick(item.id, e)}
+            role="button"
+            tabindex="0">{item.title}</span>
+          <input
+            type="checkbox"
+            class="history-list-modal-checkbox"
+            checked={selectedItems.has(item.id)}
+            on:change={() => toggleSelection(item.id)}
+          />
+        {/each}
       </div>
-    {/each}
     {/if}
   </div>
 </div>
@@ -111,7 +132,7 @@
 <style>
   .conversation-history-modal-container {
     display: grid;
-    grid-template-rows: auto var(--size-4-3) 1fr var(--size-4-1);
+    grid-template-rows: auto 1fr var(--size-4-1);
     grid-template-columns: var(--size-4-2) 1fr var(--size-4-2);
     max-height: 60vh;
     margin: 10px;
@@ -137,7 +158,7 @@
   }
 
   .conversation-history-modal-content {
-    grid-row: 3;
+    grid-row: 2;
     grid-column: 2;
     overflow: scroll;
     scroll-behavior: smooth;
@@ -153,22 +174,21 @@
     color: var(--text-muted);
   }
 
-  .history-list-modal-content {
+  .history-list-modal-list {
     display: grid;
-    grid-template-rows: 1fr;
-    grid-template-columns: 1fr auto;
-    margin-bottom: var(--size-4-2);
+    grid-template-columns: auto auto 1fr auto;
+    gap: 0;
+    align-items: center;
+  }
+
+  .history-list-modal-header {
+    padding: var(--size-2-2) 0;
+    color: var(--text-muted);
   }
 
   .history-list-modal-clickable {
-    grid-row: 1;
-    grid-column: 1;
-    display: grid;
-    grid-template-rows: 1fr;
-    grid-template-columns: auto auto 1fr;
     cursor: pointer;
     padding: var(--size-2-2) 0;
-    border-radius: var(--radius-s);
     transition: background-color 0.2s ease;
   }
 
@@ -181,33 +201,23 @@
   }
 
   .history-list-modal-date {
-    grid-row: 1;
-    grid-column: 1;
-    margin-left: var(--size-4-3)
+    margin-left: var(--size-4-3);
   }
 
   .history-list-modal-separator {
-    grid-row: 1;
-    grid-column: 2;
     color: var(--text-faint);
     margin: 0px var(--size-4-3);
   }
 
   .history-list-modal-title {
-    grid-row: 1;
-    grid-column: 3;
-    display: inline-block;
-    max-width: 80%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
   }
 
   .history-list-modal-checkbox {
-    grid-row: 1;
-    grid-column: 2;
     margin: 0px var(--size-4-3) 0px var(--size-2-3);
-    align-self: center;
   }
 
   #delete-button {

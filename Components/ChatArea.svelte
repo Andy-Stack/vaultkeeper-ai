@@ -289,7 +289,7 @@
       {/if}
     {/each}
 
-    <ThoughtIndicator thought={currentThought} bind:thoughtIndicatorElement={thoughtIndicatorElement}/>
+    <ThoughtIndicator thought={currentThought} {editModeActive} bind:thoughtIndicatorElement={thoughtIndicatorElement}/>
     {#if isSubmitting}
       <StreamingIndicator editModeActive={editModeActive} bind:streamingIndicatorElement={streamingIndicatorElement}/>
     {/if}

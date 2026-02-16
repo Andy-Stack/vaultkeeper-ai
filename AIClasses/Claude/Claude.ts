@@ -115,6 +115,13 @@ export class Claude extends BaseAIClass {
                     this.accumulatedFunctionName = toolBlock.name || null;
                     this.accumulatedFunctionArgs = "";
                     this.accumulatedFunctionId = toolBlock.id || null;
+
+                    // Return immediately to signal tool call has started
+                    return {
+                        content: "",
+                        isComplete: false,
+                        toolCallStarted: toolBlock.name
+                    };
                 }
             }
 

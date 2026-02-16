@@ -114,7 +114,7 @@
 
 {#if busyPlanning}
     <div id="chat-planning-in-progress" transition:slide>
-        <Spinner {editModeActive}/>
+        <Spinner {editModeActive} alternateBackground={true}/>
         <span id="chat-planning-in-progress-text">{$executionPlanState.plan?.isReplan ? "Replanning in progress..." : "Planning in progress..."}</span>
     </div>
 {/if}

@@ -7,7 +7,7 @@ import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIToolCall } from "AIClasses/AIToolCall";
 import { fromString as aiToolFromString } from "Enums/AITool";
 import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
-import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIToolTool, ResponsesAPIInput } from "./OpenAITypes";
+import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemAdded, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIToolTool, ResponsesAPIInput } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import { MimeType, toMimeType } from "Enums/MimeType";
@@ -138,6 +138,21 @@ export class OpenAI extends BaseAIClass {
                     break;
                 }
 
+                case "response.output_item.added": {
+                    // Function call starting - get name immediately for early UI feedback
+                    const itemAddedEvent = event as ResponseOutputItemAdded;
+
+                    // Check if this is a function call and return tool name immediately
+                    if (itemAddedEvent.item.type === "function_call" && itemAddedEvent.item.name) {
+                        return {
+                            content: "",
+                            isComplete: false,
+                            toolCallStarted: itemAddedEvent.item.name
+                        };
+                    }
+                    break;
+                }
+
                 case "response.output_item.done": {
                     // Complete output item received - this includes function calls with name
                     const itemDoneEvent = event as ResponseOutputItemDone;
@@ -167,7 +182,6 @@ export class OpenAI extends BaseAIClass {
                 case "response.in_progress":
                 case "response.content_part.added":
                 case "response.content_part.done":
-                case "response.output_item.added":
                 case "response.output_text.done":
                 case "response.web_search_call.in_progress":
                 case "response.web_search_call.searching":

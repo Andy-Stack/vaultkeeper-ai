@@ -21,6 +21,7 @@ export interface IChatServiceCallbacks {
 	onSubmit: () => void;
 	onStreamingUpdate: (streamingMessageId: string | null) => void;
 	onThoughtUpdate: (thought: string | null) => void;
+	onToolCallStarted: (toolName: string) => void;
 	onPlanningStarted: () => void;
 	onPlanningFinished: () => void;
 	onUserQuestion: (question: string) => Promise<string>;

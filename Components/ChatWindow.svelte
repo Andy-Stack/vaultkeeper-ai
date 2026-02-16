@@ -20,6 +20,7 @@
 	import type { ExecutionPlanStore } from "Stores/ExecutionPlanStore";
 	import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
 	import { HTMLService } from "Services/HTMLService";
+	import { AITool, fromString } from "Enums/AITool";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);
@@ -119,6 +120,19 @@
         } else if (currentThought !== null) {
           // we are in-between thoughts so use generic copy
           currentThought = thought;
+        }
+      },
+      onToolCallStarted: (toolName: string) => {
+        const tool = fromString(toolName);
+        switch(tool) {
+          case AITool.WriteVaultFile:
+          case AITool.PatchVaultFile:
+            currentThought = Copy.AIThoughtGeneratingNote;
+            break;
+          case AITool.AskUserQuestionPlanning:
+          case AITool.AskUserQuestionExecution:
+            currentThought = Copy.AIThoughtPreparingQuery;
+            break;
         }
       },
       onPlanningStarted: () => {

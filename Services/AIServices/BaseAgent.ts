@@ -138,6 +138,11 @@ export abstract class BaseAgent {
                 break;
             }
 
+            if (chunk.toolCallStarted) {
+                this.debugService?.log("ToolCallStarted", `Tool call started: ${chunk.toolCallStarted}`);
+                callbacks.onToolCallStarted(chunk.toolCallStarted);
+            }
+
             if (chunk.toolCall) {
                 this.debugService?.log("ToolCall", `Function call captured: ${chunk.toolCall.name}`);
                 capturedToolCall = chunk.toolCall;

@@ -73,6 +73,8 @@ export enum Copy {
     TooltipLearnMoreFileMonitoring = "Learn more in Plugin Guide",
 
     AIThoughtMessage = "Thinking...",
+    AIThoughtGeneratingNote = "Generating note contents...",
+    AIThoughtPreparingQuery = "Preparing user query...",
 
     // Rate Limit Countdown
     RateLimitCountdown = "Rate limit exceeded retrying in {seconds}...",

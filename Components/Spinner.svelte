@@ -2,6 +2,7 @@
   export let width: string = "18px";
   export let height: string = "18px";
   export let editModeActive: boolean = false;
+  export let alternateBackground: boolean = false;
   export let spinnerElement: HTMLDivElement | undefined = undefined;
 </script>
 
@@ -11,7 +12,7 @@
   style="width: {width}; height: {height};"
   bind:this={spinnerElement}
 >
-  <div class="circle-core"></div>
+  <div class="circle-core" class:alternate-background={alternateBackground}></div>
 </div>
 
 <style>
@@ -47,7 +48,11 @@
   .circle-core {
     width: 100%;
     height: 100%;
-    background-color: var(--background-secondary-alt);
+    background-color: var(--background-secondary);
     border-radius: 50%;
+  }
+
+  .circle-core.alternate-background {
+    background-color: var(--background-secondary-alt);
   }
 </style>

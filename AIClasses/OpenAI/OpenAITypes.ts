@@ -21,6 +21,19 @@ export interface ResponseToolCallArgumentsDone extends ResponseEvent {
     sequence_number: number;
 }
 
+export interface ResponseOutputItemAdded extends ResponseEvent {
+    type: "response.output_item.added";
+    response_id: string;
+    output_index: number;
+    item: {
+        type: string;
+        id?: string;
+        call_id?: string;
+        name?: string;
+        arguments?: string;
+    };
+}
+
 export interface ResponseOutputItemDone extends ResponseEvent {
     type: "response.output_item.done";
     item_id: string;

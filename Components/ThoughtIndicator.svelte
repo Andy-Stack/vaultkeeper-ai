@@ -1,14 +1,19 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
+	import Spinner from "./Spinner.svelte";
+
   export let thought: string | null = null;
   export let thoughtIndicatorElement: HTMLElement | undefined = undefined;
+  export let editModeActive : boolean = false;
+
   $: isVisible = thought !== null && thought.trim().length > 0;
+
 </script>
 
 {#if isVisible}
   <div class="ai-thought-container" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }} bind:this={thoughtIndicatorElement}>
     <div class="ai-thought-bubble">
-      <span>{thought}</span>
+      <span><Spinner {editModeActive}/> {thought}</span>
     </div>
   </div>
 {/if}
@@ -33,12 +38,15 @@
     z-index: 1;
     background: var(--background-primary-alt);
     border-radius: 10px;
-    padding: 0.75rem 1rem;
+    padding: 0.55rem 0.7rem;
     font-size: var(--font-smallest);
     color: var(--text-muted);
     font-style: italic;
     word-wrap: break-word;
     width: 100%;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .ai-thought-bubble::after {

@@ -26,6 +26,21 @@ describe('AIControllerService - Integration Tests', () => {
 	let mockPrompt: any;
 	let mockAIToolService: any;
 
+	const callbacks = {
+		onSubmit: vi.fn(),
+		onStreamingUpdate: vi.fn(),
+		onThoughtUpdate: vi.fn(),
+		onToolCallStarted: vi.fn(),
+		onPlanningStarted: vi.fn(),
+		onPlanningFinished: vi.fn(),
+		onUserQuestion: vi.fn(),
+		onPlanUpdate: vi.fn(),
+		onPlanStepUpdate: vi.fn(),
+		onPlanReset: vi.fn(),
+		onComplete: vi.fn(),
+		onCancel: vi.fn()
+	};
+
 	beforeEach(() => {
 		// Mock IPrompt
 		mockPrompt = {
@@ -84,20 +99,6 @@ describe('AIControllerService - Integration Tests', () => {
 			const conversation = new Conversation();
 			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test request' }));
 
-			const callbacks = {
-				onSubmit: vi.fn(),
-				onStreamingUpdate: vi.fn(),
-				onThoughtUpdate: vi.fn(),
-				onPlanningStarted: vi.fn(),
-				onPlanningFinished: vi.fn(),
-				onUserQuestion: vi.fn(),
-				onPlanUpdate: vi.fn(),
-				onPlanStepUpdate: vi.fn(),
-				onPlanReset: vi.fn(),
-				onComplete: vi.fn(),
-				onCancel: vi.fn()
-			};
-
 			// Mock streamRequest to return immediately without function calls
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield { content: 'Response', isComplete: true };
@@ -114,20 +115,6 @@ describe('AIControllerService - Integration Tests', () => {
 		it('should handle streaming response without function calls', async () => {
 			const conversation = new Conversation();
 			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test request' }));
-
-			const callbacks = {
-				onSubmit: vi.fn(),
-				onStreamingUpdate: vi.fn(),
-				onThoughtUpdate: vi.fn(),
-				onPlanningStarted: vi.fn(),
-				onPlanningFinished: vi.fn(),
-				onUserQuestion: vi.fn(),
-				onPlanUpdate: vi.fn(),
-				onPlanStepUpdate: vi.fn(),
-				onPlanReset: vi.fn(),
-				onComplete: vi.fn(),
-				onCancel: vi.fn()
-			};
 
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield { content: 'Part 1', isComplete: false };
@@ -146,20 +133,6 @@ describe('AIControllerService - Integration Tests', () => {
 
 		it('should throw error if AI provider not resolved', async () => {
 			const conversation = new Conversation();
-			const callbacks = {
-				onSubmit: vi.fn(),
-				onStreamingUpdate: vi.fn(),
-				onThoughtUpdate: vi.fn(),
-				onPlanningStarted: vi.fn(),
-				onPlanningFinished: vi.fn(),
-				onUserQuestion: vi.fn(),
-				onPlanUpdate: vi.fn(),
-				onPlanStepUpdate: vi.fn(),
-				onPlanReset: vi.fn(),
-				onComplete: vi.fn(),
-				onCancel: vi.fn()
-			};
-
 			// Don't call resolveAIProvider()
 			await expect(service.runMainAgent(conversation, true, false, callbacks))
 				.rejects.toThrow('Error: No AI provider has been set!');
@@ -168,20 +141,6 @@ describe('AIControllerService - Integration Tests', () => {
 		it('should handle function calls and continue the loop', async () => {
 			const conversation = new Conversation();
 			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Search for notes' }));
-
-			const callbacks = {
-				onSubmit: vi.fn(),
-				onStreamingUpdate: vi.fn(),
-				onThoughtUpdate: vi.fn(),
-				onPlanningStarted: vi.fn(),
-				onPlanningFinished: vi.fn(),
-				onUserQuestion: vi.fn(),
-				onPlanUpdate: vi.fn(),
-				onPlanStepUpdate: vi.fn(),
-				onPlanReset: vi.fn(),
-				onComplete: vi.fn(),
-				onCancel: vi.fn()
-			};
 
 			let callCount = 0;
 			mockAI.streamRequest.mockImplementation(async function* () {
@@ -215,20 +174,6 @@ describe('AIControllerService - Integration Tests', () => {
 			const conversation = new Conversation();
 			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Search' }));
 
-			const callbacks = {
-				onSubmit: vi.fn(),
-				onStreamingUpdate: vi.fn(),
-				onThoughtUpdate: vi.fn(),
-				onPlanningStarted: vi.fn(),
-				onPlanningFinished: vi.fn(),
-				onUserQuestion: vi.fn(),
-				onPlanUpdate: vi.fn(),
-				onPlanStepUpdate: vi.fn(),
-				onPlanReset: vi.fn(),
-				onComplete: vi.fn(),
-				onCancel: vi.fn()
-			};
-
 			let callCount = 0;
 			mockAI.streamRequest.mockImplementation(async function* () {
 				callCount++;
@@ -257,20 +202,6 @@ describe('AIControllerService - Integration Tests', () => {
 			const conversation = new Conversation();
 			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test' }));
 
-			const callbacks = {
-				onSubmit: vi.fn(),
-				onStreamingUpdate: vi.fn(),
-				onThoughtUpdate: vi.fn(),
-				onPlanningStarted: vi.fn(),
-				onPlanningFinished: vi.fn(),
-				onUserQuestion: vi.fn(),
-				onPlanUpdate: vi.fn(),
-				onPlanStepUpdate: vi.fn(),
-				onPlanReset: vi.fn(),
-				onComplete: vi.fn(),
-				onCancel: vi.fn()
-			};
-
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield { error: 'API Error', errorType: 'rate_limit', isComplete: true };
 			});
@@ -287,20 +218,6 @@ describe('AIControllerService - Integration Tests', () => {
 		it('should continue agent loop when shouldContinue is true', async () => {
 			const conversation = new Conversation();
 			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test continue' }));
-
-			const callbacks = {
-				onSubmit: vi.fn(),
-				onStreamingUpdate: vi.fn(),
-				onThoughtUpdate: vi.fn(),
-				onPlanningStarted: vi.fn(),
-				onPlanningFinished: vi.fn(),
-				onUserQuestion: vi.fn(),
-				onPlanUpdate: vi.fn(),
-				onPlanStepUpdate: vi.fn(),
-				onPlanReset: vi.fn(),
-				onComplete: vi.fn(),
-				onCancel: vi.fn()
-			};
 
 			let callCount = 0;
 			mockAI.streamRequest.mockImplementation(async function* () {
@@ -328,20 +245,6 @@ describe('AIControllerService - Integration Tests', () => {
 
 			const saveCallback = vi.fn().mockResolvedValue(undefined);
 			service.setSaveCallback(saveCallback);
-
-			const callbacks = {
-				onSubmit: vi.fn(),
-				onStreamingUpdate: vi.fn(),
-				onThoughtUpdate: vi.fn(),
-				onPlanningStarted: vi.fn(),
-				onPlanningFinished: vi.fn(),
-				onUserQuestion: vi.fn(),
-				onPlanUpdate: vi.fn(),
-				onPlanStepUpdate: vi.fn(),
-				onPlanReset: vi.fn(),
-				onComplete: vi.fn(),
-				onCancel: vi.fn()
-			};
 
 			let callCount = 0;
 			mockAI.streamRequest.mockImplementation(async function* () {

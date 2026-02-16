@@ -36,6 +36,7 @@ describe('Multi-Agent Integration Tests', () => {
 		onSubmit: vi.fn(),
 		onStreamingUpdate: vi.fn(),
 		onThoughtUpdate: vi.fn(),
+		onToolCallStarted: vi.fn(),
 		onPlanningStarted: vi.fn(),
 		onPlanningFinished: vi.fn(),
 		onUserQuestion: vi.fn().mockResolvedValue('User answer'),

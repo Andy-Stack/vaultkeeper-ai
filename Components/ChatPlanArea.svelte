@@ -96,7 +96,8 @@
         const stepElement = stepElements[activeStepIndex];
         if (!stepElement) return;
 
-        const stepTop = stepElement.offsetTop;
+        // Calculate position relative to the scroll container (wrapperDiv)
+        const stepTop = stepElement.offsetTop - contentDiv.offsetTop;
         const stepHeight = stepElement.offsetHeight;
         const wrapperHeight = wrapperDiv.clientHeight;
         const scrollTo = stepTop - (wrapperHeight / 2) + (stepHeight / 2);
@@ -135,7 +136,7 @@
                         {/if}
                         {#if index === activeStepIndex}
                             <div class="chat-plan-step-icon">
-                                <Spinner {editModeActive}/>
+                                <Spinner {editModeActive} alternateBackground={true}/>
                             </div>
                         {/if}
                         {#if index > activeStepIndex}

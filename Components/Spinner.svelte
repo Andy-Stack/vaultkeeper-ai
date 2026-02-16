@@ -31,6 +31,7 @@
     justify-content: center;
     align-items: center;
     border-radius: 50%;
+    flex-shrink: 0;
     --color: var(--interactive-accent);
     background: var(--color);
     background: linear-gradient(

@@ -181,6 +181,10 @@
     align-items: center;
   }
 
+  :global(.is-mobile) .history-list-modal-list {
+    margin-top: var(--size-4-1);
+  }
+
   .history-list-modal-header {
     padding: var(--size-2-2) 0;
     color: var(--text-muted);

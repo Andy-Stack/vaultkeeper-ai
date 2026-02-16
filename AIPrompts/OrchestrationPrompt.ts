@@ -58,6 +58,25 @@ Signal when the plan needs adjustment but the goal is still achievable.
 - New information emerged that changes the optimal path
 - The current plan has become stale or misaligned
 
+**When signaling Replan**, provide context that helps the planning agent create a better plan. Your replan context should include:
+
+**1. What was attempted and what happened**
+\`\`\`
+replan_context: "Steps 1-2 completed successfully. Step 3 failed: attempted to update config.yaml but the project uses config.json instead."
+\`\`\`
+
+**2. Why the current plan is no longer viable**
+\`\`\`
+replan_context: "The plan assumed a flat folder structure, but the vault uses nested folders by date. Remaining steps reference paths that don't exist."
+\`\`\`
+
+**3. What the new plan should account for**
+\`\`\`
+replan_context: "Step 2 discovered that there are 12 matching files, not 3 as originally expected. The new plan should handle batch processing rather than individual file edits."
+\`\`\`
+
+The planning agent receives the full execution history, but your replan context is its primary guide for understanding **what went wrong and what to do differently**.
+
 ### Abandon
 
 Signal when execution should stop permanently.

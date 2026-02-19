@@ -59,6 +59,11 @@ export class ExecutionAgent extends BaseAgent {
                     return { shouldExit: false };
                 }
                 this.debugService?.log("ExecutionAgent", `Task completed (success: ${parseResult.data.success}): ${parseResult.data.description}`);
+                this.conversation.addFunctionResponse(new AIToolResponse(
+                    toolCallName,
+                    { result: parseResult.data.success ? "Task completed successfully." : "Task failed, attempting recovery..." },
+                    toolCall.toolId
+                ));
                 this.updateThought(toolCall, callbacks);
                 executionResult = parseResult.data;
                 return { shouldExit: true };
@@ -79,6 +84,8 @@ export class ExecutionAgent extends BaseAgent {
             }));
             return await this.runExecutionAgent(step, callbacks);
         }
+
+        this.executionDepth = 0;
         return executionResult;
     }
 

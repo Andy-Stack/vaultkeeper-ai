@@ -38,6 +38,14 @@ When planning mode is enabled, provide the planning agent with:
 2. **Context**: Relevant vault state, user preferences, constraints
 3. **Unknowns**: What exploration is needed before committing to an approach
 
+**Critical: Convey the user's intent faithfully.** Do NOT soften, hedge, or add restrictions that the user did not request. The goal must reflect what the user actually asked for — not a cautious reinterpretation.
+
+- If the user says "ensure details are correct" → the goal is to **update notes to fix incorrect details**, not to "report findings"
+- If the user says "organize my notes" → the goal is to **move and restructure files**, not to "suggest an organization"
+- If the user says "clean up duplicates" → the goal is to **remove or merge duplicates**, not to "identify duplicates for review"
+
+The planning agent has its own safeguards and can ask clarifying questions. Your job is to pass the user's intent accurately, not to pre-filter it.
+
 #### Executing a Plan
 
 1. **Treat plan steps as directives** — execute them, don't reinterpret

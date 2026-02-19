@@ -49,13 +49,13 @@ export class OrchestrationAgent extends BaseAgent {
         let stepIndex = 0;
         let planCompleted = false;
 
+        const executionAgent = new ExecutionAgent();
+        executionAgent.resolveAIProvider();
+
         while (stepIndex < executionPlan.executionSteps.length && !planCompleted) {
             const step = executionPlan.executionSteps[stepIndex];
             callbacks.onPlanStepUpdate(stepIndex);
             this.debugService?.log("OrchestrationAgent", `Executing step ${stepIndex + 1}/${executionPlan.executionSteps.length}: ${step.description}`);
-
-            const executionAgent = new ExecutionAgent();
-            executionAgent.resolveAIProvider();
             
             const executionResult = await executionAgent.runExecutionAgent(step, callbacks);
 
@@ -362,7 +362,7 @@ export class OrchestrationAgent extends BaseAgent {
         this.ai.agentType = AgentType.Orchestration;
         this.ai.aiToolUsageMode = AIToolUsageMode.Enabled;
         this.ai.systemPrompt = this.aiPrompt.orchestrationInstruction();
-        this.ai.userInstruction = "";
+        this.ai.userInstruction = ""; // do not include user instruction for orchestration agent
         this.ai.aiToolDefinitions = AIToolDefinitions.orchestrationAgentDefinitions();
     }
 

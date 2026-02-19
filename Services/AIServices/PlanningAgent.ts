@@ -21,7 +21,7 @@ export class PlanningAgent extends BaseAgent {
     private planningDepth: number = 0;
 
     public async runPlanningAgent(conversation: Conversation, callbacks: IChatServiceCallbacks): Promise<ExecutionPlan | undefined> {
-        await this.setAgentPromptAndTools();
+        this.setAgentPromptAndTools();
 
         let capturedPlan: ExecutionPlan | null = null;
 
@@ -106,14 +106,14 @@ export class PlanningAgent extends BaseAgent {
         return capturedPlan;
     }
 
-    private async setAgentPromptAndTools() {
+    private setAgentPromptAndTools() {
         if (!this.ai) { // this shouldn't ever happen
             Exception.throw("Error: No AI provider has been set!");
         }
         this.ai.agentType = AgentType.Planning;
         this.ai.aiToolUsageMode = AIToolUsageMode.Enabled;
         this.ai.systemPrompt = this.aiPrompt.planningInstruction();
-        this.ai.userInstruction = await this.aiPrompt.userInstruction();
+        this.ai.userInstruction = ""; // do not include user instruction for planning agent
         this.ai.aiToolDefinitions = AIToolDefinitions.planningAgentDefinitions();
     }
 

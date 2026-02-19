@@ -99,7 +99,7 @@ export abstract class BaseAIClass implements IAIClass {
             case AgentType.Main:
                 return this.settingsService.settings.model;
             case AgentType.Orchestration:
-                return this.settingsService.settings.model;
+                return this.settingsService.settings.planningModel;
             case AgentType.Planning:
                 return this.settingsService.settings.planningModel;
             case AgentType.Execution:

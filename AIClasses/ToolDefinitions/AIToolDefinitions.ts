@@ -6,7 +6,6 @@ import { DeleteVaultFiles } from "./Tools/DeleteVaultFiles";
 import { MoveVaultFiles } from "./Tools/MoveVaultFiles";
 import { ListVaultFiles } from "./Tools/ListVaultFiles";
 import { PatchVaultFile } from "./Tools/PatchVaultFile";
-import { Replan } from "./Tools/Replan";
 import { CompleteStep } from "./Tools/CompleteStep";
 import { SubmitPlan } from "./Tools/SubmitPlan";
 import { CancelPlan } from "./Tools/CancelPlan";
@@ -14,6 +13,9 @@ import { AskUserQuestionPlanning } from "./Tools/AskUserQuestionPlanning";
 import { CompletePlan } from "./Tools/CompletePlan";
 import { CompleteTask } from "./Tools/CompleteTask";
 import { ExecuteWorkflow } from "./Tools/ExecuteWorkflow";
+import { ReviseStep } from "./Tools/ReviseStep";
+import { RevisePlan } from "./Tools/RevisePlan";
+import { SkipStep } from "./Tools/SkipStep";
 
 export abstract class AIToolDefinitions {
     
@@ -22,10 +24,10 @@ export abstract class AIToolDefinitions {
     // Definitions list provides a list of function definitions that does not include any planning functions (used as reference in planning agent prompt)
     private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles];
 
-    public static agentDefinitions(destructive: boolean, planning: boolean): IAIToolDefinition[] {
+    public static agentDefinitions(destructive: boolean, planningMode: boolean): IAIToolDefinition[] {
         this.isGated = false;
         
-        if (planning) {
+        if (planningMode) {
             return [ExecuteWorkflow];
         }
 
@@ -48,7 +50,17 @@ export abstract class AIToolDefinitions {
     }
 
     public static orchestrationAgentDefinitions(): IAIToolDefinition[] {
-        return [CompleteStep, Replan, CancelPlan, CompletePlan];
+        return [
+            SearchVaultFiles,
+            ReadVaultFiles,
+            ListVaultFiles,
+            CompleteStep,
+            ReviseStep,
+            RevisePlan,
+            SkipStep,
+            CompletePlan,
+            CancelPlan
+        ];
     }
 
     public static planningAgentDefinitions(): IAIToolDefinition[] {

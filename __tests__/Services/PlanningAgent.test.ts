@@ -115,11 +115,10 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(result).toBeDefined();
 			expect(result?.executionSteps).toHaveLength(3);
-			expect(result?.isReplan).toBe(false);
 			expect(result?.executionSteps[0].description).toBe('Search for notes');
 			expect(result?.executionSteps[1].description).toBe('Categorize notes');
 			expect(result?.executionSteps[2].description).toBe('Create index');
@@ -153,44 +152,10 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(result).toBeDefined();
 			expect(result?.executionSteps).toHaveLength(1);
-		});
-
-		it('should mark plan as replan when isReplan is true', async () => {
-			const callbacks = createMockCallbacks();
-			const conversation = new Conversation();
-			conversation.contents.push(new ConversationContent({
-				role: Role.User,
-				content: 'Previous plan failed, create new plan'
-			}));
-
-			mockAI.streamRequest.mockImplementation(async function* () {
-				yield {
-					content: 'Replan',
-					toolCall: new AIToolCall(
-						AITool.SubmitPlan,
-						{
-							steps: [
-								{
-									description: 'Revised approach',
-									instruction: 'New strategy'
-								}
-							]
-						},
-						'tool-1'
-					),
-					isComplete: true
-				};
-			});
-
-			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, true);
-
-			expect(result).toBeDefined();
-			expect(result?.isReplan).toBe(true);
 		});
 	});
 
@@ -247,7 +212,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(result).toBeDefined();
 			expect(attemptCount).toBeGreaterThan(1);
@@ -293,7 +258,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(result).toBeDefined();
 			expect(attemptCount).toBe(2);
@@ -351,7 +316,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(callbacks.onUserQuestion).toHaveBeenCalledWith('What topic should I search for?');
 			expect(result).toBeDefined();
@@ -421,7 +386,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(callbacks.onUserQuestion).toHaveBeenCalledTimes(2);
 			expect(result).toBeDefined();
@@ -475,7 +440,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runPlanningAgent(conversation, callbacks, false);
+			await service.runPlanningAgent(conversation, callbacks);
 
 			expect(attemptCount).toBeGreaterThan(1);
 		});
@@ -528,7 +493,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(mockAIToolService.performAITool).toHaveBeenCalled();
 			expect(result).toBeDefined();
@@ -580,7 +545,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(mockAIToolService.performAITool).toHaveBeenCalled();
 			expect(result).toBeDefined();
@@ -634,7 +599,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			// WriteVaultFile should be denied, not executed
 			expect(mockAIToolService.performAITool).not.toHaveBeenCalledWith(
@@ -691,7 +656,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runPlanningAgent(conversation, callbacks, false);
+			await service.runPlanningAgent(conversation, callbacks);
 
 			expect(attemptCount).toBeGreaterThan(1);
 		});
@@ -742,7 +707,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runPlanningAgent(conversation, callbacks, false);
+			await service.runPlanningAgent(conversation, callbacks);
 
 			expect(attemptCount).toBeGreaterThan(1);
 		});
@@ -769,7 +734,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(result).toBeUndefined();
 			expect(attemptCount).toBe(3); // MAX_AGENT_DEPTH
@@ -815,7 +780,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(result).toBeDefined();
 			expect(attemptCount).toBe(3);
@@ -847,7 +812,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			// Empty plan should be accepted
 			expect(result).toBeDefined();
@@ -903,7 +868,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(result).toBeDefined();
 			expect(conversation.contents.length).toBeGreaterThan(1);

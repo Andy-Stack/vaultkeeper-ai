@@ -75,6 +75,7 @@ export enum Copy {
     AIThoughtMessage = "Thinking...",
     AIThoughtGeneratingNote = "Generating note contents...",
     AIThoughtPreparingQuery = "Preparing user query...",
+    PlanningInProgress = "Planning in progress...",
 
     // Rate Limit Countdown
     RateLimitCountdown = "Rate limit exceeded retrying in {seconds}...",

@@ -141,46 +141,10 @@ describe('Multi-Agent Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(result).toBeDefined();
 			expect(result?.executionSteps).toHaveLength(1);
-			expect(result?.isReplan).toBe(false);
-		});
-
-		it('should mark plan as replan when requested', async () => {
-			const service = new PlanningAgent();
-			const conversation = new Conversation();
-			conversation.contents.push(new ConversationContent({
-				role: Role.User,
-				content: 'Revise plan'
-			}));
-			const callbacks = createMockCallbacks();
-
-			mockAI.streamRequest.mockImplementation(async function* () {
-				yield {
-					content: 'Replan',
-					toolCall: new AIToolCall(
-						AITool.SubmitPlan,
-						{
-							steps: [
-								{
-									description: 'Revised step',
-									instruction: 'New approach'
-								}
-							]
-						},
-						'tool-1'
-					),
-					isComplete: true
-				};
-			});
-
-			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, true);
-
-			expect(result).toBeDefined();
-			expect(result?.isReplan).toBe(true);
 		});
 	});
 
@@ -321,7 +285,7 @@ describe('Multi-Agent Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			// Should return undefined after max depth
 			expect(result).toBeUndefined();
@@ -432,7 +396,7 @@ describe('Multi-Agent Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			const result = await service.runPlanningAgent(conversation, callbacks, false);
+			const result = await service.runPlanningAgent(conversation, callbacks);
 
 			expect(mockAIToolService.performAITool).toHaveBeenCalled();
 			expect(result).toBeDefined();

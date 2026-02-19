@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { setElementIcon } from "Helpers/ElementHelper";
+	import { Copy } from "Enums/Copy";
 	import Spinner from "./Spinner.svelte";
 	import { tick, onDestroy } from "svelte";
 	import { fade, slide } from "svelte/transition";
@@ -116,7 +117,7 @@
 {#if busyPlanning}
     <div id="chat-planning-in-progress" transition:slide>
         <Spinner {editModeActive} alternateBackground={true}/>
-        <span id="chat-planning-in-progress-text">{$executionPlanState.plan?.isReplan ? "Replanning in progress..." : "Planning in progress..."}</span>
+        <span id="chat-planning-in-progress-text">{Copy.PlanningInProgress}</span>
     </div>
 {/if}
 {#if steps && steps?.length > 0}

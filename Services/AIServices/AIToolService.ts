@@ -123,12 +123,14 @@ export class AIToolService {
                 // multi-agent functions are handled elsewhere - this shouldn't really ever get hit
                 case AITool.ExecuteWorkflow:
                 case AITool.ContinuePlanExecution:
-                case AITool.Replan:
                 case AITool.SubmitPlan:
                 case AITool.AskUserQuestionPlanning:
                 case AITool.AskUserQuestionExecution:
                 case AITool.CompleteTask:
                 case AITool.CompleteStep:
+                case AITool.SkipStep:
+                case AITool.ReviseStep:
+                case AITool.RevisePlan:
                 case AITool.CompletePlan:
                 case AITool.CancelPlan: {
                     Exception.log(`Multi-agent function ${toolCall.name} should not be handled by AIToolService`);

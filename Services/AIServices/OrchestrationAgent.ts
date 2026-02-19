@@ -1,4 +1,4 @@
-import { CancelPlanArgsSchema, CompletePlanArgsSchema, CompleteStepArgsSchema, ReplanArgsSchema, type ExecuteWorkflowArgs } from "AIClasses/Schemas/AIToolSchemas";
+import { RevisePlanArgsSchema, CancelPlanArgsSchema, CompletePlanArgsSchema, CompleteStepArgsSchema, ReviseStepArgsSchema, SkipStepArgsSchema, type ExecuteWorkflowArgs } from "AIClasses/Schemas/AIToolSchemas";
 import { BaseAgent } from "./BaseAgent";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
@@ -17,7 +17,7 @@ import { DebugColor } from "Enums/DebugColor";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export class OrchestrationAgent extends BaseAgent {
-    
+
     private static readonly MAX_AGENT_DEPTH: number = 3;
 
     private orchestrationDepth: number = 0;
@@ -33,88 +33,108 @@ export class OrchestrationAgent extends BaseAgent {
         const planningAgent = new PlanningAgent();
         planningAgent.resolveAIProvider();
 
+        callbacks.onPlanReset();
+        callbacks.onPlanningStarted();
+        this.debugService?.log("OrchestrationAgent", "Spawning PlanningAgent to generate execution plan");
+        const executionPlan = await planningAgent.runPlanningAgent(planningConversation, callbacks);
+        callbacks.onPlanningFinished();
+
+        if (!executionPlan) {
+            this.debugService?.log("OrchestrationAgent", "Planning failed - no execution plan generated");
+            return { message: Copy.PlanningFailedNoSteps };
+        }
+        this.debugService?.log("OrchestrationAgent", `Execution plan received with ${executionPlan.executionSteps.length} steps`);
+        callbacks.onPlanUpdate(executionPlan);
+
+        let stepIndex = 0;
         let planCompleted = false;
-        let isReplan = false;
 
-        while (!planCompleted) {
-            callbacks.onPlanReset();
-            callbacks.onPlanningStarted();
-            this.debugService?.log("OrchestrationAgent", "Spawning PlanningAgent to generate execution plan");
-            const executionPlan = await planningAgent.runPlanningAgent(planningConversation, callbacks, isReplan);
+        while (stepIndex < executionPlan.executionSteps.length && !planCompleted) {
+            const step = executionPlan.executionSteps[stepIndex];
+            callbacks.onPlanStepUpdate(stepIndex);
+            this.debugService?.log("OrchestrationAgent", `Executing step ${stepIndex + 1}/${executionPlan.executionSteps.length}: ${step.description}`);
+
+            const executionAgent = new ExecutionAgent();
+            executionAgent.resolveAIProvider();
             
-            callbacks.onPlanningFinished();
+            const executionResult = await executionAgent.runExecutionAgent(step, callbacks);
 
-            if (!executionPlan) {
-                this.debugService?.log("OrchestrationAgent", "Planning failed - no execution plan generated");
-                return { message: Copy.PlanningFailedNoSteps };
+            if (!executionResult) {
+                this.debugService?.log("OrchestrationAgent", `Step ${stepIndex + 1} failed to execute - workflow aborted`);
+                return { message: replaceCopy(Copy.WorkflowFailedAtStep, [step.description]) };
             }
-            this.debugService?.log("OrchestrationAgent", `Execution plan received with ${executionPlan.executionSteps.length} steps`);
-            
-            callbacks.onPlanUpdate(executionPlan);
 
-            let currentStepIndex = 0;
-            for (const [index, step] of executionPlan.executionSteps.entries()) {
-                currentStepIndex = index;
-                callbacks.onPlanStepUpdate(currentStepIndex);
-                this.debugService?.log("OrchestrationAgent", `Executing step ${index + 1}/${executionPlan.executionSteps.length}: ${step.description}`);
-
-                this.debugService?.log("OrchestrationAgent", "Spawning ExecutionAgent for step");
-                const executionAgent = new ExecutionAgent();
-                executionAgent.resolveAIProvider();
-                const executionResult = await executionAgent.runExecutionAgent(step, callbacks);
-
-                if (!executionResult) {
-                    this.debugService?.log("OrchestrationAgent", `Step ${index + 1} failed to execute - workflow aborted`);
-                    return { message: replaceCopy(Copy.WorkflowFailedAtStep, [step.description]) };
-                }
-
-                if (executionResult.success) {
-                    this.debugService?.log("OrchestrationAgent", `Step ${index + 1} succeeded: ${executionResult.description}`);
-                    planningConversation.contents.push(new ConversationContent({
-                        role: Role.User,
-                        content: `Step ${index + 1} executed with the following result: ${executionResult.description}`
-                    }));
-                } else {
-                    this.debugService?.log("OrchestrationAgent", `Step ${index + 1} failed: ${executionResult.description}`);
-                    planningConversation.contents.push(new ConversationContent({
-                        role: Role.User,
-                        content: `Step ${index + 1} failed to execute to completion. Result: ${executionResult.description}`
-                    }));
-                }
-
-                this.orchestrationDepth = 0;
-                const orchestrationResult = await this.runOrchestrationAgentLoop(planningConversation, callbacks);
-
-                if (orchestrationResult.continue) {
-                    this.debugService?.log("OrchestrationAgent", `Orchestration decision: CONTINUE${orchestrationResult.continueContext ? ' (with context)' : ''}`);
-                    if (orchestrationResult.continueContext && index + 1 < executionPlan.executionSteps.length) {
-                        const nextStep = executionPlan.executionSteps[index + 1];
-                        nextStep.context = nextStep.context
-                            ? nextStep.context.concat("\n\n", orchestrationResult.continueContext)
-                            : orchestrationResult.continueContext;
-                    }
-                    continue;
-                }
-                if (orchestrationResult.abort) {
-                    this.debugService?.log("OrchestrationAgent", `Orchestration decision: ABORT - ${orchestrationResult.abortContext}`);
-                    return {
-                        message: replaceCopy(Copy.WorkflowAborted, [orchestrationResult.abortContext]),
-                    };
-                }
-                if (orchestrationResult.replan) {
-                    this.debugService?.log("OrchestrationAgent", `Orchestration decision: REPLAN - ${orchestrationResult.replanContext}`);
-                    planningConversation.contents.push(new ConversationContent({
-                        role: Role.User,
-                        content: `A replan was requested when attempting to execute Step ${index + 1}. Replan context: ${orchestrationResult.replanContext}`
-                    }));
-                    break;
-                }
-                if (orchestrationResult.complete) {
-                    callbacks.onPlanStepUpdate(executionPlan.executionSteps.length);
-                    planCompleted = true;
-                }
+            if (executionResult.success) {
+                this.debugService?.log("OrchestrationAgent", `Step ${stepIndex + 1} succeeded: ${executionResult.description}`);
+                planningConversation.contents.push(new ConversationContent({
+                    role: Role.User,
+                    content: `Step ${stepIndex + 1} executed with the following result: ${executionResult.description}`
+                }));
+            } else {
+                this.debugService?.log("OrchestrationAgent", `Step ${stepIndex + 1} failed: ${executionResult.description}`);
+                planningConversation.contents.push(new ConversationContent({
+                    role: Role.User,
+                    content: `Step ${stepIndex + 1} failed to execute to completion. Result: ${executionResult.description}`
+                }));
             }
-            isReplan = true;
+
+            this.orchestrationDepth = 0;
+            const orchestrationResult = await this.runOrchestrationAgentLoop(planningConversation, callbacks);
+
+            if (orchestrationResult.continue) {
+                this.debugService?.log("OrchestrationAgent", `Orchestration decision: CONTINUE${orchestrationResult.continueContext ? ' (with context)' : ''}`);
+                if (orchestrationResult.continueContext && stepIndex + 1 < executionPlan.executionSteps.length) {
+                    const nextStep = executionPlan.executionSteps[stepIndex + 1];
+                    nextStep.context = nextStep.context
+                        ? nextStep.context.concat("\n\n", orchestrationResult.continueContext)
+                        : orchestrationResult.continueContext;
+                }
+                stepIndex++;
+                continue;
+            }
+
+            if (orchestrationResult.reviseStep) {
+                if (orchestrationResult.revisedDescription !== undefined) {
+                    step.description = orchestrationResult.revisedDescription;
+                }
+                if (orchestrationResult.revisedInstruction !== undefined) {
+                    step.instruction = orchestrationResult.revisedInstruction;
+                }
+                if (orchestrationResult.revisedContext !== undefined) {
+                    step.context = orchestrationResult.revisedContext;
+                }
+                this.debugService?.log("OrchestrationAgent", `Orchestration decision: REVISE_STEP ${stepIndex + 1} - retrying: ${step.description}`);
+                callbacks.onPlanStepUpdate(stepIndex);
+                continue;
+            }
+
+            if (orchestrationResult.revisePlan) {
+                this.debugService?.log("OrchestrationAgent", `Orchestration decision: REVISE_PLAN — replacing current + remaining ${executionPlan.executionSteps.length - stepIndex} step(s) with ${orchestrationResult.revisedSteps.length} new step(s)`);
+                executionPlan.executionSteps.splice(stepIndex, executionPlan.executionSteps.length - stepIndex, ...orchestrationResult.revisedSteps);
+                callbacks.onPlanUpdate(executionPlan);
+                continue;
+            }
+
+            if (orchestrationResult.skipStep) {
+                this.debugService?.log("OrchestrationAgent", `Orchestration decision: SKIP_STEP — ${orchestrationResult.skipReason}`);
+                planningConversation.contents.push(new ConversationContent({
+                    role: Role.User,
+                    content: `Step ${stepIndex + 1} was skipped. Reason: ${orchestrationResult.skipReason}`
+                }));
+                stepIndex++;
+                continue;
+            }
+
+            if (orchestrationResult.abort) {
+                this.debugService?.log("OrchestrationAgent", `Orchestration decision: ABORT — ${orchestrationResult.abortContext}`);
+                return { message: replaceCopy(Copy.WorkflowAborted, [orchestrationResult.abortContext]) };
+            }
+
+            if (orchestrationResult.complete) {
+                this.debugService?.log("OrchestrationAgent", "Orchestration decision: COMPLETE_PLAN");
+                callbacks.onPlanStepUpdate(executionPlan.executionSteps.length);
+                planCompleted = true;
+            }
         }
 
         this.debugService?.log("OrchestrationAgent", "Planned workflow completed - requesting summary");
@@ -152,6 +172,17 @@ export class OrchestrationAgent extends BaseAgent {
                 return Promise.resolve({ shouldExit: false });
             }
 
+            // Vault tools — execute and continue (for recovery searches)
+            if (isAITool(toolCallName, AITool.SearchVaultFiles) ||
+                isAITool(toolCallName, AITool.ReadVaultFiles) ||
+                isAITool(toolCallName, AITool.ListVaultFiles)) {
+                this.debugService?.log("Orchestration", `Vault tool called for recovery: ${toolCallName}`);
+                this.updateThought(toolCall, callbacks);
+                const toolResponse = await this.aiToolService.performAITool(toolCall);
+                planningConversation.addFunctionResponse(toolResponse);
+                return Promise.resolve({ shouldExit: false });
+            }
+
             if (isAITool(toolCallName, AITool.CompleteStep)) {
                 const parseResult = CompleteStepArgsSchema.safeParse(toolCall.arguments);
                 if (!parseResult.success) {
@@ -170,14 +201,88 @@ export class OrchestrationAgent extends BaseAgent {
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
-                this.debugService?.log("Orchestration", `CompleteStep called (confirmed: ${parseResult.data.confirm_completion})`);
+                this.debugService?.log("Orchestration", "CompleteStep called");
                 this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { message: "Step Completed" },
+                    { message: "Step completed" },
                     toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ continue: true, continueContext: parseResult.data.context_for_next_step });
+                return Promise.resolve({ shouldExit: true });
+            }
+
+            if (isAITool(toolCallName, AITool.ReviseStep)) {
+                const parseResult = ReviseStepArgsSchema.safeParse(toolCall.arguments);
+                if (!parseResult.success) {
+                    planningConversation.addFunctionResponse(new AIToolResponse(
+                        toolCallName,
+                        { error: `Invalid arguments for ${AITool.ReviseStep}: ${parseResult.error.message}` },
+                        toolCall.toolId
+                    ));
+                    return Promise.resolve({ shouldExit: false });
+                }
+                this.debugService?.log("Orchestration", "ReviseStep called");
+                this.updateThought(toolCall, callbacks);
+                planningConversation.addFunctionResponse(new AIToolResponse(
+                    toolCallName,
+                    { message: "Step revision accepted — retrying" },
+                    toolCall.toolId
+                ));
+                orchestrationResult = new OrchestrationResult({
+                    reviseStep: true,
+                    revisedDescription: parseResult.data.revised_description,
+                    revisedInstruction: parseResult.data.revised_instruction,
+                    revisedContext: parseResult.data.revised_context
+                });
+                return Promise.resolve({ shouldExit: true });
+            }
+
+            if (isAITool(toolCallName, AITool.RevisePlan)) {
+                const parseResult = RevisePlanArgsSchema.safeParse(toolCall.arguments);
+                if (!parseResult.success) {
+                    planningConversation.addFunctionResponse(new AIToolResponse(
+                        toolCallName,
+                        { error: `Invalid arguments for ${AITool.RevisePlan}: ${parseResult.error.message}` },
+                        toolCall.toolId
+                    ));
+                    return Promise.resolve({ shouldExit: false });
+                }
+                this.debugService?.log("Orchestration", `RevisePlan called — ${parseResult.data.steps.length} new step(s)`);
+                this.updateThought(toolCall, callbacks);
+                planningConversation.addFunctionResponse(new AIToolResponse(
+                    toolCallName,
+                    { message: `Plan revised with ${parseResult.data.steps.length} remaining step(s)` },
+                    toolCall.toolId
+                ));
+                orchestrationResult = new OrchestrationResult({
+                    revisePlan: true,
+                    revisedSteps: parseResult.data.steps
+                });
+                return Promise.resolve({ shouldExit: true });
+            }
+
+            if (isAITool(toolCallName, AITool.SkipStep)) {
+                const parseResult = SkipStepArgsSchema.safeParse(toolCall.arguments);
+                if (!parseResult.success) {
+                    planningConversation.addFunctionResponse(new AIToolResponse(
+                        toolCallName,
+                        { error: `Invalid arguments for ${AITool.SkipStep}: ${parseResult.error.message}` },
+                        toolCall.toolId
+                    ));
+                    return Promise.resolve({ shouldExit: false });
+                }
+                this.debugService?.log("Orchestration", `SkipStep called — ${parseResult.data.reason}`);
+                this.updateThought(toolCall, callbacks);
+                planningConversation.addFunctionResponse(new AIToolResponse(
+                    toolCallName,
+                    { message: "Step skipped" },
+                    toolCall.toolId
+                ));
+                orchestrationResult = new OrchestrationResult({
+                    skipStep: true,
+                    skipReason: parseResult.data.reason
+                });
                 return Promise.resolve({ shouldExit: true });
             }
 
@@ -199,35 +304,14 @@ export class OrchestrationAgent extends BaseAgent {
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
-                this.debugService?.log("Orchestration", `CompletePlan called (confirmed: ${parseResult.data.confirm_completion})`);
+                this.debugService?.log("Orchestration", "CompletePlan called");
                 this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { message: "Plan Completed" },
+                    { message: "Plan completed" },
                     toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ complete: true });
-                return Promise.resolve({ shouldExit: true });
-            }
-
-            if (isAITool(toolCallName, AITool.Replan)) {
-                const parseResult = ReplanArgsSchema.safeParse(toolCall.arguments);
-                if (!parseResult.success) {
-                    planningConversation.addFunctionResponse(new AIToolResponse(
-                        toolCallName,
-                        { error: `Invalid arguments for ${AITool.Replan}: ${parseResult.error.message}` },
-                        toolCall.toolId
-                    ));
-                    return Promise.resolve({ shouldExit: false });
-                }
-                this.debugService?.log("Orchestration", `Replan requested: ${parseResult.data.context}`);
-                this.updateThought(toolCall, callbacks);
-                planningConversation.addFunctionResponse(new AIToolResponse(
-                    toolCallName,
-                    { message: "Replan Requested" },
-                    toolCall.toolId
-                ));
-                orchestrationResult = new OrchestrationResult({ replan: true, replanContext: parseResult.data.context });
                 return Promise.resolve({ shouldExit: true });
             }
 
@@ -241,11 +325,11 @@ export class OrchestrationAgent extends BaseAgent {
                     ));
                     return Promise.resolve({ shouldExit: false });
                 }
-                this.debugService?.log("Orchestration", `Plan cancellation requested: ${parseResult.data.context}`);
+                this.debugService?.log("Orchestration", `CancelPlan called — ${parseResult.data.context}`);
                 this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { message: "Plan Cancelled" },
+                    { message: "Plan cancelled" },
                     toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ abort: true, abortContext: parseResult.data.context });
@@ -272,18 +356,18 @@ export class OrchestrationAgent extends BaseAgent {
     }
 
     private setAgentPromptAndTools(): void {
-        if (!this.ai) { // this shouldn't ever happen
+        if (!this.ai) {
             Exception.throw("Error: No AI provider has been set!");
         }
         this.ai.agentType = AgentType.Orchestration;
         this.ai.aiToolUsageMode = AIToolUsageMode.Enabled;
         this.ai.systemPrompt = this.aiPrompt.orchestrationInstruction();
-        this.ai.userInstruction = ""; // do not include user instruction for orchestration agent
+        this.ai.userInstruction = "";
         this.ai.aiToolDefinitions = AIToolDefinitions.orchestrationAgentDefinitions();
     }
 
     protected override setDebugColor(): void {
         this.debugService?.setDebugColor(DebugColor.ORANGE);
     }
-    
+
 }

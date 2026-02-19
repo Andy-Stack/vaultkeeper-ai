@@ -20,7 +20,7 @@ export class PlanningAgent extends BaseAgent {
 
     private planningDepth: number = 0;
 
-    public async runPlanningAgent(conversation: Conversation, callbacks: IChatServiceCallbacks, isReplan: boolean): Promise<ExecutionPlan | undefined> {
+    public async runPlanningAgent(conversation: Conversation, callbacks: IChatServiceCallbacks): Promise<ExecutionPlan | undefined> {
         await this.setAgentPromptAndTools();
 
         let capturedPlan: ExecutionPlan | null = null;
@@ -30,7 +30,7 @@ export class PlanningAgent extends BaseAgent {
             return;
         }
         this.planningDepth++;
-        this.debugService?.log("PlanningAgent", `Starting PlanningAgent (isReplan: ${isReplan}, depth: ${this.planningDepth}/${PlanningAgent.MAX_AGENT_DEPTH})`);
+        this.debugService?.log("PlanningAgent", `Starting PlanningAgent (depth: ${this.planningDepth}/${PlanningAgent.MAX_AGENT_DEPTH})`);
 
         await this.runAgentLoop(AgentType.Planning, conversation, callbacks, async (toolCall) => {
             const toolCallName = toolCall.name;
@@ -78,7 +78,7 @@ export class PlanningAgent extends BaseAgent {
                     return { shouldExit: false };
                 }
                 this.debugService?.log("PlanningAgent", `Plan submitted successfully with ${parseResult.data.steps.length} steps`);
-                capturedPlan = new ExecutionPlan(parseResult.data, isReplan);
+                capturedPlan = new ExecutionPlan(parseResult.data);
                 conversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
                     { message: Copy.PlanReceived },
@@ -101,7 +101,7 @@ export class PlanningAgent extends BaseAgent {
                 content: Copy.PlanSubmissionRequired,
                 shouldDisplayContent: false
             }));
-            return await this.runPlanningAgent(conversation, callbacks, isReplan);
+            return await this.runPlanningAgent(conversation, callbacks);
         }
         return capturedPlan;
     }

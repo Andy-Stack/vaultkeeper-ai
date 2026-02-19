@@ -52,10 +52,6 @@ export const ExecuteWorkflowArgsSchema = z.object({
 	user_message: z.string()
 });
 
-export const ReplanArgsSchema = z.object({
-	context: z.string()
-});
-
 export const AskUserQuestionPlanningArgsSchema = z.object({
 	question: z.string(),
 	user_message: z.string()
@@ -66,12 +62,10 @@ export const AskUserQuestionExecutionArgsSchema = z.object({
 	user_message: z.string()
 });
 
-export const ContinuePlanExecutionArgsSchema = z.object({
-	confirm_continuation: z.boolean()
-});
-
-export const CancelPlanArgsSchema = z.object({
-	context: z.string()
+export const CompleteTaskArgsSchema = z.object({
+	success: z.boolean(),
+	description: z.string(),
+	context: z.string().optional()
 });
 
 export const CompleteStepArgsSchema = z.object({
@@ -79,10 +73,33 @@ export const CompleteStepArgsSchema = z.object({
 	confirm_completion: z.boolean()
 });
 
-export const CompleteTaskArgsSchema = z.object({
-	success: z.boolean(),
-	description: z.string(),
-	context: z.string().optional()
+export const SkipStepArgsSchema = z.object({
+	reason: z.string(),
+	user_message: z.string().optional()
+});
+
+export const ReviseStepArgsSchema = z.object({
+	revised_description: z.string(),
+	revised_instruction: z.string(),
+	revised_context: z.string().optional(),
+	user_message: z.string()
+});
+
+export const RevisePlanArgsSchema = z.object({
+	steps: z.array(z.object({
+		description: z.string(),
+		instruction: z.string(),
+		context: z.string().optional()
+	})),
+	user_message: z.string().optional()
+});
+
+export const ContinuePlanExecutionArgsSchema = z.object({
+	confirm_continuation: z.boolean()
+});
+
+export const CancelPlanArgsSchema = z.object({
+	context: z.string()
 });
 
 export const SubmitPlanArgsSchema = z.object({
@@ -106,12 +123,14 @@ export type DeleteVaultFilesArgs = z.infer<typeof DeleteVaultFilesArgsSchema>;
 export type MoveVaultFilesArgs = z.infer<typeof MoveVaultFilesArgsSchema>;
 export type ListVaultFilesArgs = z.infer<typeof ListVaultFilesArgsSchema>;
 export type ExecuteWorkflowArgs = z.infer<typeof ExecuteWorkflowArgsSchema>;
-export type ReplanArgs = z.infer<typeof ReplanArgsSchema>;
 export type AskUserQuestionPlanningArgs = z.infer<typeof AskUserQuestionPlanningArgsSchema>;
 export type AskUserQuestionExecutionArgs = z.infer<typeof AskUserQuestionExecutionArgsSchema>;
 export type ContinuePlanExecutionArgs = z.infer<typeof ContinuePlanExecutionArgsSchema>;
 export type CancelPlanArgs = z.infer<typeof CancelPlanArgsSchema>;
-export type CompleteStepArgs = z.infer<typeof CompleteStepArgsSchema>;
 export type CompleteTaskArgs = z.infer<typeof CompleteTaskArgsSchema>;
+export type CompleteStepArgs = z.infer<typeof CompleteStepArgsSchema>;
+export type SkipStepArgs = z.infer<typeof SkipStepArgsSchema>;
+export type ReviseStepArgs = z.infer<typeof ReviseStepArgsSchema>;
+export type RevisePlanArgs = z.infer<typeof RevisePlanArgsSchema>;
 export type SubmitPlanArgs = z.infer<typeof SubmitPlanArgsSchema>;
 export type CompletePlanArgs = z.infer<typeof CompletePlanArgsSchema>;

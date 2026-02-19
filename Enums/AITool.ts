@@ -12,10 +12,12 @@ export enum AITool {
 
     // multi agent calls
     ExecuteWorkflow = "execute_workflow",
-    Replan = "replan",
     SubmitPlan = "submit_plan",
-    CompleteStep = "complete_step",
     CompleteTask = "complete_task",
+    CompleteStep = "complete_step",
+    SkipStep = "skip_step",
+    ReviseStep = "revise_step",
+    RevisePlan = "revise_plan",
     ContinuePlanExecution = "continue_plan_execution",
     CompletePlan = "complete_plan",
     CancelPlan = "cancel_plan",

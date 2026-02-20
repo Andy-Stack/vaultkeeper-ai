@@ -167,7 +167,7 @@ export class VaultService {
             return currentContent;
         }
 
-        for (let content of oldContent) {
+        for (const content of oldContent) {
             if (!currentContent.includes(content) && !StringTools.toWhitespaceFlexibleRegex(content).test(currentContent)) {
                 return Exception.new(`Content to replace was not found in the file, the old content must match exactly. No changes have been made. Unmatched content: "${content}"`);
             }

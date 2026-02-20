@@ -65,7 +65,7 @@ describe('SettingsService', () => {
 
         it('should handle partially loaded settings and fill missing properties with defaults', () => {
             const loadedSettings: Partial<IVaultkeeperAISettings> = {
-                model: AIProviderModel.GPT_4o,
+                model: AIProviderModel.GPT_5,
                 apiKeys: {
                     claude: '',
                     openai: 'partial-key',
@@ -76,7 +76,7 @@ describe('SettingsService', () => {
             settingsService = new SettingsService(loadedSettings as IVaultkeeperAISettings);
 
             expect(settingsService.settings.firstTimeStart).toBe(true); // Default
-            expect(settingsService.settings.model).toBe(AIProviderModel.GPT_4o); // Loaded
+            expect(settingsService.settings.model).toBe(AIProviderModel.GPT_5); // Loaded
             expect(settingsService.settings.apiKeys.openai).toBe('partial-key'); // Loaded
             expect(settingsService.settings.exclusions).toEqual([]); // Default
             expect(settingsService.settings.userInstruction).toBe(''); // Default
@@ -151,7 +151,7 @@ describe('SettingsService', () => {
         it('should return OpenAI key when current model is GPT', () => {
             const loadedSettings: IVaultkeeperAISettings = {
                 firstTimeStart: false,
-                model: AIProviderModel.GPT_4o,
+                model: AIProviderModel.GPT_5_Mini,
                 planningModel: AIProviderModel.GPT_5,
                 apiKeys: {
                     claude: 'claude-key',
@@ -356,8 +356,8 @@ describe('SettingsService', () => {
 
         it('should correctly identify OpenAI models', () => {
             const openaiModels = [
-                AIProviderModel.GPT_4o,
-                AIProviderModel.GPT_4o_Mini,
+                AIProviderModel.GPT_5_Nano,
+                AIProviderModel.GPT_5_Mini,
                 AIProviderModel.GPT_5,
                 AIProviderModel.GPT_5_Mini
             ];

@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     userInstruction: "",
 
     model: AIProviderModel.ClaudeHaiku_4_5,
-    planningModel: AIProviderModel.ClaudeSonnet_4_5,
+    planningModel: AIProviderModel.ClaudeSonnet_4_6,
     apiKeys: {
         claude: "",
         openai: "",

@@ -176,9 +176,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		// Claude models
 		if (!providerFilter || providerFilter === AIProvider.Claude) {
 			const claudeGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderClaude } });
+			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeSonnet_4_6, text: Copy.ClaudeSonnet_4_6 });
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeSonnet_4_5, text: Copy.ClaudeSonnet_4_5 });
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeSonnet_4, text: Copy.ClaudeSonnet_4 });
-			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeSonnet_3_7, text: Copy.ClaudeSonnet_3_7 });
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeOpus_4_6, text: Copy.ClaudeOpus_4_6 });
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeOpus_4_5, text: Copy.ClaudeOpus_4_5 });
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeOpus_4_1, text: Copy.ClaudeOpus_4_1 });
@@ -196,11 +196,6 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5, text: Copy.GPT_5 });
 			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_Mini, text: Copy.GPT_5_Mini });
 			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_Nano, text: Copy.GPT_5_Nano });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_Pro, text: Copy.GPT_5_Pro });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_4o, text: Copy.GPT_4o });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_4o_Mini, text: Copy.GPT_4o_Mini });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_4_1, text: Copy.GPT_4_1 });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_4_1_Mini, text: Copy.GPT_4_1_Mini });
 		}
 
 		// Gemini models
@@ -211,6 +206,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_2_5, text: Copy.GeminiPro_2_5 });
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_Preview, text: Copy.GeminiFlash_3_Preview });
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_3_Preview, text: Copy.GeminiPro_3_Preview });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_3_1_Preview, text: Copy.GeminiPro_3_1_Preview });
 		}
 	}
 

@@ -8,9 +8,9 @@ export enum Copy {
     NoUserInstruction = "No custom instructions",
 
     // Model Display Names
+    ClaudeSonnet_4_6 = "Claude Sonnet 4.6",
     ClaudeSonnet_4_5 = "Claude Sonnet 4.5",
     ClaudeSonnet_4 = "Claude Sonnet 4",
-    ClaudeSonnet_3_7 = "Claude Sonnet 3.7",
     ClaudeOpus_4_6 = "Claude Opus 4.6",
     ClaudeOpus_4_5 = "Claude Opus 4.5",
     ClaudeOpus_4_1 = "Claude Opus 4.1",
@@ -22,6 +22,7 @@ export enum Copy {
     GeminiPro_2_5 = "Gemini 2.5 Pro",
     GeminiFlash_3_Preview = "Gemini 3 Flash Preview",
     GeminiPro_3_Preview = "Gemini 3 Pro Preview",
+    GeminiPro_3_1_Preview = "Gemini 3.1 Pro Preview",
 
     GPT_5_2_Instant = "GPT-5.2 Instant",
     GPT_5_2_Thinking = "GPT-5.2 Thinking",
@@ -30,11 +31,6 @@ export enum Copy {
     GPT_5 = "GPT-5",
     GPT_5_Mini = "GPT-5 Mini",
     GPT_5_Nano = "GPT-5 Nano",
-    GPT_5_Pro = "GPT-5 Pro",
-    GPT_4o = "GPT-4o",
-    GPT_4o_Mini = "GPT-4o Mini",
-    GPT_4_1 = "GPT-4.1",
-    GPT_4_1_Mini = "GPT-4.1 Mini",
 
     // AI Provider Groups
     ProviderClaude = "Claude",

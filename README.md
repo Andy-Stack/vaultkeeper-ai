@@ -66,20 +66,21 @@ The plugin supports multiple AI models:
 
 **Claude (Anthropic)**
 
-- Claude Sonnet 4.5 ⚡ (Recommended)
-- Claude Opus 4.5, 4.1, 4
+- Claude Sonnet 4.6 ⚡ (Recommended)
+- Claude Sonnet 4.5, 4
+- Claude Opus 4.6, 4.5, 4.1, 4
 - Claude Haiku 4.5
 
 **Gemini (Google)**
 
-- Gemini 3 Pro Preview
+- Gemini 3.1 Pro Preview, 3 Pro Preview, 3 Flash Preview
 - Gemini 2.5 Flash, Pro
 - Gemini 2.5 Flash Lite
 
 **OpenAI**
 
-- GPT-5.1, GPT-5 (Pro, Mini, Nano)
-- GPT-4o, GPT-4.1
+- GPT-5.2 (Instant, Thinking, Pro)
+- GPT-5.1, GPT-5 (Mini, Nano)
 
 Switch models anytime in the settings without losing your conversation context.
 
@@ -223,7 +224,7 @@ See `EXAMPLE_INSTRUCTIONS.md` in your vault for a template.
 **Planning Model**
 
 - Select a separate model for the planning agent (used in Planning Mode)
-- Default: Claude Sonnet 4.5
+- Default: Claude Sonnet 4.6
 - Allows cost optimization by using a more capable model for planning and a faster/cheaper model for execution
 - The planning model dropdown updates to match your selected provider
 

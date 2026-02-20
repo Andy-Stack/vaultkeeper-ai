@@ -146,7 +146,7 @@ export class VaultService {
         });
     }
 
-    public async patch(file: TFile, oldContent: string, newContent: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+    public async patch(file: TFile, oldContent: string[], newContent: string[], allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const filePath = this.sanitiserService.sanitize(file.path);
         if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
             Exception.log(`Plugin attempted to patch a file that is in the exclusion list: ${filePath}`);
@@ -154,7 +154,11 @@ export class VaultService {
         }
 
         if (isFileType(pathExtname(filePath), FileType.PDF)) {
-            return Exception.new("Creating PDF files is not supported");
+            return Exception.new("Patching PDF files is not supported");
+        }
+
+        if (oldContent.length !== newContent.length) {
+            return Exception.new(`Mismatched patch arrays: ${oldContent.length} old content entries but ${newContent.length} new content entries. Each old content entry must have a corresponding new content entry.`);
         }
 
         const currentContent = await this.read(file, allowAccessToPluginRoot);
@@ -163,11 +167,20 @@ export class VaultService {
             return currentContent;
         }
 
-        if (!currentContent.includes(oldContent)) {
-            return Exception.new(`Content to replace was not found in the file. The old content must match exactly.`);
+        for (let content of oldContent) {
+            if (!currentContent.includes(content) && !StringTools.toWhitespaceFlexibleRegex(content).test(currentContent)) {
+                return Exception.new(`Content to replace was not found in the file, the old content must match exactly. No changes have been made. Unmatched content: "${content}"`);
+            }
         }
 
-        const updatedContent = currentContent.replace(oldContent, newContent);
+        let updatedContent = currentContent;
+        for (let i = 0; i < oldContent.length; i++) {
+            if (updatedContent.includes(oldContent[i])) {
+                updatedContent = updatedContent.replace(oldContent[i], newContent[i]);
+            } else {
+                updatedContent = updatedContent.replace(StringTools.toWhitespaceFlexibleRegex(oldContent[i]), newContent[i]);
+            }
+        }
 
         return this.proposeChange(file.name, file.name, currentContent, updatedContent, requiresConfirmation, async () => {
             await this.vault.process(file, () => updatedContent);

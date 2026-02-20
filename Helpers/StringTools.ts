@@ -37,6 +37,12 @@ export abstract class StringTools {
         return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
 
+    // Builds a regex from a string that matches flexibly on whitespace but strictly on all other characters.
+    public static toWhitespaceFlexibleRegex(input: string): RegExp {
+        const pattern = this.escapeRegex(input).replace(/(\\\s|\s)+/g, "\\s+");
+        return new RegExp(pattern);
+    }
+
     public static asRegex(input: string, requiredFlags: string[]): RegExp | null {
         let regex: RegExp;
 

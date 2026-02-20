@@ -23,8 +23,8 @@ export const WriteVaultFileArgsSchema = z.object({
 
 export const PatchVaultFileArgsSchema = z.object({
 	file_path: z.string(),
-	oldContent: z.string(),
-	newContent: z.string(),
+	oldContent: z.array(z.string()),
+	newContent: z.array(z.string()),
 	user_message: z.string()
 });
 

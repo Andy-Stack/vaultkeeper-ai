@@ -416,8 +416,8 @@ describe('VaultService - Integration Tests', () => {
 	describe('patch', () => {
 		it('should apply patch successfully when file is not excluded', async () => {
 			const mockFile = createMockFile('note.md');
-			const oldContent = 'old content';
-			const newContent = 'new content';
+			const oldContent = ['old content'];
+			const newContent = ['new content'];
 			const currentContent = '# Title\nold content\nmore lines';
 
 			mockVault.read.mockResolvedValue(currentContent);
@@ -434,8 +434,8 @@ describe('VaultService - Integration Tests', () => {
 
 		it('should return error when file is excluded', async () => {
 			const mockFile = createMockFile('Vaultkeeper AI/test.md');
-			const oldContent = 'old';
-			const newContent = 'new';
+			const oldContent = ['old'];
+			const newContent = ['new'];
 
 			const result = await vaultService.patch(mockFile, oldContent, newContent, false);
 
@@ -446,8 +446,8 @@ describe('VaultService - Integration Tests', () => {
 
 		it('should return error when old content is not found in file', async () => {
 			const mockFile = createMockFile('note.md');
-			const oldContent = 'old';
-			const newContent = 'new';
+			const oldContent = ['old'];
+			const newContent = ['new'];
 			const currentContent = '# Different content';
 
 			mockVault.read.mockResolvedValue(currentContent);
@@ -461,8 +461,8 @@ describe('VaultService - Integration Tests', () => {
 
 		it('should allow patching excluded files when allowAccessToPluginRoot is true', async () => {
 			const mockFile = createMockFile('Vaultkeeper AI/config.md');
-			const oldContent = 'setting=old';
-			const newContent = 'setting=new';
+			const oldContent = ['setting=old'];
+			const newContent = ['setting=new'];
 			const currentContent = 'setting=old';
 
 			mockVault.read.mockResolvedValue(currentContent);
@@ -477,8 +477,8 @@ describe('VaultService - Integration Tests', () => {
 
 		it('should request diff confirmation when requiresConfirmation is true', async () => {
 			const mockFile = createMockFile('note.md');
-			const oldContent = 'old';
-			const newContent = 'new';
+			const oldContent = ['old'];
+			const newContent = ['new'];
 			const currentContent = 'old';
 			const updatedContent = 'new';
 
@@ -498,8 +498,8 @@ describe('VaultService - Integration Tests', () => {
 
 		it('should replace only the first occurrence of old content', async () => {
 			const mockFile = createMockFile('document.md');
-			const oldContent = 'duplicate text';
-			const newContent = 'replaced text';
+			const oldContent = ['duplicate text'];
+			const newContent = ['replaced text'];
 			const currentContent = 'duplicate text\nSome content\nduplicate text';
 			const expectedContent = 'replaced text\nSome content\nduplicate text';
 
@@ -519,8 +519,8 @@ describe('VaultService - Integration Tests', () => {
 
 		it('should call vault.process with function that returns updated content', async () => {
 			const mockFile = createMockFile('note.md');
-			const oldContent = 'old';
-			const newContent = 'new';
+			const oldContent = ['old'];
+			const newContent = ['new'];
 			const updatedContent = 'new';
 			let processCallback: any;
 
@@ -536,10 +536,51 @@ describe('VaultService - Integration Tests', () => {
 			expect(processCallback()).toBe(updatedContent);
 		});
 
+		it('should fall back to whitespace-flexible matching when exact match fails', async () => {
+			const mockFile = createMockFile('note.md');
+			const oldContent = ['  if (x) {\n    return true;\n  }'];
+			const newContent = ['  if (x) {\n    return false;\n  }'];
+			const currentContent = '    if (x) {\n        return true;\n    }';
+
+			mockVault.read.mockResolvedValue(currentContent);
+			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
+
+			let processCallback: any;
+			mockVault.process.mockImplementation((_file, fn) => {
+				processCallback = fn;
+				return Promise.resolve();
+			});
+
+			const result = await vaultService.patch(mockFile, oldContent, newContent);
+
+			expect(result).toBe(mockFile);
+			expect(processCallback()).toBe('  if (x) {\n    return false;\n  }');
+		});
+
+		it('should prefer exact match over whitespace-flexible match', async () => {
+			const mockFile = createMockFile('note.md');
+			const oldContent = ['hello world'];
+			const newContent = ['goodbye world'];
+			const currentContent = 'hello world';
+
+			mockVault.read.mockResolvedValue(currentContent);
+			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
+
+			let processCallback: any;
+			mockVault.process.mockImplementation((_file, fn) => {
+				processCallback = fn;
+				return Promise.resolve();
+			});
+
+			await vaultService.patch(mockFile, oldContent, newContent);
+
+			expect(processCallback()).toBe('goodbye world');
+		});
+
 		it('should skip confirmation when requiresConfirmation is false', async () => {
 			const mockFile = createMockFile('note.md');
-			const oldContent = 'old';
-			const newContent = 'new';
+			const oldContent = ['old'];
+			const newContent = ['new'];
 
 			mockVault.read.mockResolvedValue('old');
 			mockVault.process.mockResolvedValue(undefined);

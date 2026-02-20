@@ -202,7 +202,7 @@ export class AIToolService {
         return { success: true };
     }
 
-    private async patchVaultFile(filePath: string, oldContent: string, newContent: string): Promise<object> {
+    private async patchVaultFile(filePath: string, oldContent: string[], newContent: string[]): Promise<object> {
         const result = await this.fileSystemService.patchFile(normalizePath(filePath), oldContent, newContent);
         if (result instanceof Error) {
             return { success: false, error: result.message };

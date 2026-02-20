@@ -59,7 +59,7 @@ export class FileSystemService {
         return await this.vaultService.modifyBinary(file, data, allowAccessToPluginRoot);
     }
 
-    public async patchFile(filePath: string, oldContent: string, newContent: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+    public async patchFile(filePath: string, oldContent: string[], newContent: string[], allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 
         let fileToPatch: TFile;

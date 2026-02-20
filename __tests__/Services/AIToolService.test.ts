@@ -348,8 +348,8 @@ describe('AIToolService - Integration Tests', () => {
 		it('should apply patch successfully', async () => {
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('notes/test.md', 'test'));
 
-			const oldContent = 'old content';
-			const newContent = 'new content';
+			const oldContent = ['old content'];
+			const newContent = ['new content'];
 
 			const result = await service.performAITool({
 				name: AITool.PatchVaultFile,
@@ -370,8 +370,8 @@ describe('AIToolService - Integration Tests', () => {
 			const error = new Error('Content to replace was not found in the file');
 			mockFileSystemService.patchFile.mockResolvedValue(error);
 
-			const oldContent = 'old content';
-			const newContent = 'new content';
+			const oldContent = ['old content'];
+			const newContent = ['new content'];
 
 			const result = await service.performAITool({
 				name: AITool.PatchVaultFile,
@@ -391,8 +391,8 @@ describe('AIToolService - Integration Tests', () => {
 		it('should normalize file path', async () => {
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('folder/file.md', 'file'));
 
-			const oldContent = 'old';
-			const newContent = 'new';
+			const oldContent = ['old'];
+			const newContent = ['new'];
 
 			await service.performAITool({
 				name: AITool.PatchVaultFile,
@@ -417,8 +417,8 @@ describe('AIToolService - Integration Tests', () => {
 			const error = new Error('File does not exist: missing.md');
 			mockFileSystemService.patchFile.mockResolvedValue(error);
 
-			const oldContent = 'old';
-			const newContent = 'new';
+			const oldContent = ['old'];
+			const newContent = ['new'];
 
 			const result = await service.performAITool({
 				name: AITool.PatchVaultFile,
@@ -438,8 +438,8 @@ describe('AIToolService - Integration Tests', () => {
 		it('should handle complex multi-line replacement', async () => {
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('complex.md', 'complex'));
 
-			const oldContent = '# Title\nOld line 1\nContext line';
-			const newContent = '# Title\nNew line 1\nContext line';
+			const oldContent = ['# Title\nOld line 1\nContext line'];
+			const newContent = ['# Title\nNew line 1\nContext line'];
 
 			const result = await service.performAITool({
 				name: AITool.PatchVaultFile,
@@ -459,8 +459,8 @@ describe('AIToolService - Integration Tests', () => {
 		it('should handle adding new content', async () => {
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('additions.md', 'additions'));
 
-			const oldContent = '# Title\nExisting content';
-			const newContent = '# Title\nExisting content\nNew line 1\nNew line 2';
+			const oldContent = ['# Title\nExisting content'];
+			const newContent = ['# Title\nExisting content\nNew line 1\nNew line 2'];
 
 			const result = await service.performAITool({
 				name: AITool.PatchVaultFile,
@@ -479,8 +479,8 @@ describe('AIToolService - Integration Tests', () => {
 		it('should handle removing content', async () => {
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('deletions.md', 'deletions'));
 
-			const oldContent = '# Title\nLine to remove 1\nLine to remove 2\nRemaining content';
-			const newContent = '# Title\nRemaining content';
+			const oldContent = ['# Title\nLine to remove 1\nLine to remove 2\nRemaining content'];
+			const newContent = ['# Title\nRemaining content'];
 
 			const result = await service.performAITool({
 				name: AITool.PatchVaultFile,
@@ -500,8 +500,8 @@ describe('AIToolService - Integration Tests', () => {
 			const error = new Error('Permission denied');
 			mockFileSystemService.patchFile.mockResolvedValue(error);
 
-			const oldContent = 'old';
-			const newContent = 'new';
+			const oldContent = ['old'];
+			const newContent = ['new'];
 
 			const result = await service.performAITool({
 				name: AITool.PatchVaultFile,
@@ -884,8 +884,8 @@ describe('AIToolService - Integration Tests', () => {
 			// Then patch it
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('document.md', 'document'));
 
-			const oldContent = '# Original Title';
-			const newContent = '# Updated Title';
+			const oldContent = ['# Original Title'];
+			const newContent = ['# Updated Title'];
 
 			const patchResult = await service.performAITool({
 				name: AITool.PatchVaultFile,

@@ -15,6 +15,10 @@ export function fromModel(model: string): AIProvider {
     }
 }
 
+export function isValidProviderModel(model: string): model is AIProviderModel {
+    return Object.values(AIProviderModel).includes(model as AIProviderModel);
+}
+
 function isClaudeModel(model: string): boolean {
     return isValidProviderModel(model) && model.startsWith("claude-");
 }
@@ -25,10 +29,6 @@ function isGeminiModel(model: string): boolean {
 
 function isOpenAIModel(model: string): boolean {
     return isValidProviderModel(model) && model.startsWith("gpt-");
-}
-
-function isValidProviderModel(model: string): model is AIProviderModel {
-    return Object.values(AIProviderModel).includes(model as AIProviderModel);
 }
 
 export enum AIProvider {

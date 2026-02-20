@@ -45,7 +45,8 @@ const mockPlugin = {
 	app: {
 		vault: mockVault,
 		fileManager: mockFileManager
-	}
+	},
+	saveData: vi.fn().mockResolvedValue(undefined)
 } as unknown as VaultkeeperAIPlugin;
 
 const mockSettings: IVaultkeeperAISettings = {

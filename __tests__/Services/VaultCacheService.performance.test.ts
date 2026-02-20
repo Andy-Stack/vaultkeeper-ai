@@ -83,6 +83,7 @@ const mockPlugin = {
 		fileManager: mockFileManager,
 		metadataCache: mockMetadataCache
 	},
+	saveData: vi.fn().mockResolvedValue(undefined),
 	registerEvent: vi.fn()
 } as unknown as VaultkeeperAIPlugin;
 

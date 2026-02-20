@@ -9,6 +9,12 @@ When called, this tool hands off the goal to a planning and execution engine tha
 
 The workflow system specializes in breaking down complex tasks, conducting exploratory searches, managing dependencies, recovering from failures through replanning, and coordinating multi-step operations to completion.
 
+**Critical: Convey the user's intent faithfully.** Do NOT soften, hedge, or add restrictions that the user did not request. The goal must reflect what the user actually asked for — not a cautious reinterpretation.
+
+- If the user says "ensure details are correct" → the goal is to **update notes to fix incorrect details**, not to "report findings"
+- If the user says "organize my notes" → the goal is to **move and restructure files**, not to "suggest an organization"
+- If the user says "clean up duplicates" → the goal is to **remove or merge duplicates**, not to "identify duplicates for review"
+
 Call this function:
 - When the user's request involves multiple coordinated operations or phases
 - When the task requires vault exploration, analysis, or search before acting
@@ -17,10 +23,7 @@ Call this function:
 - When the task is substantial enough that delegating execution is more efficient than step-by-step guidance
 
 Do NOT use this function:
-- For simple, single-step operations you can perform directly (e.g., reading one file, creating one note)
-- When you already know the exact steps and can execute them yourself
-- For requests that require real-time user interaction or clarification during execution
-- When partial results need to be shown to the user incrementally`,
+- For simple, single-step operations you can perform directly (e.g., reading one file)`,
   parameters: {
     type: "object",
     properties: {

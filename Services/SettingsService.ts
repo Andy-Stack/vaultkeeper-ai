@@ -1,7 +1,7 @@
 import type VaultkeeperAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import { AIProvider, AIProviderModel, fromModel } from "Enums/ApiProvider";
+import { AIProvider, AIProviderModel, fromModel, isValidProviderModel } from "Enums/ApiProvider";
 
 const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     firstTimeStart: true,
@@ -46,6 +46,7 @@ export class SettingsService {
     public constructor(loadedSettings: Partial<IVaultkeeperAISettings>) {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
+        this.ensureValidModels();
     }
 
     public async saveSettings(onSave?: () => void) {
@@ -82,6 +83,22 @@ export class SettingsService {
             case AIProvider.Gemini:
                 this.settings.apiKeys.gemini = key;
                 break;
+        }
+    }
+
+    private ensureValidModels(): void {
+        const validModel = isValidProviderModel(this.settings.model);
+        const validPlanningModel = isValidProviderModel(this.settings.model);
+
+        if (!validModel) {
+            this.settings.model = AIProviderModel.ClaudeSonnet_4_6;
+        }
+        if (!validPlanningModel) {
+            this.settings.planningModel = AIProviderModel.ClaudeSonnet_4_6;
+        }
+
+        if (!validModel || !validPlanningModel) {
+            this.saveSettings();
         }
     }
 

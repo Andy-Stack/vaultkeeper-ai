@@ -94,7 +94,7 @@ const mockSettings: IVaultkeeperAISettings = {
 	apiKeys: {
 		claude: 'test-claude-key',
 		openai: 'test-openai-key',
-		gemini: 'test-gemini-key'
+		gemini: 'test-gemini-key', mistral: 'test-mistral-key'
 	},
 	exclusions: [],
 	userInstruction: '',

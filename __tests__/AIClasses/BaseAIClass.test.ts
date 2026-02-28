@@ -39,7 +39,7 @@ describe('BaseAIClass Shared Methods', () => {
                 apiKeys: {
                     claude: 'test-claude-key',
                     openai: 'test-openai-key',
-                    gemini: 'test-gemini-key'
+                    gemini: 'test-gemini-key', mistral: 'test-mistral-key'
                 }
             },
             getApiKeyForProvider: vi.fn((provider: AIProvider) => {

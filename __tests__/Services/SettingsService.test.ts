@@ -30,7 +30,7 @@ describe('SettingsService', () => {
             expect(settingsService.settings.apiKeys).toEqual({
                 claude: '',
                 openai: '',
-                gemini: ''
+                gemini: '', mistral: ''
             });
             expect(settingsService.settings.exclusions).toEqual([]);
             expect(settingsService.settings.userInstruction).toBe('');
@@ -46,7 +46,7 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: 'claude-key-123',
                     openai: 'openai-key-456',
-                    gemini: 'gemini-key-789'
+                    gemini: 'gemini-key-789', mistral: ''
                 },
                 searchResultsLimit: 25,
                 snippetSizeLimit: 200
@@ -69,7 +69,7 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: '',
                     openai: 'partial-key',
-                    gemini: ''
+                    gemini: '', mistral: ''
                 }
             };
 
@@ -94,7 +94,7 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: 'claude-api-key',
                     openai: 'openai-api-key',
-                    gemini: 'gemini-api-key'
+                    gemini: 'gemini-api-key', mistral: ''
                 },
                 exclusions: [],
                 userInstruction: '',
@@ -135,7 +135,7 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
-                    gemini: 'gemini-key'
+                    gemini: 'gemini-key', mistral: ''
                 },
                 exclusions: [],
                 userInstruction: '',
@@ -156,7 +156,7 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
-                    gemini: 'gemini-key'
+                    gemini: 'gemini-key', mistral: ''
                 },
                 exclusions: [],
                 userInstruction: '',
@@ -177,7 +177,7 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
-                    gemini: 'gemini-key'
+                    gemini: 'gemini-key', mistral: ''
                 },
                 exclusions: [],
                 userInstruction: '',
@@ -194,21 +194,21 @@ describe('SettingsService', () => {
             // Test with various Claude models
             settingsService = new SettingsService({
                 model: AIProviderModel.ClaudeOpus_4,
-                apiKeys: { claude: 'opus-key', openai: '', gemini: '' }
+                apiKeys: { claude: 'opus-key', openai: '', gemini: '', mistral: '' }
             });
             expect(settingsService.getApiKeyForCurrentModel()).toBe('opus-key');
 
             // Test with various Gemini models
             settingsService = new SettingsService({
                 model: AIProviderModel.GeminiPro_2_5,
-                apiKeys: { claude: '', openai: '', gemini: 'pro-key' }
+                apiKeys: { claude: '', openai: '', gemini: 'pro-key', mistral: '' }
             });
             expect(settingsService.getApiKeyForCurrentModel()).toBe('pro-key');
 
             // Test with various GPT models
             settingsService = new SettingsService({
                 model: AIProviderModel.GPT_5,
-                apiKeys: { claude: '', openai: 'gpt5-key', gemini: '' }
+                apiKeys: { claude: '', openai: 'gpt5-key', gemini: '', mistral: '' }
             });
             expect(settingsService.getApiKeyForCurrentModel()).toBe('gpt5-key');
         });
@@ -223,7 +223,7 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: '',
                     openai: '',
-                    gemini: ''
+                    gemini: '', mistral: ''
                 },
                 exclusions: [],
                 userInstruction: '',
@@ -252,7 +252,7 @@ describe('SettingsService', () => {
             settingsService.settings.apiKeys = {
                 claude: 'existing-claude',
                 openai: 'existing-openai',
-                gemini: 'existing-gemini'
+                gemini: 'existing-gemini', mistral: ''
             };
 
             settingsService.setApiKeyForProvider(AIProvider.Claude, 'updated-claude');
@@ -278,7 +278,7 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: 'test-key',
                     openai: '',
-                    gemini: ''
+                    gemini: '', mistral: ''
                 },
                 exclusions: ['node_modules'],
                 userInstruction: 'Be helpful',
@@ -330,7 +330,7 @@ describe('SettingsService', () => {
             claudeModels.forEach(model => {
                 settingsService = new SettingsService({
                     model,
-                    apiKeys: { claude: 'test-claude', openai: '', gemini: '' }
+                    apiKeys: { claude: 'test-claude', openai: '', gemini: '', mistral: '' }
                 });
 
                 expect(settingsService.getApiKeyForCurrentModel()).toBe('test-claude');
@@ -347,7 +347,7 @@ describe('SettingsService', () => {
             geminiModels.forEach(model => {
                 settingsService = new SettingsService({
                     model,
-                    apiKeys: { claude: '', openai: '', gemini: 'test-gemini' }
+                    apiKeys: { claude: '', openai: '', gemini: 'test-gemini', mistral: '' }
                 });
 
                 expect(settingsService.getApiKeyForCurrentModel()).toBe('test-gemini');
@@ -365,7 +365,7 @@ describe('SettingsService', () => {
             openaiModels.forEach(model => {
                 settingsService = new SettingsService({
                     model,
-                    apiKeys: { claude: '', openai: 'test-openai', gemini: '' }
+                    apiKeys: { claude: '', openai: 'test-openai', gemini: '', mistral: '' }
                 });
 
                 expect(settingsService.getApiKeyForCurrentModel()).toBe('test-openai');
@@ -377,7 +377,7 @@ describe('SettingsService', () => {
         it('should maintain reference to settings object', () => {
             settingsService = new SettingsService({
                 model: AIProviderModel.ClaudeSonnet_4_5,
-                apiKeys: { claude: 'key', openai: '', gemini: '' }
+                apiKeys: { claude: 'key', openai: '', gemini: '', mistral: '' }
             });
 
             const settingsRef = settingsService.settings;
@@ -390,7 +390,7 @@ describe('SettingsService', () => {
         it('should allow direct modification of settings properties', () => {
             settingsService = new SettingsService({
                 model: AIProviderModel.ClaudeSonnet_4_5,
-                apiKeys: { claude: '', openai: '', gemini: '' },
+                apiKeys: { claude: '', openai: '', gemini: '', mistral: '' },
                 exclusions: []
             });
 

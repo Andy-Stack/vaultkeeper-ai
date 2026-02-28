@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { GeminiConversationNamingService } from '../../AIClasses/Gemini/GeminiConversationNamingService';
+import { MistralConversationNamingService } from '../../AIClasses/Mistral/MistralConversationNamingService';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { Role } from '../../Enums/Role';
 
-describe('GeminiConversationNamingService', () => {
-    let service: GeminiConversationNamingService;
+describe('MistralConversationNamingService', () => {
+    let service: MistralConversationNamingService;
     let mockPlugin: any;
     let mockSettingsService: any;
     let mockAbortService: any;
@@ -19,20 +19,22 @@ describe('GeminiConversationNamingService', () => {
         // Mock SettingsService
         mockSettingsService = {
             settings: {
-                model: AIProviderModel.GeminiFlash_2_5,
+                model: AIProviderModel.MistralNamer,
                 apiKeys: {
                     claude: 'test-claude-key',
                     openai: 'test-openai-key',
-                    gemini: 'test-gemini-key', mistral: 'test-mistral-key'
+                    gemini: 'test-gemini-key',
+                    mistral: 'test-mistral-key'
                 }
             },
             getApiKeyForProvider: vi.fn((provider: AIProvider) => {
                 if (provider === AIProvider.Claude) return 'test-claude-key';
                 if (provider === AIProvider.OpenAI) return 'test-openai-key';
                 if (provider === AIProvider.Gemini) return 'test-gemini-key';
+                if (provider === AIProvider.Mistral) return 'test-mistral-key';
                 return '';
             }),
-            getApiKeyForCurrentModel: vi.fn(() => 'test-gemini-key')
+            getApiKeyForCurrentModel: vi.fn(() => 'test-mistral-key')
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
 
@@ -47,7 +49,7 @@ describe('GeminiConversationNamingService', () => {
         fetchMock = vi.fn();
         global.fetch = fetchMock;
 
-        service = new GeminiConversationNamingService();
+        service = new MistralConversationNamingService();
     });
 
     afterEach(() => {
@@ -61,44 +63,46 @@ describe('GeminiConversationNamingService', () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    candidates: [{ content: { parts: [{ text: 'Test Conversation' }] } }]
+                    choices: [{
+                        message: {
+                            content: 'Test Conversation'
+                        }
+                    }]
                 })
             });
 
             await service.generateName('User prompt');
-
-            expect(fetchMock).toHaveBeenCalled();
-            const fetchUrl = fetchMock.mock.calls[0][0];
-            expect(fetchUrl).toContain(AIProviderModel.GeminiNamer);
-            expect(fetchUrl).toContain('generateContent');
-            expect(fetchUrl).toContain('key=test-gemini-key');
 
             expect(fetchMock).toHaveBeenCalledWith(
                 expect.any(String),
                 expect.objectContaining({
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Authorization': 'Bearer test-mistral-key',
+                        'Content-Type': 'application/json',
                     },
                     body: expect.any(String)
                 })
             );
 
             const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
-            expect(requestBody.system_instruction).toBeDefined();
-            expect(requestBody.system_instruction.parts).toHaveLength(1);
-            expect(requestBody.system_instruction.parts[0].text).toBeDefined();
-            expect(requestBody.contents).toHaveLength(1);
-            expect(requestBody.contents[0].role).toBe(Role.User);
-            expect(requestBody.contents[0].parts).toHaveLength(1);
-            expect(requestBody.contents[0].parts[0].text).toBe('User prompt');
+            expect(requestBody.model).toBe(AIProviderModel.MistralNamer);
+            expect(requestBody.max_tokens).toBe(100);
+            expect(requestBody.messages).toHaveLength(2);
+            expect(requestBody.messages[0].role).toBe('system');
+            expect(requestBody.messages[1].role).toBe(Role.User);
+            expect(requestBody.messages[1].content).toBe('User prompt');
         });
 
         it('should return generated name from response', async () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    candidates: [{ content: { parts: [{ text: 'Generated Name' }] } }]
+                    choices: [{
+                        message: {
+                            content: 'Generated Name'
+                        }
+                    }]
                 })
             });
 
@@ -110,20 +114,36 @@ describe('GeminiConversationNamingService', () => {
         it('should throw error on API error response', async () => {
             fetchMock.mockResolvedValue({
                 ok: false,
-                status: 400,
-                statusText: 'Bad Request',
-                text: async () => 'Invalid request'
+                status: 401,
+                statusText: 'Unauthorized',
+                text: async () => 'Invalid API key'
             });
 
             await expect(service.generateName('Test'))
-                .rejects.toThrow('Gemini API error: 400 Bad Request - Invalid request');
+                .rejects.toThrow('Mistral API error: 401 Unauthorized - Invalid API key');
         });
 
         it('should throw error when response has no content', async () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    candidates: []
+                    choices: []
+                })
+            });
+
+            await expect(service.generateName('Test'))
+                .rejects.toThrow('Failed to generate conversation name');
+        });
+
+        it('should throw error when message content is missing', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    choices: [{
+                        message: {
+                            // No content field
+                        }
+                    }]
                 })
             });
 
@@ -135,7 +155,11 @@ describe('GeminiConversationNamingService', () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    candidates: [{ content: { parts: [{ text: 'Name' }] } }]
+                    choices: [{
+                        message: {
+                            content: 'Name'
+                        }
+                    }]
                 })
             });
 
@@ -153,8 +177,41 @@ describe('GeminiConversationNamingService', () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    // Missing candidates
+                    // Missing choices array
                     other: 'data'
+                })
+            });
+
+            await expect(service.generateName('Test'))
+                .rejects.toThrow('Failed to generate conversation name');
+        });
+
+        it('should trim whitespace from generated name', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    choices: [{
+                        message: {
+                            content: '  Generated Name  '
+                        }
+                    }]
+                })
+            });
+
+            const result = await service.generateName('Test');
+
+            expect(result).toBe('Generated Name');
+        });
+
+        it('should throw error when message content is empty string', async () => {
+            fetchMock.mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    choices: [{
+                        message: {
+                            content: ''
+                        }
+                    }]
                 })
             });
 

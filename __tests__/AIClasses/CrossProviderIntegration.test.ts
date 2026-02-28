@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { Gemini } from '../../AIClasses/Gemini/Gemini';
 import { Claude } from '../../AIClasses/Claude/Claude';
 import { OpenAI } from '../../AIClasses/OpenAI/OpenAI';
+import { Mistral } from '../../AIClasses/Mistral/Mistral';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
@@ -51,7 +52,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 apiKeys: {
                     claude: 'test-claude-key',
                     openai: 'test-openai-key',
-                    gemini: 'test-gemini-key'
+                    gemini: 'test-gemini-key', mistral: 'test-mistral-key'
                 }
             },
             getApiKeyForProvider: vi.fn((provider: AIProvider) => {
@@ -1739,6 +1740,587 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             const openai = new OpenAI();
             const openaiResult = await (openai as any).extractContents(conversation);
             expect(openaiResult).toHaveLength(0);
+        });
+
+        it('should handle Claude → Mistral provider switch with invalid tool call ID', async () => {
+            // Test the specific scenario from the bug report:
+            // Claude tool call with ID like "toolu_01EWDB2npEv6uLdEkkt56xxp" should be converted to text for Mistral
+            
+            const claudeToolCall = new ConversationContent({
+                role: Role.Assistant,
+                content: '',
+                displayContent: '',
+                toolCall: JSON.stringify({
+                    toolCall: {
+                        id: 'toolu_01EWDB2npEv6uLdEkkt56xxp',  // Claude-style ID with underscores, wrong length
+                        name: 'search_vault_files',
+                        args: { query: 'test' }
+                    }
+                }),
+                toolId: 'toolu_01EWDB2npEv6uLdEkkt56xxp'
+            });
+
+            const mistral = new Mistral();
+            const result = await (mistral as any).extractContents([claudeToolCall]);
+
+            // Should convert to legacy text format instead of trying to use the invalid ID
+            expect(result).toHaveLength(1);
+            expect(result[0].role).toBe(Role.Assistant);
+            expect(result[0].content).toContain('Historical tool call');
+            expect(result[0].content).toContain('search_vault_files');
+            expect(result[0].content).toContain('"name": "search_vault_files"');
+            // Should NOT have tool_calls array (that would cause the API error)
+            expect(result[0].tool_calls).toBeUndefined();
+        });
+    });
+
+    describe('Mistral Cross-Provider Integration', () => {
+        describe('Mistral → Other Providers', () => {
+            it('should handle Mistral function call when switching to Claude', async () => {
+                // Mistral function call with valid 9-char alphanumeric ID
+                const mistralToolCall = new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    toolCall: JSON.stringify({
+                        toolCall: {
+                            id: 'abc123xyz',  // Valid Mistral ID format
+                            name: 'search_vault_files',
+                            args: { query: 'test' }
+                        }
+                    }),
+                    toolId: 'abc123xyz'
+                });
+
+                const claude = new Claude();
+                const result = await (claude as any).extractContents([mistralToolCall]);
+
+                // Claude should convert Mistral's function call to its tool_use format
+                expect(result).toHaveLength(1);
+                expect(result[0].content[0]).toEqual({
+                    type: 'tool_use',
+                    id: 'abc123xyz',
+                    name: 'search_vault_files',
+                    input: { query: 'test' }
+                });
+            });
+
+            it('should handle Mistral function call when switching to OpenAI', async () => {
+                // Mistral function call with valid ID
+                const mistralToolCall = new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    toolCall: JSON.stringify({
+                        toolCall: {
+                            id: 'def456ghi',  // Valid Mistral ID format
+                            name: 'read_file',
+                            args: { path: 'test.md' }
+                        }
+                    }),
+                    toolId: 'def456ghi'
+                });
+
+                const openai = new OpenAI();
+                const result = await (openai as any).extractContents([mistralToolCall]);
+
+                // OpenAI should convert Mistral's function call to its Responses API format
+                expect(result).toHaveLength(1);
+                expect(result[0]).toEqual({
+                    type: 'function_call',
+                    call_id: 'def456ghi',
+                    name: 'read_file',
+                    arguments: '{"path":"test.md"}'
+                });
+            });
+
+            it('should handle Mistral function call when switching to Gemini', async () => {
+                // Mistral function call with valid ID
+                const mistralToolCall = new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    toolCall: JSON.stringify({
+                        toolCall: {
+                            id: 'ghi789jkl',  // Valid Mistral ID format
+                            name: 'search_vault_files',
+                            args: { query: 'project' }
+                        }
+                    }),
+                    toolId: 'ghi789jkl'
+                });
+
+                const result = await (gemini as any).extractContents([mistralToolCall]);
+
+                // Gemini should convert Mistral's function call to legacy text format
+                // because Gemini treats any function call with an ID as cross-provider
+                expect(result).toHaveLength(1);
+                expect(result[0].parts[0]).toHaveProperty('text');
+                expect(result[0].parts[0].text).toContain('Historical tool call');
+                expect(result[0].parts[0].text).toContain('search_vault_files');
+                expect(result[0].parts[0].text).toContain('"name": "search_vault_files"');
+            });
+        });
+
+        describe('Other Providers → Mistral', () => {
+            it('should handle OpenAI function call when switching to Mistral', async () => {
+                // OpenAI function call with call_xyz format ID
+                const openaiToolCall = new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    toolCall: JSON.stringify({
+                        toolCall: {
+                            id: 'call_openai_123',  // OpenAI-style ID
+                            name: 'search_vault_files',
+                            args: { query: 'test' }
+                        }
+                    }),
+                    toolId: 'call_openai_123'
+                });
+
+                const mistral = new Mistral();
+                const result = await (mistral as any).extractContents([openaiToolCall]);
+
+                // Mistral should convert OpenAI's function call to legacy text format
+                expect(result).toHaveLength(1);
+                expect(result[0].role).toBe(Role.Assistant);
+                expect(result[0].content).toContain('Historical tool call');
+                expect(result[0].content).toContain('search_vault_files');
+                expect(result[0].tool_calls).toBeUndefined();
+            });
+
+            it('should handle Claude function call when switching to Mistral', async () => {
+                // Claude function call with toolu_ format ID
+                const claudeToolCall = new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    toolCall: JSON.stringify({
+                        toolCall: {
+                            id: 'toolu_claude_123',  // Claude-style ID
+                            name: 'read_file',
+                            args: { path: 'document.md' }
+                        }
+                    }),
+                    toolId: 'toolu_claude_123'
+                });
+
+                const mistral = new Mistral();
+                const result = await (mistral as any).extractContents([claudeToolCall]);
+
+                // Mistral should convert Claude's function call to legacy text format
+                expect(result).toHaveLength(1);
+                expect(result[0].role).toBe(Role.Assistant);
+                expect(result[0].content).toContain('Historical tool call');
+                expect(result[0].content).toContain('read_file');
+                expect(result[0].tool_calls).toBeUndefined();
+            });
+
+            it('should handle Gemini function call when switching to Mistral', async () => {
+                // Gemini function call with thoughtSignature but no ID
+                const geminiToolCall = new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    toolCall: JSON.stringify({
+                        toolCall: {
+                            name: 'search_vault_files',
+                            args: { query: 'test' }
+                        }
+                    }),
+                    thoughtSignature: 'gemini_signature_123==',
+                    toolId: 'gemini_tool_1'
+                });
+
+                const mistral = new Mistral();
+                const result = await (mistral as any).extractContents([geminiToolCall]);
+
+                // Mistral should convert Gemini's function call to legacy text format
+                expect(result).toHaveLength(1);
+                expect(result[0].role).toBe(Role.Assistant);
+                expect(result[0].content).toContain('Historical tool call');
+                expect(result[0].content).toContain('search_vault_files');
+                expect(result[0].tool_calls).toBeUndefined();
+            });
+        });
+
+        describe('Mistral ID Validation', () => {
+            it('should accept valid 9-character alphanumeric Mistral IDs', async () => {
+                // Test various valid Mistral ID formats
+                const validIds = ['abc123xyz', 'ABC123XYZ', '123456789', 'aBcDeFgHi'];
+                
+                for (const validId of validIds) {
+                    const mistralToolCall = new ConversationContent({
+                        role: Role.Assistant,
+                        content: '',
+                        displayContent: '',
+                        toolCall: JSON.stringify({
+                            toolCall: {
+                                id: validId,
+                                name: 'search_vault_files',
+                                args: { query: 'test' }
+                            }
+                        }),
+                        toolId: validId
+                    });
+
+                    const mistral = new Mistral();
+                    const result = await (mistral as any).extractContents([mistralToolCall]);
+
+                    // Should use native tool_calls format for valid IDs
+                    expect(result).toHaveLength(1);
+                    expect(result[0].tool_calls).toBeDefined();
+                    expect(result[0].tool_calls![0].id).toBe(validId);
+                }
+            });
+
+            it('should reject Mistral IDs with invalid characters', async () => {
+                // Test IDs with special characters that Mistral doesn't support
+                const invalidIds = ['abc-123-xyz', 'abc_123_xyz', 'abc.123.xyz', 'abc 123 xyz'];
+                
+                for (const invalidId of invalidIds) {
+                    const mistralToolCall = new ConversationContent({
+                        role: Role.Assistant,
+                        content: '',
+                        displayContent: '',
+                        toolCall: JSON.stringify({
+                            toolCall: {
+                                id: invalidId,
+                                name: 'search_vault_files',
+                                args: { query: 'test' }
+                            }
+                        }),
+                        toolId: invalidId
+                    });
+
+                    const mistral = new Mistral();
+                    const result = await (mistral as any).extractContents([mistralToolCall]);
+
+                    // Should convert to legacy text format for invalid IDs
+                    expect(result).toHaveLength(1);
+                    expect(result[0].content).toContain('Historical tool call');
+                    expect(result[0].tool_calls).toBeUndefined();
+                }
+            });
+
+            it('should reject Mistral IDs with invalid length', async () => {
+                // Test IDs that are too short or too long
+                const invalidLengthIds = ['abc123', 'abc12345678', 'a', 'abc12345678901234567890'];
+                
+                for (const invalidId of invalidLengthIds) {
+                    const mistralToolCall = new ConversationContent({
+                        role: Role.Assistant,
+                        content: '',
+                        displayContent: '',
+                        toolCall: JSON.stringify({
+                            toolCall: {
+                                id: invalidId,
+                                name: 'search_vault_files',
+                                args: { query: 'test' }
+                            }
+                        }),
+                        toolId: invalidId
+                    });
+
+                    const mistral = new Mistral();
+                    const result = await (mistral as any).extractContents([mistralToolCall]);
+
+                    // Should convert to legacy text format for invalid lengths
+                    expect(result).toHaveLength(1);
+                    expect(result[0].content).toContain('Historical tool call');
+                    expect(result[0].tool_calls).toBeUndefined();
+                }
+            });
+        });
+
+        describe('Mixed Conversations with Mistral', () => {
+            it('should handle conversation with Mistral, Claude, and OpenAI function calls', async () => {
+                const conversation = [
+                    new ConversationContent({ role: Role.User, content: 'Start workflow', displayContent: 'Start workflow' }),
+                    
+                    // Mistral function call
+                    (() => {
+                        const content = new ConversationContent({
+                            role: Role.Assistant,
+                            content: '',
+                            displayContent: '',
+                            toolCall: JSON.stringify({
+                                toolCall: {
+                                    id: 'mistral12',  // Valid Mistral ID
+                                    name: 'search_vault_files',
+                                    args: { query: 'project' }
+                                }
+                            }),
+                            toolId: 'mistral12'
+                        });
+                        return content;
+                    })(),
+                    
+                    (() => {
+                        const responseContent = JSON.stringify({
+                            id: 'mistral12',
+                            functionResponse: { name: 'search_vault_files', response: ['project.md'] }
+                        });
+                        const content = new ConversationContent({
+                            role: Role.User,
+                            content: responseContent,
+                            displayContent: responseContent,
+                            functionResponse: responseContent,
+                            toolId: 'mistral12'
+                        });
+                        return content;
+                    })(),
+                    
+                    new ConversationContent({ role: Role.Assistant, content: 'Found project.md' }),
+                    new ConversationContent({ role: Role.User, content: 'Read it', displayContent: 'Read it' }),
+                    
+                    // Claude function call
+                    (() => {
+                        const content = new ConversationContent({
+                            role: Role.Assistant,
+                            content: '',
+                            displayContent: '',
+                            toolCall: JSON.stringify({
+                                toolCall: {
+                                    id: 'toolu_claude_1',
+                                    name: 'read_file',
+                                    args: { path: 'project.md' }
+                                }
+                            }),
+                            toolId: 'toolu_claude_1'
+                        });
+                        return content;
+                    })(),
+                    
+                    (() => {
+                        const responseContent = JSON.stringify({
+                            id: 'toolu_claude_1',
+                            functionResponse: { name: 'read_file', response: { content: 'Project details' } }
+                        });
+                        const content = new ConversationContent({
+                            role: Role.User,
+                            content: responseContent,
+                            displayContent: responseContent,
+                            functionResponse: responseContent,
+                            toolId: 'toolu_claude_1'
+                        });
+                        return content;
+                    })(),
+                    
+                    new ConversationContent({ role: Role.Assistant, content: 'Project details...' }),
+                    new ConversationContent({ role: Role.User, content: 'Summarize', displayContent: 'Summarize' }),
+                    
+                    // OpenAI function call
+                    (() => {
+                        const content = new ConversationContent({
+                            role: Role.Assistant,
+                            content: '',
+                            displayContent: '',
+                            toolCall: JSON.stringify({
+                                toolCall: {
+                                    id: 'call_openai_1',
+                                    name: 'write_file',
+                                    args: { path: 'summary.md', content: 'Summary' }
+                                }
+                            }),
+                            toolId: 'call_openai_1'
+                        });
+                        return content;
+                    })(),
+                    
+                    (() => {
+                        const responseContent = JSON.stringify({
+                            id: 'call_openai_1',
+                            functionResponse: { name: 'write_file', response: { success: true } }
+                        });
+                        const content = new ConversationContent({
+                            role: Role.User,
+                            content: responseContent,
+                            displayContent: responseContent,
+                            functionResponse: responseContent,
+                            toolId: 'call_openai_1'
+                        });
+                        return content;
+                    })()
+                ];
+
+                // Test that all providers can handle this mixed conversation
+                const mistral = new Mistral();
+                const mistralResult = await (mistral as any).extractContents(conversation);
+                expect(mistralResult.length).toBeGreaterThan(0);
+                
+                const claude = new Claude();
+                const claudeResult = await (claude as any).extractContents(conversation);
+                expect(claudeResult.length).toBeGreaterThan(0);
+                
+                const openai = new OpenAI();
+                const openaiResult = await (openai as any).extractContents(conversation);
+                expect(openaiResult.length).toBeGreaterThan(0);
+                
+                const geminiResult = await (gemini as any).extractContents(conversation);
+                expect(geminiResult.length).toBeGreaterThan(0);
+            });
+
+            it('should handle Mistral function responses when switching providers', async () => {
+                // Test that Mistral function responses are properly handled by other providers
+                const mistralToolCall = new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    displayContent: '',
+                    toolCall: JSON.stringify({
+                        toolCall: {
+                            id: 'resp12345',  // Valid Mistral ID
+                            name: 'search_vault_files',
+                            args: { query: 'test' }
+                        }
+                    }),
+                    toolId: 'resp12345'
+                });
+
+                const mistralResponse = (() => {
+                    const responseContent = JSON.stringify({
+                        id: 'resp12345',
+                        functionResponse: { name: 'search_vault_files', response: ['file1.md', 'file2.md'] }
+                    });
+                    const content = new ConversationContent({
+                        role: Role.User,
+                        content: responseContent,
+                        displayContent: responseContent,
+                        functionResponse: responseContent,
+                        toolId: 'resp12345'
+                    });
+                    return content;
+                })();
+
+                // Test Claude handling Mistral response
+                const claude = new Claude();
+                const claudeResult = await (claude as any).extractContents([mistralToolCall, mistralResponse]);
+                expect(claudeResult.length).toBe(2);
+                
+                // Test OpenAI handling Mistral response
+                const openai = new OpenAI();
+                const openaiResult = await (openai as any).extractContents([mistralToolCall, mistralResponse]);
+                expect(openaiResult.length).toBe(2);
+                
+                // Test Gemini handling Mistral response
+                const geminiResult = await (gemini as any).extractContents([mistralToolCall, mistralResponse]);
+                expect(geminiResult.length).toBe(2);
+            });
+        });
+
+        describe('Mistral Round-Trip Testing', () => {
+            it('should handle Mistral → Claude → Mistral round-trip', async () => {
+                const conversation = [
+                    new ConversationContent({ role: Role.User, content: 'Search files', displayContent: 'Search files' }),
+                    
+                    // Mistral function call
+                    (() => {
+                        const content = new ConversationContent({
+                            role: Role.Assistant,
+                            content: '',
+                            displayContent: '',
+                            toolCall: JSON.stringify({
+                                toolCall: {
+                                    id: 'mistral12',  // Valid Mistral ID
+                                    name: 'search_vault_files',
+                                    args: { query: 'test' }
+                                }
+                            }),
+                            toolId: 'mistral12'
+                        });
+                        return content;
+                    })(),
+                    
+                    (() => {
+                        const responseContent = JSON.stringify({
+                            id: 'mistral12',
+                            functionResponse: { name: 'search_vault_files', response: ['file.md'] }
+                        });
+                        const content = new ConversationContent({
+                            role: Role.User,
+                            content: responseContent,
+                            displayContent: responseContent,
+                            functionResponse: responseContent,
+                            toolId: 'mistral12'
+                        });
+                        return content;
+                    })(),
+                    
+                    new ConversationContent({ role: Role.Assistant, content: 'Found file.md' })
+                ];
+
+                // Mistral reads it initially
+                const mistral1 = new Mistral();
+                const mistralResult1 = await (mistral1 as any).extractContents(conversation);
+                expect(mistralResult1.length).toBeGreaterThan(0);
+                
+                // Claude reads it (converts to its format)
+                const claude = new Claude();
+                const claudeResult = await (claude as any).extractContents(conversation);
+                expect(claudeResult.length).toBeGreaterThan(0);
+                
+                // Mistral reads it again (should still work)
+                const mistral2 = new Mistral();
+                const mistralResult2 = await (mistral2 as any).extractContents(conversation);
+                expect(mistralResult2.length).toBeGreaterThan(0);
+            });
+
+            it('should handle Mistral → OpenAI → Mistral round-trip', async () => {
+                const conversation = [
+                    new ConversationContent({ role: Role.User, content: 'Read file', displayContent: 'Read file' }),
+                    
+                    // Mistral function call
+                    (() => {
+                        const content = new ConversationContent({
+                            role: Role.Assistant,
+                            content: '',
+                            displayContent: '',
+                            toolCall: JSON.stringify({
+                                toolCall: {
+                                    id: 'abc123def',  // Valid Mistral ID
+                                    name: 'read_file',
+                                    args: { path: 'test.md' }
+                                }
+                            }),
+                            toolId: 'abc123def'
+                        });
+                        return content;
+                    })(),
+                    
+                    (() => {
+                        const responseContent = JSON.stringify({
+                            id: 'abc123def',
+                            functionResponse: { name: 'read_file', response: { content: 'File contents' } }
+                        });
+                        const content = new ConversationContent({
+                            role: Role.User,
+                            content: responseContent,
+                            displayContent: responseContent,
+                            functionResponse: responseContent,
+                            toolId: 'abc123def'
+                        });
+                        return content;
+                    })(),
+                    
+                    new ConversationContent({ role: Role.Assistant, content: 'File contents...' })
+                ];
+
+                // Mistral reads it initially
+                const mistral1 = new Mistral();
+                const mistralResult1 = await (mistral1 as any).extractContents(conversation);
+                expect(mistralResult1.length).toBeGreaterThan(0);
+                
+                // OpenAI reads it (converts to its format)
+                const openai = new OpenAI();
+                const openaiResult = await (openai as any).extractContents(conversation);
+                expect(openaiResult.length).toBeGreaterThan(0);
+                
+                // Mistral reads it again (should still work)
+                const mistral2 = new Mistral();
+                const mistralResult2 = await (mistral2 as any).extractContents(conversation);
+                expect(mistralResult2.length).toBeGreaterThan(0);
+            });
         });
     });
 });

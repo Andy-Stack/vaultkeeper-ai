@@ -97,15 +97,10 @@ export class SettingsService {
         const validModel = isValidProviderModel(this.settings.model);
         const validPlanningModel = isValidProviderModel(this.settings.model);
 
-        if (!validModel) {
-            this.settings.model = AIProviderModel.ClaudeSonnet_4_6;
-        }
-        if (!validPlanningModel) {
-            this.settings.planningModel = AIProviderModel.ClaudeSonnet_4_6;
-        }
-
         if (!validModel || !validPlanningModel) {
-            this.saveSettings();
+            this.settings.model = AIProviderModel.ClaudeSonnet_4_6;
+            this.settings.planningModel = AIProviderModel.ClaudeSonnet_4_6;
+            void this.saveSettings();
         }
     }
 

@@ -211,9 +211,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		// Mistral models
 		if (!providerFilter || providerFilter === AIProvider.Mistral) {
 			const mistralGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderMistral } });
-			mistralGroup.createEl("option", { value: AIProviderModel.MistralLarge_3, text: Copy.MistralLarge_3 });
-			mistralGroup.createEl("option", { value: AIProviderModel.MistralMedium_3_1, text: Copy.MistralMedium_3_1 });
-			mistralGroup.createEl("option", { value: AIProviderModel.MistralSmall_3_2, text: Copy.MistralSmall_3_2 });
+			mistralGroup.createEl("option", { value: AIProviderModel.MistralLarge, text: Copy.MistralLarge });
+			mistralGroup.createEl("option", { value: AIProviderModel.MistralMedium, text: Copy.MistralMedium });
+			mistralGroup.createEl("option", { value: AIProviderModel.MistralSmall, text: Copy.MistralSmall });
 		}
 	}
 

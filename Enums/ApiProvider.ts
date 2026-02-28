@@ -72,15 +72,15 @@ export enum AIProviderModel {
     GPT_5_Nano = "gpt-5-nano",
 
     // Mistral models
-    MistralLarge_3 = "mistral-large-latest",
-    MistralMedium_3_1 = "mistral-medium-latest",
-    MistralSmall_3_2 = "mistral-small-latest",
+    MistralLarge = "mistral-large-latest",
+    MistralMedium = "mistral-medium-latest",
+    MistralSmall = "mistral-small-latest",
 
     // Conversation naming models (aliases to existing models)
     ClaudeNamer = ClaudeHaiku_4_5,
     GeminiNamer = GeminiFlash_2_5_Lite,
     OpenAINamer = GPT_5_2_Instant,
-    MistralNamer = MistralSmall_3_2,
+    MistralNamer = MistralSmall,
 }
 
 export enum AIProviderURL {

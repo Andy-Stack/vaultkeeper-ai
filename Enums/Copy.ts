@@ -31,9 +31,9 @@ export enum Copy {
     GPT_5_Mini = "GPT-5 Mini",
     GPT_5_Nano = "GPT-5 Nano",
 
-    MistralLarge_3 = "Mistral Large 3",
-    MistralMedium_3_1 = "Mistral Medium 3.1",
-    MistralSmall_3_2 = "Mistral Small 3.2",
+    MistralLarge = "Mistral Large (latest)",
+    MistralMedium = "Mistral Medium (latest)",
+    MistralSmall = "Mistral Small (latest)",
 
     // AI Provider Groups
     ProviderClaude = "Claude",

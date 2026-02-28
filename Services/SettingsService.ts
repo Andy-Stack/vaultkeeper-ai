@@ -12,7 +12,8 @@ const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     apiKeys: {
         claude: "",
         openai: "",
-        gemini: ""
+        gemini: "",
+        mistral: ""
     },
     exclusions: [],
 
@@ -30,6 +31,7 @@ export interface IVaultkeeperAISettings {
         claude: string;
         openai: string;
         gemini: string;
+        mistral: string;
     };
     exclusions: string[];
 
@@ -69,6 +71,8 @@ export class SettingsService {
                 return this.settings.apiKeys.openai;
             case AIProvider.Gemini:
                 return this.settings.apiKeys.gemini;
+            case AIProvider.Mistral:
+                return this.settings.apiKeys.mistral;
         }
     }
 
@@ -82,6 +86,9 @@ export class SettingsService {
                 break;
             case AIProvider.Gemini:
                 this.settings.apiKeys.gemini = key;
+                break;
+            case AIProvider.Mistral:
+                this.settings.apiKeys.mistral = key;
                 break;
         }
     }

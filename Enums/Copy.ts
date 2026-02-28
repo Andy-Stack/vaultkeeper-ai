@@ -21,7 +21,6 @@ export enum Copy {
     GeminiFlash_2_5 = "Gemini 2.5 Flash",
     GeminiPro_2_5 = "Gemini 2.5 Pro",
     GeminiFlash_3_Preview = "Gemini 3 Flash Preview",
-    GeminiPro_3_Preview = "Gemini 3 Pro Preview",
     GeminiPro_3_1_Preview = "Gemini 3.1 Pro Preview",
 
     GPT_5_2_Instant = "GPT-5.2 Instant",
@@ -32,10 +31,15 @@ export enum Copy {
     GPT_5_Mini = "GPT-5 Mini",
     GPT_5_Nano = "GPT-5 Nano",
 
+    MistralLarge_3 = "Mistral Large 3",
+    MistralMedium_3_1 = "Mistral Medium 3.1",
+    MistralSmall_3_2 = "Mistral Small 3.2",
+
     // AI Provider Groups
     ProviderClaude = "Claude",
     ProviderOpenAI = "OpenAI",
     ProviderGemini = "Gemini",
+    ProviderMistral = "Mistral",
 
     // Settings Copy
     SettingModel = "Model",
@@ -58,6 +62,7 @@ export enum Copy {
     SettingFileMonitoringGemini = "Files uploaded to Gemini are automatically deleted after 48 hours and will be re-uploaded during conversations as needed. No manual cleanup is typically required.",
     SettingFileMonitoringClaude = "Files uploaded to Claude remain stored indefinitely. Periodically check the Anthropic Console (https://console.anthropic.com/) to review and remove old files that are no longer needed.",
     SettingFileMonitoringOpenAI = "Files uploaded to OpenAI remain stored indefinitely. Periodically check the OpenAI Platform (https://platform.openai.com/) to review and remove old files that are no longer needed.",
+    SettingFileMonitoringMistral = "Documents uploaded to Mistral are stored on their platform. Images are sent inline and not stored. Periodically check the Mistral Console (https://console.mistral.ai/) to review and remove old files that are no longer needed.",
 
     // Settings Placeholders
     PlaceholderEnterApiKey = "Enter your API key",
@@ -164,7 +169,7 @@ If you find any issues or have a feature request, please feel free to raise them
     HelpModalGuideContent = `#### How to Use Vaultkeeper AI
 
 ##### Getting Started
-1. **Add an API Key**: Go to Settings and add at least one API key (Claude, Gemini, or OpenAI)
+1. **Add an API Key**: Go to Settings and add at least one API key (Claude, Gemini, OpenAI, or Mistral)
 2. **Select a Model**: Choose your preferred AI model from the dropdown
 3. **Open the Chat**: Click the sparkles icon in the sidebar to start chatting
 
@@ -219,7 +224,8 @@ When you upload files (PDFs, images) to conversations, they are stored by your A
 **Provider Dashboards:**
 - Claude: [Anthropic Console](https://console.anthropic.com/)
 - Gemini: [Google AI Studio](https://aistudio.google.com/)
-- OpenAI: [OpenAI Platform](https://platform.openai.com/)`,
+- OpenAI: [OpenAI Platform](https://platform.openai.com/)
+- Mistral: [Mistral Console](https://console.mistral.ai/)`,
 
     HelpModalTroubleshootTitle = "Troubleshooting",
     HelpModalTroubleshootContent = `#### Common Issues & Solutions
@@ -291,6 +297,7 @@ This error indicates a temporary issue with the AI provider's servers.
 - **Claude**: Anthropic's API
 - **Gemini**: Google's API
 - **OpenAI**: OpenAI's API
+- **Mistral**: Mistral AI's API
 
 **What gets sent**:
 - Your messages and referenced file contents (including binary files like PDFs and images)
@@ -324,7 +331,8 @@ Each AI provider has their own data policies:
 
 - [Anthropic (Claude)](https://www.anthropic.com/privacy)
 - [Google (Gemini)](https://policies.google.com/privacy)
-- [OpenAI (ChatGPT)](https://openai.com/privacy/)`,
+- [OpenAI (ChatGPT)](https://openai.com/privacy)
+- [Mistral AI](https://legal.mistral.ai/terms/privacy-policy)`,
 
     // Conversation Modal Copy
     NoConversationsFound = "No conversations match your search.",

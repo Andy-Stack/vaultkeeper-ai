@@ -1,45 +1,59 @@
+// Core and Enums
 import { AIProvider, fromModel } from "Enums/ApiProvider";
+import { Environment } from "Enums/Environment";
 import type VaultkeeperAIPlugin from "main";
+
+// Services
 import { RegisterSingleton, RegisterTransient, Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import { AIPrompt, type IPrompt } from "AIPrompts/IPrompt";
+import { AbortService } from "./AbortService";
+import { AIToolService } from "./AIServices/AIToolService";
+import { ChatService } from "./ChatService";
+import { ConversationFileSystemService } from "./ConversationFileSystemService";
+import { ConversationNamingService } from "./ConversationNamingService";
+import { DebugService } from "./DebugService";
+import { DiffService } from "./DiffService";
+import { EventService } from "./EventService";
+import { FileSystemService } from "./FileSystemService";
+import { HTMLService } from "./HTMLService";
+import { InputService } from "./InputService";
+import { MainAgent } from "./AIServices/MainAgent";
+import { SanitiserService } from "./SanitiserService";
+import { SettingsService, type IVaultkeeperAISettings } from "./SettingsService";
+import { StreamingMarkdownService } from "./StreamingMarkdownService";
+import { StreamingService } from "./StreamingService";
+import { UserInputService } from "./UserInputService";
+import { VaultCacheService } from "./VaultCacheService";
+import { VaultService } from "./VaultService";
+import { WorkSpaceService } from "./WorkSpaceService";
+
+// Stores
+import { ExecutionPlanStore } from "Stores/ExecutionPlanStore";
+import { SearchStateStore } from "Stores/SearchStateStore";
+
+// Modals
+import { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
+import { HelpModal } from "Modals/HelpModal";
+
+// AI Classes
 import type { IAIClass } from "AIClasses/IAIClass";
+import type { IAIFileService } from "AIClasses/IAIFileService";
 import type { IConversationNamingService } from "AIClasses/IConversationNamingService";
+import { Claude } from "AIClasses/Claude/Claude";
+import { ClaudeConversationNamingService } from "AIClasses/Claude/ClaudeConversationNamingService";
+import { ClaudeFileService } from "AIClasses/Claude/ClaudeFileService";
 import { Gemini } from "AIClasses/Gemini/Gemini";
 import { GeminiConversationNamingService } from "AIClasses/Gemini/GeminiConversationNamingService";
-import { StreamingMarkdownService } from "./StreamingMarkdownService";
-import { FileSystemService } from "./FileSystemService";
-import { ConversationFileSystemService } from "./ConversationFileSystemService";
-import { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
-import { AIToolService } from "./AIServices/AIToolService";
-import { StreamingService } from "./StreamingService";
-import { WorkSpaceService } from "./WorkSpaceService";
-import { ChatService } from "./ChatService";
-import { ConversationNamingService } from "./ConversationNamingService";
-import { VaultService } from "./VaultService";
-import { ClaudeConversationNamingService } from "AIClasses/Claude/ClaudeConversationNamingService";
-import { Claude } from "AIClasses/Claude/Claude";
-import { OpenAIConversationNamingService } from "AIClasses/OpenAI/OpenAIConversationNamingService";
-import { OpenAI } from "AIClasses/OpenAI/OpenAI";
-import { SanitiserService } from "./SanitiserService";
-import { VaultCacheService } from "./VaultCacheService";
-import { UserInputService } from "./UserInputService";
-import { SearchStateStore } from "Stores/SearchStateStore";
-import { ExecutionPlanStore } from "Stores/ExecutionPlanStore";
-import { InputService } from "./InputService";
-import { HTMLService } from "./HTMLService";
-import { SettingsService, type IVaultkeeperAISettings } from "./SettingsService";
-import { HelpModal } from "Modals/HelpModal";
-import { EventService } from "./EventService";
-import { DiffService } from "./DiffService";
-import { AbortService } from "./AbortService";
-import type { IAIFileService } from "AIClasses/IAIFileService";
-import { ClaudeFileService } from "AIClasses/Claude/ClaudeFileService";
 import { GeminiFileService } from "AIClasses/Gemini/GeminiFileService";
+import { Mistral } from "AIClasses/Mistral/Mistral";
+import { MistralConversationNamingService } from "AIClasses/Mistral/MistralConversationNamingService";
+import { MistralFileService } from "AIClasses/Mistral/MistralFileService";
+import { OpenAI } from "AIClasses/OpenAI/OpenAI";
+import { OpenAIConversationNamingService } from "AIClasses/OpenAI/OpenAIConversationNamingService";
 import { OpenAIFileService } from "AIClasses/OpenAI/OpenAIFileService";
-import { MainAgent } from "./AIServices/MainAgent";
-import { Environment } from "Enums/Environment";
-import { DebugService } from "./DebugService";
+
+// Prompts
+import { AIPrompt, type IPrompt } from "AIPrompts/IPrompt";
 
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
     RegisterSingleton<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin, plugin);
@@ -97,6 +111,11 @@ export function RegisterAiProvider() {
         RegisterSingleton<IAIFileService>(Services.IAIFileService, new OpenAIFileService());
         RegisterSingleton<IAIClass>(Services.IAIClass, new OpenAI());
         RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new OpenAIConversationNamingService());
+    }
+    else if (provider == AIProvider.Mistral) {
+        RegisterSingleton<IAIFileService>(Services.IAIFileService, new MistralFileService());
+        RegisterSingleton<IAIClass>(Services.IAIClass, new Mistral());
+        RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new MistralConversationNamingService());
     }
 
     Resolve<MainAgent>(Services.MainAgent).resolveAIProvider();

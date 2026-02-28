@@ -205,8 +205,15 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_2_5, text: Copy.GeminiFlash_2_5 });
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_2_5, text: Copy.GeminiPro_2_5 });
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_Preview, text: Copy.GeminiFlash_3_Preview });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_3_Preview, text: Copy.GeminiPro_3_Preview });
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_3_1_Preview, text: Copy.GeminiPro_3_1_Preview });
+		}
+
+		// Mistral models
+		if (!providerFilter || providerFilter === AIProvider.Mistral) {
+			const mistralGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderMistral } });
+			mistralGroup.createEl("option", { value: AIProviderModel.MistralLarge_3, text: Copy.MistralLarge_3 });
+			mistralGroup.createEl("option", { value: AIProviderModel.MistralMedium_3_1, text: Copy.MistralMedium_3_1 });
+			mistralGroup.createEl("option", { value: AIProviderModel.MistralSmall_3_2, text: Copy.MistralSmall_3_2 });
 		}
 	}
 
@@ -256,6 +263,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					break;
 				case AIProvider.OpenAI:
 					disclaimerText = Copy.SettingFileMonitoringOpenAI;
+					break;
+				case AIProvider.Mistral:
+					disclaimerText = Copy.SettingFileMonitoringMistral;
 					break;
 			}
 

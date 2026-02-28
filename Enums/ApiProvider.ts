@@ -10,6 +10,8 @@ export function fromModel(model: string): AIProvider {
         return AIProvider.Gemini;
     } else if (isOpenAIModel(model)) {
         return AIProvider.OpenAI;
+    } else if (isMistralModel(model)) {
+        return AIProvider.Mistral;
     } else {
         Exception.throw("Invalid model selection");
     }
@@ -31,10 +33,15 @@ function isOpenAIModel(model: string): boolean {
     return isValidProviderModel(model) && model.startsWith("gpt-");
 }
 
+function isMistralModel(model: string): boolean {
+    return isValidProviderModel(model) && model.startsWith("mistral-");
+}
+
 export enum AIProvider {
     Claude = "Claude",
     Gemini = "Gemini",
-    OpenAI = "OpenAI"
+    OpenAI = "OpenAI",
+    Mistral = "Mistral"
 }
 
 export enum AIProviderModel {
@@ -53,7 +60,6 @@ export enum AIProviderModel {
     GeminiFlash_2_5 = "gemini-2.5-flash",
     GeminiPro_2_5 = "gemini-2.5-pro",
     GeminiFlash_3_Preview = "gemini-3-flash-preview",
-    GeminiPro_3_Preview = "gemini-3-pro-preview",
     GeminiPro_3_1_Preview = "gemini-3.1-pro-preview",
 
     // OpenAI models
@@ -65,16 +71,23 @@ export enum AIProviderModel {
     GPT_5_Mini = "gpt-5-mini",
     GPT_5_Nano = "gpt-5-nano",
 
+    // Mistral models
+    MistralLarge_3 = "mistral-large-latest",
+    MistralMedium_3_1 = "mistral-medium-latest",
+    MistralSmall_3_2 = "mistral-small-latest",
+
     // Conversation naming models (aliases to existing models)
     ClaudeNamer = ClaudeHaiku_4_5,
     GeminiNamer = GeminiFlash_2_5_Lite,
     OpenAINamer = GPT_5_2_Instant,
+    MistralNamer = MistralSmall_3_2,
 }
 
 export enum AIProviderURL {
     Claude = "https://api.anthropic.com/v1/messages",
     Gemini = "https://generativelanguage.googleapis.com/v1beta/models",
-    OpenAI = "https://api.openai.com/v1/responses"
+    OpenAI = "https://api.openai.com/v1/responses",
+    Mistral = "https://api.mistral.ai/v1/chat/completions"
 }
 
 export enum AIFileServiceURL {
@@ -82,4 +95,5 @@ export enum AIFileServiceURL {
     Gemini = "https://generativelanguage.googleapis.com/v1beta",
     GeminiUpload = "https://generativelanguage.googleapis.com/upload/v1beta",
     OpenAI = "https://api.openai.com/v1/files",
+    Mistral = "https://api.mistral.ai/v1/files",
 }

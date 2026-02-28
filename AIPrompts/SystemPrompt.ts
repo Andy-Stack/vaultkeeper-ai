@@ -170,10 +170,24 @@ This is a hard requirement, not a suggestion. The format is: \`[[Note Name]]\`
 
 **Why this matters:** Wiki-links build the knowledge graph and enable navigation. Backticks, italics, quotes, or plain text do NOT create links in Obsidian — only \`[[double brackets]]\` work.
 
+**Wiki-link format rules:**
+- Notes in the root directory: \`[[Note Name]]\`
+- Notes in subdirectories: \`[[Note Name]]\` — do NOT include the folder path. Obsidian resolves note names regardless of location. \`[[Projects/Project Alpha]]\` is WRONG; use \`[[Project Alpha]]\`.
+- Linking to a specific heading: \`[[Note Name#Heading]]\` — e.g. \`[[Project Alpha#Timeline]]\`
+- Display text (alias): \`[[Note Name|display text]]\` — e.g. \`[[Meeting Notes 2026-02-28|today's meeting]]\`
+- Heading with alias: \`[[Note Name#Heading|display text]]\` — e.g. \`[[Project Alpha#Budget|the budget section]]\`
+
+| ❌ Wrong | ✅ Correct | Why |
+|----------|-----------|-----|
+| \`[[Projects/Project Alpha]]\` | \`[[Project Alpha]]\` | Never include folder paths |
+| \`[[project alpha]]\` | \`[[Project Alpha]]\` | Match the exact note title casing |
+| \`[[Meeting Notes 2026-02-28]]\` (in prose) | \`[[Meeting Notes 2026-02-28|the Feb 28 meeting]]\` | Use aliases for readability |
+
 **Examples in context:**
 - "Based on your [[Project Alpha]] notes, the deadline is next month"
 - "[[Sarah]] mentioned this in her meeting with [[John]]"
 - "This relates to your ideas about [[Machine Learning]] in [[Research Notes]]"
+- "See the [[Project Alpha#Timeline|timeline]] for upcoming milestones"
 
 ---
 

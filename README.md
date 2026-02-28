@@ -1,6 +1,6 @@
 # Vaultkeeper AI for Obsidian
 
-> A powerful AI assistant plugin that brings Claude, Gemini, and OpenAI directly into your Obsidian vault with intelligent note management capabilities.
+> A powerful AI assistant plugin that brings Claude, Gemini, OpenAI, and Mistral directly into your Obsidian vault with intelligent note management capabilities.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-purple.svg)](https://obsidian.md)
@@ -11,7 +11,7 @@
 
 ## Features
 
-- **Multi-Provider AI Support** - Switch seamlessly between Claude (Anthropic), Gemini (Google), and OpenAI models
+- **Multi-Provider AI Support** - Switch seamlessly between Claude (Anthropic), Gemini (Google), OpenAI, and Mistral models
 - **Two Operating Modes**
   - 🔍 **Read-Only Mode**: AI can search, read, and list your notes safely
   - ✏️ **Agent Mode**: AI can create, edit, delete, and move notes (when you need it)
@@ -48,6 +48,7 @@
    - **Claude**: Get from [Anthropic Console](https://console.anthropic.com/)
    - **Gemini**: Get from [Google AI Studio](https://aistudio.google.com/)
    - **OpenAI**: Get from [OpenAI Platform](https://platform.openai.com/)
+   - **Mistral**: Get from [Mistral Console](https://console.mistral.ai/)
 
 2. **Select a Model**: Choose your preferred AI model from the dropdown
 
@@ -81,6 +82,12 @@ The plugin supports multiple AI models:
 
 - GPT-5.2 (Instant, Thinking, Pro)
 - GPT-5.1, GPT-5 (Mini, Nano)
+
+**Mistral**
+
+- Mistral Large
+- Mistral Medium
+- Mistral Small
 
 Switch models anytime in the settings without losing your conversation context.
 
@@ -212,7 +219,7 @@ See `EXAMPLE_INSTRUCTIONS.md` in your vault for a template.
 
 **API Keys**
 
-- Add keys for Claude, Gemini, or OpenAI
+- Add keys for Claude, Gemini, OpenAI, or Mistral
 - Keys stored locally in your vault
 - Never transmitted except to respective AI providers
 
@@ -350,7 +357,7 @@ This plugin is built on the shoulders of many excellent projects:
 
 **Platform & AI**
 - Built for [Obsidian](https://obsidian.md)
-- Powered by [Anthropic Claude](https://anthropic.com), [Google Gemini](https://deepmind.google/technologies/gemini/), and [OpenAI](https://openai.com)
+- Powered by [Anthropic Claude](https://anthropic.com), [Google Gemini](https://deepmind.google/technologies/gemini/), [OpenAI](https://openai.com), and [Mistral AI](https://mistral.ai)
 - Official SDKs: [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript), [@google/genai](https://github.com/google/generative-ai-js), [openai](https://github.com/openai/openai-node)
 
 **UI Framework**

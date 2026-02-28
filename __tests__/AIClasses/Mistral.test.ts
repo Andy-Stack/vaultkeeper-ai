@@ -12,6 +12,7 @@ import { SettingsService } from '../../Services/SettingsService';
 import { AIProvider } from '../../Enums/ApiProvider';
 import { AbortService } from '../../Services/AbortService';
 import { Exception } from '../../Helpers/Exception';
+import { AITool } from 'Enums/AITool';
 
 describe('Mistral', () => {
     let mistral: Mistral;
@@ -919,7 +920,7 @@ describe('Mistral', () => {
             mistral.userInstruction = 'Instruction';
             mistral.aiToolDefinitions = [
                 {
-                    name: 'search_vault_files',
+                    name: AITool.ReadVaultFiles,
                     description: 'Search files',
                     parameters: {
                         type: 'object',

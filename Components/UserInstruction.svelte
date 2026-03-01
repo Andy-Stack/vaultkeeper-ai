@@ -10,7 +10,7 @@
 	import { tick } from "svelte";
 
     export let focusInput: () => void;
-    export let userInstructionActive: boolean;
+    export let userInstructionAreaActive: boolean;
 
     const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
     const fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
@@ -31,11 +31,11 @@
         scrollSelectedIntoView();
     }
 
-    $: if (userInstructionActive) {
+    $: if (userInstructionAreaActive) {
         selectedInstruction = 0;
         loadUserInstructions();
         setTimeout(() => {
-            if (resultsContainer && userInstructionActive) {
+            if (resultsContainer && userInstructionAreaActive) {
                 document.addEventListener("click", handleClickOutside);
             }
         }, 10);
@@ -59,7 +59,7 @@
 
     function handleClickOutside(event: MouseEvent) {
         if (resultsContainer && !resultsContainer.contains(event.target as Node)) {
-            userInstructionActive = false;
+            userInstructionAreaActive = false;
         }
     }
 
@@ -83,14 +83,14 @@
             settingsService.settings.userInstruction = userInstructions[selectedInstruction];
             settingsService.saveSettings();
         }
-        userInstructionActive = false;
+        userInstructionAreaActive = false;
 
         e?.preventDefault();
         focusInput();
     }
 
     async function handleKeydown(e: KeyboardEvent) {
-        if (!userInstructionActive) {
+        if (!userInstructionAreaActive) {
             return;
         }
         e.preventDefault();
@@ -110,7 +110,7 @@
         }
 
         if (e.key === "Escape") {
-            userInstructionActive = false;
+            userInstructionAreaActive = false;
             return;
         }
     }
@@ -134,7 +134,7 @@
 </script>
 
 <div id="user-instruction-results" style:height="{height}px" bind:this={resultsContainer}>
-    {#if userInstructionActive}
+    {#if userInstructionAreaActive}
         {#if userInstructions.length === 0}
             <div bind:this={emptyInstructionsContentDiv}>
                 <div id="user-instruction-empty" class="user-instruction-container">

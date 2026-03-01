@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, tick } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import { Platform, setIcon, type EventRef } from "obsidian";
 	import type { UserInputService } from "Services/UserInputService";
 	import type { ISearchState, SearchStateStore } from "Stores/SearchStateStore";
@@ -20,7 +20,7 @@
 	import { InputMode } from "Enums/InputMode";
 	import { Copy, replaceCopy } from "Enums/Copy";
 	import { HelpModal } from "Modals/HelpModal";
-  import { sleep } from "Helpers/Helpers";
+	import type { IPrompt } from "AIPrompts/IPrompt";
 
   export let attachments: Attachment[] = [];
 
@@ -36,6 +36,7 @@
   const searchStateStore: SearchStateStore = Resolve<SearchStateStore>(Services.SearchStateStore);
   const diffService: DiffService = Resolve<DiffService>(Services.DiffService);
   const eventService: EventService = Resolve<EventService>(Services.EventService);
+  const aiPrompt: IPrompt = Resolve<IPrompt>(Services.IPrompt);
 
   const searchState: Writable<ISearchState> = searchStateStore.searchState;
 
@@ -46,7 +47,8 @@
   let editModeButton: HTMLButtonElement;
   let planningModeButton: HTMLButtonElement;
 
-  let userInstructionActive: boolean = false;
+  let userInstructionAreaActive: boolean = false;
+  let userInstructionActive: boolean = true;
 
   let userRequest: string = "";
 
@@ -59,6 +61,10 @@
   const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { inputMode = InputMode.Diff; focusInput(); });
   const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { inputMode = InputMode.Normal; focusInput(); });
   const rateLimitCountdownRef: EventRef = eventService.on(Event.RateLimitCountdown, (delayMs: number) => { startCountdown(delayMs); });
+
+  onMount(async () => {
+    userInstructionActive = (await aiPrompt.userInstruction()).trim() !== "";
+  });
 
   onDestroy(() => {
     eventService.offref(diffOpenedRef);
@@ -156,6 +162,12 @@
     setIcon(userInstructionButton, "user-round-pen");
   }
 
+  $: userInstructionAreaActive, (() => {
+    tick().then(async () => {
+      userInstructionActive = (await aiPrompt.userInstruction()).trim() !== "";
+    });
+  })();
+
   $: if (submitButton) {
     if (inputMode === InputMode.Question || inputMode === InputMode.Diff) {
       setIcon(submitButton, userRequest.trim() === "" ? "square" : "send-horizontal");
@@ -245,6 +257,11 @@
     return { request: request, formattedRequest: formattedRequest };
   }
 
+  function toggleUserInstructionArea() {
+    userInstructionAreaActive = !userInstructionAreaActive;
+    searchStateStore.resetSearch();
+  }
+
   function toggleEditMode() {
     if (planningModeActive) {
       planningModeActive = false
@@ -266,7 +283,7 @@
   }
 
   async function handleKeydown(e: KeyboardEvent) {
-    userInstructionActive = false;
+    userInstructionAreaActive = false;
     if ($searchState.active) {
       await continueSearch(e);
       return;
@@ -471,15 +488,15 @@
     <ChatSearchResults searchState={$searchState} onResultAccept={handleSearchResultAcceptance}/>
   </div>
 
-  <div id="user-instruction-container" style:padding-top={userInstructionActive ? "var(--size-4-2)" : 0}>
-    <UserInstruction focusInput={focusInput} bind:userInstructionActive={userInstructionActive}/>
+  <div id="user-instruction-container" style:padding-top={userInstructionAreaActive ? "var(--size-4-2)" : 0}>
+    <UserInstruction focusInput={focusInput} bind:userInstructionAreaActive={userInstructionAreaActive}/>
   </div>
 
   <button
     id="user-instruction-button"
     class:instruction-active={userInstructionActive}
     bind:this={userInstructionButton}
-    on:click={() => { userInstructionActive = !userInstructionActive; searchStateStore.resetSearch() }}
+    on:click={toggleUserInstructionArea}
     aria-label="User Instruction">
   </button>
 
@@ -597,7 +614,7 @@
   }
 
   #user-instruction-button.instruction-active {
-    box-shadow: 0px 0px 4px 1px var(--color-accent);
+    box-shadow: 0px 0px 2px 1px var(--color-accent);
   }
 
   #input-field {

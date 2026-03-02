@@ -101,6 +101,6 @@ export default class VaultkeeperAIPlugin extends Plugin {
 
 		const vaultService: VaultService = Resolve<VaultService>(Services.VaultService);
 
-		await vaultService.create(Path.ExampleUserInstructions, Copy.EXAMPLE_USER_INSTRUCTION, true);
+		await vaultService.create(Path.ExampleUserInstructions, Copy.EXAMPLE_USER_INSTRUCTION, true, false);
 	}
 }

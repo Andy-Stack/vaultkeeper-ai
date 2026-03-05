@@ -49,7 +49,7 @@
   .circle-core {
     width: 100%;
     height: 100%;
-    background-color: var(--background-secondary);
+    background-color: var(--background-primary);
     border-radius: 50%;
   }
 

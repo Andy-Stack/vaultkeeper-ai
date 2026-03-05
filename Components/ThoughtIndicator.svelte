@@ -36,7 +36,7 @@
   .ai-thought-bubble span {
     position: relative;
     z-index: 1;
-    background: var(--background-primary-alt);
+    background: var(--background-primary);
     border-radius: 10px;
     padding: 0.55rem 0.7rem;
     font-size: var(--font-smallest);

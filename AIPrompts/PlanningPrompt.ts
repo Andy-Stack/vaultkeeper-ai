@@ -203,6 +203,93 @@ Preserve and extend the knowledge graph:
 - **Images/PDFs**: Must be read first, then referenced — plan explicit read steps so the execution agent has the content in its working memory
 - **Complex structures**: May need multi-step processing
 
+## Obsidian Bases
+
+**Bases** is a core plugin (available since Obsidian 1.9) that creates database-like views of notes from their YAML frontmatter properties. Bases are stored as \`.base\` files — treat them like notes: reference with \`[[MyBase.base]]\`, embed with \`![[MyBase.base]]\` or \`![[MyBase.base#ViewName]]\`.
+
+### When to Use Bases
+- User wants to view, filter, or aggregate notes by their properties (status, tags, dates, etc.)
+- User asks to "create a database / tracker / table" of notes
+- User wants computed columns or summaries across multiple notes
+
+### File Structure
+\`.base\` files are YAML with five top-level sections:
+\`\`\`yaml
+filters:        # Which notes to include (global, all views)
+formulas:       # Computed properties derived from other properties
+properties:     # Display names / config for columns
+summaries:      # Custom summary formulas for aggregations
+views:          # One or more named views (table, cards, list, map)
+\`\`\`
+
+### Property Namespaces
+| Namespace | Access | Example |
+|-----------|--------|---------|
+| Note frontmatter | \`property\` or \`note.property\` | \`status\`, \`note.author\` |
+| File metadata | \`file.*\` | \`file.name\`, \`file.mtime\`, \`file.size\` |
+| Formula results | \`formula.*\` | \`formula.days_left\` |
+| Current context | \`this.*\` | \`this.file.path\` (see \`this\` behavior below) |
+
+### The \`this\` Context
+\`this\` resolves differently depending on how the base is opened:
+- **Standalone tab**: \`this\` points to the base file itself
+- **Embedded in a note** (\`![[MyBase.base]]\`): \`this\` points to the embedding file
+- **Opened in the sidebar**: \`this\` points to the active file in the main content area
+
+### Filter Syntax
+\`\`\`yaml
+# Single condition
+filters: 'status == "done"'
+# Boolean logic
+filters:
+  and:
+    - 'file.hasTag("project")'
+    - 'status != "archived"'
+  or:
+    - 'priority > 3'
+    - not:
+        - 'file.inFolder("Archive")'
+\`\`\`
+
+Key filter functions: \`file.hasTag("tag")\`, \`file.hasLink("NoteName")\`, \`file.inFolder("FolderName")\`, \`file.path == this.file.path\`
+
+### Formula Syntax
+\`\`\`yaml
+formulas:
+  days_left:   'date(due) - now()'
+  overdue:     'if(date(due) < now(), "⚠️", "")'
+  word_count:  '(file.size / 5).round(0)'
+\`\`\`
+
+### View Structure
+\`\`\`yaml
+views:
+  - type: table          # table | cards | list | map
+    name: "Active"
+    limit: 50
+    groupBy:
+      property: status
+      direction: ASC
+    filters:
+      and:
+        - 'status != "done"'
+    order:
+      - file.name
+      - status
+      - formula.days_left
+\`\`\`
+
+### Creating a Base
+- **Command Palette**: \`Bases: Create new base\` (creates a new standalone base file)
+- **File Explorer**: Right-click a folder → *New base*
+- **Manual**: Create a file with \`.base\` extension and write YAML directly
+
+### Key Rules
+- All data stays in Markdown frontmatter — Bases are a view layer, not a separate database
+- \`this\` resolves to the base file, embedding file, or active file depending on context (see above)
+- Bases replace most Dataview use cases; prefer Bases for new vault database needs
+- Wiki-link bases like notes: \`[[ProjectTracker.base]]\`
+
 ## Execution Agent Available Tools
 
 The execution agent has access to these vault operations:

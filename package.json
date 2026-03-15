@@ -55,6 +55,7 @@
 		"highlight.js": "^11.11.1",
 		"katex": "^0.16.33",
 		"lowlight": "^3.3.0",
+		"officeparser": "^6.0.4",
 		"openai": "^6.25.0",
 		"path-browserify": "^1.0.1",
 		"regex-parser": "^2.3.1",

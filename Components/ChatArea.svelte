@@ -250,8 +250,10 @@
         {#if message.role === Role.User}
           <div class="message-container {Role.User}" use:trackingAction={index}>
             <div class="message-bubble {Role.User}">
-              <div class="message-text-user content-fade-in" contenteditable="false">
-                {@html content}
+              <div class="message-text-user-container content-fade-in" contenteditable="false">
+                <div class="message-text-user">
+                  {@html content}
+                </div>
               </div>
               {#if message.references.length > 0}
                 <hr class="message-attachment-break"/>
@@ -383,15 +385,19 @@
     max-width: 100%;
   }
 
-  .message-text-user {
+  .message-text-user-container {
     max-height: 15vh;
     overflow: scroll;
     padding-top: var(--size-4-2);
     white-space: pre-wrap;
   }
 
-  .message-text-user::-webkit-scrollbar {
+  .message-text-user-container::-webkit-scrollbar {
     display: none;
+  }
+
+  .message-text-user-container {
+    padding-bottom: var(--size-4-2);
   }
   
   .conversation-empty-state {

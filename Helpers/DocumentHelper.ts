@@ -1,7 +1,9 @@
 import { extractText, getDocumentProxy } from 'unpdf';
 import type { IPageText } from '../Types/SearchTypes';
 import { Exception } from './Exception';
+import OfficeParser from 'officeparser';
 
+// Handles PDF format
 export async function readPDF(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {
     try {
         const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer));
@@ -26,5 +28,21 @@ export async function readPDF(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {
             return [{ text: "PDF is password protected!", pageNumber: 1 }] as IPageText[];
         }
         return [{ text: `Failed to read PDF: ${Exception.messageFrom(error)}`, pageNumber: 1 }] as IPageText[];
+    }
+}
+
+// Handles document formats: DOCX, PPTX, XLSX, ODT, ODP, ODS
+export async function readDocument(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {
+    try {
+        const ast = await OfficeParser.parseOffice(arrayBuffer, {
+            extractAttachments: true,
+            ocr: true,
+            ocrLanguage: "eng+esp"
+        });
+
+        // OfficeParser doesn't currently expose page data (page number etc)
+        return [{ text: ast.toText(), pageNumber: 1 }] as IPageText[];
+    } catch (error) {
+        return [{ text: `Failed to read document: ${Exception.messageFrom(error)}`, pageNumber: 1 }] as IPageText[];
     }
 }

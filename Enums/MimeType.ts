@@ -63,6 +63,14 @@ export enum MimeType {
     APPLICATION_TYPESCRIPT = "application/x-typescript",
     APPLICATION_SH = "application/x-sh",
 
+    // Office document formats
+    APPLICATION_DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    APPLICATION_PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    APPLICATION_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    APPLICATION_ODT = "application/vnd.oasis.opendocument.text",
+    APPLICATION_ODP = "application/vnd.oasis.opendocument.presentation",
+    APPLICATION_ODS = "application/vnd.oasis.opendocument.spreadsheet",
+
     // Markup formats
     TEXT_RST = "text/x-rst",
     TEXT_ASCIIDOC = "text/x-asciidoc",
@@ -106,6 +114,15 @@ export function toMimeType(mimeType: string): MimeType {
 
 export function isKnownMimeType(value: string): value is MimeType {
     return Object.values(MimeType).includes(value as MimeType) && value !== MimeType.UNKNOWN.toString();
+}
+
+export function isDocumentMimeType(mimeType: MimeType) {
+    return mimeType === MimeType.APPLICATION_DOCX ||
+        mimeType === MimeType.APPLICATION_PPTX ||
+        mimeType === MimeType.APPLICATION_XLSX ||
+        mimeType === MimeType.APPLICATION_ODT ||
+        mimeType === MimeType.APPLICATION_ODP ||
+        mimeType === MimeType.APPLICATION_ODS;
 }
 
 export function isImageMimeType(mimeType: MimeType) {

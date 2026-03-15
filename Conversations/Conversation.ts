@@ -6,6 +6,7 @@ import { Role } from "Enums/Role";
 import { AITool } from "Enums/AITool";
 import { isTextFile, toFileType } from "Enums/FileType";
 import { FileTypeToMimeType } from "Enums/FileTypeMimeTypeMapping";
+import { isDocumentMimeType, MimeType } from "Enums/MimeType";
 
 export class Conversation {
 
@@ -73,7 +74,7 @@ export class Conversation {
                     name: functionResponse.name,
                     response: {
                         results: responseResults,
-                        ...(binaryResults.length > 0 && {message: "Binary files follow in next message"})
+                        ...(binaryResults.length > 0 && {message: "The contents of the files are provided below."})
                     }
                 }
             };
@@ -84,7 +85,7 @@ export class Conversation {
                 functionResponse: {
                     name: functionResponse.name,
                     response: {
-                        message: "Files retrieved successfully. Binary content follows in next message.",
+                        message: "Files retrieved successfully. The contents of the files are provided below.",
                         count: binaryResults.length
                     }
                 }
@@ -104,7 +105,12 @@ export class Conversation {
                 .filter(file => file.type && file.contents !== undefined)
                 .map(file => {
                     const fileName = file.path.split('/').pop() || file.path;
-                    const mimeType = FileTypeToMimeType[toFileType(file.type as string)];
+                    let mimeType = FileTypeToMimeType[toFileType(file.type as string)];
+
+                    if (isDocumentMimeType(mimeType)) {
+                        mimeType = MimeType.TEXT_PLAIN;
+                        return new Attachment(fileName, mimeType, StringTools.toBase64(file.contents as string));
+                    }
 
                     return new Attachment(fileName, mimeType, file.contents as string);
                 });

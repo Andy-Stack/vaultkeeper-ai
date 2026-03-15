@@ -308,7 +308,7 @@ export class Claude extends BaseAIClass {
             }
 
             return [
-                {type: "text", text: `Binary data for ${attachment.fileName} follows in next message` },
+                {type: "text", text: `The contents of the file '${attachment.fileName}' are provided below.` },
                 {
                     type: isPlainText || mimeType === MimeType.APPLICATION_PDF ? "document" : "image",
                     source: {

@@ -355,7 +355,7 @@ export class Mistral extends BaseAIClass {
                 const signedUrl = fileService.getSignedUrl(fileID);
                 if (signedUrl) {
                     contentParts.push(
-                        { type: "text", text: `Document: ${attachment.fileName}` },
+                        { type: "text", text: `The contents of the file '${attachment.fileName}' are provided below.` },
                         { type: "document_url", document_url: signedUrl }
                     );
                 } else {
@@ -371,7 +371,7 @@ export class Mistral extends BaseAIClass {
             const signedUrl = fileService.getSignedUrl(fileID);
             if (signedUrl) {
                 contentParts.push(
-                    { type: "text", text: `Image: ${attachment.fileName}` },
+                    { type: "text", text: `The contents of the file '${attachment.fileName}' are provided below.` },
                     {
                         type: "image_url",
                         image_url: signedUrl

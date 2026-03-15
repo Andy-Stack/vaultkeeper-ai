@@ -4,6 +4,8 @@ import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
 import { AITool } from '../../Enums/AITool';
+import { MimeType } from '../../Enums/MimeType';
+import { StringTools } from '../../Helpers/StringTools';
 
 describe('Conversation', () => {
 	describe('constructor', () => {
@@ -544,7 +546,72 @@ describe('Conversation', () => {
 			});
 		});
 
-		describe('non-read_vault_files functions', () => {
+			describe('read_vault_files with document files', () => {
+			it('should base64-encode document file contents and set mime type to text/plain', () => {
+				const conversation = new Conversation();
+				const documentText = 'This is the extracted text from a document file.';
+				const functionResponse = new AIToolResponse(
+					AITool.ReadVaultFiles,
+					{
+						results: [
+							{ path: 'report.odt', type: 'odt', contents: documentText }
+						]
+					},
+					'tool-123'
+				);
+
+				conversation.addFunctionResponse(functionResponse);
+
+				// Should have 2 items: function response + attachments
+				expect(conversation.contents).toHaveLength(2);
+				expect(conversation.contents[1].attachments).toHaveLength(1);
+
+				const attachment = conversation.contents[1].attachments[0];
+				expect(attachment.fileName).toBe('report.odt');
+				expect(attachment.mimeType).toBe(MimeType.TEXT_PLAIN);
+				// Content should be base64-encoded, not plain text
+				expect(attachment.base64).toBe(StringTools.toBase64(documentText));
+				expect(attachment.base64).not.toBe(documentText);
+			});
+
+			it('should handle document files alongside text and binary files', () => {
+				const conversation = new Conversation();
+				const functionResponse = new AIToolResponse(
+					AITool.ReadVaultFiles,
+					{
+						results: [
+							{ path: 'notes.md', type: 'md', contents: '# Notes' },
+							{ path: 'spreadsheet.xlsx', type: 'xlsx', contents: 'Extracted spreadsheet text' },
+							{ path: 'photo.png', type: 'png', contents: 'base64imagedata...' }
+						]
+					},
+					'tool-123'
+				);
+
+				conversation.addFunctionResponse(functionResponse);
+
+				// Should have 2 items: function response (text) + attachments (document + binary)
+				expect(conversation.contents).toHaveLength(2);
+
+				// Text file in function response
+				const parsedResponse = JSON.parse(conversation.contents[0].functionResponse!);
+				expect(parsedResponse.functionResponse.response.results).toHaveLength(1);
+				expect(parsedResponse.functionResponse.response.results[0].path).toBe('notes.md');
+
+				// Document and binary as attachments
+				const attachments = conversation.contents[1].attachments;
+				expect(attachments).toHaveLength(2);
+
+				const docAttachment = attachments.find(a => a.fileName === 'spreadsheet.xlsx')!;
+				expect(docAttachment.mimeType).toBe(MimeType.TEXT_PLAIN);
+				expect(docAttachment.base64).toBe(StringTools.toBase64('Extracted spreadsheet text'));
+
+				const imgAttachment = attachments.find(a => a.fileName === 'photo.png')!;
+				expect(imgAttachment.base64).toBe('base64imagedata...');
+			});
+		});
+
+	describe('non-read_vault_files functions', () => {
 			it('should handle other functions normally', () => {
 				const conversation = new Conversation();
 				const functionResponse = new AIToolResponse(

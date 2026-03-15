@@ -136,6 +136,14 @@ export enum FileType {
     DIFF = "diff",
     PATCH = "patch",
     
+    // Document formats
+    DOCX = "docx",
+    PPTX = "pptx",
+    XLSX = "xlsx",
+    ODT = "odt",
+    ODP = "odp",
+    ODS = "ods",
+
     // Logs
     LOG = "log",
     
@@ -158,7 +166,16 @@ export function isFileType(value: unknown, fileType: FileType): value is FileTyp
 }
 
 export function isBinaryFile(extension: string) {
-    return isKnownFileType(extension) && !isTextFile(extension);
+    return isKnownFileType(extension) && !isTextFile(extension) && !isDocumentFile(extension);
+}
+
+export function isDocumentFile(extension: string) {
+    return isFileType(extension, FileType.DOCX)
+        || isFileType(extension, FileType.PPTX)
+        || isFileType(extension, FileType.XLSX)
+        || isFileType(extension, FileType.ODT)
+        || isFileType(extension, FileType.ODP)
+        || isFileType(extension, FileType.ODS);
 }
 
 export function isTextFile(extension: string) {

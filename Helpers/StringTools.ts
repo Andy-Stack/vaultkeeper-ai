@@ -68,6 +68,15 @@ export abstract class StringTools {
         return regex;
     }
 
+    public static toBase64(text: string): string {
+        const bytes = new TextEncoder().encode(text);
+        let binary = "";
+        for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    }
+
     public static toBytes(input: string): Uint8Array<ArrayBuffer> {
         const binaryString = atob(input);
         const bytes = new Uint8Array(binaryString.length);

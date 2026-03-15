@@ -352,7 +352,7 @@ export class OpenAI extends BaseAIClass {
             }
 
             contentBlocks.push(
-                { type: "input_text", text: `Binary data for ${attachment.fileName} follows in next message` },
+                { type: "input_text", text: `The contents of the file '${attachment.fileName}' are provided below.` },
                 {
                     type: isPlainText || mimeType === MimeType.APPLICATION_PDF ? "input_file" : "input_image",
                     file_id: fileID

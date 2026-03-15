@@ -1016,7 +1016,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(2);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: 'Binary data for report.pdf follows in next message'
+                text: `The contents of the file 'report.pdf' are provided below.`
             });
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_file',
@@ -1043,7 +1043,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(2);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: 'Binary data for photo.jpg follows in next message'
+                text: `The contents of the file 'photo.jpg' are provided below.`
             });
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_image',
@@ -1069,7 +1069,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(2);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: 'Binary data for diagram.png follows in next message'
+                text: `The contents of the file 'diagram.png' are provided below.`
             });
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_image',
@@ -1095,7 +1095,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(2);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: 'Binary data for modern.webp follows in next message'
+                text: `The contents of the file 'modern.webp' are provided below.`
             });
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_image',
@@ -1184,7 +1184,7 @@ describe('OpenAI', () => {
 
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: 'Binary data for doc.pdf follows in next message'
+                text: `The contents of the file 'doc.pdf' are provided below.`
             });
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_file',
@@ -1193,7 +1193,7 @@ describe('OpenAI', () => {
 
             expect(parsed[0].content[2]).toEqual({
                 type: 'input_text',
-                text: 'Binary data for image.jpg follows in next message'
+                text: `The contents of the file 'image.jpg' are provided below.`
             });
             expect(parsed[0].content[3]).toEqual({
                 type: 'input_image',
@@ -1202,7 +1202,7 @@ describe('OpenAI', () => {
 
             expect(parsed[0].content[4]).toEqual({
                 type: 'input_text',
-                text: 'Binary data for screenshot.png follows in next message'
+                text: `The contents of the file 'screenshot.png' are provided below.`
             });
             expect(parsed[0].content[5]).toEqual({
                 type: 'input_image',
@@ -1249,7 +1249,7 @@ describe('OpenAI', () => {
 
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: 'Binary data for good.jpg follows in next message'
+                text: `The contents of the file 'good.jpg' are provided below.`
             });
             expect(parsed[0].content[1].type).toBe('input_image');
             expect(parsed[0].content[2]).toEqual({
@@ -1258,7 +1258,7 @@ describe('OpenAI', () => {
             });
             expect(parsed[0].content[3]).toEqual({
                 type: 'input_text',
-                text: 'Binary data for doc.pdf follows in next message'
+                text: `The contents of the file 'doc.pdf' are provided below.`
             });
             expect(parsed[0].content[4].type).toBe('input_file');
         });
@@ -1292,7 +1292,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(2); // Text + file reference
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: 'Binary data for success.pdf follows in next message'
+                text: `The contents of the file 'success.pdf' are provided below.`
             });
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_file',

@@ -16,8 +16,8 @@ import * as path from "path-browserify";
 import { Event } from "Enums/Event";
 import { AbortService } from "./AbortService";
 import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
-import { FileType, isBinaryFile, isFileType } from "Enums/FileType";
-import { readPDF } from "Helpers/PDFHelper";
+import { FileType, isBinaryFile, isDocumentFile, isFileType } from "Enums/FileType";
+import { readDocument, readPDF } from "Helpers/DocumentHelper";
 
 interface IFileEventArgs {
     oldPath: string;
@@ -86,10 +86,19 @@ export class VaultService {
             return Exception.new(`File does not exist: ${filePath}`);
         }
 
-        if (isBinaryFile(file.extension.toLowerCase())) {
+        const fileExtension = file.extension.toLowerCase();
+
+        if (isBinaryFile(fileExtension)) {
             const arrayBuffer = await this.readBinaryData(file, allowAccessToPluginRoot);
             if (arrayBuffer) {
                 return arrayBufferToBase64(arrayBuffer);
+            }
+        }
+
+        if (isDocumentFile(fileExtension)) {
+            const arrayBuffer = await this.readBinaryData(file, allowAccessToPluginRoot);
+            if (arrayBuffer) {
+                return (await readDocument(arrayBuffer))[0].text;
             }
         }
 
@@ -380,9 +389,14 @@ export class VaultService {
             const batchPromises = batch.map(async (file) => {
                 try {
                     let content;
-                    if (isFileType(file.extension.toLocaleLowerCase(), FileType.PDF)) {
+                    const fileExtension = file.extension.toLocaleLowerCase();
+                    
+                    if (isFileType(fileExtension, FileType.PDF)) {
                         const arrayBuffer = await this.vault.readBinary(file);
                         content = await readPDF(arrayBuffer);
+                    } else if (isDocumentFile(fileExtension)) {
+                        const arrayBuffer = await this.vault.readBinary(file);
+                        content = await readDocument(arrayBuffer);
                     } else {
                         content = [{ text: await this.vault.cachedRead(file), pageNumber: 1 }] as IPageText[];
                     }

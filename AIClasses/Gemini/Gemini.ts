@@ -348,7 +348,7 @@ export class Gemini extends BaseAIClass {
         continue;
       }
 
-      parts.push({ text: `Binary data for ${attachment.fileName} follows in next message` });
+      parts.push({ text: `The contents of the file '${attachment.fileName}' are provided below.` });
       parts.push({
         fileData: {
           mimeType: mimeType,

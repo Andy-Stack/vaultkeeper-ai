@@ -705,7 +705,7 @@ describe('Mistral', () => {
             expect(parsed).toHaveLength(2);
             expect(parsed[0]).toEqual({
                 type: 'text',
-                text: 'Document: report.pdf'
+                text: `The contents of the file 'report.pdf' are provided below.`
             });
             expect(parsed[1]).toEqual({
                 type: 'document_url',
@@ -730,7 +730,7 @@ describe('Mistral', () => {
             expect(parsed).toHaveLength(2);
             expect(parsed[0]).toEqual({
                 type: 'text',
-                text: 'Image: photo.jpg'
+                text: `The contents of the file 'photo.jpg' are provided below.`
             });
             expect(parsed[1]).toEqual({
                 type: 'image_url',
@@ -808,14 +808,14 @@ describe('Mistral', () => {
             expect(parsed).toHaveLength(4);
 
             // PDF file
-            expect(parsed[0]).toEqual({ type: 'text', text: 'Document: doc.pdf' });
+            expect(parsed[0]).toEqual({ type: 'text', text: `The contents of the file 'doc.pdf' are provided below.` });
             expect(parsed[1]).toEqual({
                 type: 'document_url',
                 document_url: 'https://signed-url.com/file_1'
             });
 
             // JPEG image
-            expect(parsed[2]).toEqual({ type: 'text', text: 'Image: image.jpg' });
+            expect(parsed[2]).toEqual({ type: 'text', text: `The contents of the file 'image.jpg' are provided below.` });
             expect(parsed[3]).toEqual({
                 type: 'image_url',
                 image_url: 'https://signed-url.com/file_2'

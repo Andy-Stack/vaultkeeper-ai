@@ -5,10 +5,13 @@ import { arrayBufferToBase64, Notice } from "obsidian";
 import { FileTypeToMimeType } from "Enums/FileTypeMimeTypeMapping";
 import * as path from "path-browserify";
 import { pathExtname } from "Helpers/Helpers";
-import { FileType, toFileType } from "Enums/FileType";
+import { FileType, isDocumentFile, toFileType } from "Enums/FileType";
 import type { FileSystemService } from "./FileSystemService";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
+import { readDocument } from "Helpers/DocumentHelper";
+import { MimeType } from "Enums/MimeType";
+import { StringTools } from "Helpers/StringTools";
 
 export class InputService {
 
@@ -43,12 +46,21 @@ export class InputService {
                     new Notice(`Unsupported file '${file.name}'`);
                     continue;
                 }
-
-                attachments.push(new Attachment(
-                    file.name,
-                    FileTypeToMimeType[fileType],
-                    arrayBufferToBase64(await file.arrayBuffer())
-                ));
+                
+                if (isDocumentFile(fileType)) {
+                    const content = await readDocument(await file.arrayBuffer());
+                    attachments.push(new Attachment(
+                        file.name,
+                        MimeType.TEXT_PLAIN,
+                        StringTools.toBase64(content[0].text)
+                    ));
+                } else {
+                    attachments.push(new Attachment(
+                        file.name,
+                        FileTypeToMimeType[fileType],
+                        arrayBufferToBase64(await file.arrayBuffer())
+                    ));
+                }
             }
         }
 

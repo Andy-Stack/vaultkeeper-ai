@@ -1135,7 +1135,7 @@ describe('Gemini', () => {
 
             expect(parsed).toHaveLength(2);
             expect(parsed[0]).toEqual({
-                text: 'Binary data for report.pdf follows in next message'
+                text: `The contents of the file 'report.pdf' are provided below.`
             });
             expect(parsed[1]).toEqual({
                 fileData: {
@@ -1161,7 +1161,7 @@ describe('Gemini', () => {
 
             expect(parsed).toHaveLength(2);
             expect(parsed[0]).toEqual({
-                text: 'Binary data for photo.jpg follows in next message'
+                text: `The contents of the file 'photo.jpg' are provided below.`
             });
             expect(parsed[1]).toEqual({
                 fileData: {
@@ -1271,7 +1271,7 @@ describe('Gemini', () => {
             expect(parsed).toHaveLength(6);
 
             // PDF file
-            expect(parsed[0]).toEqual({ text: 'Binary data for doc.pdf follows in next message' });
+            expect(parsed[0]).toEqual({ text: `The contents of the file 'doc.pdf' are provided below.` });
             expect(parsed[1]).toEqual({
                 fileData: {
                     mimeType: 'application/pdf',
@@ -1280,7 +1280,7 @@ describe('Gemini', () => {
             });
 
             // JPEG image
-            expect(parsed[2]).toEqual({ text: 'Binary data for image.jpg follows in next message' });
+            expect(parsed[2]).toEqual({ text: `The contents of the file 'image.jpg' are provided below.` });
             expect(parsed[3]).toEqual({
                 fileData: {
                     mimeType: 'image/jpeg',
@@ -1289,7 +1289,7 @@ describe('Gemini', () => {
             });
 
             // PNG image
-            expect(parsed[4]).toEqual({ text: 'Binary data for screenshot.png follows in next message' });
+            expect(parsed[4]).toEqual({ text: `The contents of the file 'screenshot.png' are provided below.` });
             expect(parsed[5]).toEqual({
                 fileData: {
                     mimeType: 'image/png',
@@ -1334,12 +1334,12 @@ describe('Gemini', () => {
 
             expect(parsed).toHaveLength(5);
 
-            expect(parsed[0]).toEqual({ text: 'Binary data for good.jpg follows in next message' });
+            expect(parsed[0]).toEqual({ text: `The contents of the file 'good.jpg' are provided below.` });
             expect(parsed[1]).toHaveProperty('fileData');
             expect(parsed[2]).toEqual({
                 text: 'Unsupported mime type \'image/bmp\': bad.bmp'
             });
-            expect(parsed[3]).toEqual({ text: 'Binary data for doc.pdf follows in next message' });
+            expect(parsed[3]).toEqual({ text: `The contents of the file 'doc.pdf' are provided below.` });
             expect(parsed[4]).toHaveProperty('fileData');
         });
 
@@ -1369,7 +1369,7 @@ describe('Gemini', () => {
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2); // Only successful upload
-            expect(parsed[0]).toEqual({ text: 'Binary data for success.pdf follows in next message' });
+            expect(parsed[0]).toEqual({ text: `The contents of the file 'success.pdf' are provided below.` });
             expect(parsed[1]).toEqual({
                 fileData: {
                     mimeType: 'application/pdf',
@@ -1399,7 +1399,7 @@ describe('Gemini', () => {
             const result = gemini.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
-            expect(parsed[0].text).toBe('Binary data for report (final) v2.pdf follows in next message');
+            expect(parsed[0].text).toBe(`The contents of the file 'report (final) v2.pdf' are provided below.`);
         });
 
         it('should handle JPEG files with .jpeg extension', () => {

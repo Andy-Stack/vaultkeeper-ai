@@ -143,6 +143,14 @@ export const FileTypeToMimeType: Record<FileType, MimeType> = {
     [FileType.DIFF]: MimeType.TEXT_PLAIN,
     [FileType.PATCH]: MimeType.TEXT_PLAIN,
 
+    // Document formats
+    [FileType.DOCX]: MimeType.APPLICATION_DOCX,
+    [FileType.PPTX]: MimeType.APPLICATION_PPTX,
+    [FileType.XLSX]: MimeType.APPLICATION_XLSX,
+    [FileType.ODT]: MimeType.APPLICATION_ODT,
+    [FileType.ODP]: MimeType.APPLICATION_ODP,
+    [FileType.ODS]: MimeType.APPLICATION_ODS,
+
     // Logs
     [FileType.LOG]: MimeType.TEXT_PLAIN,
 
@@ -244,6 +252,14 @@ export const MimeTypeToFileTypes: Record<MimeType, FileType[]> = {
     [MimeType.VIDEO_MP4]: [FileType.MP4],
     [MimeType.VIDEO_OGG]: [FileType.OGV],
     [MimeType.VIDEO_WEBM]: [FileType.WEBM, FileType.WEBM_VIDEO],
+
+    // Office document formats
+    [MimeType.APPLICATION_DOCX]: [FileType.DOCX],
+    [MimeType.APPLICATION_PPTX]: [FileType.PPTX],
+    [MimeType.APPLICATION_XLSX]: [FileType.XLSX],
+    [MimeType.APPLICATION_ODT]: [FileType.ODT],
+    [MimeType.APPLICATION_ODP]: [FileType.ODP],
+    [MimeType.APPLICATION_ODS]: [FileType.ODS],
 
     [MimeType.UNKNOWN]: [FileType.UNKNOWN]
 };

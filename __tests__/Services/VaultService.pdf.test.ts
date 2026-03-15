@@ -7,7 +7,7 @@ import { SanitiserService } from '../../Services/SanitiserService';
 import { SettingsService, type IVaultkeeperAISettings } from '../../Services/SettingsService';
 import { AIProviderModel } from '../../Enums/ApiProvider';
 import { Exception } from '../../Helpers/Exception';
-import * as PDFHelper from '../../Helpers/PDFHelper';
+import * as PDFHelper from '../../Helpers/DocumentHelper';
 import type { IPageText } from '../../Types/SearchTypes';
 
 /**

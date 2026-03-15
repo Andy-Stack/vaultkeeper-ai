@@ -103,6 +103,11 @@ const cssMergerPlugin = {
 };
 
 const buildOptions = {
+  // officeparser's default entry point requires Node's "fs" module, which crashes the plugin on
+  // Obsidian mobile. The browser bundle provides identical functionality using web APIs instead.
+  alias: {
+    'officeparser': './node_modules/officeparser/dist/officeparser.browser.js',
+  },
   plugins: [
     esbuildSvelte({
       compilerOptions: { css: "injected" },

@@ -384,8 +384,14 @@
   }
 
   .message-text-user {
-    margin: var(--size-4-2);
+    max-height: 15vh;
+    overflow: scroll;
+    padding-top: var(--size-4-2);
     white-space: pre-wrap;
+  }
+
+  .message-text-user::-webkit-scrollbar {
+    display: none;
   }
   
   .conversation-empty-state {

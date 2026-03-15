@@ -1,7 +1,7 @@
 import { Exception } from "Helpers/Exception";
 import { isSearchTriggerElement } from "../Enums/SearchTrigger";
 import { Attachment } from "Conversations/Attachment";
-import { arrayBufferToBase64 } from "obsidian";
+import { arrayBufferToBase64, Notice } from "obsidian";
 import { FileTypeToMimeType } from "Enums/FileTypeMimeTypeMapping";
 import * as path from "path-browserify";
 import { pathExtname } from "Helpers/Helpers";
@@ -37,9 +37,16 @@ export class InputService {
         if (files) {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
+                const fileType = toFileType(pathExtname(file.name))
+
+                if (fileType === FileType.UNKNOWN) {
+                    new Notice(`Unsupported file '${file.name}'`);
+                    continue;
+                }
+
                 attachments.push(new Attachment(
                     file.name,
-                    FileTypeToMimeType[toFileType(pathExtname(file.name))],
+                    FileTypeToMimeType[fileType],
                     arrayBufferToBase64(await file.arrayBuffer())
                 ));
             }

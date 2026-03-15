@@ -176,8 +176,8 @@ If you find any issues or have a feature request, please feel free to raise them
 ##### Operating Modes
 
 **Read-Only Mode (Default)** - The AI can safely explore your vault:
-- Search through your notes (including PDF documents)
-- Read file contents (including binary files like PDFs and images)
+- Search through your notes (including PDFs and Office/ODF documents)
+- Read file contents (including binary files like PDFs, Office documents, and images)
 - List directory structures
 - Cannot modify anything
 
@@ -300,7 +300,7 @@ This error indicates a temporary issue with the AI provider's servers.
 - **Mistral**: Mistral AI's API
 
 **What gets sent**:
-- Your messages and referenced file contents (including binary files like PDFs and images)
+- Your messages and referenced file contents (including binary files like PDFs, Office documents, and images)
 - Conversation context (for continuity)
 - File names and directory structures (when AI searches)
 

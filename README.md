@@ -21,7 +21,7 @@
 - **Custom System Instructions** - Create and switch between personalized AI behaviors
 - **Conversation Management** - Persistent chat history with automatic conversation naming
 - **Privacy Controls** - Exclude sensitive files and directories from AI access with glob patterns
-- **Files Support (PDF, Image, etc)** - Search through PDF documents and allow AI to read binary files directly (PDFs, images, etc)
+- **Files Support (PDF, Documents, Images, etc)** - Search through PDF and Office documents (DOCX, PPTX, XLSX) and allow AI to read binary files directly (PDFs, Office/ODF documents, images, etc)
 - **Mobile Compatible** - Full functionality on mobile devices with touch-friendly controls
 - **Streaming Responses** - See AI responses as they're generated
 - **Local & Private** - API keys stored locally, no data sent to third parties
@@ -95,8 +95,8 @@ Switch models anytime in the settings without losing your conversation context.
 
 **Read-Only Mode (Default)** 🔍
 
-- AI can search vault content (text based files and PDF documents)
-- AI can read file contents (including binary files like PDFs and images)
+- AI can search vault content (text based files, PDFs, and Office/ODF documents)
+- AI can read file contents (including binary files like PDFs, Office documents, and images)
 - AI can list directory structures
 - **Cannot** modify your notes
 
@@ -360,6 +360,10 @@ This plugin is built on the shoulders of many excellent projects:
 - Powered by [Anthropic Claude](https://anthropic.com), [Google Gemini](https://deepmind.google/technologies/gemini/), [OpenAI](https://openai.com), and [Mistral AI](https://mistral.ai)
 - Official SDKs: [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript), [@google/genai](https://github.com/google/generative-ai-js), [openai](https://github.com/openai/openai-node)
 
+**Document Processing**
+- [unpdf](https://github.com/unjs/unpdf) - PDF parsing and text extraction
+- [officeparser](https://github.com/nicktomlin/officeparser) - Office document parsing (DOCX, PPTX, XLSX, ODT, ODP, ODS)
+
 **UI Framework**
 - [Svelte](https://svelte.dev) - Reactive UI components
 - [svelte-exmarkdown](https://github.com/ssssota/svelte-exmarkdown) - Markdown rendering for Svelte
@@ -382,7 +386,6 @@ This plugin is built on the shoulders of many excellent projects:
 
 **Utilities**
 - [fuzzysort](https://github.com/farzher/fuzzysort) - Fuzzy search for reference autocomplete
-- [pdf-parse](https://github.com/modesty/pdf-parse) - PDF parsing and text extraction
 - [Zod](https://github.com/colinhacks/zod) - TypeScript-first schema validation
 - [regex-parser](https://github.com/IonicaBizau/regex-parser.js) - Parses a string as regular expression
 

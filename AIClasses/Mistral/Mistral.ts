@@ -17,6 +17,7 @@ import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import type { MistralStreamChunk, MistralToolDefinition, MistralMessage, MistralContentPart } from "./MistralTypes";
 import type { MistralFileService } from "./MistralFileService";
+import { Copy, replaceCopy } from "Enums/Copy";
 
 export class Mistral extends BaseAIClass {
 
@@ -355,7 +356,7 @@ export class Mistral extends BaseAIClass {
                 const signedUrl = fileService.getSignedUrl(fileID);
                 if (signedUrl) {
                     contentParts.push(
-                        { type: "text", text: `The contents of the file '${attachment.fileName}' are provided below.` },
+                        { type: "text", text: replaceCopy(Copy.AttachedFile, [attachment.fileName]) },
                         { type: "document_url", document_url: signedUrl }
                     );
                 } else {
@@ -371,7 +372,7 @@ export class Mistral extends BaseAIClass {
             const signedUrl = fileService.getSignedUrl(fileID);
             if (signedUrl) {
                 contentParts.push(
-                    { type: "text", text: `The contents of the file '${attachment.fileName}' are provided below.` },
+                    { type: "text", text: replaceCopy(Copy.AttachedFile, [attachment.fileName]) },
                     {
                         type: "image_url",
                         image_url: signedUrl

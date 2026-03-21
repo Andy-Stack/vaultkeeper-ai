@@ -18,6 +18,7 @@ import { ApiError, ApiErrorType } from "Types/ApiError";
 import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import type { GeminiRetryInfo, GeminiErrorResponse } from "./GeminiTypes";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
+import { Copy, replaceCopy } from "Enums/Copy";
 
 export class Gemini extends BaseAIClass {
 
@@ -348,7 +349,7 @@ export class Gemini extends BaseAIClass {
         continue;
       }
 
-      parts.push({ text: `The contents of the file '${attachment.fileName}' are provided below.` });
+      parts.push({ text: replaceCopy(Copy.AttachedFile, [attachment.fileName])});
       parts.push({
         fileData: {
           mimeType: mimeType,

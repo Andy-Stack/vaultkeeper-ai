@@ -1,7 +1,7 @@
 import { extractText, getDocumentProxy } from 'unpdf';
 import type { IPageText } from '../Types/SearchTypes';
 import { Exception } from './Exception';
-import OfficeParser from 'officeparser';
+import { parseOffice } from 'officeparser';
 
 // Handles PDF format
 export async function readPDF(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {
@@ -34,7 +34,7 @@ export async function readPDF(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {
 // Handles document formats: DOCX, PPTX, XLSX, ODT, ODP, ODS
 export async function readDocument(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {
     try {
-        const ast = await OfficeParser.parseOffice(arrayBuffer, {
+        const ast = await parseOffice(arrayBuffer, {
             extractAttachments: true,
             ocr: true,
             ocrLanguage: "eng+esp"

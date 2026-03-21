@@ -102,13 +102,29 @@ const cssMergerPlugin = {
   }
 };
 
-const buildOptions = {
-  // officeparser's default entry point requires Node's "fs" module, which crashes the plugin on
-  // Obsidian mobile. The browser bundle provides identical functionality using web APIs instead.
-  alias: {
-    'officeparser': './node_modules/officeparser/dist/officeparser.browser.js',
+// officeparser's browser bundle is an IIFE (var officeParser = (()=> { ... })()) that doesn't
+// set module.exports, so esbuild can't resolve its exports. This plugin intercepts the resolve
+// and appends a CJS export line so imports work correctly.
+const officeParserPlugin = {
+  name: "officeparser-cjs-shim",
+  setup(build) {
+    build.onResolve({ filter: /^officeparser$/ }, () => ({
+      path: join(process.cwd(), 'node_modules', 'officeparser', 'dist', 'officeparser.browser.js'),
+      namespace: 'officeparser-shim',
+    }));
+    build.onLoad({ filter: /.*/, namespace: 'officeparser-shim' }, async (args) => {
+      const contents = readFileSync(args.path, 'utf-8');
+      return {
+        contents: contents + '\nmodule.exports = officeParser;\n',
+        loader: 'js',
+      };
+    });
   },
+};
+
+const buildOptions = {
   plugins: [
+    officeParserPlugin,
     esbuildSvelte({
       compilerOptions: { css: "injected" },
       preprocess: sveltePreprocess(),

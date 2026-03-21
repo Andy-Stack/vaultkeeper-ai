@@ -16,6 +16,7 @@ import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
+import { Copy, replaceCopy } from "Enums/Copy";
 
 export class Claude extends BaseAIClass {
 
@@ -308,7 +309,7 @@ export class Claude extends BaseAIClass {
             }
 
             return [
-                {type: "text", text: `The contents of the file '${attachment.fileName}' are provided below.` },
+                {type: "text", text: replaceCopy(Copy.AttachedFile, [attachment.fileName]) },
                 {
                     type: isPlainText || mimeType === MimeType.APPLICATION_PDF ? "document" : "image",
                     source: {

@@ -15,6 +15,7 @@ import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
+import { Copy, replaceCopy } from "Enums/Copy";
 
 export class OpenAI extends BaseAIClass {
 
@@ -352,7 +353,7 @@ export class OpenAI extends BaseAIClass {
             }
 
             contentBlocks.push(
-                { type: "input_text", text: `The contents of the file '${attachment.fileName}' are provided below.` },
+                { type: "input_text", text: replaceCopy(Copy.AttachedFile, [attachment.fileName]) },
                 {
                     type: isPlainText || mimeType === MimeType.APPLICATION_PDF ? "input_file" : "input_image",
                     file_id: fileID

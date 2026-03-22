@@ -49,6 +49,7 @@
 
   let userInstructionAreaActive: boolean = false;
   let userInstructionActive: boolean = true;
+  let stacked: boolean = false;
 
   let userRequest: string = "";
 
@@ -57,6 +58,7 @@
 
   let countdownIntervalId: ReturnType<typeof setInterval> | null = null;
   let countdownSecondsRemaining: number = 0;
+  let inputInitialHeight: number = 0;
 
   const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { inputMode = InputMode.Diff; focusInput(); });
   const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { inputMode = InputMode.Normal; focusInput(); });
@@ -64,6 +66,7 @@
 
   onMount(async () => {
     userInstructionActive = (await aiPrompt.userInstruction()).trim() !== "";
+    inputInitialHeight = textareaElement.innerHeight;
   });
 
   onDestroy(() => {
@@ -72,6 +75,18 @@
     eventService.offref(rateLimitCountdownRef);
     stopCountdown();
   });
+
+  function checkStacked() {
+    if (textareaElement.textContent.trim() === "") {
+      stacked = false;
+      return;
+    }
+
+    if (textareaElement.innerHeight > inputInitialHeight) {
+      stacked = true;
+      return;
+    }
+  }
 
   export function focusInput(onMobile: boolean = false) {
     // don't focus on mobile, it's annoying
@@ -247,6 +262,7 @@
 
     textareaElement.textContent = "";
     userRequest = "";
+    checkStacked();
 
     if (Platform.isMobile) {
       textareaElement.blur();
@@ -399,6 +415,8 @@
       if (userRequest.trim() === "") {
         textareaElement.textContent = "";
       }
+
+      checkStacked();
     }
   }
 
@@ -471,7 +489,7 @@
   }
 </script>
 
-<div id="input-container" class:edit-mode={editModeActive}>
+<div id="input-container" class:edit-mode={editModeActive} class:stacked>
   <div id="input-display-container" style:padding-top={attachments.length > 0 ? "var(--size-4-2)" : 0}>
     <InputDisplay bind:this={inputDisplay} {editModeActive}/>
   </div>
@@ -737,6 +755,31 @@
   #submit-button.edit-mode:not(:disabled):hover {
     cursor: pointer;
     background-color: var(--alt-interactive-accent-hover);
+  }
+
+  /* Stacked layout: input above, buttons below (desktop only, when content wraps) */
+  #input-container.stacked {
+    grid-template-rows: auto auto auto auto var(--size-4-3) 1fr var(--size-4-2) auto var(--size-4-3);
+  }
+
+  #input-container.stacked #input-field {
+    grid-column: 2 / 11;
+  }
+
+  #input-container.stacked #user-instruction-button {
+    grid-row: 8;
+  }
+
+  #input-container.stacked #edit-mode-button {
+    grid-row: 8;
+  }
+
+  #input-container.stacked #planning-mode-button {
+    grid-row: 8;
+  }
+
+  #input-container.stacked #submit-button {
+    grid-row: 8;
   }
 
   /* Narrow/mobile layout: input above, buttons below */

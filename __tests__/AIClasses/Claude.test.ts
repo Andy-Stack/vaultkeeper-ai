@@ -13,6 +13,7 @@ import { SettingsService } from '../../Services/SettingsService';
 import { AIProvider } from '../../Enums/ApiProvider';
 import { AbortService } from '../../Services/AbortService';
 import { Exception } from '../../Helpers/Exception';
+import { Copy, replaceCopy } from 'Enums/Copy';
 
 describe('Claude', () => {
     let claude: Claude;
@@ -795,7 +796,7 @@ describe('Claude', () => {
             expect(result[0].content.length).toBeGreaterThan(1);
 
             // Should have filename text block from formatBinaryFiles
-            const filenameBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === `The contents of the file 'test-image.png' are provided below.`);
+            const filenameBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === replaceCopy(Copy.AttachedFile, ["test-image.png"]));
             expect(filenameBlock).toBeDefined();
 
             // Should have image content blocks from formatBinaryFiles
@@ -828,7 +829,7 @@ describe('Claude', () => {
             expect(result[0].content.length).toBeGreaterThan(1);
 
             // Should have filename text block from formatBinaryFiles
-            const filenameBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === `The contents of the file 'document.pdf' are provided below.`);
+            const filenameBlock = result[0].content.find((block: any) => block.type === 'text' && block.text === replaceCopy(Copy.AttachedFile, ["document.pdf"]));
             expect(filenameBlock).toBeDefined();
 
             // Should have document content blocks from formatBinaryFiles
@@ -1241,7 +1242,7 @@ describe('Claude', () => {
             expect(parsed).toHaveLength(2);
             expect(parsed[0]).toEqual({
                 type: 'text',
-                text: `The contents of the file 'report.pdf' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["report.pdf"])
             });
             expect(parsed[1]).toEqual({
                 type: 'document',
@@ -1269,7 +1270,7 @@ describe('Claude', () => {
             expect(parsed).toHaveLength(2);
             expect(parsed[0]).toEqual({
                 type: 'text',
-                text: `The contents of the file 'photo.jpg' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["photo.jpg"])
             });
             expect(parsed[1]).toEqual({
                 type: 'image',
@@ -1410,7 +1411,7 @@ describe('Claude', () => {
             expect(parsed).toHaveLength(6);
 
             // PDF file
-            expect(parsed[0]).toEqual({ type: 'text', text: `The contents of the file 'doc.pdf' are provided below.` });
+            expect(parsed[0]).toEqual({ type: 'text', text: replaceCopy(Copy.AttachedFile, ["doc.pdf"]) });
             expect(parsed[1]).toEqual({
                 type: 'document',
                 source: {
@@ -1420,7 +1421,7 @@ describe('Claude', () => {
             });
 
             // JPEG image
-            expect(parsed[2]).toEqual({ type: 'text', text: `The contents of the file 'image.jpg' are provided below.` });
+            expect(parsed[2]).toEqual({ type: 'text', text: replaceCopy(Copy.AttachedFile, ["image.jpg"]) });
             expect(parsed[3]).toEqual({
                 type: 'image',
                 source: {
@@ -1430,7 +1431,7 @@ describe('Claude', () => {
             });
 
             // PNG image
-            expect(parsed[4]).toEqual({ type: 'text', text: `The contents of the file 'screenshot.png' are provided below.` });
+            expect(parsed[4]).toEqual({ type: 'text', text: replaceCopy(Copy.AttachedFile, ["screenshot.png"]) });
             expect(parsed[5]).toEqual({
                 type: 'image',
                 source: {
@@ -1477,14 +1478,14 @@ describe('Claude', () => {
             expect(parsed).toHaveLength(5);
 
             expect(parsed[0].type).toBe('text');
-            expect(parsed[0].text).toBe(`The contents of the file 'good.jpg' are provided below.`);
+            expect(parsed[0].text).toBe(replaceCopy(Copy.AttachedFile, ["good.jpg"]));
             expect(parsed[1].type).toBe('image');
             expect(parsed[2]).toEqual({
                 type: 'text',
                 text: 'Unsupported mime type \'image/bmp\': bad.bmp'
             });
             expect(parsed[3].type).toBe('text');
-            expect(parsed[3].text).toBe(`The contents of the file 'doc.pdf' are provided below.`);
+            expect(parsed[3].text).toBe(replaceCopy(Copy.AttachedFile, ["doc.pdf"]));
             expect(parsed[4].type).toBe('document');
         });
 
@@ -1532,9 +1533,9 @@ describe('Claude', () => {
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(4);
-            expect(parsed[0].text).toBe(`The contents of the file 'document.PDF' are provided below.`);
+            expect(parsed[0].text).toBe(replaceCopy(Copy.AttachedFile, ["document.PDF"]));
             expect(parsed[1].type).toBe('document');
-            expect(parsed[2].text).toBe(`The contents of the file 'photo.JPG' are provided below.`);
+            expect(parsed[2].text).toBe(replaceCopy(Copy.AttachedFile, ["photo.JPG"]));
             expect(parsed[3].type).toBe('image');
         });
 
@@ -1561,7 +1562,7 @@ describe('Claude', () => {
             const result = claude.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
-            expect(parsed[0].text).toBe(`The contents of the file 'report (final) v2.pdf' are provided below.`);
+            expect(parsed[0].text).toBe(replaceCopy(Copy.AttachedFile, ["report (final) v2.pdf"]));
         });
 
         it('should handle JPEG files with .jpeg extension', () => {

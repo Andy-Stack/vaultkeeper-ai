@@ -12,6 +12,7 @@ import { SettingsService } from '../../Services/SettingsService';
 import { AIProvider } from '../../Enums/ApiProvider';
 import { AbortService } from '../../Services/AbortService';
 import { Exception } from '../../Helpers/Exception';
+import { Copy, replaceCopy } from 'Enums/Copy';
 
 describe('Gemini', () => {
     let gemini: Gemini;
@@ -1135,7 +1136,7 @@ describe('Gemini', () => {
 
             expect(parsed).toHaveLength(2);
             expect(parsed[0]).toEqual({
-                text: `The contents of the file 'report.pdf' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["report.pdf"])
             });
             expect(parsed[1]).toEqual({
                 fileData: {
@@ -1161,7 +1162,7 @@ describe('Gemini', () => {
 
             expect(parsed).toHaveLength(2);
             expect(parsed[0]).toEqual({
-                text: `The contents of the file 'photo.jpg' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["photo.jpg"])
             });
             expect(parsed[1]).toEqual({
                 fileData: {
@@ -1271,7 +1272,7 @@ describe('Gemini', () => {
             expect(parsed).toHaveLength(6);
 
             // PDF file
-            expect(parsed[0]).toEqual({ text: `The contents of the file 'doc.pdf' are provided below.` });
+            expect(parsed[0]).toEqual({ text: replaceCopy(Copy.AttachedFile, ["doc.pdf"]) });
             expect(parsed[1]).toEqual({
                 fileData: {
                     mimeType: 'application/pdf',
@@ -1280,7 +1281,7 @@ describe('Gemini', () => {
             });
 
             // JPEG image
-            expect(parsed[2]).toEqual({ text: `The contents of the file 'image.jpg' are provided below.` });
+            expect(parsed[2]).toEqual({ text: replaceCopy(Copy.AttachedFile, ["image.jpg"]) });
             expect(parsed[3]).toEqual({
                 fileData: {
                     mimeType: 'image/jpeg',
@@ -1289,7 +1290,7 @@ describe('Gemini', () => {
             });
 
             // PNG image
-            expect(parsed[4]).toEqual({ text: `The contents of the file 'screenshot.png' are provided below.` });
+            expect(parsed[4]).toEqual({ text: replaceCopy(Copy.AttachedFile, ["screenshot.png"]) });
             expect(parsed[5]).toEqual({
                 fileData: {
                     mimeType: 'image/png',
@@ -1334,12 +1335,12 @@ describe('Gemini', () => {
 
             expect(parsed).toHaveLength(5);
 
-            expect(parsed[0]).toEqual({ text: `The contents of the file 'good.jpg' are provided below.` });
+            expect(parsed[0]).toEqual({ text: replaceCopy(Copy.AttachedFile, ["good.jpg"]) });
             expect(parsed[1]).toHaveProperty('fileData');
             expect(parsed[2]).toEqual({
                 text: 'Unsupported mime type \'image/bmp\': bad.bmp'
             });
-            expect(parsed[3]).toEqual({ text: `The contents of the file 'doc.pdf' are provided below.` });
+            expect(parsed[3]).toEqual({ text: replaceCopy(Copy.AttachedFile, ["doc.pdf"]) });
             expect(parsed[4]).toHaveProperty('fileData');
         });
 
@@ -1369,7 +1370,7 @@ describe('Gemini', () => {
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2); // Only successful upload
-            expect(parsed[0]).toEqual({ text: `The contents of the file 'success.pdf' are provided below.` });
+            expect(parsed[0]).toEqual({ text: replaceCopy(Copy.AttachedFile, ["success.pdf"]) });
             expect(parsed[1]).toEqual({
                 fileData: {
                     mimeType: 'application/pdf',
@@ -1399,7 +1400,7 @@ describe('Gemini', () => {
             const result = gemini.formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
-            expect(parsed[0].text).toBe(`The contents of the file 'report (final) v2.pdf' are provided below.`);
+            expect(parsed[0].text).toBe(replaceCopy(Copy.AttachedFile, ["report (final) v2.pdf"]));
         });
 
         it('should handle JPEG files with .jpeg extension', () => {

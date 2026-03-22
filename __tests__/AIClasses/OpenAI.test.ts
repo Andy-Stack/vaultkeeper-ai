@@ -12,6 +12,7 @@ import { SettingsService } from '../../Services/SettingsService';
 import { AIProvider } from '../../Enums/ApiProvider';
 import { Exception } from '../../Helpers/Exception';
 import { AbortService } from '../../Services/AbortService';
+import { Copy, replaceCopy } from 'Enums/Copy';
 
 describe('OpenAI', () => {
     let openai: OpenAI;
@@ -1016,7 +1017,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(2);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: `The contents of the file 'report.pdf' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["report.pdf"])
             });
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_file',
@@ -1043,7 +1044,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(2);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: `The contents of the file 'photo.jpg' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["photo.jpg"])
             });
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_image',
@@ -1069,7 +1070,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(2);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: `The contents of the file 'diagram.png' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["diagram.png"])
             });
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_image',
@@ -1095,7 +1096,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(2);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: `The contents of the file 'modern.webp' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["modern.webp"])
             });
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_image',
@@ -1184,7 +1185,7 @@ describe('OpenAI', () => {
 
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: `The contents of the file 'doc.pdf' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["doc.pdf"])
             });
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_file',
@@ -1193,7 +1194,7 @@ describe('OpenAI', () => {
 
             expect(parsed[0].content[2]).toEqual({
                 type: 'input_text',
-                text: `The contents of the file 'image.jpg' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["image.jpg"])
             });
             expect(parsed[0].content[3]).toEqual({
                 type: 'input_image',
@@ -1202,7 +1203,7 @@ describe('OpenAI', () => {
 
             expect(parsed[0].content[4]).toEqual({
                 type: 'input_text',
-                text: `The contents of the file 'screenshot.png' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["screenshot.png"])
             });
             expect(parsed[0].content[5]).toEqual({
                 type: 'input_image',
@@ -1249,7 +1250,7 @@ describe('OpenAI', () => {
 
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: `The contents of the file 'good.jpg' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["good.jpg"])
             });
             expect(parsed[0].content[1].type).toBe('input_image');
             expect(parsed[0].content[2]).toEqual({
@@ -1258,7 +1259,7 @@ describe('OpenAI', () => {
             });
             expect(parsed[0].content[3]).toEqual({
                 type: 'input_text',
-                text: `The contents of the file 'doc.pdf' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["doc.pdf"])
             });
             expect(parsed[0].content[4].type).toBe('input_file');
         });
@@ -1292,7 +1293,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(2); // Text + file reference
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: `The contents of the file 'success.pdf' are provided below.`
+                text: replaceCopy(Copy.AttachedFile, ["success.pdf"])
             });
             expect(parsed[0].content[1]).toEqual({
                 type: 'input_file',

@@ -74,7 +74,7 @@ export class Conversation {
                     name: functionResponse.name,
                     response: {
                         results: responseResults,
-                        ...(binaryResults.length > 0 && {message: "The contents of the files are provided below."})
+                        ...(binaryResults.length > 0 && {message: "The contents of the files are included below."})
                     }
                 }
             };
@@ -85,7 +85,7 @@ export class Conversation {
                 functionResponse: {
                     name: functionResponse.name,
                     response: {
-                        message: "Files retrieved successfully. The contents of the files are provided below.",
+                        message: "Files retrieved successfully. The contents of the files are included below.",
                         count: binaryResults.length
                     }
                 }

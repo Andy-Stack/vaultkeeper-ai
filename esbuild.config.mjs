@@ -105,6 +105,12 @@ const cssMergerPlugin = {
 // officeparser's browser bundle is an IIFE (var officeParser = (()=> { ... })()) that doesn't
 // set module.exports, so esbuild can't resolve its exports. This plugin intercepts the resolve
 // and appends a CJS export line so imports work correctly.
+//
+// The browser bundle contains dynamic require() patterns (from its own esbuild bundling) that
+// our esbuild would otherwise resolve against the `external` list, emitting require("fs") etc.
+// in the final output. On Obsidian mobile there is no "fs" module, so we must neutralise those
+// internal requires by replacing the dynamic-require shim with a stub that always throws, and
+// stripping eval("require")("stream") calls. This keeps the bundle self-contained.
 const officeParserPlugin = {
   name: "officeparser-cjs-shim",
   setup(build) {
@@ -113,7 +119,17 @@ const officeParserPlugin = {
       namespace: 'officeparser-shim',
     }));
     build.onLoad({ filter: /.*/, namespace: 'officeparser-shim' }, async (args) => {
-      const contents = readFileSync(args.path, 'utf-8');
+      let contents = readFileSync(args.path, 'utf-8');
+      // Replace the dynamic require shim so esbuild doesn't see real require() calls.
+      // The original pattern: typeof require<"u"?require:typeof Proxy<"u"?new Proxy(...)
+      // Replace with a function that always throws (matching the bundle's own fallback).
+      contents = contents.replace(
+        /var Au=\(r=>typeof require<"u"\?require:typeof Proxy<"u"\?new Proxy\(r,\{get:\(e,t\)=>\(typeof require<"u"\?require:e\)\[t\]\}\):r\)\(function\(r\)\{if\(typeof require<"u"\)return require\.apply\(this,arguments\);throw Error\('Dynamic require of "'\+r\+'" is not supported'\)\}\)/,
+        'var Au=(function(r){throw Error(\'Dynamic require of "\'+r+\'" is not supported\')})'
+      );
+      // Strip eval("require")("stream") calls — replace with null so the surrounding
+      // code falls back to its non-streaming path.
+      contents = contents.replace(/eval\("require"\)\("stream"\)/g, '(null)');
       return {
         contents: contents + '\nmodule.exports = officeParser;\n',
         loader: 'js',

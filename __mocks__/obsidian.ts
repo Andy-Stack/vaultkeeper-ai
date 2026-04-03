@@ -181,7 +181,7 @@ export class Events {
 			this.events.set(name, []);
 		}
 		const boundCallback: (...data: unknown[]) => unknown = ctx
-			? (...args: unknown[]) => callback.apply(ctx, args) as unknown
+			? (...args: unknown[]) => callback.apply(ctx, args)
 			: callback;
 		this.events.get(name)!.push(boundCallback);
 		return {

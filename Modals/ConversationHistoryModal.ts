@@ -28,8 +28,8 @@ export class ConversationHistoryModal extends Modal {
     private readonly chatService: ChatService = Resolve<ChatService>(Services.ChatService);
 
     private component: ReturnType<typeof mount> | null = null;
-    private items: IListItem[];
-    private conversations: Conversation[];
+    private items: IListItem[] = [];
+    private conversations: Conversation[] = [];
     public onModalClose?: () => void;
 
     constructor() {

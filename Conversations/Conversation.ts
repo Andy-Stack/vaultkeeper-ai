@@ -13,7 +13,6 @@ export class Conversation {
     title: string;
     created: Date;
     updated: Date;
-    path: string;
 
     contents: ConversationContent[] = [];
 

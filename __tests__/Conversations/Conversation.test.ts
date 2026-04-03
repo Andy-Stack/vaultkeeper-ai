@@ -38,12 +38,6 @@ describe('Conversation', () => {
 			expect(conversation.contents).toEqual([]);
 			expect(Array.isArray(conversation.contents)).toBe(true);
 		});
-
-		it('should not have path set initially', () => {
-			const conversation = new Conversation();
-
-			expect(conversation.path).toBeUndefined();
-		});
 	});
 
 	describe('isConversationData', () => {

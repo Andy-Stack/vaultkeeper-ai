@@ -71,7 +71,7 @@ export class StreamingMarkdownService {
             const result = this.processor.processSync(preprocessed);
             return String(result);
         } catch (error) {
-            Exception.warn(`Markdown processing failed:\n${error}`);
+            Exception.warn(`Markdown processing failed:\n${Exception.messageFrom(error)}`);
             return this.getFallbackHTML(text);
         }
     }
@@ -118,7 +118,7 @@ export class StreamingMarkdownService {
                 this.htmlService.setHTMLContent(state.element, html);
                 state.lastProcessedLength = state.buffer.length;
             } catch (error) {
-                Exception.warn(`Streaming render failed:\n${error}`);
+                Exception.warn(`Streaming render failed:\n${Exception.messageFrom(error)}`);
             }
 
             this.renderTimeouts.delete(messageId);

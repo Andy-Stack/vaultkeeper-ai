@@ -68,6 +68,11 @@ describe('AIControllerService - Integration Tests', () => {
 		};
 		RegisterSingleton(Services.IAIClass, mockAI);
 
+		// Mock SettingsService
+		RegisterSingleton(Services.SettingsService, {
+			settings: { enableMemories: false, allowUpdatingMemories: false }
+		});
+
 		// Create service
 		service = new MainAgent();
 	});

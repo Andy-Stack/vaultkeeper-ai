@@ -144,7 +144,7 @@ The following context explains why you are doing the task. It is NOT an instruct
     MemoriesInjectionHeader = `\n\n---\n\n## Current Memories\n\nThe following memories were recorded from previous sessions. Use them as context for this conversation.\n\n{memories}`,
     MemoriesReadOnly = `\n\n> **Memory updates are disabled.** You can read memories but cannot save new ones this session. Do not attempt to create or modify a memories file directly — memory management is only possible through the memory tools, which are unavailable when this setting is off.`,
     MemoriesEmpty = "No memories have been created yet.",
-    MemoriesMaxLengthError = "Memories have a maximum length of 10 lines or less.",
+    MemoriesMaxLengthError = "Exceeded maximum memories length. Memories have a maximum length of {lines} and {words} words per line.",
     MemoriesUpdatedSuccess = "Memories have been updated successfully.",
     MemoriesDisabledError = "Illegal tool call, memories have been disabled by the user.",
     MemoriesUpdatingDisabledError = "Illegal tool call, updating memories has been disabled by the user.",

@@ -75,6 +75,11 @@ describe('Multi-Agent Integration Tests', () => {
 			streamRequest: vi.fn()
 		};
 		RegisterSingleton(Services.IAIClass, mockAI);
+
+		// Mock SettingsService
+		RegisterSingleton(Services.SettingsService, {
+			settings: { enableMemories: false, allowUpdatingMemories: false }
+		});
 	});
 
 	afterEach(() => {

@@ -46,6 +46,13 @@ describe('AIToolService - Integration Tests', () => {
 		// Register the mocks
 		RegisterSingleton(Services.FileSystemService, mockFileSystemService);
 		RegisterSingleton(Services.AbortService, abortService);
+		RegisterSingleton(Services.MemoriesService, {
+			readMemories: vi.fn().mockResolvedValue(''),
+			updateMemories: vi.fn().mockResolvedValue(undefined)
+		});
+		RegisterSingleton(Services.SettingsService, {
+			settings: { enableMemories: false, allowUpdatingMemories: false }
+		});
 
 		// Mock Exception.log
 		vi.spyOn(Exception, 'log').mockImplementation(() => {});

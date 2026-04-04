@@ -51,6 +51,11 @@ describe('OrchestrationAgent - Unit Tests', () => {
 		};
 		RegisterSingleton(Services.IAIClass, mockAI);
 
+		// Mock SettingsService
+		RegisterSingleton(Services.SettingsService, {
+			settings: { enableMemories: false, allowUpdatingMemories: false }
+		});
+
 		// Create service
 		service = new OrchestrationAgent();
 	});

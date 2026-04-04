@@ -1,4 +1,4 @@
-import { Copy } from "Enums/Copy";
+import { Copy, replaceCopy } from "Enums/Copy";
 import { Path } from "Enums/Path";
 import { Resolve } from "./DependencyService";
 import type { FileSystemService } from "./FileSystemService";
@@ -37,7 +37,8 @@ export class MemoriesService {
 
     public async updateMemories(newMemories: string): Promise<string|Error> {
         if (!this.isValidMemoryLength(newMemories)) {
-            return Copy.MemoriesMaxLengthError;
+            return replaceCopy(Copy.MemoriesMaxLengthError,
+                [this.maxMemoriesLength.toString(), this.maxMemoriesLineLength.toString()]);
         }
 
         const result = await this.fileSystemService.writeFile(Path.Memories, newMemories, true, false);

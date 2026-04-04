@@ -311,7 +311,6 @@ export class AIToolService {
         }
         this.lastToolReadMemories = false;
 
-        await this.memoriesService.updateMemories(content);
-        return { success: true };
+        return { result: await this.memoriesService.updateMemories(content) };
     }
 }

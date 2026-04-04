@@ -99,7 +99,9 @@ describe('SettingsService', () => {
                 exclusions: [],
                 userInstruction: '',
                 searchResultsLimit: 15,
-                snippetSizeLimit: 300
+                snippetSizeLimit: 300,
+                enableMemories: false,
+                allowUpdatingMemories: true
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -140,7 +142,9 @@ describe('SettingsService', () => {
                 exclusions: [],
                 userInstruction: '',
                 searchResultsLimit: 15,
-                snippetSizeLimit: 300
+                snippetSizeLimit: 300,
+                enableMemories: false,
+                allowUpdatingMemories: true
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -161,7 +165,9 @@ describe('SettingsService', () => {
                 exclusions: [],
                 userInstruction: '',
                 searchResultsLimit: 15,
-                snippetSizeLimit: 300
+                snippetSizeLimit: 300,
+                enableMemories: false,
+                allowUpdatingMemories: true
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -182,7 +188,9 @@ describe('SettingsService', () => {
                 exclusions: [],
                 userInstruction: '',
                 searchResultsLimit: 15,
-                snippetSizeLimit: 300
+                snippetSizeLimit: 300,
+                enableMemories: false,
+                allowUpdatingMemories: true
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -228,7 +236,9 @@ describe('SettingsService', () => {
                 exclusions: [],
                 userInstruction: '',
                 searchResultsLimit: 15,
-                snippetSizeLimit: 300
+                snippetSizeLimit: 300,
+                enableMemories: false,
+                allowUpdatingMemories: true
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -283,7 +293,9 @@ describe('SettingsService', () => {
                 exclusions: ['node_modules'],
                 userInstruction: 'Be helpful',
                 searchResultsLimit: 15,
-                snippetSizeLimit: 300
+                snippetSizeLimit: 300,
+                enableMemories: false,
+                allowUpdatingMemories: true
             };
             settingsService = new SettingsService(loadedSettings);
         });

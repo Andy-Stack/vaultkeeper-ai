@@ -99,7 +99,9 @@ const mockSettings: IVaultkeeperAISettings = {
 	exclusions: [],
 	userInstruction: '',
 	searchResultsLimit: 15,
-	snippetSizeLimit: 300
+	snippetSizeLimit: 300,
+	enableMemories: false,
+	allowUpdatingMemories: true
 };
 
 let settingsService: SettingsService;

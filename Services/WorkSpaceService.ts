@@ -1,7 +1,7 @@
 import type VaultkeeperAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import type { TFile, WorkspaceLeaf } from "obsidian";
+import { Notice, TFile, type WorkspaceLeaf } from "obsidian";
 import type { VaultService } from "./VaultService";
 
 export class WorkSpaceService {
@@ -14,6 +14,19 @@ export class WorkSpaceService {
 
         if (file) {
             await leaf.openFile(file);
+        } else {
+            new Notice(`Failed to open note: "${noteName}"`);
+        }
+    }
+
+    public async openNoteByPath(path: string) {
+        const file = this.plugin.app.vault.getAbstractFileByPath(path);
+
+        if (file instanceof TFile) {
+            const leaf: WorkspaceLeaf = this.plugin.app.workspace.getLeaf(false);
+            await leaf.openFile(file);
+        } else {
+            new Notice(`Failed to open note: "${path}"`);
         }
     }
 

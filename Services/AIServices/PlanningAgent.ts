@@ -35,7 +35,7 @@ export class PlanningAgent extends BaseAgent {
         await this.runAgentLoop(AgentType.Planning, conversation, callbacks, async (toolCall) => {
             const toolCallName = toolCall.name;
 
-            if (!AIToolDefinitions.planningAgentDefinitions().some(definition => isAITool(toolCallName, definition.name))) {
+            if (!AIToolDefinitions.planningAgentDefinitions(this.memoriesEnabled()).some(definition => isAITool(toolCallName, definition.name))) {
                 this.debugService?.log("PlanningAgent", `Invalid tool call denied: ${toolCallName}`);
                 conversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
@@ -114,7 +114,7 @@ export class PlanningAgent extends BaseAgent {
         this.ai.aiToolUsageMode = AIToolUsageMode.Enabled;
         this.ai.systemPrompt = this.aiPrompt.planningInstruction();
         this.ai.userInstruction = ""; // do not include user instruction for planning agent
-        this.ai.aiToolDefinitions = AIToolDefinitions.planningAgentDefinitions();
+        this.ai.aiToolDefinitions = AIToolDefinitions.planningAgentDefinitions(this.memoriesEnabled());
     }
 
     protected override setDebugColor(): void {

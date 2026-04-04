@@ -20,7 +20,7 @@ Do NOT use this function:
       properties: {
         path: {
           type: "string",
-          description: `The directory path to list. Use "/" for the vault root. Specify a subdirectory path to list contents of that specific folder (e.g., 'Projects/2024' or 'Daily Notes'). Path should be relative to vault root.`,
+          description: "The directory path to list. Use \"/\" for the vault root. Specify a subdirectory path to list contents of that specific folder (e.g., 'Projects/2024' or 'Daily Notes'). Path should be relative to vault root.",
         },
         recursive: {
           type: "boolean",

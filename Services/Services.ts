@@ -20,6 +20,7 @@ export class Services {
     static SanitiserService = Symbol("SanitiserService");
     static InputService = Symbol("InputService");
     static DiffService = Symbol("DiffService");
+    static MemoriesService = Symbol("MemoriesService");
     static DebugService = Symbol("DebugService");
 
     // stores

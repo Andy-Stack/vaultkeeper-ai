@@ -8,7 +8,9 @@ import type { ISearchMatch } from "../../Types/SearchTypes";
 import { AbortService } from "../AbortService";
 import { normalizePath, TAbstractFile, TFile } from "obsidian";
 import { Exception } from "Helpers/Exception";
+import { Copy } from "Enums/Copy";
 import { pathExtname } from "Helpers/Helpers";
+import type { MemoriesService } from "Services/MemoriesService";
 import { 
     SearchVaultFilesArgsSchema,
     ReadVaultFilesArgsSchema,
@@ -16,20 +18,34 @@ import {
     DeleteVaultFilesArgsSchema,
     MoveVaultFilesArgsSchema,
     ListVaultFilesArgsSchema,
-    PatchVaultFileArgsSchema
+    PatchVaultFileArgsSchema,
+    ReadMemoriesArgsSchema,
+    UpdateMemoriesArgsSchema
 } from "AIClasses/Schemas/AIToolSchemas";
+import type { SettingsService } from "Services/SettingsService";
 
 export class AIToolService {
 
     private readonly fileSystemService: FileSystemService;
+    private readonly memoriesService: MemoriesService;
+    private readonly settingsService: SettingsService;
     private readonly abortService: AbortService;
+
+    private lastToolReadMemories: boolean = false;
 
     public constructor() {
         this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
+        this.memoriesService = Resolve<MemoriesService>(Services.MemoriesService);
+        this.settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.abortService = Resolve<AbortService>(Services.AbortService);
     }
 
     public async performAITool(toolCall: AIToolCall): Promise<AIToolResponse> {
+
+        if (toolCall.name !== AITool.ReadMemories && toolCall.name !== AITool.UpdateMemories) {
+            this.lastToolReadMemories = false;
+        }
+
         return await this.abortService.abortableOperation(async () => {
             switch (toolCall.name) {
                 case AITool.SearchVaultFiles: {
@@ -114,6 +130,30 @@ export class AIToolService {
                         );
                     }
                     return new AIToolResponse(toolCall.name, await this.ListVaultFiles(parseResult.data.path, parseResult.data.recursive), toolCall.toolId);
+                }
+
+                case AITool.ReadMemories: {
+                    const parseResult = ReadMemoriesArgsSchema.safeParse(toolCall.arguments);
+                    if (!parseResult.success) {
+                        return new AIToolResponse(
+                            toolCall.name,
+                            { error: `Invalid arguments for ${AITool.ReadMemories}: ${parseResult.error.message}` },
+                            toolCall.toolId
+                        );
+                    }
+                    return new AIToolResponse(toolCall.name, await this.readMemories(), toolCall.toolId);
+                }
+
+                case AITool.UpdateMemories: {
+                    const parseResult = UpdateMemoriesArgsSchema.safeParse(toolCall.arguments);
+                    if (!parseResult.success) {
+                        return new AIToolResponse(
+                            toolCall.name,
+                            { error: `Invalid arguments for ${AITool.UpdateMemories}: ${parseResult.error.message}` },
+                            toolCall.toolId
+                        );
+                    }
+                    return new AIToolResponse(toolCall.name, await this.updateMemories(parseResult.data.content), toolCall.toolId);
                 }
     
                 // This is only used by gemini
@@ -249,5 +289,29 @@ export class AIToolService {
             type: file instanceof TFile ? "file" : "directory",
             path: file.path
         }));
+    }
+
+    private async readMemories(): Promise<object> {
+        if (!this.settingsService.settings.enableMemories) {
+            return { error: Copy.MemoriesDisabledError }
+        }
+        this.lastToolReadMemories = true;
+        return { memories: await this.memoriesService.readMemories() };
+    }
+
+    private async updateMemories(content: string): Promise<object> {
+        if (!this.settingsService.settings.allowUpdatingMemories) {
+            return { error: Copy.MemoriesUpdatingDisabledError }
+        }
+
+        if (!this.lastToolReadMemories) {
+            return {
+                error: Copy.UpdateMemoriesWithoutReadError
+            };
+        }
+        this.lastToolReadMemories = false;
+
+        await this.memoriesService.updateMemories(content);
+        return { success: true };
     }
 }

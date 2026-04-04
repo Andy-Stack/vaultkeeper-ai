@@ -1,5 +1,5 @@
 import type VaultkeeperAIPlugin from "main";
-import * as path from "path-browserify";
+import path from "path-browserify";
 
 export function openPluginSettings(plugin: VaultkeeperAIPlugin) {
     if (!("setting" in plugin.app) || typeof plugin.app.setting !== "object" || plugin.app.setting === null) {
@@ -13,6 +13,17 @@ export function openPluginSettings(plugin: VaultkeeperAIPlugin) {
     if ("openTabById" in plugin.app.setting) {
         // @ts-expect-error - accessing internal API
         plugin.app.setting.openTabById(plugin.manifest.id);
+    }
+}
+
+export function closePluginSettings(plugin: VaultkeeperAIPlugin) {
+    if (!("setting" in plugin.app) || typeof plugin.app.setting !== "object" || plugin.app.setting === null) {
+        return;
+    }
+
+    if ("close" in plugin.app.setting) {
+        // @ts-expect-error - accessing internal API
+        plugin.app.setting.close();
     }
 }
 

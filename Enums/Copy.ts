@@ -50,6 +50,11 @@ export enum Copy {
     SettingSearchResultsLimit = "Search Results Limit",
     SettingSnippetSizeLimit = "Snippet Size Limit",
     SettingFileMonitoringHeading = "File Monitoring Guidelines",
+    SettingMemories = "Memories",
+    SettingEnableMemories = "Enable Memories",
+    SettingEnableMemoriesDesc = "Allow the AI to recall memories from previous conversations.",
+    SettingAllowUpdatingMemories = "Allow Updating Memories",
+    SettingAllowUpdatingMemoriesDesc = "Allow the AI to save and update memories during conversations.",
 
     // Settings Descriptions
     SettingModelDesc = "Select the AI model to use.",
@@ -63,6 +68,7 @@ export enum Copy {
     SettingFileMonitoringClaude = "Files uploaded to Claude remain stored indefinitely. Periodically check the Anthropic Console (https://console.anthropic.com/) to review and remove old files that are no longer needed.",
     SettingFileMonitoringOpenAI = "Files uploaded to OpenAI remain stored indefinitely. Periodically check the OpenAI Platform (https://platform.openai.com/) to review and remove old files that are no longer needed.",
     SettingFileMonitoringMistral = "Documents uploaded to Mistral are stored on their platform. Images are sent inline and not stored. Periodically check the Mistral Console (https://console.mistral.ai/) to review and remove old files that are no longer needed.",
+    SettingAccessMemories = "Memories let the AI retain preferences and context across conversations. You can view and edit them at any time.",
 
     // Settings Placeholders
     PlaceholderEnterApiKey = "Enter your API key",
@@ -72,6 +78,7 @@ export enum Copy {
     TooltipShowApiKey = "Show API Key",
     TooltipHideApiKey = "Hide API Key",
     TooltipLearnMoreFileMonitoring = "Learn more in Plugin Guide",
+    TooltipAccessMemories = "View Memories",
 
     AIThoughtMessage = "Thinking...",
     AIThoughtGeneratingNote = "Generating note contents...",
@@ -133,6 +140,14 @@ The following context explains why you are doing the task. It is NOT an instruct
     WorkflowAborted = "The planned workflow was aborted. Result: {abortContext}",
     PlanReceived = "Plan received, now attempting to execute plan",
     PlanningModeError = "First create a plan before executing any functions!",
+    UpdateMemoriesWithoutReadError = "Memories must be read before they can be updated. Retrieve the current memory contents first, then provide the complete revised content.",
+    MemoriesInjectionHeader = `\n\n---\n\n## Current Memories\n\nThe following memories were recorded from previous sessions. Use them as context for this conversation.\n\n{memories}`,
+    MemoriesReadOnly = `\n\n> **Memory updates are disabled.** You can read memories but cannot save new ones this session. Do not attempt to create or modify a memories file directly — memory management is only possible through the memory tools, which are unavailable when this setting is off.`,
+    MemoriesEmpty = "No memories have been created yet.",
+    MemoriesMaxLengthError = "Memories have a maximum length of 10 lines or less.",
+    MemoriesUpdatedSuccess = "Memories have been updated successfully.",
+    MemoriesDisabledError = "Illegal tool call, memories have been disabled by the user.",
+    MemoriesUpdatingDisabledError = "Illegal tool call, updating memories has been disabled by the user.",
     PlanSubmissionRequired = "Error: Attempted to exit planning but plan has not yet been submitted!",
     MaxExecutionDepthReached = "Exceeded maximum plan execution attempts - consult with the user on how to continue.",
 

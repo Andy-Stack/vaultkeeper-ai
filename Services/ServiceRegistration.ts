@@ -18,6 +18,7 @@ import { FileSystemService } from "./FileSystemService";
 import { HTMLService } from "./HTMLService";
 import { InputService } from "./InputService";
 import { MainAgent } from "./AIServices/MainAgent";
+import { MemoriesService } from "./MemoriesService";
 import { SanitiserService } from "./SanitiserService";
 import { SettingsService, type IVaultkeeperAISettings } from "./SettingsService";
 import { StreamingMarkdownService } from "./StreamingMarkdownService";
@@ -77,6 +78,7 @@ export function RegisterDependencies() {
     RegisterSingleton<UserInputService>(Services.UserInputService, new UserInputService());
     RegisterSingleton<WorkSpaceService>(Services.WorkSpaceService, new WorkSpaceService());
     RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());
+    RegisterSingleton<MemoriesService>(Services.MemoriesService, new MemoriesService());
     RegisterSingleton<ConversationFileSystemService>(Services.ConversationFileSystemService, new ConversationFileSystemService());
     RegisterSingleton<ConversationNamingService>(Services.ConversationNamingService, new ConversationNamingService());
 

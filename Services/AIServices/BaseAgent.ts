@@ -15,6 +15,7 @@ import type { DebugService } from "Services/DebugService";
 import { DebugColor } from "Enums/DebugColor";
 import { Exception } from "Helpers/Exception";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
+import type { SettingsService } from "Services/SettingsService";
 
 export abstract class BaseAgent {
     
@@ -23,11 +24,14 @@ export abstract class BaseAgent {
     protected readonly aiToolService: AIToolService;
     protected readonly debugService: DebugService | undefined;
 
+    private readonly settingsService: SettingsService;
+
     private onSaveConversation?: (conversation: Conversation) => Promise<void>;
 
     public constructor() {
         this.aiPrompt = Resolve<IPrompt>(Services.IPrompt);
         this.aiToolService = Resolve<AIToolService>(Services.AIToolService);
+        this.settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.debugService = TryResolve<DebugService>(Services.DebugService);
         this.setDebugColor();
     }
@@ -38,6 +42,14 @@ export abstract class BaseAgent {
 
     public setSaveCallback(callback: (conversation: Conversation) => Promise<void>) {
         this.onSaveConversation = callback;
+    }
+
+    protected memoriesEnabled(): boolean {
+        return this.settingsService.settings.enableMemories;
+    }
+
+    protected updateMemoriesEnabled(): boolean {
+        return this.settingsService.settings.allowUpdatingMemories;
     }
 
     protected async runAgentLoop(agentType: AgentType, conversation: Conversation, callbacks: IChatServiceCallbacks,

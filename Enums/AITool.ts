@@ -6,6 +6,8 @@ export enum AITool {
     DeleteVaultFiles = "delete_vault_files",
     MoveVaultFiles = "move_vault_files",
     ListVaultFiles = "list_vault_files",
+    ReadMemories = "read_memories",
+    UpdateMemories = "update_memories",
 
     // only used by gemini
     RequestWebSearch = "request_web_search",

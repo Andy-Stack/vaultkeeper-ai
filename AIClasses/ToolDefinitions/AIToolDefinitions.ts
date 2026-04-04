@@ -16,6 +16,8 @@ import { ExecuteWorkflow } from "./Tools/ExecuteWorkflow";
 import { ReviseStep } from "./Tools/ReviseStep";
 import { RevisePlan } from "./Tools/RevisePlan";
 import { SkipStep } from "./Tools/SkipStep";
+import { ReadMemories } from "./Tools/ReadMemories";
+import { UpdateMemories } from "./Tools/UpdateMemories";
 
 export abstract class AIToolDefinitions {
     
@@ -24,7 +26,7 @@ export abstract class AIToolDefinitions {
     // Definitions list provides a list of function definitions that does not include any planning functions (used as reference in planning agent prompt)
     private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles];
 
-    public static agentDefinitions(destructive: boolean, planningMode: boolean): IAIToolDefinition[] {
+    public static agentDefinitions(destructive: boolean, planningMode: boolean, memories: boolean, updateMemories: boolean): IAIToolDefinition[] {
         this.isGated = false;
         
         if (planningMode) {
@@ -36,6 +38,14 @@ export abstract class AIToolDefinitions {
             ReadVaultFiles,
             ListVaultFiles
         ];
+
+        if (memories) {
+            actions = actions.concat([ReadMemories]);
+        }
+
+        if (updateMemories) {
+            actions = actions.concat([UpdateMemories]);
+        }
 
         if (destructive) {
             actions = actions.concat([
@@ -63,12 +73,18 @@ export abstract class AIToolDefinitions {
         ];
     }
 
-    public static planningAgentDefinitions(): IAIToolDefinition[] {
-        return [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, AskUserQuestionPlanning, SubmitPlan];
+    public static planningAgentDefinitions(memories: boolean): IAIToolDefinition[] {
+        let actions = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, AskUserQuestionPlanning, SubmitPlan];
+
+        if (memories) {
+            actions = actions.concat([ReadMemories]);
+        }
+
+        return actions;
     }
 
     public static executionAgentDefinitions(): IAIToolDefinition[] {
-        return [...this.agentDefinitions(true, false), CompleteTask];
+        return [...this.agentDefinitions(true, false, false, false), CompleteTask];
     }
 
     public static compactSummaryForPlanningAgent(): string {

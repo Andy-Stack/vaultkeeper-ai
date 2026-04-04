@@ -57,6 +57,14 @@
   resize: none;
 }
 
+.setting-item-memories-disabled .checkbox-container {
+  background-color: var(--interactive-accent-disabled);
+}
+
+.setting-item-memories-disabled .setting-item-info {
+  font-weight: var(--font-light);
+}
+
 /* ============================== */
 /* CSS Variables for Common Components */
 /* ============================== */
@@ -204,6 +212,11 @@ body {
     in hsl shorter hue,
     var(--background-primary) 75%,
     hsl(0 0% 0%) 25%
+  );
+  --interactive-accent-disabled: color-mix(
+    in hsl shorter hue,
+    var(--background-modifier-border-hover) 50%,
+    var(--interactive-accent) 40%
   );
 }
 

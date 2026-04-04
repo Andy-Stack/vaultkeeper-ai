@@ -17,8 +17,11 @@ const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     },
     exclusions: [],
 
-    searchResultsLimit: 15,
-    snippetSizeLimit: 300
+    searchResultsLimit: 30,
+    snippetSizeLimit: 100,
+
+    enableMemories: false,
+    allowUpdatingMemories: true
 }
 
 export interface IVaultkeeperAISettings {
@@ -37,6 +40,9 @@ export interface IVaultkeeperAISettings {
 
     searchResultsLimit: number;
     snippetSizeLimit: number;
+
+    enableMemories: boolean;
+    allowUpdatingMemories: boolean;
 }
 
 export class SettingsService {

@@ -3,24 +3,34 @@ import { Copy } from "Enums/Copy";
 import { Selector } from "Enums/Selector";
 import type VaultkeeperAIPlugin from "main";
 import { HelpModal } from "Modals/HelpModal";
-import { DropdownComponent, PluginSettingTab, Setting, setIcon, setTooltip } from "obsidian";
+import { DropdownComponent, PluginSettingTab, Setting, ToggleComponent, setIcon, setTooltip } from "obsidian";
 import { Resolve } from "Services/DependencyService";
 import type { SettingsService } from "Services/SettingsService";
 import { Services } from "Services/Services";
 import { RegisterAiProvider } from "Services/ServiceRegistration";
+import { closePluginSettings } from "Helpers/Helpers";
+import type { MemoriesService } from "Services/MemoriesService";
 
 export class VaultkeeperAISettingTab extends PluginSettingTab {
+	private readonly plugin: VaultkeeperAIPlugin;
 	private readonly settingsService: SettingsService;
+	private readonly memoriesService: MemoriesService;
 
 	private apiKeySetting: Setting | null = null;
 	private apiKeyInputEl: HTMLInputElement | null = null;
 	private fileDisclaimerSetting: Setting | null = null;
 	private planningModelDropdown: DropdownComponent | null = null;
+	private allowUpdatingMemoriesSetting: Setting | null = null;
+	private allowUpdatingMemoriesToggleComponent: ToggleComponent | null = null;
 
 	constructor() {
 		const plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
+		
 		super(plugin.app, plugin);
+		this.plugin = plugin;
+
 		this.settingsService = Resolve<SettingsService>(Services.SettingsService);
+		this.memoriesService = Resolve<MemoriesService>(Services.MemoriesService);
 	}
 
 	public display() {
@@ -46,6 +56,20 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					await this.updatePlanningModelDropdown();
 				});
 			});
+
+		/* Model files API disclaimer */
+		this.fileDisclaimerSetting = new Setting(containerEl)
+		.setDesc(Copy.SettingFileMonitoringClaude)
+		.addExtraButton(button => {
+			button
+				.setTooltip(Copy.TooltipLearnMoreFileMonitoring)
+				.onClick(() => {
+					const modal = Resolve<HelpModal>(Services.HelpModal);
+					modal.open(2); // Opens HelpModal to "Plugin Guide" (topic 2)
+				});
+			setIcon(button.extraSettingsEl, "help-circle");
+		});
+		this.updateFileDisclaimer();
 
 		/* Planning Model Selection Setting */
 		const currentProvider = fromModel(this.settingsService.settings.model);
@@ -150,24 +174,53 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					});
 			});
 
-		/* File Monitoring Guidelines */
+		/* Memories Header */
 		new Setting(containerEl)
 			.setHeading()
-			.setName(Copy.SettingFileMonitoringHeading);
+			.setName(Copy.SettingMemories);
 
-		this.fileDisclaimerSetting = new Setting(containerEl)
-			.setDesc(Copy.SettingFileMonitoringClaude)
-			.addExtraButton(button => {
-				button
-					.setTooltip(Copy.TooltipLearnMoreFileMonitoring)
-					.onClick(() => {
-						const modal = Resolve<HelpModal>(Services.HelpModal);
-						modal.open(2); // Opens HelpModal to "Plugin Guide" (topic 2)
+		/* Enable Memories Setting */
+		new Setting(containerEl)
+			.setName(Copy.SettingEnableMemories)
+			.setDesc(Copy.SettingEnableMemoriesDesc)
+			.addToggle(toggle => {
+				toggle
+					.setValue(this.settingsService.settings.enableMemories)
+					.onChange(async (value) => {
+						this.settingsService.settings.enableMemories = value;
+						await this.settingsService.saveSettings();
+						this.updateAllowUpdatingMemoriesSetting();
 					});
-				setIcon(button.extraSettingsEl, "help-circle");
 			});
 
-		this.updateFileDisclaimer();
+		/* Allow Updating Memories Setting */
+		this.allowUpdatingMemoriesSetting = new Setting(containerEl)
+			.setName(Copy.SettingAllowUpdatingMemories)
+			.setDesc(Copy.SettingAllowUpdatingMemoriesDesc)
+			.addToggle(toggle => {
+				this.allowUpdatingMemoriesToggleComponent = toggle;
+				toggle
+					.setValue(this.settingsService.settings.allowUpdatingMemories)
+					.onChange(async (value) => {
+						this.settingsService.settings.allowUpdatingMemories = value;
+						await this.settingsService.saveSettings();
+					})
+			});
+		this.updateAllowUpdatingMemoriesSetting();
+
+		/* Access Memories banner */
+		new Setting(containerEl)
+		.setDesc(Copy.SettingAccessMemories)
+		.addExtraButton(button => {
+			button
+				.setTooltip(Copy.TooltipAccessMemories)
+				.onClick(async () => {
+					await this.memoriesService.openMemories();
+					closePluginSettings(this.plugin);
+				});
+			setIcon(button.extraSettingsEl, "clipboard-clock");
+		});
+		this.updateFileDisclaimer();	
 	}
 
 	private populateModelDropdown(dropdown: DropdownComponent, providerFilter?: AIProvider): void {
@@ -246,6 +299,14 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				this.apiKeySetting.settingEl.removeClass(Selector.ApiKeySettingError);
 				this.apiKeySetting.settingEl.addClass(Selector.ApiKeySettingOk);
 			}
+		}
+	}
+
+	private updateAllowUpdatingMemoriesSetting() {
+		if (this.allowUpdatingMemoriesToggleComponent && this.allowUpdatingMemoriesSetting) {
+			const enabled = this.settingsService.settings.enableMemories;
+			this.allowUpdatingMemoriesToggleComponent.disabled = !enabled;
+			this.allowUpdatingMemoriesSetting.settingEl.toggleClass("setting-item-memories-disabled", !enabled);
 		}
 	}
 

@@ -5,6 +5,8 @@ import type { IAIToolDefinition } from "./ToolDefinitions/IAIToolDefinition";
 import type { AIProvider } from "Enums/ApiProvider";
 import type { AgentType } from "Enums/AgentType";
 import type { AIToolUsageMode } from "Enums/AIToolUsageMode";
+import type { AIToolCall } from "./AIToolCall";
+import type { AIToolResponse } from "./ToolDefinitions/AIToolResponse";
 
 export interface IAIClass {
     get currentProvider(): AIProvider;
@@ -16,4 +18,7 @@ export interface IAIClass {
 
     streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown>;
     formatBinaryFiles(attachments: Attachment[]): string;
+    
+    // Optional provider-level tool call handler. Called before AIToolService.
+    resolveToolCall?(toolCall: AIToolCall): Promise<AIToolResponse | null>;
 }

@@ -4,7 +4,8 @@ import type { Conversation } from "Conversations/Conversation";
 import type { Attachment } from "Conversations/Attachment";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIToolCall } from "AIClasses/AIToolCall";
-import { fromString as aiToolFromString } from "Enums/AITool";
+import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
+import { fromString as aiToolFromString, AITool } from "Enums/AITool";
 import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
@@ -18,6 +19,7 @@ import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import type { MistralStreamChunk, MistralToolDefinition, MistralMessage, MistralContentPart } from "./MistralTypes";
 import type { MistralFileService } from "./MistralFileService";
 import { Copy, replaceCopy } from "Enums/Copy";
+import { MistralAgent } from "./MistralAgent";
 
 export class Mistral extends BaseAIClass {
 
@@ -32,6 +34,8 @@ export class Mistral extends BaseAIClass {
         MimeType.IMAGE_WEBP
     ];
 
+    private readonly agent: MistralAgent = new MistralAgent();
+
     // Accumulation state for streaming tool calls
     private accumulatedToolCalls: Map<number, { id: string; name: string; args: string }> = new Map();
 
@@ -40,30 +44,30 @@ export class Mistral extends BaseAIClass {
     }
 
     public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
+        const messages = await this.buildMessages(conversation);
 
-        this.accumulatedToolCalls.clear();
-
-        // Refresh file cache only if conversation has attachments
-        if (conversation.hasAttachments()) {
-            await this.aiFileService.refreshCache();
-        }
-
-        const systemPrompt = `${this.systemPrompt}\n\n${this.userInstruction}`;
-
-        const messages = await this.extractContents(conversation.contents);
-
-        // Add system message at the beginning
-        const allMessages: MistralMessage[] = [
-            { role: "system", content: systemPrompt },
-            ...messages
+        const tools = [
+            {
+                type: "function" as const,
+                function: {
+                    name: AITool.RequestWebSearch,
+                    description: `Use this function when you need to search the web for current information, recent events, news, or facts that may have changed.`,
+                    parameters: {
+                        type: "object" as const,
+                        properties: {
+                            query: { type: "string", description: "The search query to look up on the web." }
+                        },
+                        required: ["query"]
+                    }
+                }
+            },
+            ...this.mapFunctionDefinitions(this.aiToolDefinitions)
         ];
-
-        const tools = this.mapFunctionDefinitions(this.aiToolDefinitions);
 
         const requestBody: Record<string, unknown> = {
             model: this.model(),
             max_tokens: 16384,
-            messages: allMessages,
+            messages: messages,
             stream: true
         };
 
@@ -85,6 +89,32 @@ export class Mistral extends BaseAIClass {
             headers,
             (error) => this.extractRetryDelay(error)
         );
+    }
+
+    public async resolveToolCall(toolCall: AIToolCall): Promise<AIToolResponse | null> {
+        if (toolCall.name !== AITool.RequestWebSearch) {
+            return null;
+        }
+        const query = (toolCall.arguments as Record<string, string>).query ?? "";
+        const result = await this.agent.search(query);
+        return new AIToolResponse(toolCall.name, { result }, toolCall.toolId);
+    }
+
+    private async buildMessages(conversation: Conversation): Promise<MistralMessage[]> {
+        this.accumulatedToolCalls.clear();
+
+        // Refresh file cache only if conversation has attachments
+        if (conversation.hasAttachments()) {
+            await this.aiFileService.refreshCache();
+        }
+
+        const systemPrompt = `${this.systemPrompt}\n\n${this.userInstruction}`;
+        const messages = await this.extractContents(conversation.contents);
+
+        return [
+            { role: "system", content: systemPrompt },
+            ...messages
+        ];
     }
 
     protected parseStreamChunk(chunk: string): IStreamChunk {

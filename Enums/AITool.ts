@@ -9,7 +9,7 @@ export enum AITool {
     ReadMemories = "read_memories",
     UpdateMemories = "update_memories",
 
-    // only used by gemini
+    // used by gemini and mistral
     RequestWebSearch = "request_web_search",
 
     // multi agent calls

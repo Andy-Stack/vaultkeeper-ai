@@ -77,7 +77,7 @@ export class MainAgent extends BaseAgent {
 
             this.debugService?.log("MainAgent", `Executing function: ${toolCall.name}`);
             this.updateThought(toolCall, callbacks);
-            const functionResponse = await this.aiToolService.performAITool(toolCall);
+            const functionResponse = await this.performAITool(toolCall);
             conversation.addFunctionResponse(functionResponse);
             return { shouldExit: false };
         });

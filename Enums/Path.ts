@@ -5,5 +5,5 @@ export enum Path {
     Attachments = `${Path.Conversations}/Attachments`,
     UserInstructions = `${Path.VaultkeeperAIDir}/User Instructions`,
     ExampleUserInstructions = `${Path.UserInstructions}/EXAMPLE_INSTRUCTIONS.md`,
-    Memories = `${Path.VaultkeeperAIDir}/MEMORIES.md`
+    Memories = `${Path.VaultkeeperAIDir}/Memories.md`
 };

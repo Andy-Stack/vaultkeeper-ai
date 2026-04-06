@@ -97,3 +97,8 @@ export enum AIFileServiceURL {
     OpenAI = "https://api.openai.com/v1/files",
     Mistral = "https://api.mistral.ai/v1/files",
 }
+
+export enum MistralAgentEndpoint {
+    Url = "https://api.mistral.ai/v1/agents",
+    ConversationsUrl = "https://api.mistral.ai/v1/conversations"
+}

@@ -178,7 +178,7 @@ export class OrchestrationAgent extends BaseAgent {
                 isAITool(toolCallName, AITool.ListVaultFiles)) {
                 this.debugService?.log("Orchestration", `Vault tool called for recovery: ${toolCallName}`);
                 this.updateThought(toolCall, callbacks);
-                const toolResponse = await this.aiToolService.performAITool(toolCall);
+                const toolResponse = await this.performAITool(toolCall);
                 planningConversation.addFunctionResponse(toolResponse);
                 return Promise.resolve({ shouldExit: false });
             }

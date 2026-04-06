@@ -93,6 +93,44 @@ export interface MistralContentPart {
     document_url?: string;
 }
 
+// Agents API types
+export interface MistralAgentCreateRequest {
+    model: string;
+    name?: string;
+    description?: string;
+    instructions?: string;
+    tools: Array<{ type: "web_search" | "function" }>;
+}
+
+export interface MistralAgentCreateResponse {
+    id: string;
+    object: "agent";
+    created_at: string;
+    name: string | null;
+    model: string;
+}
+
+export type MistralAgentListResponse = MistralAgentCreateResponse[];
+
+export interface MistralConversationRequest {
+    agent_id: string;
+    inputs: string;
+    stream?: boolean;
+}
+
+export interface MistralConversationResponse {
+    object: "conversation.response";
+    conversation_id: string;
+    outputs: Array<{
+        type: "message.output" | "tool.execution";
+        role?: string;
+        content?: string | Array<{
+            type: "text" | "tool_reference";
+            text?: string;
+        }>;
+    }>;
+}
+
 // File API types
 export interface MistralFile {
     id: string;

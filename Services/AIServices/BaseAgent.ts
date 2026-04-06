@@ -1,4 +1,5 @@
 import type { AIToolCall } from "AIClasses/AIToolCall";
+import type { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIPrompts/IPrompt";
 import type { Conversation } from "Conversations/Conversation";
@@ -201,6 +202,14 @@ export abstract class BaseAgent {
         callbacks.onStreamingUpdate(null);
 
         return { toolCall: capturedToolCall, shouldContinue: capturedShouldContinue };
+    }
+
+    protected async performAITool(toolCall: AIToolCall): Promise<AIToolResponse> {
+        const providerResult = await this.ai?.resolveToolCall?.(toolCall) ?? null;
+        if (providerResult !== null) {
+            return providerResult;
+        }
+        return this.aiToolService.performAITool(toolCall);
     }
 
     private async withToolCallingDisabled<T>(callback: () => Promise<T>): Promise<T> {

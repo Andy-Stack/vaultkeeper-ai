@@ -18,7 +18,7 @@ Do NOT use this function:
         properties: {
             file_path: {
                 type: "string",
-                description: "The full path to the file within the vault (e.g., 'folder/note.md')"
+                description: "The full path to the file within the vault. Example: 'folder/note.md'"
             },
             content: {
                 type: "string",
@@ -26,7 +26,7 @@ Do NOT use this function:
             },
             user_message: {
                 type: "string",
-                description: "A short message to be displayed to the user explaining what you're writing and why (e.g., 'Creating your daily note for today')"
+                description: "A short message to be displayed to the user explaining what you're writing and why. Example: 'Creating your daily note for today'"
             }
         },
         required: ["file_path", "content", "user_message"]

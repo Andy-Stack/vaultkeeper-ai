@@ -705,22 +705,50 @@ describe('VaultService - Integration Tests', () => {
 		});
 	});
 
-	describe('createFolder', () => {
-		it('should create folder with sanitized path', async () => {
-			const mockFolder = createMockFolder('folder');
-			mockVault.createFolder.mockResolvedValue(mockFolder);
+	describe('createDirectories', () => {
+		it('should create a single directory with no slashes', async () => {
+			mockVault.getAbstractFileByPath.mockReturnValue(null);
+			mockVault.createFolder.mockResolvedValue(createMockFolder('Zap'));
 
-			const result = await vaultService.createFolder('folder');
+			await vaultService.createDirectories('Zap');
 
-			expect(mockVault.createFolder).toHaveBeenCalledWith('folder');
-			expect(result).toBe(mockFolder);
+			expect(mockVault.createFolder).toHaveBeenCalledWith('Zap');
 		});
 
-		it('should return error when trying to create folder in excluded path', async () => {
-			const result = await vaultService.createFolder('Vaultkeeper AI/subfolder', false);
+		it('should create all intermediate directories for a directory path', async () => {
+			mockVault.getAbstractFileByPath.mockReturnValue(null);
+			mockVault.createFolder.mockResolvedValue(createMockFolder(''));
+
+			await vaultService.createDirectories('Zap/Test');
+
+			expect(mockVault.createFolder).toHaveBeenCalledWith('Zap');
+			expect(mockVault.createFolder).toHaveBeenCalledWith('Zap/Test');
+		});
+
+		it('should create parent directories for a file path', async () => {
+			mockVault.getAbstractFileByPath.mockReturnValue(null);
+			mockVault.createFolder.mockResolvedValue(createMockFolder(''));
+
+			await vaultService.createDirectories('Zap/Test/file.md');
+
+			expect(mockVault.createFolder).toHaveBeenCalledWith('Zap');
+			expect(mockVault.createFolder).toHaveBeenCalledWith('Zap/Test');
+			expect(mockVault.createFolder).not.toHaveBeenCalledWith('Zap/Test/file.md');
+		});
+
+		it('should skip directories that already exist', async () => {
+			mockVault.adapter.exists.mockResolvedValue(true);
+
+			await vaultService.createDirectories('Zap');
+
+			expect(mockVault.createFolder).not.toHaveBeenCalled();
+		});
+
+		it('should return error when trying to create directory in excluded path', async () => {
+			const result = await vaultService.createDirectories('Vaultkeeper AI/subfolder', false);
 
 			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toContain('Failed to create folder, permission denied');
+			expect((result as Error).message).toContain('Failed to create the following directories');
 		});
 	});
 

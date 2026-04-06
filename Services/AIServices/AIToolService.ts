@@ -20,7 +20,8 @@ import {
     ListVaultFilesArgsSchema,
     PatchVaultFileArgsSchema,
     ReadMemoriesArgsSchema,
-    UpdateMemoriesArgsSchema
+    UpdateMemoriesArgsSchema,
+    CreateVaultFolderSchema
 } from "AIClasses/Schemas/AIToolSchemas";
 import type { SettingsService } from "Services/SettingsService";
 
@@ -119,6 +120,18 @@ export class AIToolService {
                     }
                     return new AIToolResponse(toolCall.name, await this.moveVaultFiles(parseResult.data.source_paths, parseResult.data.destination_paths), toolCall.toolId);
                 }
+
+                case AITool.CreateVaultFolder: {
+                    const parseResult = CreateVaultFolderSchema.safeParse(toolCall.arguments);
+                    if (!parseResult.success) {
+                        return new AIToolResponse(
+                            toolCall.name,
+                            { error: `Invalid arguments for ${AITool.CreateVaultFolder}: ${parseResult.error.message}` },
+                            toolCall.toolId
+                        );
+                    }
+                    return new AIToolResponse(toolCall.name, await this.createVaultFolder(parseResult.data.path), toolCall.toolId);
+                }
     
                 case AITool.ListVaultFiles: {
                     const parseResult = ListVaultFilesArgsSchema.safeParse(toolCall.arguments);
@@ -129,7 +142,7 @@ export class AIToolService {
                             toolCall.toolId
                         );
                     }
-                    return new AIToolResponse(toolCall.name, await this.ListVaultFiles(parseResult.data.path, parseResult.data.recursive), toolCall.toolId);
+                    return new AIToolResponse(toolCall.name, await this.listVaultFiles(parseResult.data.path, parseResult.data.recursive), toolCall.toolId);
                 }
 
                 case AITool.ReadMemories: {
@@ -222,13 +235,13 @@ export class AIToolService {
             filePaths.map(async (filePath) => {
                 const result = await this.fileSystemService.readFile(filePath);
                 if (result instanceof Error) {
-                    return { path: filePath, error: result.message }
+                    return { path: filePath, error: result.message };
                 }
                 return {
                     type: pathExtname(filePath),
                     path: filePath,
                     contents: result
-                }
+                };
             })
         );
         return { results };
@@ -258,7 +271,7 @@ export class AIToolService {
         const results = await Promise.all(filePaths.map(async filePath => {
             const result = await this.fileSystemService.deleteFile(filePath);
             if (result instanceof Error) {
-                return { path: filePath, success: false, error: result.message }
+                return { path: filePath, success: false, error: result.message };
             }
             return { path: filePath, success: true };
         }));
@@ -275,7 +288,7 @@ export class AIToolService {
             const destinationPath = destinationPaths[index];
             const result = await this.fileSystemService.moveFile(sourcePath, destinationPath);
             if (result instanceof Error) {
-                return { path: destinationPath, success: false, error: result.message }
+                return { path: destinationPath, success: false, error: result.message };
             }
             return { path: destinationPath, success: true };
         }));
@@ -283,7 +296,15 @@ export class AIToolService {
         return { results };
     }
 
-    private async ListVaultFiles(path: string, recursive: boolean): Promise<object> {
+    private async createVaultFolder(path: string): Promise<object> {
+        const result = await this.fileSystemService.createFolder(path);
+        if (result instanceof Error) {
+            return { path: path, success: false, error: result.message };
+        }
+        return { path: path, success: true };
+    }
+
+    private async listVaultFiles(path: string, recursive: boolean): Promise<object> {
         const files: TAbstractFile[] = await this.fileSystemService.listDirectoryContents(path, recursive);
         return files.map(file => ({
             type: file instanceof TFile ? "file" : "directory",
@@ -301,7 +322,7 @@ export class AIToolService {
 
     private async updateMemories(content: string): Promise<object> {
         if (!this.settingsService.settings.allowUpdatingMemories) {
-            return { error: Copy.MemoriesUpdatingDisabledError }
+            return { error: Copy.MemoriesUpdatingDisabledError };
         }
 
         if (!this.lastToolReadMemories) {

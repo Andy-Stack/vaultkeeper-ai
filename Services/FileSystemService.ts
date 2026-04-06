@@ -91,6 +91,10 @@ export class FileSystemService {
         return await this.vaultService.move(sourcePath, destinationPath, allowAccessToPluginRoot);
     }
 
+    public async createFolder(path: string, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
+        return await this.vaultService.createDirectories(path, allowAccessToPluginRoot);
+    }
+
     public async listFilesInDirectory(dirPath: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFile[]> {
         return await this.vaultService.listFilesInDirectory(dirPath, recursive, allowAccessToPluginRoot);
     }

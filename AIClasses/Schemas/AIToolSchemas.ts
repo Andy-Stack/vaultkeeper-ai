@@ -40,6 +40,11 @@ export const MoveVaultFilesArgsSchema = z.object({
 	user_message: z.string()
 });
 
+export const CreateVaultFolderSchema = z.object({
+	path: z.string(),
+	user_message: z.string()
+});
+
 export const ListVaultFilesArgsSchema = z.object({
 	path: z.string(),
 	recursive: z.boolean(),
@@ -131,6 +136,7 @@ export type PatchVaultFileArgs = z.infer<typeof PatchVaultFileArgsSchema>;
 export type DeleteVaultFilesArgs = z.infer<typeof DeleteVaultFilesArgsSchema>;
 export type MoveVaultFilesArgs = z.infer<typeof MoveVaultFilesArgsSchema>;
 export type ListVaultFilesArgs = z.infer<typeof ListVaultFilesArgsSchema>;
+export type CreateVaultFolder = z.infer<typeof CreateVaultFolderSchema>;
 export type ExecuteWorkflowArgs = z.infer<typeof ExecuteWorkflowArgsSchema>;
 export type AskUserQuestionPlanningArgs = z.infer<typeof AskUserQuestionPlanningArgsSchema>;
 export type AskUserQuestionExecutionArgs = z.infer<typeof AskUserQuestionExecutionArgsSchema>;

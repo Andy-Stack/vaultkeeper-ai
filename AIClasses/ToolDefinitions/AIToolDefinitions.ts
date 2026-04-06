@@ -18,13 +18,14 @@ import { RevisePlan } from "./Tools/RevisePlan";
 import { SkipStep } from "./Tools/SkipStep";
 import { ReadMemories } from "./Tools/ReadMemories";
 import { UpdateMemories } from "./Tools/UpdateMemories";
+import { CreateVaultFolder } from "./Tools/CreateVaultFolder";
 
 export abstract class AIToolDefinitions {
     
     public static isGated: boolean = false;
 
     // Definitions list provides a list of function definitions that does not include any planning functions (used as reference in planning agent prompt)
-    private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles];
+    private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles, CreateVaultFolder];
 
     public static agentDefinitions(destructive: boolean, planningMode: boolean, memories: boolean, updateMemories: boolean): IAIToolDefinition[] {
         this.isGated = false;
@@ -52,7 +53,8 @@ export abstract class AIToolDefinitions {
                 WriteVaultFile,
                 PatchVaultFile,
                 DeleteVaultFiles,
-                MoveVaultFiles
+                MoveVaultFiles,
+                CreateVaultFolder
             ]);
         }
 

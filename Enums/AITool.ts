@@ -5,6 +5,7 @@ export enum AITool {
     PatchVaultFile = "patch_vault_file",
     DeleteVaultFiles = "delete_vault_files",
     MoveVaultFiles = "move_vault_files",
+    CreateVaultFolder = "create_vault_folder",
     ListVaultFiles = "list_vault_files",
     ReadMemories = "read_memories",
     UpdateMemories = "update_memories",

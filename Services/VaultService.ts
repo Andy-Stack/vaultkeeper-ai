@@ -284,15 +284,6 @@ export class VaultService {
         }
     }
 
-    public async createFolder(path: string, allowAccessToPluginRoot: boolean = false): Promise<TFolder | Error> {
-        path = this.sanitiserService.sanitize(path);
-        if (this.isExclusion(path, allowAccessToPluginRoot)) {
-            Exception.log(`Plugin attempted to create a folder that is in the exclusion list: ${path}`);
-            return Exception.new(`Failed to create folder, permission denied: ${path}`);
-        }
-        return await this.vault.createFolder(path);
-    }
-
     public async listDirectoryContents(path: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TAbstractFile[]> {
         path = this.sanitiserService.sanitize(path);
 
@@ -468,8 +459,10 @@ export class VaultService {
         });
     }
 
-    private async createDirectories(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
-        const dirPath: string = filePath.substring(0, filePath.lastIndexOf("/"));
+    public async createDirectories(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
+        const dirPath: string = path.extname(filePath)
+            ? filePath.substring(0, filePath.lastIndexOf("/"))
+            : filePath;
 
         const dirs: string[] = dirPath.split("/");
 
@@ -478,19 +471,26 @@ export class VaultService {
         for (const dir of dirs) {
             if (dir) {
                 currentPath = currentPath ? `${currentPath}/${dir}` : dir;
-                try {
-                    if (!(await this.exists(currentPath, allowAccessToPluginRoot))) {
-                        await this.createFolder(currentPath, allowAccessToPluginRoot);
+                if (!(await this.exists(currentPath, allowAccessToPluginRoot))) {
+                    const result = await this.createDirectory(currentPath, allowAccessToPluginRoot);
+                    if (result instanceof Error) {
+                        failures.push(currentPath);
                     }
-                } catch (error) {
-                    failures.push(currentPath);
-                    Exception.log(error);
                 }
             }
         }
         if (failures.length > 0) {
             return Exception.new(`Failed to create the following directories: ${String(failures)}`);
         }
+    }
+
+    private async createDirectory(path: string, allowAccessToPluginRoot: boolean = false): Promise<TFolder | Error> {
+        path = this.sanitiserService.sanitize(path);
+        if (this.isExclusion(path, allowAccessToPluginRoot)) {
+            Exception.log(`Plugin attempted to create a folder that is in the exclusion list: ${path}`);
+            return Exception.new(`Failed to create folder, permission denied: ${path}`);
+        }
+        return await this.vault.createFolder(path);
     }
 
     private extractSnippets(pages: IPageText[], regex: RegExp): ISearchSnippet[] {

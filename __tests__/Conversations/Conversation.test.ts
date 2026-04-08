@@ -3,9 +3,11 @@ import { Conversation } from '../../Conversations/Conversation';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
+import { AIToolResponsePayload } from '../../AIClasses/ToolDefinitions/AIToolResponsePayload';
 import { AITool } from '../../Enums/AITool';
 import { MimeType } from '../../Enums/MimeType';
 import { StringTools } from '../../Helpers/StringTools';
+import { Attachment } from '../../Conversations/Attachment';
 
 describe('Conversation', () => {
 	describe('constructor', () => {
@@ -383,11 +385,11 @@ describe('Conversation', () => {
 				const conversation = new Conversation();
 				const functionResponse = new AIToolResponse(
 					AITool.ReadVaultFiles,
-					{
+					new AIToolResponsePayload({
 						results: [
 							{ path: 'nonexistent.md', error: 'File does not exist: nonexistent.md' }
 						]
-					},
+					}),
 					'tool-123'
 				);
 
@@ -403,21 +405,21 @@ describe('Conversation', () => {
 
 				// Parse the function response to verify error is included
 				const parsedResponse = JSON.parse(conversation.contents[0].functionResponse!);
-				expect(parsedResponse.functionResponse.response.results).toHaveLength(1);
-				expect(parsedResponse.functionResponse.response.results[0].error).toBe('File does not exist: nonexistent.md');
+				expect(parsedResponse.functionResponse.response.result.results).toHaveLength(1);
+				expect(parsedResponse.functionResponse.response.result.results[0].error).toBe('File does not exist: nonexistent.md');
 			});
 
 			it('should handle mix of successful reads and errors', () => {
 				const conversation = new Conversation();
 				const functionResponse = new AIToolResponse(
 					AITool.ReadVaultFiles,
-					{
+					new AIToolResponsePayload({
 						results: [
 							{ path: 'existing.md', type: 'md', contents: '# Hello' },
 							{ path: 'nonexistent.md', error: 'File does not exist: nonexistent.md' },
 							{ path: 'another.txt', type: 'txt', contents: 'World' }
 						]
-					},
+					}),
 					'tool-123'
 				);
 
@@ -429,7 +431,7 @@ describe('Conversation', () => {
 
 				// Parse the function response
 				const parsedResponse = JSON.parse(conversation.contents[0].functionResponse!);
-				const results = parsedResponse.functionResponse.response.results;
+				const results = parsedResponse.functionResponse.response.result.results;
 
 				// Should have all 3 results (2 successful + 1 error)
 				expect(results).toHaveLength(3);
@@ -449,11 +451,11 @@ describe('Conversation', () => {
 				const conversation = new Conversation();
 				const functionResponse = new AIToolResponse(
 					AITool.ReadVaultFiles,
-					{
+					new AIToolResponsePayload({
 						results: [
 							{ path: 'image.png', error: 'File does not exist: image.png' }
 						]
-					},
+					}),
 					'tool-123'
 				);
 
@@ -467,19 +469,18 @@ describe('Conversation', () => {
 
 				// Verify error is in the function response
 				const parsedResponse = JSON.parse(conversation.contents[0].functionResponse!);
-				expect(parsedResponse.functionResponse.response.results[0].error).toBeDefined();
+				expect(parsedResponse.functionResponse.response.result.results[0].error).toBeDefined();
 			});
 
 			it('should handle binary files with errors not creating invalid attachments', () => {
 				const conversation = new Conversation();
+				const validAttachment = new Attachment('valid.png', MimeType.IMAGE_PNG, 'base64encodeddata...');
 				const functionResponse = new AIToolResponse(
 					AITool.ReadVaultFiles,
-					{
-						results: [
-							{ path: 'image.png', error: 'File does not exist: image.png' },
-							{ path: 'valid.png', type: 'png', contents: 'base64encodeddata...' }
-						]
-					},
+					new AIToolResponsePayload(
+						{ results: [{ path: 'image.png', error: 'File does not exist: image.png' }] },
+						[validAttachment]
+					),
 					'tool-123'
 				);
 
@@ -488,10 +489,10 @@ describe('Conversation', () => {
 				// Should have 2 content items: function response + attachments
 				expect(conversation.contents).toHaveLength(2);
 
-				// First item should have the error and success message
+				// First item should have the error
 				const parsedResponse = JSON.parse(conversation.contents[0].functionResponse!);
-				expect(parsedResponse.functionResponse.response.results).toHaveLength(1);
-				expect(parsedResponse.functionResponse.response.results[0].error).toBe('File does not exist: image.png');
+				expect(parsedResponse.functionResponse.response.result.results).toHaveLength(1);
+				expect(parsedResponse.functionResponse.response.result.results[0].error).toBe('File does not exist: image.png');
 
 				// Second item should only have the valid attachment
 				expect(conversation.contents[1].attachments).toHaveLength(1);
@@ -504,11 +505,11 @@ describe('Conversation', () => {
 				const conversation = new Conversation();
 				const functionResponse = new AIToolResponse(
 					AITool.ReadVaultFiles,
-					{
+					new AIToolResponsePayload({
 						results: [
 							{ path: 'file.md', type: 'md', contents: '# Title' }
 						]
-					},
+					}),
 					'tool-123'
 				);
 
@@ -516,18 +517,18 @@ describe('Conversation', () => {
 
 				expect(conversation.contents).toHaveLength(1);
 				const parsedResponse = JSON.parse(conversation.contents[0].functionResponse!);
-				expect(parsedResponse.functionResponse.response.results[0].contents).toBe('# Title');
+				expect(parsedResponse.functionResponse.response.result.results[0].contents).toBe('# Title');
 			});
 
 			it('should create attachments for binary files', () => {
 				const conversation = new Conversation();
+				const attachment = new Attachment('image.png', MimeType.IMAGE_PNG, 'base64data...');
 				const functionResponse = new AIToolResponse(
 					AITool.ReadVaultFiles,
-					{
-						results: [
-							{ path: 'image.png', type: 'png', contents: 'base64data...' }
-						]
-					},
+					new AIToolResponsePayload(
+						{ message: 'Files retrieved successfully. The contents of the files are included below.', count: 1 },
+						[attachment]
+					),
 					'tool-123'
 				);
 
@@ -544,13 +545,13 @@ describe('Conversation', () => {
 			it('should base64-encode document file contents and set mime type to text/plain', () => {
 				const conversation = new Conversation();
 				const documentText = 'This is the extracted text from a document file.';
+				const docAttachment = new Attachment('report.odt', MimeType.TEXT_PLAIN, StringTools.toBase64(documentText));
 				const functionResponse = new AIToolResponse(
 					AITool.ReadVaultFiles,
-					{
-						results: [
-							{ path: 'report.odt', type: 'odt', contents: documentText }
-						]
-					},
+					new AIToolResponsePayload(
+						{ message: 'Files retrieved successfully. The contents of the files are included below.', count: 1 },
+						[docAttachment]
+					),
 					'tool-123'
 				);
 
@@ -570,15 +571,14 @@ describe('Conversation', () => {
 
 			it('should handle document files alongside text and binary files', () => {
 				const conversation = new Conversation();
+				const xlsxAttachment = new Attachment('spreadsheet.xlsx', MimeType.TEXT_PLAIN, StringTools.toBase64('Extracted spreadsheet text'));
+				const imgAttachment = new Attachment('photo.png', MimeType.IMAGE_PNG, 'base64imagedata...');
 				const functionResponse = new AIToolResponse(
 					AITool.ReadVaultFiles,
-					{
-						results: [
-							{ path: 'notes.md', type: 'md', contents: '# Notes' },
-							{ path: 'spreadsheet.xlsx', type: 'xlsx', contents: 'Extracted spreadsheet text' },
-							{ path: 'photo.png', type: 'png', contents: 'base64imagedata...' }
-						]
-					},
+					new AIToolResponsePayload(
+						{ results: [{ type: 'md', path: 'notes.md', contents: '# Notes' }], message: 'The contents of the files are included below.' },
+						[xlsxAttachment, imgAttachment]
+					),
 					'tool-123'
 				);
 
@@ -589,8 +589,8 @@ describe('Conversation', () => {
 
 				// Text file in function response
 				const parsedResponse = JSON.parse(conversation.contents[0].functionResponse!);
-				expect(parsedResponse.functionResponse.response.results).toHaveLength(1);
-				expect(parsedResponse.functionResponse.response.results[0].path).toBe('notes.md');
+				expect(parsedResponse.functionResponse.response.result.results).toHaveLength(1);
+				expect(parsedResponse.functionResponse.response.result.results[0].path).toBe('notes.md');
 
 				// Document and binary as attachments
 				const attachments = conversation.contents[1].attachments;
@@ -600,8 +600,8 @@ describe('Conversation', () => {
 				expect(docAttachment.mimeType).toBe(MimeType.TEXT_PLAIN);
 				expect(docAttachment.base64).toBe(StringTools.toBase64('Extracted spreadsheet text'));
 
-				const imgAttachment = attachments.find(a => a.fileName === 'photo.png')!;
-				expect(imgAttachment.base64).toBe('base64imagedata...');
+				const pngAttachment = attachments.find(a => a.fileName === 'photo.png')!;
+				expect(pngAttachment.base64).toBe('base64imagedata...');
 			});
 		});
 
@@ -610,7 +610,7 @@ describe('Conversation', () => {
 				const conversation = new Conversation();
 				const functionResponse = new AIToolResponse(
 					AITool.WriteVaultFile,
-					{ success: true },
+					new AIToolResponsePayload({ success: true }),
 					'tool-123'
 				);
 

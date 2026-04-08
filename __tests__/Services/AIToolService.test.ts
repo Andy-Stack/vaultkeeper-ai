@@ -53,6 +53,10 @@ describe('AIToolService - Integration Tests', () => {
 		RegisterSingleton(Services.SettingsService, {
 			settings: { enableMemories: false, allowUpdatingMemories: false }
 		});
+		RegisterSingleton(Services.WebViewerService, {
+			getWebViewContent: vi.fn(),
+			takeScreenshot: vi.fn()
+		});
 
 		// Mock Exception.log
 		vi.spyOn(Exception, 'log').mockImplementation(() => {});
@@ -105,7 +109,7 @@ describe('AIToolService - Integration Tests', () => {
 
 			expect(result.name).toBe(AITool.SearchVaultFiles);
 			expect(result.toolId).toBe('tool_1');
-			expect(result.response).toEqual([{searchTerm: 'test', results: [
+			expect(result.payload.response).toEqual([{searchTerm: 'test', results: [
 				{
 					path: 'notes/test.md',
 					snippets: [
@@ -133,7 +137,7 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 
 			// Empty search terms return empty results
-			expect(result.response).toEqual([{searchTerm: '', results: []}]);
+			expect(result.payload.response).toEqual([{searchTerm: '', results: []}]);
 		});
 
 		it('should return empty array when search term is whitespace', async () => {
@@ -147,7 +151,7 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 
 			// Whitespace search terms return empty results (after trim)
-			expect(result.response).toEqual([{searchTerm: '   ', results: []}]);
+			expect(result.payload.response).toEqual([{searchTerm: '   ', results: []}]);
 		});
 
 		it('should return empty array when no matches found', async () => {
@@ -160,7 +164,7 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 
 			// No matches returns empty results
-			expect(result.response).toEqual([{searchTerm: 'nonexistent', results: []}]);
+			expect(result.payload.response).toEqual([{searchTerm: 'nonexistent', results: []}]);
 		});
 
 		it('should handle single match', async () => {
@@ -179,10 +183,10 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_5'
 			} as any);
 
-			expect(result.response).toHaveLength(1);
-			expect((result.response as any)[0].searchTerm).toBe('single');
-			expect((result.response as any)[0].results).toHaveLength(1);
-			expect((result.response as any)[0].results[0].path).toBe('single.md');
+			expect(result.payload.response).toHaveLength(1);
+			expect((result.payload.response as any)[0].searchTerm).toBe('single');
+			expect((result.payload.response as any)[0].results).toHaveLength(1);
+			expect((result.payload.response as any)[0].results[0].path).toBe('single.md');
 		});
 	});
 
@@ -199,7 +203,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_6'
 			} as any);
 
-			expect(result.response).toEqual({
+			expect(result.payload.response).toEqual({
 				results: [
 					{ type: 'md', path: 'file1.md', contents: 'Content of file 1' },
 					{ type: 'md', path: 'file2.md', contents: 'Content of file 2' },
@@ -223,7 +227,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_7'
 			} as any);
 
-			expect(result.response).toEqual({
+			expect(result.payload.response).toEqual({
 				results: [
 					{ type: 'md', path: 'exists.md', contents: 'Existing content' },
 					{ path: 'missing1.md', error: 'File not found' },
@@ -244,10 +248,10 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_8'
 			} as any);
 
-			const results = (result.response as any).results;
-			expect(results[0].contents).toBe('Content A');
-			expect(results[1].error).toBe('File not found');
-			expect(results[2].contents).toBe('Content B');
+			const results = (result.payload.response as any).results;
+			expect(results.find((r: any) => r.contents === 'Content A')).toBeDefined();
+			expect(results.find((r: any) => r.contents === 'Content B')).toBeDefined();
+			expect(results.find((r: any) => r.error === 'File not found')).toBeDefined();
 		});
 
 		it('should handle empty file list', async () => {
@@ -257,7 +261,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_9'
 			} as any);
 
-			expect(result.response).toEqual({ results: [] });
+			expect(result.payload.response).toEqual({ message: 'Files retrieved successfully. The contents of the files are included below.', count: 0 });
 		});
 
 		it('should handle single file read', async () => {
@@ -269,8 +273,8 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_10'
 			} as any);
 
-			expect((result.response as any).results).toHaveLength(1);
-			expect((result.response as any).results[0].contents).toBe('Single file content');
+			expect((result.payload.response as any).results).toHaveLength(1);
+			expect((result.payload.response as any).results[0].contents).toBe('Single file content');
 		});
 	});
 
@@ -292,7 +296,7 @@ describe('AIToolService - Integration Tests', () => {
 				'notes/new-note.md',
 				'# New Note\n\nContent here'
 			);
-			expect(result.response).toEqual({ success: true });
+			expect(result.payload.response).toEqual({ success: true });
 		});
 
 		it('should handle write failure', async () => {
@@ -309,8 +313,8 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_12'
 			} as any);
 
-			expect((result.response as any).success).toBe(false);
-			expect((result.response as any).error).toBeDefined();
+			expect((result.payload.response as any).success).toBe(false);
+			expect((result.payload.response as any).error).toBeDefined();
 		});
 
 		it('should normalize file path', async () => {
@@ -347,7 +351,7 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 
 			expect(mockFileSystemService.writeFile).toHaveBeenCalledWith('empty.md', '');
-			expect((result.response as any).success).toBe(true);
+			expect((result.payload.response as any).success).toBe(true);
 		});
 	});
 
@@ -370,7 +374,7 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 
 			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('notes/test.md', oldContent, newContent);
-			expect(result.response).toEqual({ success: true });
+			expect(result.payload.response).toEqual({ success: true });
 		});
 
 		it('should handle patch failure', async () => {
@@ -391,8 +395,8 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_patch_2'
 			} as any);
 
-			expect((result.response as any).success).toBe(false);
-			expect((result.response as any).error).toBe('Content to replace was not found in the file');
+			expect((result.payload.response as any).success).toBe(false);
+			expect((result.payload.response as any).error).toBe('Content to replace was not found in the file');
 		});
 
 		it('should normalize file path', async () => {
@@ -438,8 +442,8 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_patch_4'
 			} as any);
 
-			expect((result.response as any).success).toBe(false);
-			expect((result.response as any).error).toContain('File does not exist');
+			expect((result.payload.response as any).success).toBe(false);
+			expect((result.payload.response as any).error).toContain('File does not exist');
 		});
 
 		it('should handle complex multi-line replacement', async () => {
@@ -460,7 +464,7 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 
 			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('complex.md', oldContent, newContent);
-			expect((result.response as any).success).toBe(true);
+			expect((result.payload.response as any).success).toBe(true);
 		});
 
 		it('should handle adding new content', async () => {
@@ -480,7 +484,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_patch_6'
 			} as any);
 
-			expect((result.response as any).success).toBe(true);
+			expect((result.payload.response as any).success).toBe(true);
 		});
 
 		it('should handle removing content', async () => {
@@ -500,7 +504,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_patch_7'
 			} as any);
 
-			expect((result.response as any).success).toBe(true);
+			expect((result.payload.response as any).success).toBe(true);
 		});
 
 		it('should handle permission denied error', async () => {
@@ -521,8 +525,8 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_patch_8'
 			} as any);
 
-			expect((result.response as any).success).toBe(false);
-			expect((result.response as any).error).toBe('Permission denied');
+			expect((result.payload.response as any).success).toBe(false);
+			expect((result.payload.response as any).error).toBe('Permission denied');
 		});
 
 		it('should return correct toolId in response', async () => {
@@ -557,7 +561,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_patch_invalid'
 			} as any);
 
-			expect((result.response as any).error).toContain('Invalid arguments for patch_vault_file');
+			expect((result.payload.response as any).error).toContain('Invalid arguments for patch_vault_file');
 			expect(mockFileSystemService.patchFile).not.toHaveBeenCalled();
 		});
 	});
@@ -579,7 +583,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_15'
 			} as any);
 
-			expect(result.response).toEqual({
+			expect(result.payload.response).toEqual({
 				results: [
 					{ path: 'file1.md', success: true },
 					{ path: 'file2.md', success: true },
@@ -599,7 +603,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_16'
 			} as any);
 
-			expect(result.response).toEqual({
+			expect(result.payload.response).toEqual({
 				error: 'Confirmation was false, no action taken'
 			});
 			expect(mockFileSystemService.deleteFile).not.toHaveBeenCalled();
@@ -623,7 +627,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_17'
 			} as any);
 
-			expect((result.response as any).results).toEqual([
+			expect((result.payload.response as any).results).toEqual([
 				{ path: 'a.md', success: true },
 				{ path: 'missing.md', success: false, error: 'File not found' },
 				{ path: 'c.md', success: true }
@@ -645,7 +649,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_18'
 			} as any);
 
-			const results = (result.response as any).results;
+			const results = (result.payload.response as any).results;
 			expect(results[0].success).toBe(false);
 			expect(results[1].success).toBe(false);
 		});
@@ -661,7 +665,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_19'
 			} as any);
 
-			expect((result.response as any).results).toEqual([]);
+			expect((result.payload.response as any).results).toEqual([]);
 		});
 	});
 
@@ -682,7 +686,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_20'
 			} as any);
 
-			expect(result.response).toEqual({
+			expect(result.payload.response).toEqual({
 				results: [
 					{ path: 'dest/a.md', success: true },
 					{ path: 'dest/b.md', success: true },
@@ -702,7 +706,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_21'
 			} as any);
 
-			expect(result.response).toEqual({
+			expect(result.payload.response).toEqual({
 				error: 'Source paths array length does not equal destination paths array length'
 			});
 			expect(mockFileSystemService.moveFile).not.toHaveBeenCalled();
@@ -726,7 +730,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_22'
 			} as any);
 
-			expect((result.response as any).results).toEqual([
+			expect((result.payload.response as any).results).toEqual([
 				{ path: 'new/a.md', success: true },
 				{ path: 'existing.md', success: false, error: 'Destination exists' },
 				{ path: 'new/c.md', success: true }
@@ -760,7 +764,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_24'
 			} as any);
 
-			expect((result.response as any).results).toEqual([]);
+			expect((result.payload.response as any).results).toEqual([]);
 		});
 	});
 
@@ -773,7 +777,7 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 
 			expect(result.name).toBe(AITool.RequestWebSearch);
-			expect(result.response).toEqual({});
+			expect(result.payload.response).toEqual({});
 			expect(result.toolId).toBe('tool_25');
 		});
 
@@ -784,7 +788,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_26'
 			} as any);
 
-			expect(result.response).toEqual({});
+			expect(result.payload.response).toEqual({});
 		});
 	});
 
@@ -797,7 +801,7 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 			expect(result.name).toBe('unknown');
 			expect(result.toolId).toBe('tool_27');
-			expect(result.response).toEqual({ error: 'Unknown function request unknown' });
+			expect(result.payload.response).toEqual({ error: 'Unknown function request unknown' });
 		});
 
 		it('should return unknown response for invalid function', async () => {
@@ -808,7 +812,7 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 			expect(result.name).toBe('unknown');
 			expect(result.toolId).toBe('tool_error');
-			expect(result.response).toEqual({ error: 'Unknown function request unknown' });
+			expect(result.payload.response).toEqual({ error: 'Unknown function request unknown' });
 		});
 	});
 
@@ -829,7 +833,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'search_1'
 			} as any);
 
-			const foundPath = (searchResult.response as any)[0].results[0].path;
+			const foundPath = (searchResult.payload.response as any)[0].results[0].path;
 
 			// Then read
 			mockFileSystemService.readFile.mockResolvedValue('File content here');
@@ -840,8 +844,8 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'read_1'
 			} as any);
 
-			expect((readResult.response as any).results[0].contents).toBe('File content here');
-			expect((readResult.response as any).results[0].error).toBeUndefined();
+			expect((readResult.payload.response as any).results[0].contents).toBe('File content here');
+			expect((readResult.payload.response as any).results[0].error).toBeUndefined();
 		});
 
 		it('should handle write -> move workflow', async () => {
@@ -858,7 +862,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'write_1'
 			} as any);
 
-			expect((writeResult.response as any).success).toBe(true);
+			expect((writeResult.payload.response as any).success).toBe(true);
 
 			// Then move
 			mockFileSystemService.moveFile.mockResolvedValue({ success: true });
@@ -873,7 +877,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'move_1'
 			} as any);
 
-			expect((moveResult.response as any).results[0].success).toBe(true);
+			expect((moveResult.payload.response as any).results[0].success).toBe(true);
 		});
 
 		it('should handle read -> patch workflow', async () => {
@@ -886,7 +890,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'read_2'
 			} as any);
 
-			expect((readResult.response as any).results[0].contents).toContain('Original');
+			expect((readResult.payload.response as any).results[0].contents).toContain('Original');
 
 			// Then patch it
 			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('document.md', 'document'));
@@ -905,7 +909,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'patch_1'
 			} as any);
 
-			expect((patchResult.response as any).success).toBe(true);
+			expect((patchResult.payload.response as any).success).toBe(true);
 			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('document.md', oldContent, newContent);
 		});
 	});

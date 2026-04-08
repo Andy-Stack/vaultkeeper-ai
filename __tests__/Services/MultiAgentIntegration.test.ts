@@ -11,6 +11,7 @@ import { Role } from '../../Enums/Role';
 import { AITool } from '../../Enums/AITool';
 import { AIToolCall } from '../../AIClasses/AIToolCall';
 import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
+import { AIToolResponsePayload } from '../../AIClasses/ToolDefinitions/AIToolResponsePayload';
 import type { ExecutionStep } from '../../Types/ExecutionStep';
 
 /**
@@ -61,7 +62,7 @@ describe('Multi-Agent Integration Tests', () => {
 		// Mock AIToolService
 		mockAIToolService = {
 			performAITool: vi.fn().mockResolvedValue(
-				new AIToolResponse(AITool.SearchVaultFiles, { results: ['file1.md', 'file2.md'] }, 'test-tool-id')
+				new AIToolResponse(AITool.SearchVaultFiles, new AIToolResponsePayload({ results: ['file1.md', 'file2.md'] }), 'test-tool-id')
 			)
 		};
 		RegisterSingleton(Services.AIToolService, mockAIToolService);

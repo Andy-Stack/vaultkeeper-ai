@@ -8,6 +8,7 @@ import { Role } from '../../Enums/Role';
 import { AITool } from '../../Enums/AITool';
 import { AIToolCall } from '../../AIClasses/AIToolCall';
 import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
+import { AIToolResponsePayload } from '../../AIClasses/ToolDefinitions/AIToolResponsePayload';
 
 /**
  * UNIT TESTS - PlanningAgent
@@ -53,7 +54,7 @@ describe('PlanningAgent - Unit Tests', () => {
 		// Mock AIToolService
 		mockAIToolService = {
 			performAITool: vi.fn().mockResolvedValue(
-				new AIToolResponse(AITool.SearchVaultFiles, { results: [] }, 'test-tool-id')
+				new AIToolResponse(AITool.SearchVaultFiles, new AIToolResponsePayload({ results: [] }), 'test-tool-id')
 			)
 		};
 		RegisterSingleton(Services.AIToolService, mockAIToolService);

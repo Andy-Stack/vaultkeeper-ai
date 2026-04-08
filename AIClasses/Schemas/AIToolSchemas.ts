@@ -1,5 +1,3 @@
-/** Zod schemas for runtime validation of AI function arguments **/
-
 import { z } from "zod";
 
 // Zod schemas for AI function arguments
@@ -43,6 +41,12 @@ export const MoveVaultFilesArgsSchema = z.object({
 export const CreateVaultFolderSchema = z.object({
 	path: z.string(),
 	user_message: z.string()
+});
+
+export const DeleteVaultFolderSchema = z.object({
+	path: z.string(),
+	user_message: z.string(),
+	confirm_deletion: z.boolean()
 });
 
 export const ListVaultFilesArgsSchema = z.object({
@@ -142,6 +146,7 @@ export type PatchVaultFileArgs = z.infer<typeof PatchVaultFileArgsSchema>;
 export type DeleteVaultFilesArgs = z.infer<typeof DeleteVaultFilesArgsSchema>;
 export type MoveVaultFilesArgs = z.infer<typeof MoveVaultFilesArgsSchema>;
 export type CreateVaultFolder = z.infer<typeof CreateVaultFolderSchema>;
+export type DeleteVaultFolder = z.infer<typeof DeleteVaultFolderSchema>;
 export type ListVaultFilesArgs = z.infer<typeof ListVaultFilesArgsSchema>;
 export type GetWebViewerContent = z.infer<typeof GetWebViewerContentSchema>;
 export type ExecuteWorkflowArgs = z.infer<typeof ExecuteWorkflowArgsSchema>;

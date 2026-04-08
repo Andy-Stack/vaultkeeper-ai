@@ -30,7 +30,8 @@ import {
     ReadMemoriesArgsSchema,
     UpdateMemoriesArgsSchema,
     CreateVaultFolderSchema,
-    GetWebViewerContentSchema
+    GetWebViewerContentSchema,
+    DeleteVaultFolderSchema
 } from "AIClasses/Schemas/AIToolSchemas";
 
 export class AIToolService {
@@ -141,6 +142,18 @@ export class AIToolService {
                         );
                     }
                     return new AIToolResponse(toolCall.name, await this.createVaultFolder(parseResult.data.path), toolCall.toolId);
+                }
+
+                case AITool.DeleteVaultFolder: {
+                    const parseResult = DeleteVaultFolderSchema.safeParse(toolCall.arguments);
+                    if (!parseResult.success) {
+                        return new AIToolResponse(
+                            toolCall.name,
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.DeleteVaultFolder}: ${parseResult.error.message}` }),
+                            toolCall.toolId
+                        );
+                    }
+                    return new AIToolResponse(toolCall.name, await this.deleteVaultFolder(parseResult.data.path, parseResult.data.confirm_deletion), toolCall.toolId);
                 }
     
                 case AITool.ListVaultFiles: {
@@ -352,6 +365,16 @@ export class AIToolService {
             return new AIToolResponsePayload({ path: path, success: false, error: result.message });
         }
         return new AIToolResponsePayload({ path: path, success: true });
+    }
+
+    private async deleteVaultFolder(path: string, confirmation: boolean): Promise<AIToolResponsePayload> {
+        if (!confirmation) {
+            return new AIToolResponsePayload({ error: "Confirmation was false, no action taken" });
+        }
+        const result = await this.fileSystemService.deleteFolder(path);
+        return result instanceof Error
+            ? new AIToolResponsePayload({ path: path, success: false, error: result.message })
+            : new AIToolResponsePayload({ path: path, success: true });
     }
 
     private async listVaultFiles(path: string, recursive: boolean): Promise<AIToolResponsePayload> {

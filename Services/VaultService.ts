@@ -76,7 +76,7 @@ export class VaultService {
             return false;
         }
 
-        return await this.vault.adapter.exists(filePath);
+        return await this.vault.adapter.exists(filePath, true);
     }
 
     public async read(file: TFile, allowAccessToPluginRoot: boolean = false): Promise<string | Error> {
@@ -199,13 +199,16 @@ export class VaultService {
 
     public async delete(file: TAbstractFile, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<void | Error> {
         const filePath = this.sanitiserService.sanitize(file.path);
-        if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
-            Exception.log(`Plugin attempted to delete a file that is in the exclusions list: ${filePath}`)
-            return Exception.new(`File does not exist: ${filePath}`);
+        const isFile = file instanceof TFile;
+
+        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
+            Exception.log(`Plugin attempted to delete a ${isFile ? "file" : "folder"} that is in the exclusions list: ${filePath}`)
+            return isFile ? Exception.new(`File does not exist: ${filePath} GOT`)
+                          : Exception.new(`Deletion failed. The folder or its contents may be protected: ${filePath}`);
         }
 
         // handle file deletion
-        if (file instanceof TFile) {
+        if (isFile) {
             const currentContent = await this.read(file, allowAccessToPluginRoot)
 
             if (currentContent instanceof Error) {

@@ -80,7 +80,7 @@ export class FileSystemService {
     public async deleteFile(filePath: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<Error | void> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 
-        if (!file) {
+        if (!file || !(file instanceof TFile)) {
             return Exception.new(`File does not exist: ${filePath}`);
         }
 
@@ -94,6 +94,21 @@ export class FileSystemService {
     public async createFolder(path: string, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
         return await this.vaultService.createDirectories(path, allowAccessToPluginRoot);
     }
+
+    public async deleteFolder(path: string, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
+        if (this.vaultService.isExclusion(path, allowAccessToPluginRoot)) {
+            return Exception.new(`Deletion failed. The folder or its contents may be protected: ${path}`);
+        }
+    
+        const folder: TAbstractFile | null = this.vaultService.getAbstractFileByPath(path, allowAccessToPluginRoot);
+    
+        if (!folder || !(folder instanceof TFolder)) {
+            return Exception.new(`Folder does not exist: ${path}`);
+        }
+    
+        return await this.vaultService.delete(folder, allowAccessToPluginRoot);
+    }
+    
 
     public async listFilesInDirectory(dirPath: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFile[]> {
         return await this.vaultService.listFilesInDirectory(dirPath, recursive, allowAccessToPluginRoot);

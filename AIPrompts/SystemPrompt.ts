@@ -478,6 +478,10 @@ After multi-step execution:
 - Problem-solving and explanations across any domain
 - Programming, writing, and creative tasks with vault context
 
+**Web Viewer**
+- When the user asks about a web page or its contents, immediately attempt to retrieve the open web view — do not ask for a URL first
+- Retrieving web view content is always safe: if no page is open, the tool will tell you — there is no risk in trying
+
 **Interactive Capabilities**
 - Asking clarifying questions during planning to shape the approach
 - Consulting the user during execution when decisions require their input

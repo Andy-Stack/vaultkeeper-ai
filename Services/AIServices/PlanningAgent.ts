@@ -13,6 +13,7 @@ import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import { DebugColor } from "Enums/DebugColor";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
+import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
 
 export class PlanningAgent extends BaseAgent {
  
@@ -39,7 +40,7 @@ export class PlanningAgent extends BaseAgent {
                 this.debugService?.log("PlanningAgent", `Invalid tool call denied: ${toolCallName}`);
                 conversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { message: Copy.PlanningToolDenial },
+                    new AIToolResponsePayload({ message: Copy.PlanningToolDenial }),
                     toolCall.toolId
                 ));
                 return { shouldExit: false };
@@ -50,7 +51,7 @@ export class PlanningAgent extends BaseAgent {
                 if (!parseResult.success) {
                     conversation.addFunctionResponse(new AIToolResponse(
                         toolCallName,
-                        { error: `Invalid arguments for ${AITool.AskUserQuestionPlanning}: ${parseResult.error.message}` },
+                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.AskUserQuestionPlanning}: ${parseResult.error.message}` }),
                         toolCall.toolId
                     ));
                     return { shouldExit: false };
@@ -61,7 +62,7 @@ export class PlanningAgent extends BaseAgent {
                 this.debugService?.log("PlanningAgent", "User answer received");
                 conversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { answer: answer },
+                    new AIToolResponsePayload({ answer: answer }),
                     toolCall.toolId
                 ));
                 return { shouldExit: false };
@@ -72,7 +73,7 @@ export class PlanningAgent extends BaseAgent {
                 if (!parseResult.success) {
                     conversation.addFunctionResponse(new AIToolResponse(
                         toolCallName,
-                        { error: `Invalid arguments for ${AITool.SubmitPlan}: ${parseResult.error.message}` },
+                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.SubmitPlan}: ${parseResult.error.message}` }),
                         toolCall.toolId
                     ));
                     return { shouldExit: false };
@@ -81,7 +82,7 @@ export class PlanningAgent extends BaseAgent {
                 capturedPlan = new ExecutionPlan(parseResult.data);
                 conversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { message: Copy.PlanReceived },
+                    new AIToolResponsePayload({ message: Copy.PlanReceived }),
                     toolCall.toolId
                 ));
                 return { shouldExit: true };

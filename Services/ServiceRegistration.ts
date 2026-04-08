@@ -27,6 +27,7 @@ import { UserInputService } from "./UserInputService";
 import { VaultCacheService } from "./VaultCacheService";
 import { VaultService } from "./VaultService";
 import { WorkSpaceService } from "./WorkSpaceService";
+import { WebViewerService } from "./WebViewerService";
 
 // Stores
 import { ExecutionPlanStore } from "Stores/ExecutionPlanStore";
@@ -81,7 +82,9 @@ export function RegisterDependencies() {
     RegisterSingleton<MemoriesService>(Services.MemoriesService, new MemoriesService());
     RegisterSingleton<ConversationFileSystemService>(Services.ConversationFileSystemService, new ConversationFileSystemService());
     RegisterSingleton<ConversationNamingService>(Services.ConversationNamingService, new ConversationNamingService());
-
+    
+    RegisterTransient<WebViewerService>(Services.WebViewerService, () => new WebViewerService());
+    
     RegisterSingleton<IPrompt>(Services.IPrompt, new AIPrompt());
     RegisterSingleton<AIToolService>(Services.AIToolService, new AIToolService());
     RegisterSingleton<MainAgent>(Services.MainAgent, new MainAgent());

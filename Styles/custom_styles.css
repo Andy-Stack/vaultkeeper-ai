@@ -57,12 +57,16 @@
   resize: none;
 }
 
-.setting-item-memories-disabled .checkbox-container {
-  background-color: var(--interactive-accent-disabled);
+.setting-item-memories-disabled-accent .checkbox-container {
+  background-color: var(--interactive-accent-disabled-accent);
 }
 
-.setting-item-memories-disabled .setting-item-info {
+.setting-item-memories-disabled-accent .setting-item-info {
   font-weight: var(--font-light);
+}
+
+.setting-item-memories-disabled .checkbox-container {
+  background-color: var(--interactive-accent-disabled);
 }
 
 /* ============================== */
@@ -213,10 +217,16 @@ body {
     var(--background-primary) 75%,
     hsl(0 0% 0%) 25%
   );
-  --interactive-accent-disabled: color-mix(
+  --interactive-accent-disabled-accent: color-mix(
     in hsl shorter hue,
     var(--background-modifier-border-hover) 50%,
     var(--interactive-accent) 40%
+  );
+
+  --interactive-accent-disabled: color-mix(
+    in hsl shorter hue,
+    var(--background-modifier-border-hover) 50%,
+    var(--background-primary) 40%
   );
 }
 

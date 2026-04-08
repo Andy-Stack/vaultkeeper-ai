@@ -19,6 +19,7 @@ export class Services {
     static ChatService = Symbol("ChatService");
     static SanitiserService = Symbol("SanitiserService");
     static InputService = Symbol("InputService");
+    static WebViewerService = Symbol("WebViewerService");
     static DiffService = Symbol("DiffService");
     static MemoriesService = Symbol("MemoriesService");
     static DebugService = Symbol("DebugService");

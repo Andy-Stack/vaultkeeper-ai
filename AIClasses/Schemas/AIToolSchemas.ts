@@ -51,6 +51,12 @@ export const ListVaultFilesArgsSchema = z.object({
 	user_message: z.string()
 });
 
+export const GetWebViewerContentSchema = z.object({
+	url_hint: z.string().optional(),
+	format: z.enum(["text", "screenshot"]),
+	user_message: z.string()
+});
+
 export const ExecuteWorkflowArgsSchema = z.object({
 	goal: z.string(),
 	context: z.string().optional(),
@@ -135,8 +141,9 @@ export type WriteVaultFileArgs = z.infer<typeof WriteVaultFileArgsSchema>;
 export type PatchVaultFileArgs = z.infer<typeof PatchVaultFileArgsSchema>;
 export type DeleteVaultFilesArgs = z.infer<typeof DeleteVaultFilesArgsSchema>;
 export type MoveVaultFilesArgs = z.infer<typeof MoveVaultFilesArgsSchema>;
-export type ListVaultFilesArgs = z.infer<typeof ListVaultFilesArgsSchema>;
 export type CreateVaultFolder = z.infer<typeof CreateVaultFolderSchema>;
+export type ListVaultFilesArgs = z.infer<typeof ListVaultFilesArgsSchema>;
+export type GetWebViewerContent = z.infer<typeof GetWebViewerContentSchema>;
 export type ExecuteWorkflowArgs = z.infer<typeof ExecuteWorkflowArgsSchema>;
 export type AskUserQuestionPlanningArgs = z.infer<typeof AskUserQuestionPlanningArgsSchema>;
 export type AskUserQuestionExecutionArgs = z.infer<typeof AskUserQuestionExecutionArgsSchema>;

@@ -19,13 +19,15 @@ import { SkipStep } from "./Tools/SkipStep";
 import { ReadMemories } from "./Tools/ReadMemories";
 import { UpdateMemories } from "./Tools/UpdateMemories";
 import { CreateVaultFolder } from "./Tools/CreateVaultFolder";
+import { GetWebViewerContent } from "./Tools/GetWebViewerContent";
 
 export abstract class AIToolDefinitions {
     
     public static isGated: boolean = false;
 
     // Definitions list provides a list of function definitions that does not include any planning functions (used as reference in planning agent prompt)
-    private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles, CreateVaultFolder];
+    private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, GetWebViewerContent,
+        WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles, CreateVaultFolder];
 
     public static agentDefinitions(destructive: boolean, planningMode: boolean, memories: boolean, updateMemories: boolean): IAIToolDefinition[] {
         this.isGated = false;
@@ -37,7 +39,8 @@ export abstract class AIToolDefinitions {
         let actions = [
             SearchVaultFiles,
             ReadVaultFiles,
-            ListVaultFiles
+            ListVaultFiles,
+            GetWebViewerContent
         ];
 
         if (memories) {
@@ -66,6 +69,7 @@ export abstract class AIToolDefinitions {
             SearchVaultFiles,
             ReadVaultFiles,
             ListVaultFiles,
+            GetWebViewerContent,
             CompleteStep,
             ReviseStep,
             RevisePlan,
@@ -76,7 +80,7 @@ export abstract class AIToolDefinitions {
     }
 
     public static planningAgentDefinitions(memories: boolean): IAIToolDefinition[] {
-        let actions = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, AskUserQuestionPlanning, SubmitPlan];
+        let actions = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, GetWebViewerContent, AskUserQuestionPlanning, SubmitPlan];
 
         if (memories) {
             actions = actions.concat([ReadMemories]);

@@ -13,6 +13,7 @@ import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
 import { DebugColor } from "Enums/DebugColor";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
+import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
 
 export class MainAgent extends BaseAgent {
 
@@ -64,7 +65,7 @@ export class MainAgent extends BaseAgent {
                 if (!parseResult.success) {
                     conversation.addFunctionResponse(new AIToolResponse(
                         toolCallName,
-                        { error: `Invalid arguments for ${AITool.ExecuteWorkflow}: ${parseResult.error.message}` },
+                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.ExecuteWorkflow}: ${parseResult.error.message}` }),
                         toolCall.toolId
                     ));
                     return { shouldExit: false };

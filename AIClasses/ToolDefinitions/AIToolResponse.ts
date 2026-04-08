@@ -1,18 +1,19 @@
 // Platform agnostic class for function responses
 
 import type { AITool } from "Enums/AITool";
+import type { AIToolResponsePayload } from "./AIToolResponsePayload";
 
 // Used by AI providers to format function execution results for API calls
 export class AIToolResponse {
     public readonly name: AITool;
-    public readonly response: object;
+    public readonly payload: AIToolResponsePayload;
     public readonly toolId?: string;
 
     public static readonly UserRejectionMessage: string = `The user has explicitly rejected this change.
                                                            They may have changed their mind about the requested change.
 
                                                            **CRITICAL:** Immediately stop all further actions and consult with the user`;
-                                                           
+
     public static readonly UserSuggestionMessage: string = `**USER MODIFICATION REQUEST:**
 
     The user has reviewed your proposed action and provided a modification or alternative direction.
@@ -29,9 +30,9 @@ export class AIToolResponse {
 
     **User's Suggestion:**`;
 
-    constructor(name: AITool, response: object, toolId?: string) {
+    constructor(name: AITool, payload: AIToolResponsePayload, toolId?: string) {
         this.name = name;
-        this.response = response;
+        this.payload = payload;
         this.toolId = toolId;
     }
 
@@ -40,7 +41,7 @@ export class AIToolResponse {
             id: this.toolId,
             functionResponse: {
                 name: this.name,
-                response: { result: this.response }
+                response: { result: this.payload.response }
             }
         });
     }

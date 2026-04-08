@@ -305,8 +305,10 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 	private updateAllowUpdatingMemoriesSetting() {
 		if (this.allowUpdatingMemoriesToggleComponent && this.allowUpdatingMemoriesSetting) {
 			const enabled = this.settingsService.settings.enableMemories;
+			const updateEnabled = this.settingsService.settings.allowUpdatingMemories;
 			this.allowUpdatingMemoriesToggleComponent.disabled = !enabled;
-			this.allowUpdatingMemoriesSetting.settingEl.toggleClass("setting-item-memories-disabled", !enabled);
+			this.allowUpdatingMemoriesSetting.settingEl.toggleClass("setting-item-memories-disabled-accent", !enabled && updateEnabled);
+			this.allowUpdatingMemoriesSetting.settingEl.toggleClass("setting-item-memories-disabled", !enabled && !updateEnabled);
 		}
 	}
 

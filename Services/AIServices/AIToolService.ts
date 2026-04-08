@@ -8,10 +8,18 @@ import type { ISearchMatch } from "../../Types/SearchTypes";
 import { AbortService } from "../AbortService";
 import { normalizePath, TAbstractFile, TFile } from "obsidian";
 import { Exception } from "Helpers/Exception";
-import { Copy } from "Enums/Copy";
+import { Copy, replaceCopy } from "Enums/Copy";
 import { pathExtname } from "Helpers/Helpers";
 import type { MemoriesService } from "Services/MemoriesService";
-import { 
+import type { SettingsService } from "Services/SettingsService";
+import type { WebViewerService } from "Services/WebViewerService";
+import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
+import { Attachment } from "Conversations/Attachment";
+import { isDocumentMimeType, MimeType } from "Enums/MimeType";
+import { isTextFile, toFileType } from "Enums/FileType";
+import { FileTypeToMimeType } from "Enums/FileTypeMimeTypeMapping";
+import { StringTools } from "Helpers/StringTools";
+import {
     SearchVaultFilesArgsSchema,
     ReadVaultFilesArgsSchema,
     WriteVaultFileArgsSchema,
@@ -21,15 +29,16 @@ import {
     PatchVaultFileArgsSchema,
     ReadMemoriesArgsSchema,
     UpdateMemoriesArgsSchema,
-    CreateVaultFolderSchema
+    CreateVaultFolderSchema,
+    GetWebViewerContentSchema
 } from "AIClasses/Schemas/AIToolSchemas";
-import type { SettingsService } from "Services/SettingsService";
 
 export class AIToolService {
 
     private readonly fileSystemService: FileSystemService;
     private readonly memoriesService: MemoriesService;
     private readonly settingsService: SettingsService;
+    private readonly webViewerService: WebViewerService;
     private readonly abortService: AbortService;
 
     private lastToolReadMemories: boolean = false;
@@ -38,6 +47,7 @@ export class AIToolService {
         this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
         this.memoriesService = Resolve<MemoriesService>(Services.MemoriesService);
         this.settingsService = Resolve<SettingsService>(Services.SettingsService);
+        this.webViewerService = Resolve<WebViewerService>(Services.WebViewerService);
         this.abortService = Resolve<AbortService>(Services.AbortService);
     }
 
@@ -54,7 +64,7 @@ export class AIToolService {
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
-                            { error: `Invalid arguments for ${AITool.SearchVaultFiles}: ${parseResult.error.message}` },
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.SearchVaultFiles}: ${parseResult.error.message}` }),
                             toolCall.toolId
                         );
                     }
@@ -66,7 +76,7 @@ export class AIToolService {
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
-                            { error: `Invalid arguments for ${AITool.ReadVaultFiles}: ${parseResult.error.message}` },
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.ReadVaultFiles}: ${parseResult.error.message}` }),
                             toolCall.toolId
                         );
                     }
@@ -78,7 +88,7 @@ export class AIToolService {
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
-                            { error: `Invalid arguments for ${AITool.WriteVaultFile}: ${parseResult.error.message}` },
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.WriteVaultFile}: ${parseResult.error.message}` }),
                             toolCall.toolId
                         );
                     }
@@ -90,7 +100,7 @@ export class AIToolService {
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
-                            { error: `Invalid arguments for ${AITool.PatchVaultFile}: ${parseResult.error.message}` },
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.PatchVaultFile}: ${parseResult.error.message}` }),
                             toolCall.toolId
                         );
                     }
@@ -102,7 +112,7 @@ export class AIToolService {
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
-                            { error: `Invalid arguments for ${AITool.DeleteVaultFiles}: ${parseResult.error.message}` },
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.DeleteVaultFiles}: ${parseResult.error.message}` }),
                             toolCall.toolId
                         );
                     }
@@ -114,7 +124,7 @@ export class AIToolService {
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
-                            { error: `Invalid arguments for ${AITool.MoveVaultFiles}: ${parseResult.error.message}` },
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.MoveVaultFiles}: ${parseResult.error.message}` }),
                             toolCall.toolId
                         );
                     }
@@ -126,7 +136,7 @@ export class AIToolService {
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
-                            { error: `Invalid arguments for ${AITool.CreateVaultFolder}: ${parseResult.error.message}` },
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.CreateVaultFolder}: ${parseResult.error.message}` }),
                             toolCall.toolId
                         );
                     }
@@ -138,11 +148,23 @@ export class AIToolService {
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
-                            { error: `Invalid arguments for ${AITool.ListVaultFiles}: ${parseResult.error.message}` },
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.ListVaultFiles}: ${parseResult.error.message}` }),
                             toolCall.toolId
                         );
                     }
                     return new AIToolResponse(toolCall.name, await this.listVaultFiles(parseResult.data.path, parseResult.data.recursive), toolCall.toolId);
+                }
+
+                case AITool.GetWebViewerContent: {
+                    const parseResult = GetWebViewerContentSchema.safeParse(toolCall.arguments);
+                    if (!parseResult.success) {
+                        return new AIToolResponse(
+                            toolCall.name,
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.GetWebViewerContent}: ${parseResult.error.message}` }),
+                            toolCall.toolId
+                        );
+                    }
+                    return new AIToolResponse(toolCall.name, await this.getWebViewerContent(parseResult.data.format, parseResult.data.url_hint), toolCall.toolId);
                 }
 
                 case AITool.ReadMemories: {
@@ -150,7 +172,7 @@ export class AIToolService {
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
-                            { error: `Invalid arguments for ${AITool.ReadMemories}: ${parseResult.error.message}` },
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.ReadMemories}: ${parseResult.error.message}` }),
                             toolCall.toolId
                         );
                     }
@@ -162,7 +184,7 @@ export class AIToolService {
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
-                            { error: `Invalid arguments for ${AITool.UpdateMemories}: ${parseResult.error.message}` },
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.UpdateMemories}: ${parseResult.error.message}` }),
                             toolCall.toolId
                         );
                     }
@@ -171,7 +193,7 @@ export class AIToolService {
     
                 // This is only used by gemini
                 case AITool.RequestWebSearch:
-                    return new AIToolResponse(toolCall.name, {}, toolCall.toolId)
+                    return new AIToolResponse(toolCall.name, new AIToolResponsePayload({}), toolCall.toolId)
 
                 // multi-agent functions are handled elsewhere - this shouldn't really ever get hit
                 case AITool.ExecuteWorkflow:
@@ -189,7 +211,7 @@ export class AIToolService {
                     Exception.log(`Multi-agent function ${toolCall.name} should not be handled by AIToolService`);
                     return new AIToolResponse(
                         toolCall.name,
-                        { error: `Failed to execute ${toolCall.name}.` },
+                        new AIToolResponsePayload({ error: `Failed to execute ${toolCall.name}.` }),
                         toolCall.toolId
                     );
                 }
@@ -201,7 +223,7 @@ export class AIToolService {
                     Exception.log(error);
                     return new AIToolResponse(
                         toolCallName,
-                        { error: error },
+                        new AIToolResponsePayload({ error: error }),
                         toolCall.toolId
                     );
                 }
@@ -209,7 +231,7 @@ export class AIToolService {
         });
     }
 
-    private async searchVaultFiles(searchTerms: string[]): Promise<object> {
+    private async searchVaultFiles(searchTerms: string[]): Promise<AIToolResponsePayload> {
         const results: { searchTerm: string, results: object[] }[] = [];
 
         for (const searchTerm of searchTerms) {
@@ -227,10 +249,10 @@ export class AIToolService {
             });
         }
 
-        return results;
+        return new AIToolResponsePayload(results);
     }
 
-    private async readVaultFiles(filePaths: string[]): Promise<object> {
+    private async readVaultFiles(filePaths: string[]): Promise<AIToolResponsePayload> {
         const results = await Promise.all(
             filePaths.map(async (filePath) => {
                 const result = await this.fileSystemService.readFile(filePath);
@@ -244,28 +266,56 @@ export class AIToolService {
                 };
             })
         );
-        return { results };
+
+        const errorResults = results.filter(result => result.error);
+        const successResults = results.filter(result => !result.error && result.type && result.contents !== undefined) as
+            Array<{ type: string; path: string; contents: string }>;
+
+        const textResults = successResults.filter(result => isTextFile(result.type));
+        const binaryResults = successResults.filter(result => !isTextFile(result.type));
+
+        const attachments = binaryResults.map(file => {
+            const fileName = file.path.split('/').pop() || file.path;
+            let mimeType = FileTypeToMimeType[toFileType(file.type)];
+            if (isDocumentMimeType(mimeType)) {
+                mimeType = MimeType.TEXT_PLAIN;
+                return new Attachment(fileName, mimeType, StringTools.toBase64(file.contents));
+            }
+            return new Attachment(fileName, mimeType, file.contents);
+        });
+
+        const response = textResults.length > 0 || errorResults.length > 0
+            ? {
+                results: [...textResults, ...errorResults],
+                ...(binaryResults.length > 0 && { message: "The contents of the files are included below." })
+            }
+            : {
+                message: "Files retrieved successfully. The contents of the files are included below.",
+                count: binaryResults.length
+            };
+
+        return new AIToolResponsePayload(response, attachments);
     }
 
-    private async writeVaultFile(filePath: string, content: string): Promise<object> {
+    private async writeVaultFile(filePath: string, content: string): Promise<AIToolResponsePayload> {
         const result = await this.fileSystemService.writeFile(normalizePath(filePath), content);
         if (result instanceof Error) {
-            return { success: false, error: result.message };
+            return new AIToolResponsePayload({ success: false, error: result.message });
         }
-        return { success: true };
+        return new AIToolResponsePayload({ success: true });
     }
 
-    private async patchVaultFile(filePath: string, oldContent: string[], newContent: string[]): Promise<object> {
+    private async patchVaultFile(filePath: string, oldContent: string[], newContent: string[]): Promise<AIToolResponsePayload> {
         const result = await this.fileSystemService.patchFile(normalizePath(filePath), oldContent, newContent);
         if (result instanceof Error) {
-            return { success: false, error: result.message };
+            return new AIToolResponsePayload({ success: false, error: result.message });
         }
-        return { success: true };
+        return new AIToolResponsePayload({ success: true });
     }
 
-    private async deleteVaultFiles(filePaths: string[], confirmation: boolean): Promise<object> {
+    private async deleteVaultFiles(filePaths: string[], confirmation: boolean): Promise<AIToolResponsePayload> {
         if (!confirmation) {
-            return { error: "Confirmation was false, no action taken" };
+            return new AIToolResponsePayload({ error: "Confirmation was false, no action taken" });
         }
 
         const results = await Promise.all(filePaths.map(async filePath => {
@@ -276,12 +326,12 @@ export class AIToolService {
             return { path: filePath, success: true };
         }));
 
-        return { results };
+        return new AIToolResponsePayload({ results });
     }
 
-    private async moveVaultFiles(sourcePaths: string[], destinationPaths: string[]): Promise<object> {
+    private async moveVaultFiles(sourcePaths: string[], destinationPaths: string[]): Promise<AIToolResponsePayload> {
         if (sourcePaths.length !== destinationPaths.length) {
-            return { error: "Source paths array length does not equal destination paths array length" };
+            return new AIToolResponsePayload({ error: "Source paths array length does not equal destination paths array length" });
         }
 
         const results = await Promise.all(sourcePaths.map(async (sourcePath, index) => {
@@ -293,45 +343,60 @@ export class AIToolService {
             return { path: destinationPath, success: true };
         }));
 
-        return { results };
+        return new AIToolResponsePayload({ results });
     }
 
-    private async createVaultFolder(path: string): Promise<object> {
+    private async createVaultFolder(path: string): Promise<AIToolResponsePayload> {
         const result = await this.fileSystemService.createFolder(path);
         if (result instanceof Error) {
-            return { path: path, success: false, error: result.message };
+            return new AIToolResponsePayload({ path: path, success: false, error: result.message });
         }
-        return { path: path, success: true };
+        return new AIToolResponsePayload({ path: path, success: true });
     }
 
-    private async listVaultFiles(path: string, recursive: boolean): Promise<object> {
+    private async listVaultFiles(path: string, recursive: boolean): Promise<AIToolResponsePayload> {
         const files: TAbstractFile[] = await this.fileSystemService.listDirectoryContents(path, recursive);
-        return files.map(file => ({
+        return new AIToolResponsePayload(files.map(file => ({
             type: file instanceof TFile ? "file" : "directory",
             path: file.path
-        }));
+        })));
     }
 
-    private async readMemories(): Promise<object> {
+    private async getWebViewerContent(format: "text" | "screenshot", urlHint?: string): Promise<AIToolResponsePayload> {
+        const result = format === "text" 
+            ? await this.webViewerService.getWebViewContent(urlHint)
+            : await this.webViewerService.takeScreenshot(urlHint, true);
+        
+        if (urlHint && !result) {
+            return new AIToolResponsePayload({ error: replaceCopy(Copy.WebViewerNoMatchingUrl, [urlHint]) });
+        }
+        if (!result) {
+            return new AIToolResponsePayload({ error: Copy.WebViewerNoOpenView });
+        }
+
+        return format === "text"
+            ? new AIToolResponsePayload({ content: result })
+            : new AIToolResponsePayload({ success: true }, [new Attachment("screenshot.png", MimeType.IMAGE_PNG, result)]);
+    }
+
+    private async readMemories(): Promise<AIToolResponsePayload> {
         if (!this.settingsService.settings.enableMemories) {
-            return { error: Copy.MemoriesDisabledError }
+            return new AIToolResponsePayload({ error: Copy.MemoriesDisabledError });
         }
         this.lastToolReadMemories = true;
-        return { memories: await this.memoriesService.readMemories() };
+        return new AIToolResponsePayload({ memories: await this.memoriesService.readMemories() });
     }
 
-    private async updateMemories(content: string): Promise<object> {
+    private async updateMemories(content: string): Promise<AIToolResponsePayload> {
         if (!this.settingsService.settings.allowUpdatingMemories) {
-            return { error: Copy.MemoriesUpdatingDisabledError };
+            return new AIToolResponsePayload({ error: Copy.MemoriesUpdatingDisabledError });
         }
 
         if (!this.lastToolReadMemories) {
-            return {
-                error: Copy.UpdateMemoriesWithoutReadError
-            };
+            return new AIToolResponsePayload({ error: Copy.UpdateMemoriesWithoutReadError });
         }
         this.lastToolReadMemories = false;
 
-        return { result: await this.memoriesService.updateMemories(content) };
+        return new AIToolResponsePayload({ result: await this.memoriesService.updateMemories(content) });
     }
 }

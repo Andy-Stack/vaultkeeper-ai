@@ -9,6 +9,7 @@ export enum AITool {
     ListVaultFiles = "list_vault_files",
     ReadMemories = "read_memories",
     UpdateMemories = "update_memories",
+    GetWebViewerContent = "get_web_viewer_content",
 
     // used by gemini and mistral
     RequestWebSearch = "request_web_search",

@@ -15,6 +15,7 @@ import { AITool, isAITool } from "Enums/AITool";
 import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import { DebugColor } from "Enums/DebugColor";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
+import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
 
 export class OrchestrationAgent extends BaseAgent {
 
@@ -22,7 +23,7 @@ export class OrchestrationAgent extends BaseAgent {
 
     private orchestrationDepth: number = 0;
 
-    public async runPlannedWorkflow(planRequest: ExecuteWorkflowArgs, callbacks: IChatServiceCallbacks): Promise<object> {
+    public async runPlannedWorkflow(planRequest: ExecuteWorkflowArgs, callbacks: IChatServiceCallbacks): Promise<AIToolResponsePayload> {
         this.debugService?.log("OrchestrationAgent", `Starting planned workflow: ${planRequest.goal}`);
         const planningConversation: Conversation = new Conversation();
         planningConversation.contents.push(new ConversationContent({
@@ -41,7 +42,7 @@ export class OrchestrationAgent extends BaseAgent {
 
         if (!executionPlan) {
             this.debugService?.log("OrchestrationAgent", "Planning failed - no execution plan generated");
-            return { message: Copy.PlanningFailedNoSteps };
+            return new AIToolResponsePayload({ message: Copy.PlanningFailedNoSteps });
         }
         this.debugService?.log("OrchestrationAgent", `Execution plan received with ${executionPlan.executionSteps.length} steps`);
         callbacks.onPlanUpdate(executionPlan);
@@ -61,7 +62,7 @@ export class OrchestrationAgent extends BaseAgent {
 
             if (!executionResult) {
                 this.debugService?.log("OrchestrationAgent", `Step ${stepIndex + 1} failed to execute - workflow aborted`);
-                return { message: replaceCopy(Copy.WorkflowFailedAtStep, [step.description]) };
+                return new AIToolResponsePayload({ message: replaceCopy(Copy.WorkflowFailedAtStep, [step.description]) });
             }
 
             if (executionResult.success) {
@@ -127,7 +128,7 @@ export class OrchestrationAgent extends BaseAgent {
 
             if (orchestrationResult.abort) {
                 this.debugService?.log("OrchestrationAgent", `Orchestration decision: ABORT — ${orchestrationResult.abortContext}`);
-                return { message: replaceCopy(Copy.WorkflowAborted, [orchestrationResult.abortContext]) };
+                return new AIToolResponsePayload({ message: replaceCopy(Copy.WorkflowAborted, [orchestrationResult.abortContext]) });
             }
 
             if (orchestrationResult.complete) {
@@ -144,7 +145,7 @@ export class OrchestrationAgent extends BaseAgent {
         }));
         const orchestrationSummary = await this.requestAgentResponse(AgentType.Orchestration, planningConversation, callbacks);
 
-        return { planExecutionSummary: orchestrationSummary };
+        return new AIToolResponsePayload({ planExecutionSummary: orchestrationSummary });
     }
 
     private async runOrchestrationAgentLoop(planningConversation: Conversation, callbacks: IChatServiceCallbacks): Promise<OrchestrationResult> {
@@ -166,7 +167,7 @@ export class OrchestrationAgent extends BaseAgent {
                 this.debugService?.log("Orchestration", `Invalid tool call denied: ${toolCallName}`);
                 planningConversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { message: Copy.OrchestrationToolDenial },
+                    new AIToolResponsePayload({ message: Copy.OrchestrationToolDenial }),
                     toolCall.toolId
                 ));
                 return Promise.resolve({ shouldExit: false });
@@ -188,7 +189,7 @@ export class OrchestrationAgent extends BaseAgent {
                 if (!parseResult.success) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
                         toolCallName,
-                        { error: `Invalid arguments for ${AITool.CompleteStep}: ${parseResult.error.message}` },
+                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.CompleteStep}: ${parseResult.error.message}` }),
                         toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
@@ -196,7 +197,7 @@ export class OrchestrationAgent extends BaseAgent {
                 if (!parseResult.data.confirm_completion) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
                         toolCallName,
-                        { error: "Confirmation was false, no action taken" },
+                        new AIToolResponsePayload({ error: "Confirmation was false, no action taken" }),
                         toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
@@ -205,7 +206,7 @@ export class OrchestrationAgent extends BaseAgent {
                 this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { message: "Step completed" },
+                    new AIToolResponsePayload({ message: "Step completed" }),
                     toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ continue: true, continueContext: parseResult.data.context_for_next_step });
@@ -217,7 +218,7 @@ export class OrchestrationAgent extends BaseAgent {
                 if (!parseResult.success) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
                         toolCallName,
-                        { error: `Invalid arguments for ${AITool.ReviseStep}: ${parseResult.error.message}` },
+                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.ReviseStep}: ${parseResult.error.message}` }),
                         toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
@@ -226,7 +227,7 @@ export class OrchestrationAgent extends BaseAgent {
                 this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { message: "Step revision accepted — retrying" },
+                    new AIToolResponsePayload({ message: "Step revision accepted — retrying" }),
                     toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({
@@ -243,7 +244,7 @@ export class OrchestrationAgent extends BaseAgent {
                 if (!parseResult.success) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
                         toolCallName,
-                        { error: `Invalid arguments for ${AITool.RevisePlan}: ${parseResult.error.message}` },
+                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.RevisePlan}: ${parseResult.error.message}` }),
                         toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
@@ -252,7 +253,7 @@ export class OrchestrationAgent extends BaseAgent {
                 this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { message: `Plan revised with ${parseResult.data.steps.length} remaining step(s)` },
+                    new AIToolResponsePayload({ message: `Plan revised with ${parseResult.data.steps.length} remaining step(s)` }),
                     toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({
@@ -267,7 +268,7 @@ export class OrchestrationAgent extends BaseAgent {
                 if (!parseResult.success) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
                         toolCallName,
-                        { error: `Invalid arguments for ${AITool.SkipStep}: ${parseResult.error.message}` },
+                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.SkipStep}: ${parseResult.error.message}` }),
                         toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
@@ -276,7 +277,7 @@ export class OrchestrationAgent extends BaseAgent {
                 this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { message: "Step skipped" },
+                    new AIToolResponsePayload({ message: "Step skipped" }),
                     toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({
@@ -291,7 +292,7 @@ export class OrchestrationAgent extends BaseAgent {
                 if (!parseResult.success) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
                         toolCallName,
-                        { error: `Invalid arguments for ${AITool.CompletePlan}: ${parseResult.error.message}` },
+                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.CompletePlan}: ${parseResult.error.message}` }),
                         toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
@@ -299,7 +300,7 @@ export class OrchestrationAgent extends BaseAgent {
                 if (!parseResult.data.confirm_completion) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
                         toolCallName,
-                        { error: "Confirmation was false, no action taken" },
+                        new AIToolResponsePayload({ error: "Confirmation was false, no action taken" }),
                         toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
@@ -308,7 +309,7 @@ export class OrchestrationAgent extends BaseAgent {
                 this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { message: "Plan completed" },
+                    new AIToolResponsePayload({ message: "Plan completed" }),
                     toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ complete: true });
@@ -320,7 +321,7 @@ export class OrchestrationAgent extends BaseAgent {
                 if (!parseResult.success) {
                     planningConversation.addFunctionResponse(new AIToolResponse(
                         toolCallName,
-                        { error: `Invalid arguments for ${AITool.CancelPlan}: ${parseResult.error.message}` },
+                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.CancelPlan}: ${parseResult.error.message}` }),
                         toolCall.toolId
                     ));
                     return Promise.resolve({ shouldExit: false });
@@ -329,7 +330,7 @@ export class OrchestrationAgent extends BaseAgent {
                 this.updateThought(toolCall, callbacks);
                 planningConversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
-                    { message: "Plan cancelled" },
+                    new AIToolResponsePayload({ message: "Plan cancelled" }),
                     toolCall.toolId
                 ));
                 orchestrationResult = new OrchestrationResult({ abort: true, abortContext: parseResult.data.context });

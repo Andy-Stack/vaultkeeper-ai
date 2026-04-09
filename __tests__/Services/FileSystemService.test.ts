@@ -345,16 +345,17 @@ describe('FileSystemService', () => {
 			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFile, true, true);
 		});
 
-		it('should delete folder successfully (supports both files and folders)', async () => {
+		it('should delete folder successfully', async () => {
 			const mockFolder = createMockFolder('folder');
 
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFolder);
+			mockVaultService.isExclusion = vi.fn().mockReturnValue(false);
 			mockVaultService.delete = vi.fn().mockResolvedValue(undefined);
 
-			const result = await fileSystemService.deleteFile('folder');
+			const result = await fileSystemService.deleteFolder('folder');
 
 			expect(result).toBeUndefined();
-			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFolder, false, true);
+			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFolder, false);
 		});
 	});
 

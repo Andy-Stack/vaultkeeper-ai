@@ -239,15 +239,22 @@ export class VaultService {
         const file = this.getAbstractFileByPath(sourcePath, allowAccessToPluginRoot);
 
         if (file === null) {
-            return Exception.new(`File does not exist: ${sourcePath}`);
+            return Exception.new(`Move failed as source does not exist: ${sourcePath}`);
         }
+
+        const isFile = file instanceof TFile;
 
         if (this.isExclusion(destinationPath, allowAccessToPluginRoot)) {
             return Exception.new(`Failed to rename "${sourcePath}" to "${destinationPath}", permission denied.`)
         }
 
         try {
-            await this.createDirectories(destinationPath, allowAccessToPluginRoot)
+            if (isFile) {
+                await this.createDirectories(destinationPath, allowAccessToPluginRoot);
+            } else {
+                const parentPath = destinationPath.substring(0, destinationPath.lastIndexOf("/"));
+                if (parentPath) await this.createDirectories(parentPath, allowAccessToPluginRoot);
+            }
             await this.fileManager.renameFile(file, destinationPath);
         } catch (error) {
             Exception.log(error);

@@ -665,7 +665,7 @@ describe('VaultService - Integration Tests', () => {
 			const result = await vaultService.move('Vaultkeeper AI/test.md', 'dest.md', false);
 
 			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toContain('File does not exist');
+			expect((result as Error).message).toContain('Move failed as source does not exist');
 			expect(mockFileManager.renameFile).not.toHaveBeenCalled();
 		});
 
@@ -675,7 +675,7 @@ describe('VaultService - Integration Tests', () => {
 			const result = await vaultService.move('nonexistent.md', 'dest.md');
 
 			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toContain('File does not exist');
+			expect((result as Error).message).toContain('Move failed as source does not exist');
 			expect(mockFileManager.renameFile).not.toHaveBeenCalled();
 		});
 

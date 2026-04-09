@@ -4,6 +4,7 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { AITool } from '../../Enums/AITool';
 import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
+import { AIToolResponsePayload } from 'AIClasses/ToolDefinitions/AIToolResponsePayload';
 
 /**
  * UNIT TESTS - OrchestrationAgent
@@ -36,7 +37,7 @@ describe('OrchestrationAgent - Unit Tests', () => {
 		// Mock AIToolService
 		mockAIToolService = {
 			performAITool: vi.fn().mockResolvedValue(
-				new AIToolResponse(AITool.SearchVaultFiles, { results: [] }, 'test-tool-id')
+				new AIToolResponse(AITool.SearchVaultFiles, new AIToolResponsePayload({ results: [] }), 'test-tool-id')
 			)
 		};
 		RegisterSingleton(Services.AIToolService, mockAIToolService);

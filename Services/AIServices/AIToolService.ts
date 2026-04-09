@@ -29,9 +29,10 @@ import {
     PatchVaultFileArgsSchema,
     ReadMemoriesArgsSchema,
     UpdateMemoriesArgsSchema,
-    CreateVaultFolderSchema,
-    GetWebViewerContentSchema,
-    DeleteVaultFolderSchema
+    CreateVaultFolderArgsSchema,
+    GetWebViewerContentArgsSchema,
+    DeleteVaultFolderArgsSchema,
+    MoveVaultFolderArgsSchema
 } from "AIClasses/Schemas/AIToolSchemas";
 
 export class AIToolService {
@@ -133,7 +134,7 @@ export class AIToolService {
                 }
 
                 case AITool.CreateVaultFolder: {
-                    const parseResult = CreateVaultFolderSchema.safeParse(toolCall.arguments);
+                    const parseResult = CreateVaultFolderArgsSchema.safeParse(toolCall.arguments);
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
@@ -145,7 +146,7 @@ export class AIToolService {
                 }
 
                 case AITool.DeleteVaultFolder: {
-                    const parseResult = DeleteVaultFolderSchema.safeParse(toolCall.arguments);
+                    const parseResult = DeleteVaultFolderArgsSchema.safeParse(toolCall.arguments);
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
@@ -154,6 +155,18 @@ export class AIToolService {
                         );
                     }
                     return new AIToolResponse(toolCall.name, await this.deleteVaultFolder(parseResult.data.path, parseResult.data.confirm_deletion), toolCall.toolId);
+                }
+
+                case AITool.MoveVaultFolder: {
+                    const parseResult = MoveVaultFolderArgsSchema.safeParse(toolCall.arguments);
+                    if (!parseResult.success) {
+                        return new AIToolResponse(
+                            toolCall.name,
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.MoveVaultFolder}: ${parseResult.error.message}` }),
+                            toolCall.toolId
+                        );
+                    }
+                    return new AIToolResponse(toolCall.name, await this.moveVaultFolder(parseResult.data.source_path, parseResult.data.destination_path), toolCall.toolId);
                 }
     
                 case AITool.ListVaultFiles: {
@@ -169,7 +182,7 @@ export class AIToolService {
                 }
 
                 case AITool.GetWebViewerContent: {
-                    const parseResult = GetWebViewerContentSchema.safeParse(toolCall.arguments);
+                    const parseResult = GetWebViewerContentArgsSchema.safeParse(toolCall.arguments);
                     if (!parseResult.success) {
                         return new AIToolResponse(
                             toolCall.name,
@@ -375,6 +388,14 @@ export class AIToolService {
         return result instanceof Error
             ? new AIToolResponsePayload({ path: path, success: false, error: result.message })
             : new AIToolResponsePayload({ path: path, success: true });
+    }
+
+    private async moveVaultFolder(sourcePath: string, destinationPath: string): Promise<AIToolResponsePayload> {
+        const result = await this.fileSystemService.moveFile(sourcePath, destinationPath);
+        if (result instanceof Error) {
+            return new AIToolResponsePayload({ path: destinationPath, success: false, error: result.message });
+        }
+        return new AIToolResponsePayload({ path: destinationPath, success: true });
     }
 
     private async listVaultFiles(path: string, recursive: boolean): Promise<AIToolResponsePayload> {

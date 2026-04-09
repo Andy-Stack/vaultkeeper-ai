@@ -38,15 +38,21 @@ export const MoveVaultFilesArgsSchema = z.object({
 	user_message: z.string()
 });
 
-export const CreateVaultFolderSchema = z.object({
+export const CreateVaultFolderArgsSchema = z.object({
 	path: z.string(),
 	user_message: z.string()
 });
 
-export const DeleteVaultFolderSchema = z.object({
+export const DeleteVaultFolderArgsSchema = z.object({
 	path: z.string(),
 	user_message: z.string(),
 	confirm_deletion: z.boolean()
+});
+
+export const MoveVaultFolderArgsSchema = z.object({
+	source_path: z.string(),
+	destination_path: z.string(),
+	user_message: z.string()
 });
 
 export const ListVaultFilesArgsSchema = z.object({
@@ -55,7 +61,7 @@ export const ListVaultFilesArgsSchema = z.object({
 	user_message: z.string()
 });
 
-export const GetWebViewerContentSchema = z.object({
+export const GetWebViewerContentArgsSchema = z.object({
 	url_hint: z.string().optional(),
 	format: z.enum(["text", "screenshot"]),
 	user_message: z.string()
@@ -145,10 +151,11 @@ export type WriteVaultFileArgs = z.infer<typeof WriteVaultFileArgsSchema>;
 export type PatchVaultFileArgs = z.infer<typeof PatchVaultFileArgsSchema>;
 export type DeleteVaultFilesArgs = z.infer<typeof DeleteVaultFilesArgsSchema>;
 export type MoveVaultFilesArgs = z.infer<typeof MoveVaultFilesArgsSchema>;
-export type CreateVaultFolder = z.infer<typeof CreateVaultFolderSchema>;
-export type DeleteVaultFolder = z.infer<typeof DeleteVaultFolderSchema>;
+export type CreateVaultFolderArgs = z.infer<typeof CreateVaultFolderArgsSchema>;
+export type DeleteVaultFolderArgs = z.infer<typeof DeleteVaultFolderArgsSchema>;
+export type MoveVaultFolderArgs = z.infer<typeof MoveVaultFolderArgsSchema>;
 export type ListVaultFilesArgs = z.infer<typeof ListVaultFilesArgsSchema>;
-export type GetWebViewerContent = z.infer<typeof GetWebViewerContentSchema>;
+export type GetWebViewerContentArgs = z.infer<typeof GetWebViewerContentArgsSchema>;
 export type ExecuteWorkflowArgs = z.infer<typeof ExecuteWorkflowArgsSchema>;
 export type AskUserQuestionPlanningArgs = z.infer<typeof AskUserQuestionPlanningArgsSchema>;
 export type AskUserQuestionExecutionArgs = z.infer<typeof AskUserQuestionExecutionArgsSchema>;

@@ -21,6 +21,7 @@ import { UpdateMemories } from "./Tools/UpdateMemories";
 import { CreateVaultFolder } from "./Tools/CreateVaultFolder";
 import { GetWebViewerContent } from "./Tools/GetWebViewerContent";
 import { DeleteVaultFolder } from "./Tools/DeleteVaultFolder";
+import { MoveVaultFolder } from "./Tools/MoveVaultFolder";
 
 export abstract class AIToolDefinitions {
     
@@ -28,7 +29,7 @@ export abstract class AIToolDefinitions {
 
     // Definitions list provides a list of function definitions that does not include any planning functions (used as reference in planning agent prompt)
     private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, GetWebViewerContent,
-        WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles, CreateVaultFolder, DeleteVaultFolder];
+        WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles, CreateVaultFolder, DeleteVaultFolder, MoveVaultFolder];
 
     public static agentDefinitions(destructive: boolean, planningMode: boolean, memories: boolean, updateMemories: boolean): IAIToolDefinition[] {
         this.isGated = false;
@@ -59,7 +60,8 @@ export abstract class AIToolDefinitions {
                 DeleteVaultFiles,
                 MoveVaultFiles,
                 CreateVaultFolder,
-                DeleteVaultFolder
+                DeleteVaultFolder,
+                MoveVaultFolder
             ]);
         }
 

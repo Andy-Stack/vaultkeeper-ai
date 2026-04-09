@@ -20,6 +20,7 @@ import type { MistralStreamChunk, MistralToolDefinition, MistralMessage, Mistral
 import type { MistralFileService } from "./MistralFileService";
 import { Copy, replaceCopy } from "Enums/Copy";
 import { MistralAgent } from "./MistralAgent";
+import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
 
 export class Mistral extends BaseAIClass {
 
@@ -97,7 +98,7 @@ export class Mistral extends BaseAIClass {
         }
         const query = (toolCall.arguments as Record<string, string>).query ?? "";
         const result = await this.agent.search(query);
-        return new AIToolResponse(toolCall.name, { result }, toolCall.toolId);
+        return new AIToolResponse(toolCall.name, new AIToolResponsePayload({ result }), toolCall.toolId);
     }
 
     private async buildMessages(conversation: Conversation): Promise<MistralMessage[]> {

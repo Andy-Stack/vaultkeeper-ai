@@ -14,6 +14,7 @@ import { Role } from "Enums/Role";
 import { DebugColor } from "Enums/DebugColor";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
+import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
 
 export class PlanningAgent extends BaseAgent {
  
@@ -22,7 +23,7 @@ export class PlanningAgent extends BaseAgent {
     private planningDepth: number = 0;
 
     public async runPlanningAgent(conversation: Conversation, callbacks: IChatServiceCallbacks): Promise<ExecutionPlan | undefined> {
-        this.setAgentPromptAndTools();
+        await this.setAgentPromptAndTools();
 
         let capturedPlan: ExecutionPlan | null = null;
 
@@ -36,7 +37,7 @@ export class PlanningAgent extends BaseAgent {
         await this.runAgentLoop(AgentType.Planning, conversation, callbacks, async (toolCall) => {
             const toolCallName = toolCall.name;
 
-            if (!AIToolDefinitions.planningAgentDefinitions(this.memoriesEnabled()).some(definition => isAITool(toolCallName, definition.name))) {
+            if (!this.planningTools().some(definition => isAITool(toolCallName, definition.name))) {
                 this.debugService?.log("PlanningAgent", `Invalid tool call denied: ${toolCallName}`);
                 conversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
@@ -107,15 +108,19 @@ export class PlanningAgent extends BaseAgent {
         return capturedPlan;
     }
 
-    private setAgentPromptAndTools() {
+    private async setAgentPromptAndTools() {
         if (!this.ai) { // this shouldn't ever happen
             Exception.throw("Error: No AI provider has been set!");
         }
         this.ai.agentType = AgentType.Planning;
         this.ai.aiToolUsageMode = AIToolUsageMode.Enabled;
-        this.ai.systemPrompt = this.aiPrompt.planningInstruction();
+        this.ai.systemPrompt = await this.aiPrompt.planningInstruction();
         this.ai.userInstruction = ""; // do not include user instruction for planning agent
-        this.ai.aiToolDefinitions = AIToolDefinitions.planningAgentDefinitions(this.memoriesEnabled());
+        this.ai.aiToolDefinitions = this.planningTools();
+    }
+
+    private planningTools(): IAIToolDefinition[] {
+        return AIToolDefinitions.planningAgentDefinitions(this.memoriesEnabled(), this.webViewerAccessEnabled());
     }
 
     protected override setDebugColor(): void {

@@ -174,6 +174,24 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					});
 			});
 
+		/* Web Access Header */
+		new Setting(containerEl)
+			.setHeading()
+			.setName(Copy.SettingWebViewerAccess);
+
+		/* Enable Web Viewer Setting */
+		new Setting(containerEl)
+			.setName(Copy.SettingEnableWebViewer)
+			.setDesc(Copy.SettingEnableWebViewerDesc)
+			.addToggle(toggle => {
+				toggle
+					.setValue(this.settingsService.settings.enableWebViewer)
+					.onChange(async (value) => {
+						this.settingsService.settings.enableWebViewer = value;
+						await this.settingsService.saveSettings();
+					});
+			});
+
 		/* Memories Header */
 		new Setting(containerEl)
 			.setHeading()

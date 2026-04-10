@@ -23,7 +23,8 @@ const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     enableMemories: false,
     allowUpdatingMemories: true,
 
-    enableWebSearch: true
+    enableWebSearch: true,
+    enableWebViewer: false
 }
 
 export interface IVaultkeeperAISettings {
@@ -47,6 +48,7 @@ export interface IVaultkeeperAISettings {
     allowUpdatingMemories: boolean;
 
     enableWebSearch: boolean;
+    enableWebViewer: boolean;
 }
 
 export class SettingsService {

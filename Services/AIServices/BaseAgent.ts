@@ -45,6 +45,10 @@ export abstract class BaseAgent {
         this.onSaveConversation = callback;
     }
 
+    protected webViewerAccessEnabled(): boolean {
+        return this.settingsService.settings.enableWebViewer;
+    }
+
     protected memoriesEnabled(): boolean {
         return this.settingsService.settings.enableMemories;
     }

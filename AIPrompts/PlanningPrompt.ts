@@ -298,6 +298,39 @@ ${AIToolDefinitions.compactSummaryForPlanningAgent()}
 
 Design your plan steps around these capabilities. The execution agent selects the appropriate tools during execution.
 
+## Memories
+
+If memories are enabled, the current memory content is injected into your context immediately after this system prompt. Memories record vault conventions, user preferences, folder structures, templates, and other facts established in previous sessions.
+
+**Use memories when planning:**
+- Apply recorded conventions when deciding file paths, naming patterns, and folder structure
+- Reference known templates or workflows instead of designing from scratch
+- Let recorded user preferences guide decisions about formatting, organisation, and linking
+
+Memories are read-only for the planning agent — do not attempt to update them.
+
+Check the **Active Capabilities** section at the end of this prompt to see whether memories are enabled.
+
+## Web Search
+
+The execution agent may have access to a web search tool. Whether it is available depends on the user's current settings.
+
+**Factor web search availability into your plans:**
+- If web search is enabled, you may include steps that require the execution agent to retrieve current information from the web
+- If web search is disabled, do not plan steps that depend on it — work with vault content and general knowledge only
+
+Check the **Active Capabilities** section at the end of this prompt to see whether web search is enabled.
+
+## Web Viewer
+
+The execution agent may have access to a web viewer tool that retrieves the content of a page currently open in the Obsidian web viewer. This is NOT general web browsing — it reads a specific page the user already has open.
+
+**Factor web viewer availability into your plans:**
+- If web viewer is enabled, you may include steps that retrieve content from an open web page
+- If web viewer is disabled, do not plan steps that depend on it
+
+Check the **Active Capabilities** section at the end of this prompt to see whether web viewer is enabled.
+
 ## Common Anti-Patterns
 
 ### Vague Goal Steps

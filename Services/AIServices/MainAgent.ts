@@ -93,8 +93,8 @@ export class MainAgent extends BaseAgent {
         this.ai.aiToolUsageMode = AIToolUsageMode.Auto;
         this.ai.systemPrompt = await this.aiPrompt.systemInstruction();
         this.ai.userInstruction = await this.aiPrompt.userInstruction();
-        this.ai.aiToolDefinitions = AIToolDefinitions.agentDefinitions(
-            allowDestructiveActions, planningMode, this.memoriesEnabled(), this.updateMemoriesEnabled());
+        this.ai.aiToolDefinitions = AIToolDefinitions.agentDefinitions(allowDestructiveActions, planningMode,
+            this.memoriesEnabled(), this.updateMemoriesEnabled(), this.webViewerAccessEnabled());
     }
 
     protected override setDebugColor(): void {

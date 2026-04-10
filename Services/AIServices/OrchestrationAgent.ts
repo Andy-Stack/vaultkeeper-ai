@@ -16,6 +16,7 @@ import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import { DebugColor } from "Enums/DebugColor";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
+import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
 
 export class OrchestrationAgent extends BaseAgent {
 
@@ -149,7 +150,7 @@ export class OrchestrationAgent extends BaseAgent {
     }
 
     private async runOrchestrationAgentLoop(planningConversation: Conversation, callbacks: IChatServiceCallbacks): Promise<OrchestrationResult> {
-        this.setAgentPromptAndTools();
+        await this.setAgentPromptAndTools();
 
         if (this.orchestrationDepth >= OrchestrationAgent.MAX_AGENT_DEPTH) {
             this.debugService?.log("Orchestration", "Max orchestration depth reached - aborting");
@@ -163,7 +164,7 @@ export class OrchestrationAgent extends BaseAgent {
         await this.runAgentLoop(AgentType.Orchestration, planningConversation, callbacks, async toolCall => {
             const toolCallName = toolCall.name;
 
-            if (!AIToolDefinitions.orchestrationAgentDefinitions().some(definition => isAITool(toolCallName, definition.name))) {
+            if (!this.orchestrationTools().some(definition => isAITool(toolCallName, definition.name))) {
                 this.debugService?.log("Orchestration", `Invalid tool call denied: ${toolCallName}`);
                 planningConversation.addFunctionResponse(new AIToolResponse(
                     toolCallName,
@@ -356,15 +357,19 @@ export class OrchestrationAgent extends BaseAgent {
         return input.goal + context;
     }
 
-    private setAgentPromptAndTools(): void {
+    private async setAgentPromptAndTools(): Promise<void> {
         if (!this.ai) {
             Exception.throw("Error: No AI provider has been set!");
         }
         this.ai.agentType = AgentType.Orchestration;
         this.ai.aiToolUsageMode = AIToolUsageMode.Enabled;
-        this.ai.systemPrompt = this.aiPrompt.orchestrationInstruction();
+        this.ai.systemPrompt = await this.aiPrompt.orchestrationInstruction();
         this.ai.userInstruction = ""; // do not include user instruction for orchestration agent
-        this.ai.aiToolDefinitions = AIToolDefinitions.orchestrationAgentDefinitions();
+        this.ai.aiToolDefinitions = this.orchestrationTools();
+    }
+
+    private orchestrationTools(): IAIToolDefinition[] {
+        return AIToolDefinitions.orchestrationAgentDefinitions(this.memoriesEnabled(), this.webViewerAccessEnabled());
     }
 
     protected override setDebugColor(): void {

@@ -56,6 +56,10 @@ export enum Copy {
     SettingAllowUpdatingMemories = "Allow Updating Memories",
     SettingAllowUpdatingMemoriesDesc = "Allow the AI to save and update memories during conversations.",
 
+    SettingWebViewerAccess = "Web Viewer Access",
+    SettingEnableWebViewer = "Enable Web Viewer Access",
+    SettingEnableWebViewerDesc = "Allow the AI to read content from pages open in the Obsidian web viewer (Obsidian core plugin). This is not the same as general web access which can be toggled using the chat controls.",
+
     // Settings Descriptions
     SettingModelDesc = "Select the AI model to use.",
     SettingPlanningModelDesc = "Select the AI model to use when planning complex tasks.",
@@ -145,7 +149,6 @@ The following context explains why you are doing the task. It is NOT an instruct
     PlanningModeError = "First create a plan before executing any functions!",
     UpdateMemoriesWithoutReadError = "Memories must be read before they can be updated. Retrieve the current memory contents first, then provide the complete revised content.",
     MemoriesInjectionHeader = `\n\n---\n\n## Current Memories\n\nThe following memories were recorded from previous sessions. Use them as context for this conversation.\n\n{memories}`,
-    MemoriesReadOnly = `\n\n> **Memory updates are disabled.** You can read memories but cannot save new ones this session. Do not attempt to create or modify a memories file directly — memory management is only possible through the memory tools, which are unavailable when this setting is off.`,
     MemoriesEmpty = "No memories have been created yet.",
     MemoriesMaxLengthError = "Exceeded maximum memories length. Memories have a maximum length of {lines} and {words} words per line.",
     MemoriesUpdatedSuccess = "Memories have been updated successfully.",
@@ -153,6 +156,17 @@ The following context explains why you are doing the task. It is NOT an instruct
     MemoriesUpdatingDisabledError = "Illegal tool call, updating memories has been disabled by the user.",
     WebViewerNoMatchingUrl = "No open web view was found matching the URL '{urlHint}'. Ensure the correct page is open in the web viewer.",
     WebViewerNoOpenView = "No open web view was found. Ask the user to open a page in the web viewer and try again.",
+
+    // Active Capabilities
+    ActiveCapabilitiesHeader = `\n\n---\n\n## Active Capabilities\n\nThe following reflects your current configuration. Follow these directives exactly.\n\n{directives}`,
+    DirectiveMemoriesDisabled = "- **Memory**: DISABLED — do NOT attempt to use any memory tools",
+    DirectiveMemoriesEnabled = "- **Memory**: ENABLED — memories are injected above; you may read and update them",
+    DirectiveMemoriesReadOnly = "- **Memory**: ENABLED (read-only) — memories are injected above; you may read them but do NOT attempt to update them",
+    DirectiveWebSearchEnabled = "- **Web Search**: ENABLED — you may call the web search tool to retrieve current information from the web",
+    DirectiveWebSearchDisabled = "- **Web Search**: DISABLED — do NOT call the web search tool; if the user requests it, inform them it is currently turned off in settings",
+    DirectiveWebViewerEnabled = "- **Web Viewer**: ENABLED — you may call the web viewer tool to read the content of the page currently open in the Obsidian web viewer; call it proactively when the user asks about a web page",
+    DirectiveWebViewerDisabled = "- **Web Viewer**: DISABLED — do NOT call the web viewer tool",
+    
     PlanSubmissionRequired = "Error: Attempted to exit planning but plan has not yet been submitted!",
     MaxExecutionDepthReached = "Exceeded maximum plan execution attempts - consult with the user on how to continue.",
 

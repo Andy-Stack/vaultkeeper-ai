@@ -31,7 +31,7 @@ export abstract class AIToolDefinitions {
     private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, GetWebViewerContent,
         WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles, CreateVaultFolder, DeleteVaultFolder, MoveVaultFolder];
 
-    public static agentDefinitions(destructive: boolean, planningMode: boolean, memories: boolean, updateMemories: boolean): IAIToolDefinition[] {
+    public static agentDefinitions(destructive: boolean, planningMode: boolean, memories: boolean, updateMemories: boolean, webViewer: boolean): IAIToolDefinition[] {
         this.isGated = false;
         
         if (planningMode) {
@@ -41,9 +41,12 @@ export abstract class AIToolDefinitions {
         let actions = [
             SearchVaultFiles,
             ReadVaultFiles,
-            ListVaultFiles,
-            GetWebViewerContent
+            ListVaultFiles
         ];
+
+        if (webViewer) {
+            actions = actions.concat([GetWebViewerContent]);
+        }
 
         if (memories) {
             actions = actions.concat([ReadMemories]);
@@ -68,12 +71,11 @@ export abstract class AIToolDefinitions {
         return actions;
     }
 
-    public static orchestrationAgentDefinitions(): IAIToolDefinition[] {
-        return [
+    public static orchestrationAgentDefinitions(memories: boolean, webViewer: boolean): IAIToolDefinition[] {
+        let actions = [
             SearchVaultFiles,
             ReadVaultFiles,
             ListVaultFiles,
-            GetWebViewerContent,
             CompleteStep,
             ReviseStep,
             RevisePlan,
@@ -81,10 +83,24 @@ export abstract class AIToolDefinitions {
             CompletePlan,
             CancelPlan
         ];
+
+        if (webViewer) {
+            actions = actions.concat([GetWebViewerContent]);
+        }
+
+        if (memories) {
+            actions = actions.concat([ReadMemories]);
+        }
+
+        return actions;
     }
 
-    public static planningAgentDefinitions(memories: boolean): IAIToolDefinition[] {
-        let actions = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, GetWebViewerContent, AskUserQuestionPlanning, SubmitPlan];
+    public static planningAgentDefinitions(memories: boolean, webViewer: boolean): IAIToolDefinition[] {
+        let actions = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, AskUserQuestionPlanning, SubmitPlan];
+
+        if (webViewer) {
+            actions = actions.concat([GetWebViewerContent]);
+        }
 
         if (memories) {
             actions = actions.concat([ReadMemories]);
@@ -94,7 +110,7 @@ export abstract class AIToolDefinitions {
     }
 
     public static executionAgentDefinitions(): IAIToolDefinition[] {
-        return [...this.agentDefinitions(true, false, false, false), CompleteTask];
+        return [...this.agentDefinitions(true, false, false, false, false), CompleteTask];
     }
 
     public static compactSummaryForPlanningAgent(): string {

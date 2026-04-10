@@ -28,8 +28,8 @@ describe('OrchestrationAgent - Unit Tests', () => {
 		mockPrompt = {
 			systemInstruction: vi.fn().mockReturnValue('System instruction'),
 			userInstruction: vi.fn().mockResolvedValue('User instruction'),
-			planningInstruction: vi.fn().mockReturnValue('Planning instruction'),
-			orchestrationInstruction: vi.fn().mockReturnValue('Orchestration instruction'),
+			planningInstruction: vi.fn().mockResolvedValue('Planning instruction'),
+			orchestrationInstruction: vi.fn().mockResolvedValue('Orchestration instruction'),
 			executionInstruction: vi.fn().mockReturnValue('Execution instruction')
 		};
 		RegisterSingleton(Services.IPrompt, mockPrompt);

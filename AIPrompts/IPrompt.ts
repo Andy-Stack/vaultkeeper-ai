@@ -11,8 +11,8 @@ import { Copy, replaceCopy } from "Enums/Copy";
 
 export interface IPrompt {
   systemInstruction(): Promise<string>;
-  orchestrationInstruction(): string;
-  planningInstruction(): string;
+  orchestrationInstruction(): Promise<string>;
+  planningInstruction(): Promise<string>;
   executionInstruction(): string;
   userInstruction(): Promise<string>;
 }
@@ -30,33 +30,55 @@ export class AIPrompt implements IPrompt {
   }
 
   public async systemInstruction(): Promise<string> {
-    let systemInstruction = SystemInstruction;
-    
-    if (!this.settingsService.settings.enableMemories) {
-      return systemInstruction;
-    }
-
-    const memories = await this.memoriesService.readMemories();
-    if (memories !== "") {
-      systemInstruction = systemInstruction + replaceCopy(Copy.MemoriesInjectionHeader, [memories]);
-    }
-    if (!this.settingsService.settings.allowUpdatingMemories) {
-      systemInstruction = systemInstruction + Copy.MemoriesReadOnly;
-    }
-
-    return systemInstruction;
+    return this.buildPrompt(SystemInstruction);
   }
 
-  public orchestrationInstruction(): string {
-    return OrchestrationPrompt;
+  public async orchestrationInstruction(): Promise<string> {
+    return this.buildPrompt(OrchestrationPrompt);
   }
 
-  public planningInstruction(): string {
-    return PlanningPrompt;
+  public async planningInstruction(): Promise<string> {
+    return this.buildPrompt(PlanningPrompt);
   }
 
   public executionInstruction(): string {
     return ExecutionPrompt;
+  }
+
+  private async buildPrompt(basePrompt: string): Promise<string> {
+    let prompt = basePrompt;
+
+    if (this.settingsService.settings.enableMemories) {
+      const memories = await this.memoriesService.readMemories();
+      if (memories !== "") {
+        prompt = prompt + replaceCopy(Copy.MemoriesInjectionHeader, [memories]);
+      }
+    }
+
+    prompt = prompt + this.buildActiveDirectives();
+
+    return prompt;
+  }
+
+  private buildActiveDirectives(): string {
+    const s = this.settingsService.settings;
+
+    const memoriesDirective = !s.enableMemories
+      ? Copy.DirectiveMemoriesDisabled
+      : s.allowUpdatingMemories
+        ? Copy.DirectiveMemoriesEnabled
+        : Copy.DirectiveMemoriesReadOnly;
+
+    const webSearchDirective = s.enableWebSearch
+      ? Copy.DirectiveWebSearchEnabled
+      : Copy.DirectiveWebSearchDisabled;
+
+    const webViewerDirective = s.enableWebViewer
+      ? Copy.DirectiveWebViewerEnabled
+      : Copy.DirectiveWebViewerDisabled;
+
+    const directives = [memoriesDirective, webSearchDirective, webViewerDirective].join("\n");
+    return replaceCopy(Copy.ActiveCapabilitiesHeader, [directives]);
   }
 
   public async userInstruction(): Promise<string> {

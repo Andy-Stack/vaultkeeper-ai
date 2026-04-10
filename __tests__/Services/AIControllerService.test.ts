@@ -47,7 +47,7 @@ describe('AIControllerService - Integration Tests', () => {
 		mockPrompt = {
 			systemInstruction: vi.fn().mockReturnValue('System instruction'),
 			userInstruction: vi.fn().mockResolvedValue('User instruction'),
-			planningInstruction: vi.fn().mockReturnValue('Planning instruction')
+			planningInstruction: vi.fn().mockResolvedValue('Planning instruction')
 		};
 		RegisterSingleton(Services.IPrompt, mockPrompt);
 

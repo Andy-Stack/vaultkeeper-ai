@@ -14,7 +14,7 @@
 - **Multi-Provider AI Support** - Switch seamlessly between Claude (Anthropic), Gemini (Google), OpenAI, and Mistral models
 - **Two Operating Modes**
   - 🔍 **Read-Only Mode**: AI can search, read, and list your notes safely
-  - ✏️ **Agent Mode**: AI can create, edit, delete, and move notes (when you need it)
+  - ✏️ **Agent Mode**: AI can create, edit, delete, and move notes and folders (when you need it)
 - **Planning Mode** - Enable a two-agent workflow where a planning agent analyzes your vault and creates a step-by-step strategy before execution
 - **Interactive Diff Viewer** - Review and approve AI-proposed changes before they're applied with side-by-side diff view
 - **Smart Reference System** - Mention tags (`#`), files (`@`), and folders (`/`) with autocomplete
@@ -22,6 +22,9 @@
 - **Conversation Management** - Persistent chat history with automatic conversation naming
 - **Privacy Controls** - Exclude sensitive files and directories from AI access with glob patterns
 - **Files Support (PDF, Documents, Images, etc)** - Search through PDF and Office documents (DOCX, PPTX, XLSX) and allow AI to read binary files directly (PDFs, Office/ODF documents, images, etc)
+- **AI Memory** - Persist vault conventions, preferences, and workflows across sessions so the AI remembers how you work
+- **Web Search** - Toggle web search on per-message so the AI can look up current information
+- **Web Viewer** - Allow the AI to fetch and read web page content directly
 - **Mobile Compatible** - Full functionality on mobile devices with touch-friendly controls
 - **Streaming Responses** - See AI responses as they're generated
 - **Local & Private** - API keys stored locally, no data sent to third parties
@@ -105,7 +108,8 @@ Toggle to **Agent Mode** ✏️ when you need the AI to:
 - Create new notes
 - Edit existing content
 - Delete files
-- Move/rename files
+- Move/rename files and folders
+- Create and delete folders
 
 The mode toggle is clearly visible in the chat input area with visual indicators.
 
@@ -159,6 +163,33 @@ Planning mode is especially useful for:
 **Replanning**
 
 If issues arise during execution, the orchestration agent can request a replan. This returns to the planning phase with full context about what's already been completed and what went wrong, allowing the plan to intelligently adapt to new information discovered during execution.
+
+### AI Memory
+
+The AI can retain information across conversation sessions — your vault conventions, tagging patterns, personal preferences, or any established workflows you've described.
+
+**How It Works**
+
+Memories are stored in a plain markdown file at `Vaultkeeper AI/memories.md`. The AI reads this at the start of each conversation and can update it during a session. You can view and edit this file directly at any time.
+
+**Settings**
+
+- **Enable Memories**: Toggle memory on or off entirely
+- **Read-Only Memories**: The AI can recall past memories but cannot add or update them — useful if you want to manage the file yourself
+
+### Web Search
+
+Toggle web search on a per-message basis using the globe button in the chat input toolbar. When active, the AI can perform live web searches to answer questions requiring current or external information.
+
+Web search is supported on all four providers. Mistral uses its native Agents API for search; Claude, Gemini, and OpenAI use their respective built-in search tools.
+
+You can also disable web search access entirely from Settings if you prefer the AI to stay within your vault.
+
+### Web Viewer
+
+When enabled, the AI can fetch and read the content of web pages — useful for summarising articles, pulling in documentation, or referencing any URL you share.
+
+Web viewer access can be toggled on or off in Settings.
 
 ### Reference System
 
@@ -234,6 +265,16 @@ See `EXAMPLE_INSTRUCTIONS.md` in your vault for a template.
 - Default: Claude Sonnet 4.6
 - Allows cost optimization by using a more capable model for planning and a faster/cheaper model for execution
 - The planning model dropdown updates to match your selected provider
+
+**Memory**
+
+- **Enable Memories**: Allow the AI to read and update a persistent memory file (`Vaultkeeper AI/memories.md`) across sessions
+- **Read-Only Memories**: The AI can read memories but cannot modify them
+
+**Web Access**
+
+- **Enable Web Search**: Allow the AI to perform live web searches (can also be toggled per-message in the chat toolbar)
+- **Enable Web Viewer**: Allow the AI to fetch and read web page content
 
 **Search Configuration**
 

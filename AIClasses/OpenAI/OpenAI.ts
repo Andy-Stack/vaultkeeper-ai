@@ -42,9 +42,7 @@ export class OpenAI extends BaseAIClass {
 
         const input = await this.extractContents(conversation.contents);
 
-        const tools = [{
-            type: "web_search"
-        }, ...this.mapFunctionDefinitions(this.aiToolDefinitions)];
+        const tools = this.getTools();
 
         const requestBody = {
             model: this.model(),
@@ -329,7 +327,7 @@ export class OpenAI extends BaseAIClass {
         }));
     }
 
-    public formatBinaryFiles(attachments: Attachment[]): string {
+    protected formatBinaryFiles(attachments: Attachment[]): string {
         const contentBlocks: unknown[] = [];
 
         for (const attachment of attachments) {
@@ -367,6 +365,15 @@ export class OpenAI extends BaseAIClass {
         }]);
     }
 
+    private getTools(): (OpenAIToolTool | { type: string })[] {
+        if (this.settingsService.settings.enableWebSearch) {
+            return [{
+                type: "web_search"
+            }, ...this.mapFunctionDefinitions(this.aiToolDefinitions)];
+        }
+        return this.mapFunctionDefinitions(this.aiToolDefinitions);
+    }
+    
     private buildOpenAIToolChoice(): string {
         // If no tools defined, fall back to auto
         if (this.aiToolDefinitions.length === 0) {

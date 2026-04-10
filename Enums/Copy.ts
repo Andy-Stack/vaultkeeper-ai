@@ -107,6 +107,9 @@ export enum Copy {
     ButtonTurnOnAgentMode = "Turn on Agent Mode",
     ButtonTurnOffPlanningMode = "Turn off Planning Mode",
     ButtonTurnOnPlanningMode = "Turn on Planning Mode",
+    ButtonTurnOffWebSearch = "Turn off Web Search",
+    ButtonTurnOnWebSearch = "Turn on Web Search",
+    ButtonUserInstruction = "User Instruction",
 
     // Agent file message
     AttachedFile = `The user has attached the file {fileName}. The contents of the file are included below.

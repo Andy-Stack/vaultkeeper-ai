@@ -46,24 +46,7 @@ export class Mistral extends BaseAIClass {
 
     public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
         const messages = await this.buildMessages(conversation);
-
-        const tools = [
-            {
-                type: "function" as const,
-                function: {
-                    name: AITool.RequestWebSearch,
-                    description: `Use this function when you need to search the web for current information, recent events, news, or facts that may have changed.`,
-                    parameters: {
-                        type: "object" as const,
-                        properties: {
-                            query: { type: "string", description: "The search query to look up on the web." }
-                        },
-                        required: ["query"]
-                    }
-                }
-            },
-            ...this.mapFunctionDefinitions(this.aiToolDefinitions)
-        ];
+        const tools = this.getTools();
 
         const requestBody: Record<string, unknown> = {
             model: this.model(),
@@ -357,7 +340,7 @@ export class Mistral extends BaseAIClass {
         }));
     }
 
-    public formatBinaryFiles(attachments: Attachment[]): string {
+    protected formatBinaryFiles(attachments: Attachment[]): string {
         const contentParts: MistralContentPart[] = [];
         const fileService = this.aiFileService as MistralFileService;
 
@@ -418,6 +401,29 @@ export class Mistral extends BaseAIClass {
         }
 
         return JSON.stringify(contentParts);
+    }
+
+    private getTools(): MistralToolDefinition[] {
+        if (this.settingsService.settings.enableWebSearch) {
+            return [
+                {
+                    type: "function" as const,
+                    function: {
+                        name: AITool.RequestWebSearch,
+                        description: `Use this function when you need to search the web for current information, recent events, news, or facts that may have changed.`,
+                        parameters: {
+                            type: "object" as const,
+                            properties: {
+                                query: { type: "string", description: "The search query to look up on the web." }
+                            },
+                            required: ["query"]
+                        }
+                    }
+                },
+                ...this.mapFunctionDefinitions(this.aiToolDefinitions)
+            ];
+        }
+        return this.mapFunctionDefinitions(this.aiToolDefinitions);
     }
 
     private buildMistralToolChoice(): string {

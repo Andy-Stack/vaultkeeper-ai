@@ -88,7 +88,7 @@ export abstract class BaseAIClass implements IAIClass {
 
     public abstract streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown>;
 
-    public abstract formatBinaryFiles(attachments: Attachment[]): string;
+    protected abstract formatBinaryFiles(attachments: Attachment[]): string;
 
     protected abstract parseStreamChunk(chunk: string): IStreamChunk;
     protected abstract extractContents(conversationContent: ConversationContent[]): unknown;

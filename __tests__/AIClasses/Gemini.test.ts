@@ -337,7 +337,35 @@ describe('Gemini', () => {
     });
 
     describe('Web Search Toggle', () => {
-        it('should use custom tools by default', async () => {
+        it('should use custom tools by default (no request_web_search when disabled)', async () => {
+            mockSettingsService.settings.enableWebSearch = false;
+
+            const conversation = new Conversation();
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test' }));
+
+            mockStreamingService.streamRequest.mockImplementation(async function* () {
+                yield { content: 'done', isComplete: true };
+            });
+
+            const generator = gemini.streamRequest(conversation);
+            for await (const chunk of generator) {}
+
+            const callArgs = mockStreamingService.streamRequest.mock.calls[0];
+            const requestBody = callArgs[1];
+
+            expect(requestBody.tools[0]).toHaveProperty('functionDeclarations');
+            expect(requestBody.tools[0].functionDeclarations).toBeInstanceOf(Array);
+
+            // Should NOT include request_web_search when web search is disabled
+            const hasWebSearchFunc = requestBody.tools[0].functionDeclarations.some(
+                (f: any) => f.name === 'request_web_search'
+            );
+            expect(hasWebSearchFunc).toBe(false);
+        });
+
+        it('should include request_web_search function when web search is enabled', async () => {
+            mockSettingsService.settings.enableWebSearch = true;
+
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test' }));
 
@@ -355,7 +383,6 @@ describe('Gemini', () => {
             expect(requestBody.tools[0].functionDeclarations).toBeInstanceOf(Array);
             expect(requestBody.tools[0].functionDeclarations.length).toBeGreaterThan(0);
 
-            // Should include request_web_search function
             const hasWebSearchFunc = requestBody.tools[0].functionDeclarations.some(
                 (f: any) => f.name === 'request_web_search'
             );
@@ -1131,7 +1158,7 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = gemini.formatBinaryFiles([attachment as any]);
+            const result = (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1157,7 +1184,7 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = gemini.formatBinaryFiles([attachment as any]);
+            const result = (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1183,7 +1210,7 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = gemini.formatBinaryFiles([attachment as any]);
+            const result = (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1206,7 +1233,7 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = gemini.formatBinaryFiles([attachment as any]);
+            const result = (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1226,7 +1253,7 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = gemini.formatBinaryFiles([attachment as any]);
+            const result = (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1266,7 +1293,7 @@ describe('Gemini', () => {
                 }
             ];
 
-            const result = gemini.formatBinaryFiles(attachments as any);
+            const result = (gemini as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(6);
@@ -1330,7 +1357,7 @@ describe('Gemini', () => {
                 }
             ];
 
-            const result = gemini.formatBinaryFiles(attachments as any);
+            const result = (gemini as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(5);
@@ -1366,7 +1393,7 @@ describe('Gemini', () => {
                 }
             ];
 
-            const result = gemini.formatBinaryFiles(attachments as any);
+            const result = (gemini as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2); // Only successful upload
@@ -1380,7 +1407,7 @@ describe('Gemini', () => {
         });
 
         it('should handle empty attachments array', () => {
-            const result = gemini.formatBinaryFiles([]);
+            const result = (gemini as any).formatBinaryFiles([]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(0);
@@ -1397,7 +1424,7 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = gemini.formatBinaryFiles([attachment as any]);
+            const result = (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed[0].text).toBe(replaceCopy(Copy.AttachedFile, ["report (final) v2.pdf"]));
@@ -1414,7 +1441,7 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = gemini.formatBinaryFiles([attachment as any]);
+            const result = (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed[1]).toEqual({

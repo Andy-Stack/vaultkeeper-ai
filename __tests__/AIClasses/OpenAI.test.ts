@@ -976,7 +976,9 @@ describe('OpenAI', () => {
             );
         });
 
-        it('should include name field in web_search tool', async () => {
+        it('should include web_search tool when web search is enabled', async () => {
+            mockSettingsService.settings.enableWebSearch = true;
+
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test message' }));
 
@@ -993,7 +995,6 @@ describe('OpenAI', () => {
 
             expect(webSearchTool).toBeDefined();
             expect(webSearchTool.type).toBe('web_search');
-            expect(webSearchTool.name).toBe(undefined);
         });
     });
 
@@ -1009,7 +1010,7 @@ describe('OpenAI', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = openai.formatBinaryFiles([attachment as any]);
+            const result = (openai as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1036,7 +1037,7 @@ describe('OpenAI', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = openai.formatBinaryFiles([attachment as any]);
+            const result = (openai as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1063,7 +1064,7 @@ describe('OpenAI', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = openai.formatBinaryFiles([attachment as any]);
+            const result = (openai as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1089,7 +1090,7 @@ describe('OpenAI', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = openai.formatBinaryFiles([attachment as any]);
+            const result = (openai as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1115,7 +1116,7 @@ describe('OpenAI', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = openai.formatBinaryFiles([attachment as any]);
+            const result = (openai as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1137,7 +1138,7 @@ describe('OpenAI', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = openai.formatBinaryFiles([attachment as any]);
+            const result = (openai as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1176,7 +1177,7 @@ describe('OpenAI', () => {
                 }
             ];
 
-            const result = openai.formatBinaryFiles(attachments as any);
+            const result = (openai as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1242,7 +1243,7 @@ describe('OpenAI', () => {
                 }
             ];
 
-            const result = openai.formatBinaryFiles(attachments as any);
+            const result = (openai as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1286,7 +1287,7 @@ describe('OpenAI', () => {
                 }
             ];
 
-            const result = openai.formatBinaryFiles(attachments as any);
+            const result = (openai as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1302,7 +1303,7 @@ describe('OpenAI', () => {
         });
 
         it('should handle empty attachments array', () => {
-            const result = openai.formatBinaryFiles([]);
+            const result = (openai as any).formatBinaryFiles([]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1332,7 +1333,7 @@ describe('OpenAI', () => {
                 }
             ];
 
-            const result = openai.formatBinaryFiles(attachments as any);
+            const result = (openai as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);

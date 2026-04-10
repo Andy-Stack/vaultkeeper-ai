@@ -21,7 +21,9 @@ const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     snippetSizeLimit: 100,
 
     enableMemories: false,
-    allowUpdatingMemories: true
+    allowUpdatingMemories: true,
+
+    enableWebSearch: true
 }
 
 export interface IVaultkeeperAISettings {
@@ -43,6 +45,8 @@ export interface IVaultkeeperAISettings {
 
     enableMemories: boolean;
     allowUpdatingMemories: boolean;
+
+    enableWebSearch: boolean;
 }
 
 export class SettingsService {

@@ -21,6 +21,7 @@
 	import { Copy, replaceCopy } from "Enums/Copy";
 	import { HelpModal } from "Modals/HelpModal";
 	import type { IPrompt } from "AIPrompts/IPrompt";
+  import type { SettingsService } from "Services/SettingsService";
 
   export let attachments: Attachment[] = [];
 
@@ -32,6 +33,7 @@
   export let onStop: () => void;
 
   const inputService: InputService = Resolve<InputService>(Services.InputService);
+  const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
   const userInputService: UserInputService = Resolve<UserInputService>(Services.UserInputService);
   const searchStateStore: SearchStateStore = Resolve<SearchStateStore>(Services.SearchStateStore);
   const diffService: DiffService = Resolve<DiffService>(Services.DiffService);
@@ -43,6 +45,7 @@
   let inputDisplay: InputDisplay;
   let textareaElement: HTMLDivElement;
   let userInstructionButton: HTMLButtonElement;
+  let webSearchButton: HTMLButtonElement;
   let submitButton: HTMLButtonElement;
   let editModeButton: HTMLButtonElement;
   let planningModeButton: HTMLButtonElement;
@@ -177,6 +180,10 @@
     setIcon(userInstructionButton, "user-round-pen");
   }
 
+  $: if (webSearchButton) {
+    setIcon(webSearchButton, "globe");
+  }
+
   $: userInstructionAreaActive, (() => {
     tick().then(async () => {
       userInstructionActive = (await aiPrompt.userInstruction()).trim() !== "";
@@ -276,6 +283,11 @@
   function toggleUserInstructionArea() {
     userInstructionAreaActive = !userInstructionAreaActive;
     searchStateStore.resetSearch();
+  }
+
+  function toggleWebSearch() {
+    settingsService.settings.enableWebSearch = !settingsService.settings.enableWebSearch;
+    settingsService.saveSettings();
   }
 
   function toggleEditMode() {
@@ -515,7 +527,15 @@
     class:instruction-active={userInstructionActive}
     bind:this={userInstructionButton}
     on:click={toggleUserInstructionArea}
-    aria-label="User Instruction">
+    aria-label={Copy.ButtonUserInstruction}>
+  </button>
+
+  <button
+    id="web-search-button"
+    class:web-search-active={settingsService.settings.enableWebSearch}
+    bind:this={webSearchButton}
+    on:click={toggleWebSearch}
+    aria-label={settingsService.settings.enableWebSearch ? Copy.ButtonTurnOffWebSearch : Copy.ButtonTurnOnWebSearch}>
   </button>
 
   <div
@@ -584,7 +604,7 @@
     grid-column: 1;
     display: grid;
     grid-template-rows: auto auto auto auto var(--size-4-3) 1fr var(--size-4-3);
-    grid-template-columns: var(--size-4-3) auto var(--size-4-2) 1fr var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
+    grid-template-columns: var(--size-4-3) auto var(--size-4-2) auto var(--size-4-2) 1fr var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
     border-radius: var(--radius-l);
     background-color: var(--background-primary);
   }
@@ -596,27 +616,27 @@
 
   #input-display-container {
     grid-row: 1;
-    grid-column: 2 / 11;
+    grid-column: 2 / 13;
   }
 
   #input-attachments-container {
     grid-row: 2;
-    grid-column: 2 / 11;
+    grid-column: 2 / 13;
   }
 
   #diff-controls-container {
     grid-row: 3;
-    grid-column: 2 / 11;
+    grid-column: 2 / 13;
   }
 
   #input-search-results-container {
     grid-row: 4;
-    grid-column: 2 / 11;
+    grid-column: 2 / 13;
   }
 
   #user-instruction-container {
     grid-row: 4;
-    grid-column: 2 / 11;
+    grid-column: 2 / 13;
   }
 
   #user-instruction-button {
@@ -635,9 +655,25 @@
     box-shadow: 0px 0px 2px 1px var(--color-accent);
   }
 
-  #input-field {
+  #web-search-button {
     grid-row: 6;
     grid-column: 4;
+    border-radius: var(--radius-l);
+    align-self: end;
+    transition-duration: 0.5s;
+  }
+
+  #web-search-button.web-search-active {
+    box-shadow: 0px 0px 2px 1px var(--color-accent);
+  }
+
+  :global(.is-mobile) #web-search-button {
+    max-height: 2rem;
+  }
+
+  #input-field {
+    grid-row: 6;
+    grid-column: 6;
     height: 100%;
     max-height: 30vh;
     border-radius: var(--radius-m);
@@ -698,7 +734,7 @@
 
   #edit-mode-button {
     grid-row: 6;
-    grid-column: 6;
+    grid-column: 8;
     border-radius: var(--radius-l);
     align-self: end;
     transition-duration: 0.5s;
@@ -714,7 +750,7 @@
 
   #planning-mode-button {
     grid-row: 6;
-    grid-column: 8;
+    grid-column: 10;
     border-radius: var(--radius-l);
     align-self: end;
     transition-duration: 0.5s;
@@ -730,7 +766,7 @@
 
   #submit-button {
     grid-row: 6;
-    grid-column: 10;
+    grid-column: 12;
     border-radius: var(--radius-l);
     padding-left: var(--size-4-5);
     padding-right: var(--size-4-5);
@@ -763,10 +799,14 @@
   }
 
   #input-container.stacked #input-field {
-    grid-column: 2 / 11;
+    grid-column: 2 / 13;
   }
 
   #input-container.stacked #user-instruction-button {
+    grid-row: 8;
+  }
+
+  #input-container.stacked #web-search-button {
     grid-row: 8;
   }
 
@@ -785,7 +825,7 @@
   /* Narrow/mobile layout: input above, buttons below */
   :global(.is-mobile) #input-container {
     grid-template-rows: auto auto auto auto var(--size-4-3) 1fr var(--size-4-2) auto var(--size-4-3);
-    grid-template-columns: var(--size-4-3) auto 1fr auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
+    grid-template-columns: var(--size-4-3) auto var(--size-4-2) auto 1fr auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
   }
 
   :global(.is-mobile) #input-display-container,
@@ -793,12 +833,12 @@
   :global(.is-mobile) #diff-controls-container,
   :global(.is-mobile) #input-search-results-container,
   :global(.is-mobile) #user-instruction-container {
-    grid-column: 2 / 9;
+    grid-column: 2 / 11;
   }
 
   :global(.is-mobile) #input-field {
     grid-row: 6;
-    grid-column: 2 / 9;
+    grid-column: 2 / 11;
   }
 
   :global(.is-mobile) #user-instruction-button {
@@ -806,18 +846,23 @@
     grid-column: 2;
   }
 
-  :global(.is-mobile) #edit-mode-button {
+  :global(.is-mobile) #web-search-button {
     grid-row: 8;
     grid-column: 4;
   }
 
-  :global(.is-mobile) #planning-mode-button {
+  :global(.is-mobile) #edit-mode-button {
     grid-row: 8;
     grid-column: 6;
   }
 
-  :global(.is-mobile) #submit-button {
+  :global(.is-mobile) #planning-mode-button {
     grid-row: 8;
     grid-column: 8;
+  }
+
+  :global(.is-mobile) #submit-button {
+    grid-row: 8;
+    grid-column: 10;
   }
 </style>

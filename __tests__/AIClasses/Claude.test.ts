@@ -1236,7 +1236,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = claude.formatBinaryFiles([attachment as any]);
+            const result = (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1264,7 +1264,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = claude.formatBinaryFiles([attachment as any]);
+            const result = (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1292,7 +1292,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = claude.formatBinaryFiles([attachment as any]);
+            const result = (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1316,7 +1316,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = claude.formatBinaryFiles([attachment as any]);
+            const result = (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1340,7 +1340,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = claude.formatBinaryFiles([attachment as any]);
+            const result = (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1364,7 +1364,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = claude.formatBinaryFiles([attachment as any]);
+            const result = (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1405,7 +1405,7 @@ describe('Claude', () => {
                 }
             ];
 
-            const result = claude.formatBinaryFiles(attachments as any);
+            const result = (claude as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(6);
@@ -1472,7 +1472,7 @@ describe('Claude', () => {
                 }
             ];
 
-            const result = claude.formatBinaryFiles(attachments as any);
+            const result = (claude as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(5);
@@ -1500,7 +1500,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = claude.formatBinaryFiles([attachment as any]);
+            const result = (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             // Should return empty array when no file ID is available
@@ -1529,7 +1529,7 @@ describe('Claude', () => {
                 }
             ];
 
-            const result = claude.formatBinaryFiles(attachments as any);
+            const result = (claude as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(4);
@@ -1542,7 +1542,7 @@ describe('Claude', () => {
         it('should handle empty files array', () => {
             const attachments: any[] = [];
 
-            const result = claude.formatBinaryFiles(attachments);
+            const result = (claude as any).formatBinaryFiles(attachments);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(0);
@@ -1559,7 +1559,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = claude.formatBinaryFiles([attachment as any]);
+            const result = (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed[0].text).toBe(replaceCopy(Copy.AttachedFile, ["report (final) v2.pdf"]));
@@ -1576,7 +1576,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = claude.formatBinaryFiles([attachment as any]);
+            const result = (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed[1]).toEqual({

@@ -63,14 +63,7 @@ export class Claude extends BaseAIClass {
         const messages = this.addCacheControlToMessages(
             await this.extractContents(conversation.contents));
 
-        const webSearchTool: WebSearchTool20250305 = {
-            type: "web_search_20250305",
-            name: "web_search",
-            max_uses: 5
-        };
-
-        const tools: ToolUnion[] = this.addCacheControlToTools([
-            webSearchTool, ...this.mapFunctionDefinitions(this.aiToolDefinitions)]);
+        const tools = this.getTools();
 
         const requestBody = {
             model: this.model(),
@@ -288,7 +281,7 @@ export class Claude extends BaseAIClass {
         }));
     }
 
-    public formatBinaryFiles(attachments: Attachment[]): string {
+    protected formatBinaryFiles(attachments: Attachment[]): string {
         const contentBlocks = attachments.flatMap(attachment => {
             const fileID = attachment.getFileID(this.provider);
             if (!fileID) {
@@ -373,6 +366,20 @@ export class Claude extends BaseAIClass {
         } as ContentBlockParam;
 
         return cachedMessages;
+    }
+
+    private getTools(): ToolUnion[] {
+        if (this.settingsService.settings.enableWebSearch) {
+            const webSearchTool: WebSearchTool20250305 = {
+                type: "web_search_20250305",
+                name: "web_search",
+                max_uses: 5
+            };
+
+            return this.addCacheControlToTools([
+                webSearchTool, ...this.mapFunctionDefinitions(this.aiToolDefinitions)]);
+        }
+        return this.addCacheControlToTools(this.mapFunctionDefinitions(this.aiToolDefinitions));
     }
 
     private buildClaudeToolChoice(): { type: string } {

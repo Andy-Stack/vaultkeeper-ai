@@ -700,7 +700,7 @@ describe('Mistral', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = mistral.formatBinaryFiles([attachment as any]);
+            const result = (mistral as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -725,7 +725,7 @@ describe('Mistral', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = mistral.formatBinaryFiles([attachment as any]);
+            const result = (mistral as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -750,7 +750,7 @@ describe('Mistral', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = mistral.formatBinaryFiles([attachment as any]);
+            const result = (mistral as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -771,7 +771,7 @@ describe('Mistral', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = mistral.formatBinaryFiles([attachment as any]);
+            const result = (mistral as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -803,7 +803,7 @@ describe('Mistral', () => {
                 }
             ];
 
-            const result = mistral.formatBinaryFiles(attachments as any);
+            const result = (mistral as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(4);
@@ -834,7 +834,7 @@ describe('Mistral', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = mistral.formatBinaryFiles([attachment as any]);
+            const result = (mistral as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             // Should return empty array when no file ID is available
@@ -844,7 +844,7 @@ describe('Mistral', () => {
         it('should handle empty files array', () => {
             const attachments: any[] = [];
 
-            const result = mistral.formatBinaryFiles(attachments);
+            const result = (mistral as any).formatBinaryFiles(attachments);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(0);

@@ -5,7 +5,7 @@ import type { Attachment } from "Conversations/Attachment";
 import { Role } from "Enums/Role";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIToolCall } from "AIClasses/AIToolCall";
-import { fromString as aiToolFromString } from "Enums/AITool";
+import { AITool, fromString as aiToolFromString } from "Enums/AITool";
 import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
@@ -22,7 +22,6 @@ import { Copy, replaceCopy } from "Enums/Copy";
 
 export class Gemini extends BaseAIClass {
 
-  private readonly REQUEST_WEB_SEARCH: string = "request_web_search";
 
   private readonly SUPPORTED_MIMETYPES = [
     // Common Text
@@ -83,7 +82,7 @@ export class Gemini extends BaseAIClass {
 
   public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
     // next request should use web search only (gemini api doesn't support custom tooling and grounding at the same time)
-    const requestWebSearch = this.accumulatedFunctionName == this.REQUEST_WEB_SEARCH;
+    const requestWebSearch = this.accumulatedFunctionName == AITool.RequestWebSearch;
 
     this.accumulatedFunctionName = null;
     this.accumulatedFunctionArgs = {};
@@ -96,18 +95,7 @@ export class Gemini extends BaseAIClass {
 
     const contents = await this.extractContents(conversation.contents);
 
-    const tools = requestWebSearch ? { google_search: {} } :
-      {
-        functionDeclarations: [
-          {
-            name: "request_web_search",
-            description: `Use this function when you need to search the web for current
-                        information, recent events, news, or facts that may have changed.
-                        After calling this, you will be able to perform web searches.`,
-          },
-          ...this.mapFunctionDefinitions(this.aiToolDefinitions),
-        ]
-      }
+    const tools = requestWebSearch ? { google_search: {} } : this.getTools()
 
     const requestBody: Record<string, unknown> = {
       system_instruction: {
@@ -326,7 +314,7 @@ export class Gemini extends BaseAIClass {
     }));
   }
 
-  public formatBinaryFiles(attachments: Attachment[]): string {
+  protected formatBinaryFiles(attachments: Attachment[]): string {
     const parts: unknown[] = [];
 
     for (const attachment of attachments) {
@@ -359,6 +347,23 @@ export class Gemini extends BaseAIClass {
     }
 
     return JSON.stringify(parts);
+  }
+
+  private getTools(): { functionDeclarations: FunctionDeclaration[] } {
+      if (this.settingsService.settings.enableWebSearch) {
+          return {
+              functionDeclarations: [
+                  {
+                      name: AITool.RequestWebSearch,
+                      description: `Use this function when you need to search the web for current
+                          information, recent events, news, or facts that may have changed.
+                          After calling this, you will be able to perform web searches.`,
+                  },
+                  ...this.mapFunctionDefinitions(this.aiToolDefinitions),
+              ]
+          };
+      }
+      return { functionDeclarations: this.mapFunctionDefinitions(this.aiToolDefinitions) };
   }
 
   private buildGeminiToolConfig(): { function_calling_config: { mode: string } } {

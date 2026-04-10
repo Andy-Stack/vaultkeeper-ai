@@ -101,7 +101,9 @@ describe('SettingsService', () => {
                 searchResultsLimit: 15,
                 snippetSizeLimit: 300,
                 enableMemories: false,
-                allowUpdatingMemories: true
+                allowUpdatingMemories: true,
+                enableWebSearch: true,
+                enableWebViewer: false
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -144,7 +146,9 @@ describe('SettingsService', () => {
                 searchResultsLimit: 15,
                 snippetSizeLimit: 300,
                 enableMemories: false,
-                allowUpdatingMemories: true
+                allowUpdatingMemories: true,
+                enableWebSearch: true,
+                enableWebViewer: false
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -167,7 +171,9 @@ describe('SettingsService', () => {
                 searchResultsLimit: 15,
                 snippetSizeLimit: 300,
                 enableMemories: false,
-                allowUpdatingMemories: true
+                allowUpdatingMemories: true,
+                enableWebSearch: true,
+                enableWebViewer: false
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -190,7 +196,9 @@ describe('SettingsService', () => {
                 searchResultsLimit: 15,
                 snippetSizeLimit: 300,
                 enableMemories: false,
-                allowUpdatingMemories: true
+                allowUpdatingMemories: true,
+                enableWebSearch: true,
+                enableWebViewer: false
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -238,7 +246,9 @@ describe('SettingsService', () => {
                 searchResultsLimit: 15,
                 snippetSizeLimit: 300,
                 enableMemories: false,
-                allowUpdatingMemories: true
+                allowUpdatingMemories: true,
+                enableWebSearch: true,
+                enableWebViewer: false
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -295,7 +305,9 @@ describe('SettingsService', () => {
                 searchResultsLimit: 15,
                 snippetSizeLimit: 300,
                 enableMemories: false,
-                allowUpdatingMemories: true
+                allowUpdatingMemories: true,
+                enableWebSearch: true,
+                enableWebViewer: false
             };
             settingsService = new SettingsService(loadedSettings);
         });

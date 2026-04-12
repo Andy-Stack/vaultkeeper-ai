@@ -260,23 +260,21 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		// OpenAI models
 		if (!providerFilter || providerFilter === AIProvider.OpenAI) {
 			const openaiGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderOpenAI } });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_2_Instant, text: Copy.GPT_5_2_Instant });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_2_Thinking, text: Copy.GPT_5_2_Thinking });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_2_Pro, text: Copy.GPT_5_2_Pro });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_1, text: Copy.GPT_5_1 });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5, text: Copy.GPT_5 });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_Mini, text: Copy.GPT_5_Mini });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_Nano, text: Copy.GPT_5_Nano });
+			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_4, text: Copy.GPT_5_4 });
+			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_4_Pro, text: Copy.GPT_5_4_Pro });
+			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_4_Mini, text: Copy.GPT_5_4_Mini });
+			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_4_Nano, text: Copy.GPT_5_4_Nano });
 		}
 
 		// Gemini models
 		if (!providerFilter || providerFilter === AIProvider.Gemini) {
 			const geminiGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderGemini } });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_2_5_Lite, text: Copy.GeminiFlash_2_5_Lite });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_2_5, text: Copy.GeminiFlash_2_5 });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_2_5, text: Copy.GeminiPro_2_5 });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_Preview, text: Copy.GeminiFlash_3_Preview });
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_3_1_Preview, text: Copy.GeminiPro_3_1_Preview });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_1_Preview_Lite, text: Copy.GeminiFlash_3_1_Preview_Lite });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_Preview, text: Copy.GeminiFlash_3_Preview });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_2_5, text: Copy.GeminiPro_2_5 });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_2_5, text: Copy.GeminiFlash_2_5 });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_2_5_Lite, text: Copy.GeminiFlash_2_5_Lite });
 		}
 
 		// Mistral models

@@ -28,7 +28,7 @@
 		"@typescript-eslint/eslint-plugin": "8.58.1",
 		"@typescript-eslint/parser": "8.58.1",
 		"@vitest/ui": "^4.1.4",
-		"builtin-modules": "5.0.0",
+		"builtin-modules": "5.1.0",
 		"esbuild": "^0.28.0",
 		"esbuild-svelte": "^0.9.4",
 		"eslint": "^9.39.2",
@@ -44,7 +44,7 @@
 		"vitest": "^4.1.4"
 	},
 	"dependencies": {
-		"@anthropic-ai/sdk": "^0.87.0",
+		"@anthropic-ai/sdk": "^0.88.0",
 		"@google/genai": "^1.49.0",
 		"@shikijs/rehype": "^4.0.2",
 		"core-js": "^3.49.0",

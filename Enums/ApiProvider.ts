@@ -60,16 +60,14 @@ export enum AIProviderModel {
     GeminiFlash_2_5 = "gemini-2.5-flash",
     GeminiPro_2_5 = "gemini-2.5-pro",
     GeminiFlash_3_Preview = "gemini-3-flash-preview",
+    GeminiFlash_3_1_Preview_Lite = "gemini-3.1-flash-lite-preview",
     GeminiPro_3_1_Preview = "gemini-3.1-pro-preview",
 
     // OpenAI models
-    GPT_5_2_Instant = "gpt-5.2-chat-latest",
-    GPT_5_2_Thinking = "gpt-5.2",
-    GPT_5_2_Pro = "gpt-5.2-pro",
-    GPT_5_1 = "gpt-5.1",
-    GPT_5 = "gpt-5",
-    GPT_5_Mini = "gpt-5-mini",
-    GPT_5_Nano = "gpt-5-nano",
+    GPT_5_4 = "gpt-5.4",
+    GPT_5_4_Pro = "gpt-5.4-pro",
+    GPT_5_4_Mini = "gpt-5.4-mini",
+    GPT_5_4_Nano = "gpt-5.4-nano",
 
     // Mistral models
     MistralLarge = "mistral-large-latest",
@@ -79,7 +77,7 @@ export enum AIProviderModel {
     // Conversation naming models (aliases to existing models)
     ClaudeNamer = ClaudeHaiku_4_5,
     GeminiNamer = GeminiFlash_2_5_Lite,
-    OpenAINamer = GPT_5_2_Instant,
+    OpenAINamer = GPT_5_4_Nano,
     MistralNamer = MistralSmall,
 }
 

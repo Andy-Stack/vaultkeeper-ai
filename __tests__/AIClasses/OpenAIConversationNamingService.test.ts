@@ -19,7 +19,7 @@ describe('OpenAIConversationNamingService', () => {
         // Mock SettingsService
         mockSettingsService = {
             settings: {
-                model: AIProviderModel.GPT_5_Nano,
+                model: AIProviderModel.GPT_5_4_Nano,
                 apiKeys: {
                     claude: 'test-claude-key',
                     openai: 'test-openai-key',

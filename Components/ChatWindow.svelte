@@ -21,6 +21,7 @@
 	import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
 	import { HTMLService } from "Services/HTMLService";
 	import { AITool, fromString } from "Enums/AITool";
+  import { ChatMode } from "Enums/ChatMode";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);
@@ -39,8 +40,7 @@
   let hasNoApiKey = false;
   let isSubmitting = false;
   let busyPlanning = false;
-  let editModeActive = false;
-  let planningModeActive = false;
+  let chatMode: ChatMode = ChatMode.ReadOnly;
   let currentStreamingMessageId: string | null = null;
 
   let conversation: Conversation = new Conversation();
@@ -103,7 +103,7 @@
 
     const currentRequest = userRequest;
 
-    await chatService.submit(conversation, editModeActive, planningModeActive, currentRequest, formattedRequest, attachments, {
+    await chatService.submit(conversation, chatMode, currentRequest, formattedRequest, attachments, {
       onSubmit: () => {
         isSubmitting = true;
         attachments = [];
@@ -207,24 +207,22 @@
 
   $: if ($conversationStore.shouldDeactivateEditMode) {
     conversationStore.clearEditModeFlag();
-    planningModeActive = false;
-    editModeActive = false;
+    chatMode = ChatMode.ReadOnly;
   }
 </script>
 
 <main class="container">
-  <ChatPlanArea executionPlanState={executionPlanStore.executionPlanState} {editModeActive} {busyPlanning}/>
+  <ChatPlanArea executionPlanState={executionPlanStore.executionPlanState} {busyPlanning}/>
 
   <div id="chat-container">
     <ChatArea messages={conversation.contents} bind:this={chatArea} bind:currentThought bind:isSubmitting bind:chatContainer
-      currentStreamingMessageId={currentStreamingMessageId} editModeActive={editModeActive}/>
+      currentStreamingMessageId={currentStreamingMessageId}/>
   </div>
 
   <ChatInput
     bind:this={chatInput}
     bind:attachments
-    bind:editModeActive
-    bind:planningModeActive
+    bind:chatMode={chatMode}
     {hasNoApiKey}
     {isSubmitting}
     onSubmit={handleSubmit}

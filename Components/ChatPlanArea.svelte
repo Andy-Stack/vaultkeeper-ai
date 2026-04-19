@@ -8,7 +8,6 @@
 	import type { Writable } from "svelte/store";
 
     export let executionPlanState: Writable<IExecutionPlanState>;
-    export let editModeActive = false;
     export let busyPlanning = false;
 
     let expanded = false;
@@ -116,7 +115,7 @@
 
 {#if busyPlanning}
     <div id="chat-planning-in-progress" transition:slide>
-        <Spinner {editModeActive} alternateBackground={true}/>
+        <Spinner alternateBackground={true}/>
         <span id="chat-planning-in-progress-text">{Copy.PlanningInProgress}</span>
     </div>
 {/if}
@@ -137,7 +136,7 @@
                         {/if}
                         {#if index === activeStepIndex}
                             <div class="chat-plan-step-icon">
-                                <Spinner {editModeActive} alternateBackground={true}/>
+                                <Spinner alternateBackground={true}/>
                             </div>
                         {/if}
                         {#if index > activeStepIndex}

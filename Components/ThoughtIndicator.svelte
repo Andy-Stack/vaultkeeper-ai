@@ -1,10 +1,8 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
 	import Spinner from "./Spinner.svelte";
-
   export let thought: string | null = null;
   export let thoughtIndicatorElement: HTMLElement | undefined = undefined;
-  export let editModeActive : boolean = false;
 
   $: isVisible = thought !== null && thought.trim().length > 0;
 
@@ -13,7 +11,7 @@
 {#if isVisible}
   <div class="ai-thought-container" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }} bind:this={thoughtIndicatorElement}>
     <div class="ai-thought-bubble">
-      <span><Spinner {editModeActive}/> {thought}</span>
+      <span><Spinner/> {thought}</span>
     </div>
   </div>
 {/if}

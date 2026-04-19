@@ -1,14 +1,12 @@
 <script lang="ts">
   export let width: string = "18px";
   export let height: string = "18px";
-  export let editModeActive: boolean = false;
   export let alternateBackground: boolean = false;
   export let spinnerElement: HTMLDivElement | undefined = undefined;
 </script>
 
 <div
   class="circle-border"
-  class:edit-mode={editModeActive}
   style="width: {width}; height: {height};"
   bind:this={spinnerElement}
 >
@@ -40,10 +38,6 @@
       var(--color) 100%
     );
     animation: spin 0.8s linear 0s infinite;
-  }
-
-  .circle-border.edit-mode {
-    --color: var(--alt-interactive-accent);
   }
 
   .circle-core {

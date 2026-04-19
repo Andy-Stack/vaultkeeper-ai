@@ -14,14 +14,15 @@ import { Role } from "Enums/Role";
 import { DebugColor } from "Enums/DebugColor";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
+import { ChatMode } from "Enums/ChatMode";
 
 export class MainAgent extends BaseAgent {
 
-    public async runMainAgent(conversation: Conversation, allowDestructiveActions: boolean, planningMode: boolean, callbacks: IChatServiceCallbacks) {
-        await this.setAgentPromptAndTools(planningMode, allowDestructiveActions);
-        this.debugService?.log("MainAgent", `Starting MainAgent (planningMode: ${planningMode}, destructive: ${allowDestructiveActions})`);
+    public async runMainAgent(conversation: Conversation, chatMode: ChatMode, callbacks: IChatServiceCallbacks) {
+        await this.setAgentPromptAndTools(chatMode);
+        this.debugService?.log("MainAgent", `Starting MainAgent (chatMode: ${chatMode})`);
 
-        if (planningMode) {
+        if (chatMode === ChatMode.Planning) {
             this.debugService?.log("MainAgent", "Planning mode enabled - workflow execution available");
             conversation.contents.push(new ConversationContent({
                 role: Role.User,
@@ -45,7 +46,7 @@ export class MainAgent extends BaseAgent {
                 result.toolCall.toolId
             ));
 
-            await this.setAgentPromptAndTools(planningMode, allowDestructiveActions);
+            await this.setAgentPromptAndTools(chatMode);
             result = await this.runMainAgentLoop(conversation, callbacks);
         }
     }
@@ -85,7 +86,7 @@ export class MainAgent extends BaseAgent {
         return { planRequest: planRequest, toolCall: planToolCall };
     }
 
-    private async setAgentPromptAndTools(planningMode: boolean, allowDestructiveActions: boolean): Promise<void> {
+    private async setAgentPromptAndTools(chatMode: ChatMode): Promise<void> {
         if (!this.ai) { // this shouldn't ever happen
             Exception.throw("Error: No AI provider has been set!");
         }
@@ -93,8 +94,8 @@ export class MainAgent extends BaseAgent {
         this.ai.aiToolUsageMode = AIToolUsageMode.Auto;
         this.ai.systemPrompt = await this.aiPrompt.systemInstruction();
         this.ai.userInstruction = await this.aiPrompt.userInstruction();
-        this.ai.aiToolDefinitions = AIToolDefinitions.agentDefinitions(allowDestructiveActions, planningMode,
-            this.memoriesEnabled(), this.updateMemoriesEnabled(), this.webViewerAccessEnabled());
+        this.ai.aiToolDefinitions = AIToolDefinitions.agentDefinitions(
+            chatMode, this.memoriesEnabled(), this.updateMemoriesEnabled(), this.webViewerAccessEnabled());
     }
 
     protected override setDebugColor(): void {

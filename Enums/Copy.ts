@@ -95,6 +95,14 @@ export enum Copy {
 
     SafeContinue= "Continue",
 
+    // Chat Mode Selector
+    ChatModeReadOnlyTitle = "Read-only",
+    ChatModeReadOnlyDesc = "The AI can search and read your vault but cannot make any changes.",
+    ChatModeEditTitle = "Allow Edits",
+    ChatModeEditDesc = "The AI can create, edit, move, and delete files in your vault.",
+    ChatModePlanningTitle = "Planning",
+    ChatModePlanningDesc = "The AI plans its approach before executing tasks in your vault.",
+
     // Chat Input Placeholders
     InputPlaceholderQuestion = "Provide an answer...",
     InputPlaceholderDiff = "Make a suggestion...",
@@ -105,8 +113,7 @@ export enum Copy {
     ButtonSubmitAnswer = "Submit answer",
     ButtonMakeSuggestion = "Make Suggestion",
     ButtonSendMessage = "Send Message",
-    ButtonTurnOffAgentMode = "Turn off Agent Mode",
-    ButtonTurnOnAgentMode = "Turn on Agent Mode",
+    ButtonChangeChatMode = "Change the Chat Mode",
     ButtonTurnOffPlanningMode = "Turn off Planning Mode",
     ButtonTurnOnPlanningMode = "Turn on Planning Mode",
     ButtonTurnOffWebSearch = "Turn off Web Search",

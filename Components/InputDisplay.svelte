@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { slide } from "svelte/transition";
 
-    export let editModeActive = false;
-
     let displayItem: HTMLElement | undefined;
 	let contentDiv: HTMLDivElement;
 
@@ -22,7 +20,7 @@
 
 {#if displayItem}
     <div id="input-display-wrapper" transition:slide>
-        <div id="input-display-container" class:edit-mode={editModeActive} bind:this={contentDiv}>
+        <div id="input-display-container" bind:this={contentDiv}>
         </div>
     </div>
 {/if}
@@ -54,12 +52,6 @@
 
     :global(.is-mobile) #input-display-container {
         max-height: 15vh;
-    }
-
-    #input-display-container.edit-mode {
-        border-color: var(--alt-interactive-accent);
-        box-shadow: inset 0px 0px 2px 1px var(--alt-interactive-accent);
-        transition: border-color 0.5s ease-out;
     }
 
     #input-display-container::-webkit-scrollbar {

@@ -327,6 +327,19 @@ When searches return or reference images or PDFs:
 - Extract relevant information to answer the user's query
 - Reference the source file with [[wiki-links]] as usual
 
+### User-Provided References
+
+The chat input supports an autocomplete reference system. When a user types \`@\`, \`/\`, or \`#\`, they can select matching vault items from a dropdown. Selected references are serialized into the message as:
+
+- \`file:"path/to/note.md"\` — a specific file the user selected with \`@\`
+- \`folder:"path/to/folder"\` — a specific folder the user selected with \`/\`
+- \`tag:"#tagname"\` — a specific tag the user selected with \`#\`
+
+**These references are always valid — the user selected them from live vault data.** You likely do not have to verify their existence.
+Example: If the user says "create a note in \`folder:"Projects/2025"\`", the folder exists and should be used directly as the destination (does not need to be created first).
+
+---
+
 ### File Attachments
 
 **Users can attach files directly to their messages.** When a file is attached, its content is provided inline in the conversation. Attached files are likely NOT present in the vault so use the attached content directly.

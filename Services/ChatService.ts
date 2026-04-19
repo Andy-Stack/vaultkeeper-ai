@@ -16,6 +16,7 @@ import { Reference } from "Conversations/Reference";
 import type { WorkSpaceService } from "./WorkSpaceService";
 import type { ExecutionPlan } from "Types/ExecutionPlan";
 import type { MainAgent } from "./AIServices/MainAgent";
+import type { ChatMode } from "Enums/ChatMode";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
@@ -59,7 +60,7 @@ export class ChatService {
 
 	public onNameChanged: ((name: string) => void) | undefined = undefined;
 
-	public async submit(conversation: Conversation, allowDestructiveActions: boolean, planningMode: boolean, userRequest: string, formattedRequest: string, attachments: Attachment[], callbacks: IChatServiceCallbacks) {
+	public async submit(conversation: Conversation, chatMode: ChatMode, userRequest: string, formattedRequest: string, attachments: Attachment[], callbacks: IChatServiceCallbacks) {
 		if (!await this.semaphore.wait()) {
 			return;
 		}
@@ -108,7 +109,7 @@ export class ChatService {
 				callbacks.onSubmit();
 				callbacks.onStreamingUpdate(null);
 
-				await this.mainAgent.runMainAgent(conversation, allowDestructiveActions, planningMode, callbacks);
+				await this.mainAgent.runMainAgent(conversation, chatMode, callbacks);
 
 				if (namingPromise) {
 					const timeout = new Promise<void>(resolve => setTimeout(resolve, 5000));

@@ -50,7 +50,7 @@
 }
 
 .ai-exclusions-input {
-  width: 350px;
+  width: max(350px, 100%);
   height: 110px;
   font: var(--font-monospace);
   font-size: 0.9em;
@@ -202,16 +202,6 @@ body {
   --checkbox-border: var(--background-modifier-border);
   --checkbox-checked-bg: var(--interactive-accent);
   --footnote-border: var(--background-modifier-border);
-  --alt-interactive-accent: color-mix(
-    in hsl longer hue,
-    var(--interactive-accent) 50%,
-    hsl(130, 100%, 50%) 50%
-  );
-  --alt-interactive-accent-hover: color-mix(
-    in hsl longer hue,
-    var(--interactive-accent-hover) 50%,
-    hsl(130 100% 50%) 50%
-  );
   --alt-background-primary: color-mix(
     in hsl shorter hue,
     var(--background-primary) 75%,

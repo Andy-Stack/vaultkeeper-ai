@@ -1,9 +1,8 @@
 <script lang="ts">
-  export let editModeActive: boolean = false;
   export let streamingIndicatorElement: HTMLElement | undefined = undefined;
 </script>
 
-<div class="loader" class:edit-mode={editModeActive} bind:this={streamingIndicatorElement}>
+<div class="loader" bind:this={streamingIndicatorElement}>
   <div class="circle">
     <div class="dot"></div>
     <div class="outline"></div>
@@ -31,10 +30,6 @@
     align-items: center;
     --color: var(--interactive-accent);
     --animation: 2s ease-in-out infinite;
-  }
-
-  .loader.edit-mode {
-    --color: var(--alt-interactive-accent);
   }
 
   .loader .circle {

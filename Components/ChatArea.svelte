@@ -17,7 +17,6 @@
   export let isSubmitting: boolean = false;
   export let chatContainer: HTMLDivElement;
   export let currentStreamingMessageId: string | null = null;
-  export let editModeActive: boolean = false;
 
   export function resetChatArea() {
     autoScroll = true;
@@ -291,9 +290,9 @@
       {/if}
     {/each}
 
-    <ThoughtIndicator thought={currentThought} {editModeActive} bind:thoughtIndicatorElement={thoughtIndicatorElement}/>
+    <ThoughtIndicator thought={currentThought} bind:thoughtIndicatorElement={thoughtIndicatorElement}/>
     {#if isSubmitting}
-      <StreamingIndicator editModeActive={editModeActive} bind:streamingIndicatorElement={streamingIndicatorElement}/>
+      <StreamingIndicator bind:streamingIndicatorElement={streamingIndicatorElement}/>
     {/if}
 
     <div bind:this={chatAreaPaddingElement} style:user-select=none></div>

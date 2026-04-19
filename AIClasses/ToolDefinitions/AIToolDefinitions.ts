@@ -22,6 +22,7 @@ import { CreateVaultFolder } from "./Tools/CreateVaultFolder";
 import { GetWebViewerContent } from "./Tools/GetWebViewerContent";
 import { DeleteVaultFolder } from "./Tools/DeleteVaultFolder";
 import { MoveVaultFolder } from "./Tools/MoveVaultFolder";
+import { ChatMode, chatModeAllowsEdits } from "Enums/ChatMode";
 
 export abstract class AIToolDefinitions {
     
@@ -31,10 +32,10 @@ export abstract class AIToolDefinitions {
     private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, GetWebViewerContent,
         WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles, CreateVaultFolder, DeleteVaultFolder, MoveVaultFolder];
 
-    public static agentDefinitions(destructive: boolean, planningMode: boolean, memories: boolean, updateMemories: boolean, webViewer: boolean): IAIToolDefinition[] {
+    public static agentDefinitions(chatMode: ChatMode, memories: boolean, updateMemories: boolean, webViewer: boolean): IAIToolDefinition[] {
         this.isGated = false;
         
-        if (planningMode) {
+        if (chatMode === ChatMode.Planning) {
             return [ExecuteWorkflow];
         }
 
@@ -56,7 +57,7 @@ export abstract class AIToolDefinitions {
             actions = actions.concat([UpdateMemories]);
         }
 
-        if (destructive) {
+        if (chatModeAllowsEdits(chatMode)) {
             actions = actions.concat([
                 WriteVaultFile,
                 PatchVaultFile,
@@ -110,7 +111,7 @@ export abstract class AIToolDefinitions {
     }
 
     public static executionAgentDefinitions(): IAIToolDefinition[] {
-        return [...this.agentDefinitions(true, false, false, false, false), CompleteTask];
+        return [...this.agentDefinitions(ChatMode.Edit, false, false, false), CompleteTask];
     }
 
     public static compactSummaryForPlanningAgent(): string {

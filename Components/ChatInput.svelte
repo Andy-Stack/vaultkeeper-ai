@@ -10,6 +10,7 @@
 	import type { Writable } from "svelte/store";
 	import type { InputService } from "Services/InputService";
 	import UserInstruction from "./UserInstruction.svelte";
+  import ChatModeSelector from "./ChatModeSelector.svelte";
 	import DiffControls from "./DiffControls.svelte";
 	import type { EventService } from "Services/EventService";
 	import { Event } from "Enums/Event";
@@ -22,13 +23,13 @@
 	import { HelpModal } from "Modals/HelpModal";
 	import type { IPrompt } from "AIPrompts/IPrompt";
   import type { SettingsService } from "Services/SettingsService";
+  import { ChatMode, chatModeAllowsEdits, iconForChatMode } from "Enums/ChatMode";
 
   export let attachments: Attachment[] = [];
 
   export let hasNoApiKey: boolean;
   export let isSubmitting: boolean;
-  export let editModeActive: boolean;
-  export let planningModeActive: boolean;
+  export let chatMode: ChatMode;
   export let onSubmit: (userRequest: string, formattedRequest: string) => void;
   export let onStop: () => void;
 
@@ -47,9 +48,10 @@
   let userInstructionButton: HTMLButtonElement;
   let webSearchButton: HTMLButtonElement;
   let submitButton: HTMLButtonElement;
-  let editModeButton: HTMLButtonElement;
-  let planningModeButton: HTMLButtonElement;
+  let attachmentButton: HTMLButtonElement;
+  let chatModeButton: HTMLButtonElement;
 
+  let chatModeSelectionAreaActive: boolean = false;
   let userInstructionAreaActive: boolean = false;
   let userInstructionActive: boolean = true;
   let stacked: boolean = false;
@@ -198,12 +200,12 @@
     }
   }
 
-  $: if (editModeButton) {
-    setIcon(editModeButton, editModeActive ? "pencil" : "pencil-off");
+  $: if (attachmentButton) {
+    setIcon(attachmentButton, "paperclip");
   }
 
-  $: if (planningModeButton) {
-    setIcon(planningModeButton, planningModeActive ? "list-ordered" : "list-x");
+  $: if (chatModeButton) {
+    setIcon(chatModeButton, iconForChatMode(chatMode));
   }
 
   $: inputPlaceholder = (() => {
@@ -290,24 +292,8 @@
     settingsService.saveSettings();
   }
 
-  function toggleEditMode() {
-    if (planningModeActive) {
-      planningModeActive = false
-    }
-    editModeActive = !editModeActive;
-    focusInput();
-  }
-
-  function togglePlanningMode() {
-    if (planningModeActive) {
-      planningModeActive = false;
-    } else {
-      if (!editModeActive) {
-        toggleEditMode(); // Mandatory for planning mode
-      }
-      planningModeActive = true;
-    }
-    focusInput();
+  function toggleChatModeSelectionArea() {
+    chatModeSelectionAreaActive = !chatModeSelectionAreaActive;
   }
 
   async function handleKeydown(e: KeyboardEvent) {
@@ -501,9 +487,9 @@
   }
 </script>
 
-<div id="input-container" class:edit-mode={editModeActive} class:stacked>
+<div id="input-container" class:stacked>
   <div id="input-display-container" style:padding-top={attachments.length > 0 ? "var(--size-4-2)" : 0}>
-    <InputDisplay bind:this={inputDisplay} {editModeActive}/>
+    <InputDisplay bind:this={inputDisplay}/>
   </div>
 
   <div id="input-attachments-container" style:padding-top={attachments.length > 0 ? "var(--size-4-2)" : 0}>
@@ -522,9 +508,13 @@
     <UserInstruction focusInput={focusInput} bind:userInstructionAreaActive={userInstructionAreaActive}/>
   </div>
 
+  <div id="chat-mode-selector-container" style:padding-top={chatModeSelectionAreaActive ? "var(--size-4-2)" : 0}>
+    <ChatModeSelector focusInput={focusInput} bind:chatModeSelectionAreaActive={chatModeSelectionAreaActive} bind:currentChatMode={chatMode} />
+  </div>
+
   <button
     id="user-instruction-button"
-    class:instruction-active={userInstructionActive}
+    class:input-button-highlight={userInstructionActive}
     bind:this={userInstructionButton}
     on:click={toggleUserInstructionArea}
     aria-label={Copy.ButtonUserInstruction}>
@@ -532,7 +522,7 @@
 
   <button
     id="web-search-button"
-    class:web-search-active={settingsService.settings.enableWebSearch}
+    class:input-button-highlight={settingsService.settings.enableWebSearch}
     bind:this={webSearchButton}
     on:click={toggleWebSearch}
     aria-label={settingsService.settings.enableWebSearch ? Copy.ButtonTurnOffWebSearch : Copy.ButtonTurnOnWebSearch}>
@@ -541,7 +531,6 @@
   <div
     id="input-field"
     class:error={hasNoApiKey}
-    class:edit-mode={editModeActive && !hasNoApiKey}
     bind:this={textareaElement}
     contenteditable="plaintext-only"
     on:keydown={handleKeydown}
@@ -563,26 +552,25 @@
   </div>
 
   <button
-    id="edit-mode-button"
-    class:edit-mode={editModeActive}
-    bind:this={editModeButton}
-    on:click={() => { toggleEditMode() }}
+    id="chat-attachment-button"
+    bind:this={attachmentButton}
+    on:click={() => {  }}
     disabled={isSubmitting}
-    aria-label={editModeActive ? Copy.ButtonTurnOffAgentMode : Copy.ButtonTurnOnAgentMode}>
+    aria-label={"Attachment"}>
+    <!-- Copy.AttachmentLabel -->
   </button>
 
   <button
-    id="planning-mode-button"
-    class:planning-mode={planningModeActive}
-    bind:this={planningModeButton}
-    on:click={() => { togglePlanningMode() }}
+    id="chat-mode-button"
+    class:input-button-highlight={chatModeAllowsEdits(chatMode)}
+    bind:this={chatModeButton}
+    on:click={() => { toggleChatModeSelectionArea() }}
     disabled={isSubmitting}
-    aria-label={planningModeActive ? Copy.ButtonTurnOffPlanningMode : Copy.ButtonTurnOnPlanningMode}>
+    aria-label={Copy.ButtonChangeChatMode}>
   </button>
 
   <button
     id="submit-button"
-    class:edit-mode={editModeActive}
     bind:this={submitButton}
     on:click={() => {
       if (inputMode === InputMode.Question) {
@@ -607,11 +595,6 @@
     grid-template-columns: var(--size-4-3) auto var(--size-4-2) auto var(--size-4-2) 1fr var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
     border-radius: var(--radius-l);
     background-color: var(--background-primary);
-  }
-
-  #input-container.edit-mode {
-    border-color: var(--alt-interactive-accent);
-    transition: border-color 0.5s ease-out;
   }
 
   #input-display-container {
@@ -639,10 +622,16 @@
     grid-column: 2 / 13;
   }
 
+  #chat-mode-selector-container {
+    grid-row: 4;
+    grid-column: 2 / 13;
+  }
+
   #user-instruction-button {
     grid-row: 6;
     grid-column: 2;
-    border-radius: var(--radius-l);
+    border-radius: var(--radius-xl);
+    padding: var(--size-4-2);
     align-self: end;
     transition-duration: 0.5s;
   }
@@ -651,20 +640,13 @@
     max-height: 2rem;
   }
 
-  #user-instruction-button.instruction-active {
-    box-shadow: 0px 0px 2px 1px var(--color-accent);
-  }
-
   #web-search-button {
     grid-row: 6;
     grid-column: 4;
-    border-radius: var(--radius-l);
+    border-radius: var(--radius-xl);
+    padding: var(--size-4-2);
     align-self: end;
     transition-duration: 0.5s;
-  }
-
-  #web-search-button.web-search-active {
-    box-shadow: 0px 0px 2px 1px var(--color-accent);
   }
 
   :global(.is-mobile) #web-search-button {
@@ -704,12 +686,6 @@
     transition: border-color 0.5s ease-out;
   }
 
-  #input-field.edit-mode:focus {
-    border-color: var(--alt-interactive-accent);
-    box-shadow: 0px 0px 3px 1px var(--alt-interactive-accent);
-    transition: border-color 0.5s ease-out;
-  }
-
   #input-field.error,
   #input-field.error:focus {
     border-color: var(--color-red);
@@ -732,44 +708,42 @@
     outline: none;
   }
 
-  #edit-mode-button {
+  #chat-attachment-button {
     grid-row: 6;
     grid-column: 8;
-    border-radius: var(--radius-l);
+    border-radius: var(--radius-xl);
+    padding: var(--size-4-2);
     align-self: end;
     transition-duration: 0.5s;
   }
 
-  #edit-mode-button.edit-mode {
-    box-shadow: inset 0px 0px 1px 1px var(--alt-interactive-accent);
-  }
-
-  :global(.is-mobile) #edit-mode-button {
+  :global(.is-mobile) #chat-attachment-button {
     max-height: 2rem;
   }
 
-  #planning-mode-button {
+  #chat-mode-button {
     grid-row: 6;
     grid-column: 10;
-    border-radius: var(--radius-l);
+    border-radius: var(--radius-xl);
+    padding: var(--size-4-2);
     align-self: end;
     transition-duration: 0.5s;
   }
 
-  #planning-mode-button.planning-mode {
-    box-shadow: inset 0px 0px 1px 1px var(--alt-interactive-accent);
+  :global(.is-mobile) #chat-mode-button {
+    max-height: 2rem;
   }
 
-  :global(.is-mobile) #planning-mode-button {
-    max-height: 2rem;
+  .input-button-highlight {
+    box-shadow: 0px 0px 2px 1px var(--color-accent);
   }
 
   #submit-button {
     grid-row: 6;
     grid-column: 12;
-    border-radius: var(--radius-l);
-    padding-left: var(--size-4-5);
-    padding-right: var(--size-4-5);
+    border-radius: var(--radius-xl);
+    padding-left: var(--size-4-2);
+    padding-right: var(--size-4-2);
     align-self: end;
     transition-duration: 0.5s;
     background-color: var(--interactive-accent);
@@ -782,15 +756,6 @@
   #submit-button:not(:disabled):hover {
     cursor: pointer;
     background-color: var(--interactive-accent-hover);
-  }
-
-  #submit-button.edit-mode {
-    background-color: var(--alt-interactive-accent);
-  }
-
-  #submit-button.edit-mode:not(:disabled):hover {
-    cursor: pointer;
-    background-color: var(--alt-interactive-accent-hover);
   }
 
   /* Stacked layout: input above, buttons below (desktop only, when content wraps) */
@@ -810,11 +775,11 @@
     grid-row: 8;
   }
 
-  #input-container.stacked #edit-mode-button {
+  #input-container.stacked #chat-attachment-button {
     grid-row: 8;
   }
 
-  #input-container.stacked #planning-mode-button {
+  #input-container.stacked #chat-mode-button {
     grid-row: 8;
   }
 
@@ -832,7 +797,8 @@
   :global(.is-mobile) #input-attachments-container,
   :global(.is-mobile) #diff-controls-container,
   :global(.is-mobile) #input-search-results-container,
-  :global(.is-mobile) #user-instruction-container {
+  :global(.is-mobile) #user-instruction-container,
+  :global(.is-mobile) #chat-mode-selector-container {
     grid-column: 2 / 11;
   }
 
@@ -851,12 +817,12 @@
     grid-column: 4;
   }
 
-  :global(.is-mobile) #edit-mode-button {
+  :global(.is-mobile) #chat-attachment-button {
     grid-row: 8;
     grid-column: 6;
   }
 
-  :global(.is-mobile) #planning-mode-button {
+  :global(.is-mobile) #chat-mode-button {
     grid-row: 8;
     grid-column: 8;
   }

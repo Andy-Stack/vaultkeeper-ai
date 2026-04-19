@@ -9,6 +9,7 @@ import { AITool } from '../../Enums/AITool';
 import { AIToolCall } from '../../AIClasses/AIToolCall';
 import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
 import { AIToolResponsePayload } from '../../AIClasses/ToolDefinitions/AIToolResponsePayload';
+import { ChatMode } from '../../Enums/ChatMode';
 
 /**
  * INTEGRATION TESTS - AIControllerService
@@ -111,7 +112,7 @@ describe('AIControllerService - Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runMainAgent(conversation, true, false, callbacks);
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
 
 			// Verify system prompt and user instruction were set
 			expect(mockPrompt.systemInstruction).toHaveBeenCalled();
@@ -128,7 +129,7 @@ describe('AIControllerService - Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runMainAgent(conversation, true, false, callbacks);
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
 
 			// Should have added assistant message to conversation
 			expect(conversation.contents.length).toBeGreaterThan(1);
@@ -140,7 +141,7 @@ describe('AIControllerService - Integration Tests', () => {
 		it('should throw error if AI provider not resolved', async () => {
 			const conversation = new Conversation();
 			// Don't call resolveAIProvider()
-			await expect(service.runMainAgent(conversation, true, false, callbacks))
+			await expect(service.runMainAgent(conversation, ChatMode.Edit, callbacks))
 				.rejects.toThrow('Error: No AI provider has been set!');
 		});
 
@@ -169,7 +170,7 @@ describe('AIControllerService - Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runMainAgent(conversation, true, false, callbacks);
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
 
 			// Verify function was called
 			expect(mockAIToolService.performAITool).toHaveBeenCalledTimes(1);
@@ -199,7 +200,7 @@ describe('AIControllerService - Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runMainAgent(conversation, true, false, callbacks);
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
 
 			expect(callbacks.onThoughtUpdate).toHaveBeenCalledWith('Searching for notes');
 		});
@@ -213,7 +214,7 @@ describe('AIControllerService - Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runMainAgent(conversation, true, false, callbacks);
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
 
 			// Should have added error to conversation
 			const lastMessage = conversation.contents[conversation.contents.length - 1];
@@ -237,7 +238,7 @@ describe('AIControllerService - Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runMainAgent(conversation, true, false, callbacks);
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
 
 			// Should have made 2 calls due to shouldContinue
 			expect(callCount).toBe(2);
@@ -271,7 +272,7 @@ describe('AIControllerService - Integration Tests', () => {
 			});
 
 			service.resolveAIProvider();
-			await service.runMainAgent(conversation, true, false, callbacks);
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
 
 			// Save should be called after each response
 			expect(saveCallback).toHaveBeenCalledWith(conversation);

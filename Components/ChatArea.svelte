@@ -61,8 +61,9 @@
     const paddingBottom = parseFloat(styles.paddingBottom) || 0;
 
     const sortedMessages = messageElements.sort((a, b) => a.index - b.index);
-    const lastMessage = sortedMessages[sortedMessages.length - 1];
-    let contentHeight = getOuterHeight(lastMessage.element);
+    
+    let result = calculateMessageHeight(sortedMessages);
+    let contentHeight = result.height + (gap * (result.count - 1));
 
     if (!shouldSettle) {
       if (thoughtIndicatorElement) {
@@ -85,6 +86,25 @@
     }
   }
 
+  function calculateMessageHeight(sortedMessages: { element: HTMLElement, index: number, role: Role }[]): { count: number, height: number } {
+    const lastMessage = sortedMessages[sortedMessages.length - 1];
+    if (lastMessage.role === Role.User) {
+      return { count: 1, height: getOuterHeight(lastMessage.element) };
+    }
+
+    let count = 0;
+    let height = 0;
+
+    for (const message of sortedMessages.reverse()) {
+      if (message.role === Role.User) {
+        break;
+      }
+      height += getOuterHeight(message.element);
+      count++;
+    }
+    return { count: count, height: height };
+  }
+
   let autoScroll: boolean = true;
   let lastScrollTop: number = 0;
 
@@ -94,7 +114,7 @@
 
   let streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
 
-  let messageElements: { index: number, element: HTMLElement }[] = [];
+  let messageElements: { element: HTMLElement, index: number, role: Role }[] = [];
   let lastProcessedContent: Map<string, string> = new Map<string, string>();
   let currentStreamFinalized: boolean = false;
 
@@ -161,8 +181,8 @@
     streamingMarkdownService.initializeStream(messageId, element);
   }
 
-  function trackingAction(element: HTMLElement, index: number) {
-    messageElements.push({ index: index, element: element });
+  function trackingAction(element: HTMLElement, { index, role }: { index: number, role: Role }) {
+    messageElements.push({ index: index, element: element, role: role });
   }
 
   function observeResize(element: HTMLElement) {
@@ -247,7 +267,7 @@
       {@const content = message.getDisplayContent()}
       {#if message.shouldDisplayContent && content.trim() !== ""}
         {#if message.role === Role.User}
-          <div class="message-container {Role.User}" use:trackingAction={index}>
+          <div class="message-container {Role.User}" use:trackingAction={{ index, role: Role.User }}>
             <div class="message-bubble {Role.User}">
               <div class="message-text-user-container content-fade-in" contenteditable="false">
                 <div class="message-text-user">
@@ -275,7 +295,7 @@
           </div>
         {:else}
           {@const messageId = message.timestamp.getTime().toString()}
-          <div class="message-container {Role.Assistant}" use:trackingAction={index}>
+          <div class="message-container {Role.Assistant}" use:trackingAction={{ index, role: Role.Assistant }}>
             <div class="message-bubble {Role.Assistant}">
               <div class="markdown-content content-fade-in {currentStreamingMessageId === messageId ? "streaming" : ""}">
                 {#if currentStreamingMessageId === messageId}

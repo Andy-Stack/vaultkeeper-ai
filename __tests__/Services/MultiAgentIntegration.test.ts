@@ -13,6 +13,7 @@ import { AIToolCall } from '../../AIClasses/AIToolCall';
 import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
 import { AIToolResponsePayload } from '../../AIClasses/ToolDefinitions/AIToolResponsePayload';
 import type { ExecutionStep } from '../../Types/ExecutionStep';
+import { ChatMode } from '../../Enums/ChatMode';
 
 /**
  * INTEGRATION TESTS - Multi-Agent Architecture
@@ -106,7 +107,7 @@ describe('Multi-Agent Integration Tests', () => {
 			const conversation = new Conversation();
 			const callbacks = createMockCallbacks();
 
-			await expect(service.runMainAgent(conversation, true, false, callbacks))
+			await expect(service.runMainAgent(conversation, ChatMode.Edit, callbacks))
 				.rejects.toThrow('Error: No AI provider has been set!');
 		});
 	});

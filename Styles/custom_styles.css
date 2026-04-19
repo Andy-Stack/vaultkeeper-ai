@@ -1,4 +1,13 @@
 /* ============================== */
+/* Mobile Drawer Full Width */
+/* ============================== */
+
+body:not(.is-tablet) .workspace-drawer.mod-right {
+  max-width: 100%;
+  width: 100%;
+}
+
+/* ============================== */
 /* Main View Customization */
 /* ============================== */
 

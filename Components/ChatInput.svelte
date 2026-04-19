@@ -470,6 +470,27 @@
     e.stopPropagation();
   }
 
+  function handleAttachments() {
+    const input = document.createElement("input");
+    input.multiple = true;
+    input.type = "file";
+
+    input.onchange = async () => {
+      if (input.files) {
+        const dataTransfer = new DataTransfer();
+
+        for (let index = 0; index < input.files.length; index++) {
+          dataTransfer.items.add(input.files[index]);
+        }
+
+        const files = await inputService.getFilesFromDataTransfer(dataTransfer);
+        const newAttachments = files.filter(file => !attachments.some(a => a.base64 === file.base64));
+        attachments = [...attachments, ...newAttachments];
+      }
+    };
+    input.click();
+  }
+
   function handleCursorPositionChange() {
     if (!$searchState.active || $searchState.position === null) {
       return;
@@ -554,10 +575,9 @@
   <button
     id="chat-attachment-button"
     bind:this={attachmentButton}
-    on:click={() => {  }}
+    on:click={() => { handleAttachments() }}
     disabled={isSubmitting}
-    aria-label={"Attachment"}>
-    <!-- Copy.AttachmentLabel -->
+    aria-label={Copy.ButtonAttachFiles}>
   </button>
 
   <button

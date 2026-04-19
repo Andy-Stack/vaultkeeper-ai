@@ -119,6 +119,7 @@ export enum Copy {
     ButtonTurnOffWebSearch = "Turn off Web Search",
     ButtonTurnOnWebSearch = "Turn on Web Search",
     ButtonUserInstruction = "User Instruction",
+    ButtonAttachFiles = "Attach Files",
 
     // Agent file message
     AttachedFile = `The user has attached the file {fileName}. The contents of the file are included below.

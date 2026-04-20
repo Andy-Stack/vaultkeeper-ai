@@ -17,6 +17,10 @@ export function fromModel(model: string): AIProvider {
     }
 }
 
+export function isvalidProvider(value: string): value is AIProvider {
+    return Object.values(AIProvider).includes(value as AIProvider);
+}
+
 export function isValidProviderModel(model: string): model is AIProviderModel {
     return Object.values(AIProviderModel).includes(model as AIProviderModel);
 }
@@ -35,6 +39,19 @@ function isOpenAIModel(model: string): boolean {
 
 function isMistralModel(model: string): boolean {
     return isValidProviderModel(model) && model.startsWith("mistral-");
+}
+
+export function modelMatchesProvider(model: AIProviderModel, provider: AIProvider): boolean {
+    switch (provider) {
+        case AIProvider.Claude:
+            return isClaudeModel(model);
+        case AIProvider.Gemini:
+            return isGeminiModel(model);
+        case AIProvider.OpenAI:
+            return isOpenAIModel(model);
+        case AIProvider.Mistral:
+            return isMistralModel(model);
+    }
 }
 
 export enum AIProvider {
@@ -100,3 +117,17 @@ export enum MistralAgentEndpoint {
     Url = "https://api.mistral.ai/v1/agents",
     ConversationsUrl = "https://api.mistral.ai/v1/conversations"
 }
+
+export const DEFAULT_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
+    [AIProvider.Claude]:  AIProviderModel.ClaudeHaiku_4_5,
+    [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_2_5_Lite,
+    [AIProvider.OpenAI]:  AIProviderModel.GPT_5_4_Nano,
+    [AIProvider.Mistral]: AIProviderModel.MistralSmall,
+};
+
+export const DEFAULT_PLANNING_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
+    [AIProvider.Claude]:  AIProviderModel.ClaudeSonnet_4_6,
+    [AIProvider.Gemini]:  AIProviderModel.GeminiPro_2_5,
+    [AIProvider.OpenAI]:  AIProviderModel.GPT_5_4_Pro,
+    [AIProvider.Mistral]: AIProviderModel.MistralLarge,
+};

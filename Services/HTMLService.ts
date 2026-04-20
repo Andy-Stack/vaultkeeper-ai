@@ -12,7 +12,7 @@ export class HTMLService {
 
     public parseHTMLString(htmlString: string): DocumentFragment {
         const parser = new DOMParser();
-        const fragment = document.createDocumentFragment();
+        const fragment = activeDocument.createDocumentFragment();
         const doc = parser.parseFromString(htmlString, "text/html");
 
         // Transfer all nodes from the parsed body to the fragment
@@ -26,7 +26,7 @@ export class HTMLService {
     // Creates a temporary container, parses HTML, and returns the container.
     // Useful for parsing HTML when you need to traverse the resulting DOM structure.
     public parseHTMLToContainer(htmlString: string): HTMLDivElement {
-        const container = document.createElement("div");
+        const container = activeDocument.createElement("div");
         const fragment = this.parseHTMLString(htmlString);
         container.appendChild(fragment);
         return container;

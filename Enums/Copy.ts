@@ -62,6 +62,8 @@ export enum Copy {
     SettingModelDesc = "Select the AI model to use.",
     SettingPlanningModelDesc = "Select the AI model to use when planning complex tasks.",
     SettingPlanningModelTip = "Tip: You can reduce cost by using a more powerful model for planning and a cheaper model for the regular agent.",
+    SettingQuickActionModel = "Quick Actions Model",
+    SettingQuickActionModelDesc = "Select the AI model to use for quick actions. A fast, lightweight model is recommended.",
     SettingApiKeyDesc = "Enter your API key here.",
     SettingFileExclusionsDesc = "Set which directories and files the AI should ignore. Enter one path per line - supports glob patterns like folder/**, *.md",
     SettingSearchResultsLimitDesc = "Set the maximum number of results provided to the AI when it searches through files in your vault. Higher values provide more context but increase search time.",

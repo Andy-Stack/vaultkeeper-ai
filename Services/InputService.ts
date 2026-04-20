@@ -166,7 +166,7 @@ export class InputService {
     }
 
     public getCursorPosition(element: HTMLElement): number {
-        const selection = window.getSelection() || new Selection();
+        const selection = activeWindow.window.getSelection() || new Selection();
         
         if (selection.rangeCount === 0) {
             return -1;
@@ -201,8 +201,8 @@ export class InputService {
         
         try {
             // Create range and selection
-            const range = document.createRange();
-            const selection = window.getSelection() ?? new Selection();
+            const range = activeWindow.document.createRange();
+            const selection = activeWindow.getSelection() ?? new Selection();
             
             // Find the text node and position
             const result = this.findTextNodeAndOffset(element, targetPosition);
@@ -236,7 +236,7 @@ export class InputService {
             return;
         }
 
-        const selection = window.getSelection();
+        const selection = activeWindow.getSelection();
         if (!selection || selection.rangeCount === 0) {
             return;
         }
@@ -244,7 +244,7 @@ export class InputService {
         const range = selection.getRangeAt(0);
         range.deleteContents();
 
-        const textNode = document.createTextNode(text);
+        const textNode = activeDocument.createTextNode(text);
         range.insertNode(textNode);
 
         range.setStartAfter(textNode);
@@ -259,7 +259,7 @@ export class InputService {
             return;
         }
 
-        const selection = window.getSelection();
+        const selection = activeWindow.getSelection();
         if (!selection || selection.rangeCount === 0) {
             return;
         }
@@ -283,13 +283,13 @@ export class InputService {
             return;
         }
         
-        const selection = window.getSelection();
+        const selection = activeWindow.getSelection();
         if (!selection) {
             return;
         }
         
         try {
-            const range = document.createRange();
+            const range = activeDocument.createRange();
             
             // Find the text nodes and offsets for start and end positions
             const startResult = this.findTextNodeAndOffset(element, startPos);
@@ -323,7 +323,7 @@ export class InputService {
      * If it is, repositions the cursor to a valid location.
      */
     private ensureCursorNotInNonEditableElement(element: HTMLElement) {
-        const selection = window.getSelection();
+        const selection = activeWindow.getSelection();
         if (!selection || selection.rangeCount === 0) {
             return;
         }
@@ -349,13 +349,13 @@ export class InputService {
      * Positions the cursor immediately after the given element.
      */
     private positionCursorAfterElement(targetElement: HTMLElement, container: HTMLElement) {
-        const selection = window.getSelection();
+        const selection = activeWindow.getSelection();
         if (!selection) {
             return;
         }
         
         try {
-            const range = document.createRange();
+            const range = activeDocument.createRange();
             
             // Try to position cursor in the next text node or after the element
             const nextSibling = targetElement.nextSibling;

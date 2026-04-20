@@ -1,4 +1,4 @@
-import { AIProvider, AIProviderModel, fromModel } from "Enums/ApiProvider";
+import { AIProvider, AIProviderModel, fromModel, isValidProviderModel } from "Enums/ApiProvider";
 import { Copy } from "Enums/Copy";
 import { Selector } from "Enums/Selector";
 import type VaultkeeperAIPlugin from "main";
@@ -20,6 +20,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 	private apiKeyInputEl: HTMLInputElement | null = null;
 	private fileDisclaimerSetting: Setting | null = null;
 	private planningModelDropdown: DropdownComponent | null = null;
+	private quickActionModelDropdown: DropdownComponent | null = null;
 	private allowUpdatingMemoriesSetting: Setting | null = null;
 	private allowUpdatingMemoriesToggleComponent: ToggleComponent | null = null;
 
@@ -46,34 +47,24 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				this.populateModelDropdown(dropdown);
 				dropdown.setValue(this.settingsService.settings.model);
 				dropdown.onChange(async (value) => {
+					if (!isValidProviderModel(value)) {
+						return;
+					}
 					this.settingsService.settings.model = value;
+					this.settingsService.settings.provider = fromModel(value);
 					await this.settingsService.saveSettings(() => RegisterAiProvider());
 					if (this.apiKeyInputEl) {
 						this.apiKeyInputEl.value = this.settingsService.getApiKeyForCurrentModel();
 						this.highlightApiKey();
 					}
 					this.updateFileDisclaimer();
-					await this.updatePlanningModelDropdown();
+					await this.updateModelDropdowns();
 				});
 			});
 
-		/* Model files API disclaimer */
-		this.fileDisclaimerSetting = new Setting(containerEl)
-		.setDesc(Copy.SettingFileMonitoringClaude)
-		.addExtraButton(button => {
-			button
-				.setTooltip(Copy.TooltipLearnMoreFileMonitoring)
-				.onClick(() => {
-					const modal = Resolve<HelpModal>(Services.HelpModal);
-					modal.open(2); // Opens HelpModal to "Plugin Guide" (topic 2)
-				});
-			setIcon(button.extraSettingsEl, "help-circle");
-		});
-		this.updateFileDisclaimer();
-
 		/* Planning Model Selection Setting */
 		const currentProvider = fromModel(this.settingsService.settings.model);
-		const planningModelDescFragment = document.createDocumentFragment();
+		const planningModelDescFragment = activeDocument.createDocumentFragment();
 		planningModelDescFragment.appendText(Copy.SettingPlanningModelDesc);
 		planningModelDescFragment.createEl("br");
 		planningModelDescFragment.createEl("br");
@@ -86,7 +77,27 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				this.populateModelDropdown(dropdown, currentProvider);
 				dropdown.setValue(this.settingsService.settings.planningModel);
 				dropdown.onChange(async (value) => {
+					if (!isValidProviderModel(value)) {
+						return;
+					}
 					this.settingsService.settings.planningModel = value;
+					await this.settingsService.saveSettings();
+				});
+			});
+
+		/* Quick Action Model Selection Setting */
+		new Setting(containerEl)
+			.setName(Copy.SettingQuickActionModel)
+			.setDesc(Copy.SettingQuickActionModelDesc)
+			.addDropdown((dropdown) => {
+				this.quickActionModelDropdown = dropdown;
+				this.populateModelDropdown(dropdown);
+				dropdown.setValue(this.settingsService.settings.quickActionModel);
+				dropdown.onChange(async (value) => {
+					if (!isValidProviderModel(value)) {
+						return;
+					}
+					this.settingsService.settings.quickActionModel = value;
 					await this.settingsService.saveSettings();
 				});
 			});
@@ -124,6 +135,20 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				setIcon(button.extraSettingsEl, "eye");
 			});
 		this.highlightApiKey();
+
+		/* Model files API disclaimer */
+		this.fileDisclaimerSetting = new Setting(containerEl)
+		.setDesc(Copy.SettingFileMonitoringClaude)
+		.addExtraButton(button => {
+			button
+				.setTooltip(Copy.TooltipLearnMoreFileMonitoring)
+				.onClick(() => {
+					const modal = Resolve<HelpModal>(Services.HelpModal);
+					modal.open(2); // Opens HelpModal to "Plugin Guide" (topic 2)
+				});
+			setIcon(button.extraSettingsEl, "help-circle");
+		});
+		this.updateFileDisclaimer();
 
 		/* Exclusions Setting */
 		new Setting(containerEl)
@@ -286,23 +311,39 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		}
 	}
 
-	private async updatePlanningModelDropdown(): Promise<void> {
-		if (!this.planningModelDropdown) return;
-
+	private async updateModelDropdowns(): Promise<void> {
 		const currentProvider = fromModel(this.settingsService.settings.model);
-		const planningProvider = fromModel(this.settingsService.settings.planningModel);
+		let shouldSave = false;
 
-		// Clear existing options
-		this.planningModelDropdown.selectEl.empty();
-		this.populateModelDropdown(this.planningModelDropdown, currentProvider);
+		if (this.planningModelDropdown) {
+			const planningProvider = fromModel(this.settingsService.settings.planningModel);
+			this.planningModelDropdown.selectEl.empty();
+			this.populateModelDropdown(this.planningModelDropdown, currentProvider);
 
-		// If planning model provider doesn't match, reset to main model
-		if (planningProvider !== currentProvider) {
-			this.settingsService.settings.planningModel = this.settingsService.settings.model;
-			await this.settingsService.saveSettings();
+			if (planningProvider !== currentProvider) {
+				this.settingsService.settings.planningModel = this.settingsService.settings.model;
+				shouldSave = true;
+			}
+
+			this.planningModelDropdown.setValue(this.settingsService.settings.planningModel);
 		}
 
-		this.planningModelDropdown.setValue(this.settingsService.settings.planningModel);
+		if (this.quickActionModelDropdown) {
+			const quickActionProvider = fromModel(this.settingsService.settings.quickActionModel);
+			this.quickActionModelDropdown.selectEl.empty();
+			this.populateModelDropdown(this.quickActionModelDropdown);
+
+			if (quickActionProvider !== currentProvider) {
+				this.settingsService.settings.quickActionModel = this.settingsService.settings.model;
+				shouldSave = true;
+			}
+
+			this.quickActionModelDropdown.setValue(this.settingsService.settings.quickActionModel);
+		}
+
+		if (shouldSave) {
+			await this.settingsService.saveSettings();
+		}
 	}
 
 	private highlightApiKey() {

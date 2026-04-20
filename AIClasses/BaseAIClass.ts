@@ -104,6 +104,8 @@ export abstract class BaseAIClass implements IAIClass {
                 return this.settingsService.settings.planningModel;
             case AgentType.Execution:
                 return this.settingsService.settings.model;
+            case AgentType.QuickAction:
+                return this.settingsService.settings.quickActionModel;
         }
     }
 

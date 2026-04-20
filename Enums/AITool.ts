@@ -36,7 +36,7 @@ export enum AITool {
 export function fromString(functionName: string): AITool {
     const enumValue = Object.values(AITool).find((value: string) => value === functionName);
     if (enumValue) {
-        return enumValue as AITool;
+        return enumValue;
     }
     return AITool.Unknown;
 }

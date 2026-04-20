@@ -56,7 +56,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 	public async activateMainView() {
 		const { workspace } = this.app;
 
-		let leaf: WorkspaceLeaf | null = null;
+		let leaf: WorkspaceLeaf | null;
 		const leaves = workspace.getLeavesOfType(VIEW_TYPE_MAIN);
 
 		if (leaves.length > 0) {
@@ -74,10 +74,8 @@ export default class VaultkeeperAIPlugin extends Plugin {
 	public async activateDiffView(diffString: string, config: Diff2HtmlUIConfig) {
 		const { workspace } = this.app;
 
-		let leaf: WorkspaceLeaf | null = null;
 		const leaves = workspace.getLeavesOfType(VIEW_TYPE_DIFF);
-
-		leaf = leaves.length > 0 ? leaves[0] : workspace.getLeaf("tab");
+		const leaf = leaves.length > 0 ? leaves[0] : workspace.getLeaf("tab");
 
 		await leaf?.setViewState({ 
 			type: VIEW_TYPE_DIFF,

@@ -164,7 +164,7 @@ export class OpenAI extends BaseAIClass {
                             const args = JSON.parse(itemDoneEvent.item.arguments) as Record<string, unknown>;
                             toolCall = new AIToolCall(
                                 aiToolFromString(itemDoneEvent.item.name),
-                                args as Record<string, object>,
+                                args,
                                 itemDoneEvent.item.call_id || itemDoneEvent.item_id,
                                 undefined  // thoughtSignature not used by OpenAI
                             );

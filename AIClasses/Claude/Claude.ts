@@ -138,7 +138,7 @@ export class Claude extends BaseAIClass {
                         const args = JSON.parse(this.accumulatedFunctionArgs) as Record<string, unknown>;
                         toolCall = new AIToolCall(
                             aiToolFromString(this.accumulatedFunctionName),
-                            args as Record<string, object>,
+                            args,
                             this.accumulatedFunctionId || undefined,
                             undefined  // thoughtSignature not used by Claude
                         );

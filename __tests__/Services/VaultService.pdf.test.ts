@@ -5,7 +5,7 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { SanitiserService } from '../../Services/SanitiserService';
 import { SettingsService, type IVaultkeeperAISettings } from '../../Services/SettingsService';
-import { AIProviderModel } from '../../Enums/ApiProvider';
+import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { Exception } from '../../Helpers/Exception';
 import * as PDFHelper from '../../Helpers/DocumentHelper';
 import type { IPageText } from '../../Types/SearchTypes';
@@ -63,7 +63,9 @@ const mockSettings: IVaultkeeperAISettings = {
 	enableMemories: false,
 	allowUpdatingMemories: true,
 	enableWebSearch: true,
-	enableWebViewer: false
+	enableWebViewer: false,
+	provider: AIProvider.Claude,
+	quickActionModel: AIProviderModel.ClaudeSonnet_4_6
 };
 
 const mockPlugin = {

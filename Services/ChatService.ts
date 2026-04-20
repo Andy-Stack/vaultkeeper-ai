@@ -112,7 +112,7 @@ export class ChatService {
 				await this.mainAgent.runMainAgent(conversation, chatMode, callbacks);
 
 				if (namingPromise) {
-					const timeout = new Promise<void>(resolve => setTimeout(resolve, 5000));
+					const timeout = new Promise<void>(resolve => activeWindow.setTimeout(resolve, 5000));
 					await Promise.race([namingPromise, timeout]);
 				}
 			});

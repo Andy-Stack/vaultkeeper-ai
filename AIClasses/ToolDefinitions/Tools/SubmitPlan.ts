@@ -26,7 +26,7 @@ Do NOT use this function:
             properties: {
               description: {
                 type: "string",
-                description: "Brief summary of what this step accomplishes (e.g., 'Search for ML notes', 'Create index file'). This is user-facing and should be concise."
+                description: "Brief summary of what this step accomplishes (e.g., 'Search for ML notes', 'Create index file'). This is user-facing and should be very concise."
               },
               instruction: {
                 type: "string",

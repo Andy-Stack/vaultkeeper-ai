@@ -11,11 +11,13 @@ export class Services {
     static FileSystemService = Symbol("FileSystemService");
     static ConversationFileSystemService = Symbol("ConversationFileSystemService");
     static ConversationNamingService = Symbol("ConversationNamingService");
+    static QuickActionsService = Symbol("QuickActionsService");
     static StreamingService = Symbol("StreamingService");
     static MarkdownService = Symbol("MarkdownService");
     static StreamingMarkdownService = Symbol("StreamingMarkdownService");
     static AIToolService = Symbol("AIToolService");
     static MainAgent = Symbol("MainAgent");
+    static QuickAgent = Symbol("QuickAgent");
     static ChatService = Symbol("ChatService");
     static SanitiserService = Symbol("SanitiserService");
     static InputService = Symbol("InputService");

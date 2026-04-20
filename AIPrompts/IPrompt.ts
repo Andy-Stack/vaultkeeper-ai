@@ -82,7 +82,7 @@ export class AIPrompt implements IPrompt {
   }
 
   public async userInstruction(): Promise<string> {
-    const result = await this.fileSystemService.readFile(this.settingsService.settings.userInstruction, true);
+    const result = await this.fileSystemService.readFilePath(this.settingsService.settings.userInstruction, true);
     return result instanceof Error ? "" : result;
   }
 }

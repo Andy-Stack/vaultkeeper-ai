@@ -281,7 +281,7 @@ export class AIToolService {
     private async readVaultFiles(filePaths: string[]): Promise<AIToolResponsePayload> {
         const results = await Promise.all(
             filePaths.map(async (filePath) => {
-                const result = await this.fileSystemService.readFile(filePath);
+                const result = await this.fileSystemService.readFilePath(filePath);
                 if (result instanceof Error) {
                     return { path: filePath, error: result.message };
                 }
@@ -324,7 +324,7 @@ export class AIToolService {
     }
 
     private async writeVaultFile(filePath: string, content: string): Promise<AIToolResponsePayload> {
-        const result = await this.fileSystemService.writeFile(normalizePath(filePath), content);
+        const result = await this.fileSystemService.writeToFilePath(normalizePath(filePath), content);
         if (result instanceof Error) {
             return new AIToolResponsePayload({ success: false, error: result.message });
         }
@@ -332,7 +332,7 @@ export class AIToolService {
     }
 
     private async patchVaultFile(filePath: string, oldContent: string[], newContent: string[]): Promise<AIToolResponsePayload> {
-        const result = await this.fileSystemService.patchFile(normalizePath(filePath), oldContent, newContent);
+        const result = await this.fileSystemService.patchFileAtPath(normalizePath(filePath), oldContent, newContent);
         if (result instanceof Error) {
             return new AIToolResponsePayload({ success: false, error: result.message });
         }

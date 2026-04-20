@@ -26,7 +26,7 @@ export class MemoriesService {
     }
 
     public async readMemories(): Promise<string> {
-        const result = await this.fileSystemService.readFile(Path.Memories, true);
+        const result = await this.fileSystemService.readFilePath(Path.Memories, true);
 
         if (result instanceof Error) {
             return Copy.MemoriesEmpty;
@@ -41,7 +41,7 @@ export class MemoriesService {
                 [this.maxMemoriesLength.toString(), this.maxMemoriesLineLength.toString()]);
         }
 
-        const result = await this.fileSystemService.writeFile(Path.Memories, newMemories, true, false);
+        const result = await this.fileSystemService.writeToFilePath(Path.Memories, newMemories, true, false);
         return result instanceof Error ? result : Copy.MemoriesUpdatedSuccess;
     }
 

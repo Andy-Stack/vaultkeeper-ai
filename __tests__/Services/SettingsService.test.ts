@@ -103,7 +103,9 @@ describe('SettingsService', () => {
                 enableMemories: false,
                 allowUpdatingMemories: true,
                 enableWebSearch: true,
-                enableWebViewer: false
+                enableWebViewer: false,
+                provider: AIProvider.Claude,
+                quickActionModel: AIProviderModel.ClaudeSonnet_4_6
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -148,7 +150,9 @@ describe('SettingsService', () => {
                 enableMemories: false,
                 allowUpdatingMemories: true,
                 enableWebSearch: true,
-                enableWebViewer: false
+                enableWebViewer: false,
+                provider: AIProvider.Claude,
+                quickActionModel: AIProviderModel.ClaudeSonnet_4_6
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -173,7 +177,9 @@ describe('SettingsService', () => {
                 enableMemories: false,
                 allowUpdatingMemories: true,
                 enableWebSearch: true,
-                enableWebViewer: false
+                enableWebViewer: false,
+                provider: AIProvider.Claude,
+                quickActionModel: AIProviderModel.ClaudeSonnet_4_6
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -198,7 +204,9 @@ describe('SettingsService', () => {
                 enableMemories: false,
                 allowUpdatingMemories: true,
                 enableWebSearch: true,
-                enableWebViewer: false
+                enableWebViewer: false,
+                provider: AIProvider.Claude,
+                quickActionModel: AIProviderModel.ClaudeSonnet_4_6
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -248,7 +256,9 @@ describe('SettingsService', () => {
                 enableMemories: false,
                 allowUpdatingMemories: true,
                 enableWebSearch: true,
-                enableWebViewer: false
+                enableWebViewer: false,
+                provider: AIProvider.Claude,
+                quickActionModel: AIProviderModel.ClaudeSonnet_4_6
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -307,7 +317,9 @@ describe('SettingsService', () => {
                 enableMemories: false,
                 allowUpdatingMemories: true,
                 enableWebSearch: true,
-                enableWebViewer: false
+                enableWebViewer: false,
+                provider: AIProvider.Claude,
+                quickActionModel: AIProviderModel.ClaudeSonnet_4_6
             };
             settingsService = new SettingsService(loadedSettings);
         });

@@ -83,7 +83,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 			mockVaultService.read = vi.fn().mockResolvedValue(fileContent);
 
-			const result = await fileSystemService.readFile('test.md');
+			const result = await fileSystemService.readFilePath('test.md');
 
 			expect(result).toBe(fileContent);
 			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('test.md', false);
@@ -93,7 +93,7 @@ describe('FileSystemService', () => {
 		it('should return Error when file does not exist', async () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(null);
 
-			const result = await fileSystemService.readFile('nonexistent.md');
+			const result = await fileSystemService.readFilePath('nonexistent.md');
 
 			expect(result).toBeInstanceOf(Error);
 			expect((result as Error).message).toContain('File does not exist: ');
@@ -107,7 +107,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 			mockVaultService.read = vi.fn().mockResolvedValue(fileContent);
 
-			await fileSystemService.readFile('plugin/config.json', true);
+			await fileSystemService.readFilePath('plugin/config.json', true);
 
 			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/config.json', true);
 			expect(mockVaultService.read).toHaveBeenCalledWith(mockFile, true);
@@ -118,7 +118,7 @@ describe('FileSystemService', () => {
 
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFolder);
 
-			const result = await fileSystemService.readFile('folder');
+			const result = await fileSystemService.readFilePath('folder');
 
 			expect(result).toBeInstanceOf(Error);
 			expect((result as Error).message).toContain('Path is a folder, not a file');
@@ -132,7 +132,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(null);
 			mockVaultService.create = vi.fn().mockResolvedValue(mockFile);
 
-			const result = await fileSystemService.writeFile('new.md', 'content');
+			const result = await fileSystemService.writeToFilePath('new.md', 'content');
 
 			expect(result).toBe(mockFile);
 			expect(mockVaultService.create).toHaveBeenCalledWith('new.md', 'content', false, true);
@@ -145,7 +145,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 			mockVaultService.modify = vi.fn().mockResolvedValue(mockFile);
 
-			const result = await fileSystemService.writeFile('existing.md', 'new content');
+			const result = await fileSystemService.writeToFilePath('existing.md', 'new content');
 
 			expect(result).toBe(mockFile);
 			expect(mockVaultService.modify).toHaveBeenCalledWith(mockFile, 'new content', false, true);
@@ -156,7 +156,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(null);
 			mockVaultService.create = vi.fn().mockResolvedValue(undefined);
 
-			await fileSystemService.writeFile('plugin/data.json', 'content', true);
+			await fileSystemService.writeToFilePath('plugin/data.json', 'content', true);
 
 			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/data.json', true);
 			expect(mockVaultService.create).toHaveBeenCalledWith('plugin/data.json', 'content', true, true);
@@ -168,7 +168,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(null);
 			mockVaultService.create = vi.fn().mockResolvedValue(error);
 
-			const result = await fileSystemService.writeFile('error.md', 'content');
+			const result = await fileSystemService.writeToFilePath('error.md', 'content');
 
 			expect(result).toBeInstanceOf(Error);
 			expect((result as Error).message).toBe('Create failed');
@@ -181,7 +181,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 			mockVaultService.modify = vi.fn().mockResolvedValue(error);
 
-			const result = await fileSystemService.writeFile('existing.md', 'content');
+			const result = await fileSystemService.writeToFilePath('existing.md', 'content');
 
 			expect(result).toBeInstanceOf(Error);
 			expect((result as Error).message).toBe('Modify failed');
@@ -197,7 +197,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 			mockVaultService.patch = vi.fn().mockResolvedValue(mockFile);
 
-			const result = await fileSystemService.patchFile('existing.md', oldContent, newContent);
+			const result = await fileSystemService.patchFileAtPath('existing.md', oldContent, newContent);
 
 			expect(result).toBe(mockFile);
 			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, false, true);
@@ -215,7 +215,7 @@ describe('FileSystemService', () => {
 			mockVaultService.create = vi.fn().mockResolvedValue(mockFile);
 			mockVaultService.patch = vi.fn().mockResolvedValue(mockFile);
 
-			const result = await fileSystemService.patchFile('new.md', oldContent, newContent);
+			const result = await fileSystemService.patchFileAtPath('new.md', oldContent, newContent);
 
 			// writeFile should create the file with empty content
 			expect(mockVaultService.create).toHaveBeenCalledWith('new.md', '', false, true);
@@ -232,7 +232,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 			mockVaultService.patch = vi.fn().mockResolvedValue(error);
 
-			const result = await fileSystemService.patchFile('existing.md', oldContent, newContent);
+			const result = await fileSystemService.patchFileAtPath('existing.md', oldContent, newContent);
 
 			expect(result).toBeInstanceOf(Error);
 			expect((result as Error).message).toContain('Content to replace was not found in the file');
@@ -246,7 +246,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(null);
 			mockVaultService.create = vi.fn().mockResolvedValue(error);
 
-			const result = await fileSystemService.patchFile('new.md', oldContent, newContent);
+			const result = await fileSystemService.patchFileAtPath('new.md', oldContent, newContent);
 
 			expect(result).toBeInstanceOf(Error);
 			expect((result as Error).message).toBe('Create failed');
@@ -261,7 +261,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 			mockVaultService.patch = vi.fn().mockResolvedValue(mockFile);
 
-			await fileSystemService.patchFile('plugin/config.md', oldContent, newContent, true);
+			await fileSystemService.patchFileAtPath('plugin/config.md', oldContent, newContent, true);
 
 			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/config.md', true);
 			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, true, true);
@@ -275,7 +275,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 			mockVaultService.patch = vi.fn().mockResolvedValue(mockFile);
 
-			const result = await fileSystemService.patchFile('document.md', oldContent, newContent);
+			const result = await fileSystemService.patchFileAtPath('document.md', oldContent, newContent);
 
 			expect(result).toBe(mockFile);
 			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, false, true);
@@ -289,7 +289,7 @@ describe('FileSystemService', () => {
 			mockVaultService.create = vi.fn().mockResolvedValue(createMockFile('new.md'));
 			mockVaultService.patch = vi.fn().mockResolvedValue(createMockFile('new.md'));
 
-			await fileSystemService.patchFile('new.md', oldContent, newContent);
+			await fileSystemService.patchFileAtPath('new.md', oldContent, newContent);
 
 			// Should call patch on the created file
 			expect(mockVaultService.create).toHaveBeenCalledWith('new.md', '', false, true);
@@ -304,7 +304,7 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 			mockVaultService.patch = vi.fn().mockResolvedValue(mockFile);
 
-			await fileSystemService.patchFile('test.md', oldContent, newContent, false, true);
+			await fileSystemService.patchFileAtPath('test.md', oldContent, newContent, false, true);
 
 			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, false, true);
 		});

@@ -17,7 +17,11 @@ export class FileSystemService {
         return await this.vaultService.exists(filePath, allowAccessToPluginRoot);
     }
 
-    public async readFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<string | Error> {
+    public async readFile(file: TFile, allowAccessToPluginRoot: boolean = false): Promise<string | Error> {
+        return await this.vaultService.read(file, allowAccessToPluginRoot);
+    }
+
+    public async readFilePath(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<string | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
         if (file == null) {
             return Exception.new(`File does not exist: ${filePath}`);    
@@ -43,7 +47,11 @@ export class FileSystemService {
         return Exception.new(`Path is a folder, not a file: ${filePath}`);
     }
 
-    public async writeFile(filePath: string, content: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+    public async writeToFile(file: TFile, content: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+        return await this.vaultService.modify(file, content, allowAccessToPluginRoot, requiresConfirmation);
+    }
+
+    public async writeToFilePath(filePath: string, content: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
         if (file == null || !(file instanceof TFile)) {
             return await this.vaultService.create(filePath, content, allowAccessToPluginRoot, requiresConfirmation);
@@ -59,7 +67,11 @@ export class FileSystemService {
         return await this.vaultService.modifyBinary(file, data, allowAccessToPluginRoot);
     }
 
-    public async patchFile(filePath: string, oldContent: string[], newContent: string[], allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+    public async patchFile(file: TFile, oldContent: string[], newContent: string[], allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+        return await this.vaultService.patch(file, oldContent, newContent, allowAccessToPluginRoot, requiresConfirmation);
+    }
+    
+    public async patchFileAtPath(filePath: string, oldContent: string[], newContent: string[], allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);
 
         let fileToPatch: TFile;
@@ -67,7 +79,7 @@ export class FileSystemService {
             fileToPatch = file;
         } else {
             // if the file doesn't exist we may as well create it even though this is just a patch operation
-            const result = await this.writeFile(filePath, "", allowAccessToPluginRoot, requiresConfirmation);
+            const result = await this.writeToFilePath(filePath, "", allowAccessToPluginRoot, requiresConfirmation);
             if (result instanceof Error) {
                 return result;
             }

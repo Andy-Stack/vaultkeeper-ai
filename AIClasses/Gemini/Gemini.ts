@@ -190,7 +190,7 @@ export class Gemini extends BaseAIClass {
       if (isComplete && this.accumulatedFunctionName) {
         toolCall = new AIToolCall(
           aiToolFromString(this.accumulatedFunctionName),
-          this.accumulatedFunctionArgs as Record<string, object>,
+          this.accumulatedFunctionArgs,
           undefined,  // toolId not used by Gemini
           this.accumulatedThoughtSignature || undefined
         );
@@ -419,7 +419,7 @@ export class Gemini extends BaseAIClass {
 
       // Handle object format: { seconds: 10, nanos: 500000000 }
       if (typeof rawDelay === 'object' && rawDelay !== null && 'seconds' in rawDelay) {
-        const seconds = (rawDelay as { seconds: unknown }).seconds;
+        const seconds = (rawDelay).seconds;
         if (typeof seconds === 'number' || typeof seconds === 'string') {
           return Math.ceil(Number(seconds));
         }

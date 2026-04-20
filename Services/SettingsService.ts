@@ -1,14 +1,17 @@
 import type VaultkeeperAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import { AIProvider, AIProviderModel, fromModel, isValidProviderModel } from "Enums/ApiProvider";
+import { AIProvider, AIProviderModel, DEFAULT_MODEL_BY_PROVIDER, DEFAULT_PLANNING_MODEL_BY_PROVIDER, fromModel, isvalidProvider, isValidProviderModel, modelMatchesProvider } from "Enums/ApiProvider";
 
 const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     firstTimeStart: true,
     userInstruction: "",
 
+    provider: AIProvider.Claude,
     model: AIProviderModel.ClaudeHaiku_4_5,
     planningModel: AIProviderModel.ClaudeSonnet_4_6,
+    quickActionModel: AIProviderModel.ClaudeHaiku_4_5,
+    
     apiKeys: {
         claude: "",
         openai: "",
@@ -31,8 +34,11 @@ export interface IVaultkeeperAISettings {
     firstTimeStart: boolean;
     userInstruction: string;
 
-    model: string;
-    planningModel: string;
+    provider: AIProvider;
+    model: AIProviderModel;
+    planningModel: AIProviderModel;
+    quickActionModel: AIProviderModel;
+
     apiKeys: {
         claude: string;
         openai: string;
@@ -106,12 +112,31 @@ export class SettingsService {
     }
 
     private ensureValidModels(): void {
-        const validModel = isValidProviderModel(this.settings.model);
-        const validPlanningModel = isValidProviderModel(this.settings.model);
+        let changed = false;
 
-        if (!validModel || !validPlanningModel) {
-            this.settings.model = AIProviderModel.ClaudeSonnet_4_6;
-            this.settings.planningModel = AIProviderModel.ClaudeSonnet_4_6;
+        let provider = this.settings.provider;
+
+        if (!isvalidProvider(provider)) {
+            provider = DEFAULT_SETTINGS.provider;
+            changed = true;
+        }
+
+        if (!isValidProviderModel(this.settings.model) || !modelMatchesProvider(this.settings.model, provider)) {
+            this.settings.model = DEFAULT_MODEL_BY_PROVIDER[provider];
+            changed = true;
+        }
+
+        if (!isValidProviderModel(this.settings.planningModel) || !modelMatchesProvider(this.settings.planningModel, provider)) {
+            this.settings.planningModel = DEFAULT_PLANNING_MODEL_BY_PROVIDER[provider];
+            changed = true;
+        }
+
+        if (!isValidProviderModel(this.settings.quickActionModel) || !modelMatchesProvider(this.settings.quickActionModel, provider)) {
+            this.settings.quickActionModel = DEFAULT_MODEL_BY_PROVIDER[provider];
+            changed = true;
+        }
+
+        if (changed) {
             void this.saveSettings();
         }
     }

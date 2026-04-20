@@ -6,7 +6,7 @@ import { SettingsService, type IVaultkeeperAISettings } from '../../Services/Set
 import { SanitiserService } from '../../Services/SanitiserService';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import { AIProviderModel } from '../../Enums/ApiProvider';
+import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import type VaultkeeperAIPlugin from '../../main';
 
 // Mock getAllTags from obsidian
@@ -103,7 +103,9 @@ const mockSettings: IVaultkeeperAISettings = {
 	enableMemories: false,
 	allowUpdatingMemories: true,
 	enableWebSearch: true,
-	enableWebViewer: false
+	enableWebViewer: false,
+	provider: AIProvider.Claude,
+	quickActionModel: AIProviderModel.ClaudeSonnet_4_6
 };
 
 let settingsService: SettingsService;

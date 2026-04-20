@@ -168,7 +168,7 @@ export class Mistral extends BaseAIClass {
                             const args = JSON.parse(firstToolCall.args) as Record<string, unknown>;
                             toolCall = new AIToolCall(
                                 aiToolFromString(firstToolCall.name),
-                                args as Record<string, object>,
+                                args,
                                 firstToolCall.id || undefined,
                                 undefined
                             );

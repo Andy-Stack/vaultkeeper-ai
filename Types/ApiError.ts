@@ -34,7 +34,7 @@ export class ApiError extends Error {
         let isRetryable: boolean;
 
         // Parse response body for provider-specific messages
-        let providerMessage = "";
+        let providerMessage: string;
         try {
             const parsed = JSON.parse(responseBody) as { error?: { message?: string }; message?: string };
             providerMessage = parsed.error?.message || parsed.message || "";

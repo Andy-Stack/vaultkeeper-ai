@@ -13,6 +13,10 @@ export class FileSystemService {
         this.vaultService = Resolve<VaultService>(Services.VaultService);
     }
 
+    public getMarkdownFiles(allowAccessToPluginRoot: boolean = false): TFile[] {
+        return this.vaultService.getMarkdownFiles(allowAccessToPluginRoot);
+    }
+
     public async exists(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<boolean> {
         return await this.vaultService.exists(filePath, allowAccessToPluginRoot);
     }

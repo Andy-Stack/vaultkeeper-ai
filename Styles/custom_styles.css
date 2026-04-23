@@ -23,6 +23,16 @@ body:not(.is-tablet) .workspace-drawer.mod-right {
 }
 
 /* ============================== */
+/* Quick Actions Notice */
+/* ============================== */
+
+.quick-action-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--size-2-3);
+}
+
+/* ============================== */
 /* Diff View Customization */
 /* ============================== */
 

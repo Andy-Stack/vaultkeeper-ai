@@ -115,7 +115,7 @@
 
 {#if busyPlanning}
     <div id="chat-planning-in-progress" transition:slide>
-        <Spinner alternateBackground={true}/>
+        <Spinner background=var(--background-secondary-alt)/>
         <span id="chat-planning-in-progress-text">{Copy.PlanningInProgress}</span>
     </div>
 {/if}
@@ -136,7 +136,7 @@
                         {/if}
                         {#if index === activeStepIndex}
                             <div class="chat-plan-step-icon">
-                                <Spinner alternateBackground={true}/>
+                                <Spinner background=var(--background-secondary-alt)/>
                             </div>
                         {/if}
                         {#if index > activeStepIndex}

@@ -9,7 +9,7 @@ import { Role } from "Enums/Role";
 
 export class QuickAgent extends BaseAgent {
 
-    public async quickAction(action: string, context: string): Promise<string> {
+    public async quickAction(action: string, context: string): Promise<string | null> {
         
         this.setAgentPromptAndTools(action);
 
@@ -19,8 +19,12 @@ export class QuickAgent extends BaseAgent {
             content: context,
         });
         conversation.contents.push(conversationContent);
-                        
-        return await this.requestAgentResponse(AgentType.QuickAction, conversation, this.callbacks());
+
+        const result = await this.requestAgentResponse(AgentType.QuickAction, conversation, this.callbacks());
+        if (conversation.contents.last()?.errorType) {
+            return null;
+        }
+        return result;
     }
 
     private setAgentPromptAndTools(instruction: string): void {
@@ -42,9 +46,7 @@ export class QuickAgent extends BaseAgent {
             onToolCallStarted: () => {},
             onPlanningStarted: () => {},
             onPlanningFinished: () => {},
-            onUserQuestion: async () => {
-                return new Promise<string>(() => {});
-            },
+            onUserQuestion: async () => new Promise<string>(() => {}),
             onPlanUpdate: () => {},
             onPlanStepUpdate: () => {},
             onPlanReset: () => {},

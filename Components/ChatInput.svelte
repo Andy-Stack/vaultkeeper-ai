@@ -575,7 +575,7 @@
   <button
     id="chat-attachment-button"
     bind:this={attachmentButton}
-    on:click={() => { handleAttachments() }}
+    on:click={handleAttachments}
     disabled={isSubmitting}
     aria-label={Copy.ButtonAttachFiles}>
   </button>
@@ -584,7 +584,7 @@
     id="chat-mode-button"
     class:input-button-highlight={chatModeAllowsEdits(chatMode)}
     bind:this={chatModeButton}
-    on:click={() => { toggleChatModeSelectionArea() }}
+    on:click={toggleChatModeSelectionArea}
     disabled={isSubmitting}
     aria-label={Copy.ButtonChangeChatMode}>
   </button>
@@ -611,7 +611,7 @@
     grid-row: 3;
     grid-column: 1;
     display: grid;
-    grid-template-rows: auto auto auto auto var(--size-4-3) 1fr var(--size-4-3);
+    grid-template-rows: auto auto auto auto auto var(--size-4-3) 1fr var(--size-4-3);
     grid-template-columns: var(--size-4-3) auto var(--size-4-2) auto var(--size-4-2) 1fr var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
     border-radius: var(--radius-l);
     background-color: var(--background-primary);
@@ -643,12 +643,12 @@
   }
 
   #chat-mode-selector-container {
-    grid-row: 4;
+    grid-row: 5;
     grid-column: 2 / 13;
   }
 
   #user-instruction-button {
-    grid-row: 6;
+    grid-row: 7;
     grid-column: 2;
     border-radius: var(--radius-xl);
     padding: var(--size-4-2);
@@ -661,7 +661,7 @@
   }
 
   #web-search-button {
-    grid-row: 6;
+    grid-row: 7;
     grid-column: 4;
     border-radius: var(--radius-xl);
     padding: var(--size-4-2);
@@ -674,7 +674,7 @@
   }
 
   #input-field {
-    grid-row: 6;
+    grid-row: 7;
     grid-column: 6;
     height: 100%;
     max-height: 30vh;
@@ -729,7 +729,7 @@
   }
 
   #chat-attachment-button {
-    grid-row: 6;
+    grid-row: 7;
     grid-column: 8;
     border-radius: var(--radius-xl);
     padding: var(--size-4-2);
@@ -742,7 +742,7 @@
   }
 
   #chat-mode-button {
-    grid-row: 6;
+    grid-row: 7;
     grid-column: 10;
     border-radius: var(--radius-xl);
     padding: var(--size-4-2);
@@ -759,7 +759,7 @@
   }
 
   #submit-button {
-    grid-row: 6;
+    grid-row: 7;
     grid-column: 12;
     border-radius: var(--radius-xl);
     padding-left: var(--size-4-2);
@@ -780,7 +780,7 @@
 
   /* Stacked layout: input above, buttons below (desktop only, when content wraps) */
   #input-container.stacked {
-    grid-template-rows: auto auto auto auto var(--size-4-3) 1fr var(--size-4-2) auto var(--size-4-3);
+    grid-template-rows: auto auto auto auto auto var(--size-4-3) 1fr var(--size-4-2) auto var(--size-4-3);
   }
 
   #input-container.stacked #input-field {
@@ -788,28 +788,28 @@
   }
 
   #input-container.stacked #user-instruction-button {
-    grid-row: 8;
+    grid-row: 9;
   }
 
   #input-container.stacked #web-search-button {
-    grid-row: 8;
+    grid-row: 9;
   }
 
   #input-container.stacked #chat-attachment-button {
-    grid-row: 8;
+    grid-row: 9;
   }
 
   #input-container.stacked #chat-mode-button {
-    grid-row: 8;
+    grid-row: 9;
   }
 
   #input-container.stacked #submit-button {
-    grid-row: 8;
+    grid-row: 9;
   }
 
   /* Narrow/mobile layout: input above, buttons below */
   :global(.is-mobile) #input-container {
-    grid-template-rows: auto auto auto auto var(--size-4-3) 1fr var(--size-4-2) auto var(--size-4-3);
+    grid-template-rows: auto auto auto auto auto var(--size-4-3) 1fr var(--size-4-2) auto var(--size-4-3);
     grid-template-columns: var(--size-4-3) auto var(--size-4-2) auto 1fr auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
   }
 
@@ -823,32 +823,32 @@
   }
 
   :global(.is-mobile) #input-field {
-    grid-row: 6;
+    grid-row: 7;
     grid-column: 2 / 11;
   }
 
   :global(.is-mobile) #user-instruction-button {
-    grid-row: 8;
+    grid-row: 9;
     grid-column: 2;
   }
 
   :global(.is-mobile) #web-search-button {
-    grid-row: 8;
+    grid-row: 9;
     grid-column: 4;
   }
 
   :global(.is-mobile) #chat-attachment-button {
-    grid-row: 8;
+    grid-row: 9;
     grid-column: 6;
   }
 
   :global(.is-mobile) #chat-mode-button {
-    grid-row: 8;
+    grid-row: 9;
     grid-column: 8;
   }
 
   :global(.is-mobile) #submit-button {
-    grid-row: 8;
+    grid-row: 9;
     grid-column: 10;
   }
 </style>

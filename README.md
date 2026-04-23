@@ -12,10 +12,10 @@
 ## Features
 
 - **Multi-Provider AI Support** - Switch seamlessly between Claude (Anthropic), Gemini (Google), OpenAI, and Mistral models
-- **Two Operating Modes**
+- **Three Chat Modes**
   - 🔍 **Read-Only Mode**: AI can search, read, and list your notes safely
-  - ✏️ **Agent Mode**: AI can create, edit, delete, and move notes and folders (when you need it)
-- **Planning Mode** - Enable a two-agent workflow where a planning agent analyzes your vault and creates a step-by-step strategy before execution
+  - ✏️ **Edit Mode**: AI can create, edit, delete, and move notes and folders (when you need it)
+  - 📋 **Planning Mode**: A three-agent workflow where a planning agent analyzes your vault and creates a step-by-step strategy before execution
 - **Interactive Diff Viewer** - Review and approve AI-proposed changes before they're applied with side-by-side diff view
 - **Smart Reference System** - Mention tags (`#`), files (`@`), and folders (`/`) with autocomplete
 - **Custom System Instructions** - Create and switch between personalized AI behaviors
@@ -25,6 +25,7 @@
 - **AI Memory** - Persist vault conventions, preferences, and workflows across sessions so the AI remembers how you work
 - **Web Search** - Toggle web search on per-message so the AI can look up current information
 - **Web Viewer** - Allow the AI to fetch and read web page content directly
+- **Quick Actions** - Right-click context menu actions for lightweight, single-shot AI operations on selected text (desktop only)
 - **Mobile Compatible** - Full functionality on mobile devices with touch-friendly controls
 - **Streaming Responses** - See AI responses as they're generated
 - **Local & Private** - API keys stored locally, no data sent to third parties
@@ -94,7 +95,9 @@ The plugin supports multiple AI models:
 
 Switch models anytime in the settings without losing your conversation context.
 
-### Read-Only vs Agent Mode
+### Chat Modes
+
+The chat mode selector in the input toolbar lets you switch between three modes at any time.
 
 **Read-Only Mode (Default)** 🔍
 
@@ -103,7 +106,9 @@ Switch models anytime in the settings without losing your conversation context.
 - AI can list directory structures
 - **Cannot** modify your notes
 
-Toggle to **Agent Mode** ✏️ when you need the AI to:
+**Edit Mode** ✏️
+
+Switch to Edit Mode when you need the AI to:
 
 - Create new notes
 - Edit existing content
@@ -111,7 +116,9 @@ Toggle to **Agent Mode** ✏️ when you need the AI to:
 - Move/rename files and folders
 - Create and delete folders
 
-The mode toggle is clearly visible in the chat input area with visual indicators.
+**Planning Mode** 📋
+
+Switch to Planning Mode for complex, multi-step tasks. See the [Planning Mode](#planning-mode-1) section below for full details.
 
 ### Interactive Diff Viewer
 
@@ -163,6 +170,12 @@ Planning mode is especially useful for:
 **Replanning**
 
 If issues arise during execution, the orchestration agent can request a replan. This returns to the planning phase with full context about what's already been completed and what went wrong, allowing the plan to intelligently adapt to new information discovered during execution.
+
+### Quick Actions
+
+Quick Actions are lightweight, single-shot AI operations available from the right-click context menu in the editor on desktop. They let you run a focused AI task on selected text without opening the chat panel.
+
+Quick Actions are currently only available on desktop and are not accessible on mobile.
 
 ### AI Memory
 

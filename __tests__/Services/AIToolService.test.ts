@@ -33,9 +33,9 @@ describe('AIToolService - Integration Tests', () => {
 		mockFileSystemService = {
 			searchVaultFiles: vi.fn(),
 			listFilesInDirectory: vi.fn(),
-			readFile: vi.fn(),
-			writeFile: vi.fn(),
-			patchFile: vi.fn(),
+			readFilePath: vi.fn(),
+			writeToFilePath: vi.fn(),
+			patchFileAtPath: vi.fn(),
 			deleteFile: vi.fn(),
 			moveFile: vi.fn()
 		};
@@ -192,7 +192,7 @@ describe('AIToolService - Integration Tests', () => {
 
 	describe('performAITool - ReadVaultFiles', () => {
 		it('should read multiple files successfully', async () => {
-			mockFileSystemService.readFile
+			mockFileSystemService.readFilePath
 				.mockResolvedValueOnce('Content of file 1')
 				.mockResolvedValueOnce('Content of file 2')
 				.mockResolvedValueOnce('Content of file 3');
@@ -216,7 +216,7 @@ describe('AIToolService - Integration Tests', () => {
 			const error1 = new Error('File not found');
 			const error2 = new Error('File not found');
 
-			mockFileSystemService.readFile
+			mockFileSystemService.readFilePath
 				.mockResolvedValueOnce('Existing content')
 				.mockResolvedValueOnce(error1)
 				.mockResolvedValueOnce(error2);
@@ -237,7 +237,7 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should handle mixed success and failure', async () => {
-			mockFileSystemService.readFile
+			mockFileSystemService.readFilePath
 				.mockResolvedValueOnce('Content A')
 				.mockResolvedValueOnce(new Error('File not found'))
 				.mockResolvedValueOnce('Content B');
@@ -265,7 +265,7 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should handle single file read', async () => {
-			mockFileSystemService.readFile.mockResolvedValue('Single file content');
+			mockFileSystemService.readFilePath.mockResolvedValue('Single file content');
 
 			const result = await service.performAITool({
 				name: AITool.ReadVaultFiles,
@@ -280,7 +280,7 @@ describe('AIToolService - Integration Tests', () => {
 
 	describe('performAITool - WriteVaultFile', () => {
 		it('should write file successfully', async () => {
-			mockFileSystemService.writeFile.mockResolvedValue(undefined);
+			mockFileSystemService.writeToFilePath.mockResolvedValue(undefined);
 
 			const result = await service.performAITool({
 				name: AITool.WriteVaultFile,
@@ -292,7 +292,7 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_11'
 			} as any);
 
-			expect(mockFileSystemService.writeFile).toHaveBeenCalledWith(
+			expect(mockFileSystemService.writeToFilePath).toHaveBeenCalledWith(
 				'notes/new-note.md',
 				'# New Note\n\nContent here'
 			);
@@ -301,7 +301,7 @@ describe('AIToolService - Integration Tests', () => {
 
 		it('should handle write failure', async () => {
 			const error = new Error('Permission denied');
-			mockFileSystemService.writeFile.mockResolvedValue(error);
+			mockFileSystemService.writeToFilePath.mockResolvedValue(error);
 
 			const result = await service.performAITool({
 				name: AITool.WriteVaultFile,
@@ -318,7 +318,7 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should normalize file path', async () => {
-			mockFileSystemService.writeFile.mockResolvedValue(undefined);
+			mockFileSystemService.writeToFilePath.mockResolvedValue(undefined);
 
 			await service.performAITool({
 				name: AITool.WriteVaultFile,
@@ -331,14 +331,14 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 
 			// normalizePath should convert backslashes to forward slashes
-			expect(mockFileSystemService.writeFile).toHaveBeenCalledWith(
+			expect(mockFileSystemService.writeToFilePath).toHaveBeenCalledWith(
 				expect.stringContaining('/'),
 				'Content'
 			);
 		});
 
 		it('should handle empty content', async () => {
-			mockFileSystemService.writeFile.mockResolvedValue(undefined);
+			mockFileSystemService.writeToFilePath.mockResolvedValue(undefined);
 
 			const result = await service.performAITool({
 				name: AITool.WriteVaultFile,
@@ -350,14 +350,14 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_14'
 			} as any);
 
-			expect(mockFileSystemService.writeFile).toHaveBeenCalledWith('empty.md', '');
+			expect(mockFileSystemService.writeToFilePath).toHaveBeenCalledWith('empty.md', '');
 			expect((result.payload.response as any).success).toBe(true);
 		});
 	});
 
 	describe('performAITool - PatchVaultFile', () => {
 		it('should apply patch successfully', async () => {
-			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('notes/test.md', 'test'));
+			mockFileSystemService.patchFileAtPath.mockResolvedValue(createMockFile('notes/test.md', 'test'));
 
 			const oldContent = ['old content'];
 			const newContent = ['new content'];
@@ -373,13 +373,13 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_patch_1'
 			} as any);
 
-			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('notes/test.md', oldContent, newContent);
+			expect(mockFileSystemService.patchFileAtPath).toHaveBeenCalledWith('notes/test.md', oldContent, newContent);
 			expect(result.payload.response).toEqual({ success: true });
 		});
 
 		it('should handle patch failure', async () => {
 			const error = new Error('Content to replace was not found in the file');
-			mockFileSystemService.patchFile.mockResolvedValue(error);
+			mockFileSystemService.patchFileAtPath.mockResolvedValue(error);
 
 			const oldContent = ['old content'];
 			const newContent = ['new content'];
@@ -400,7 +400,7 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should normalize file path', async () => {
-			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('folder/file.md', 'file'));
+			mockFileSystemService.patchFileAtPath.mockResolvedValue(createMockFile('folder/file.md', 'file'));
 
 			const oldContent = ['old'];
 			const newContent = ['new'];
@@ -417,7 +417,7 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 
 			// normalizePath should convert backslashes to forward slashes
-			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith(
+			expect(mockFileSystemService.patchFileAtPath).toHaveBeenCalledWith(
 				expect.stringContaining('/'),
 				oldContent,
 				newContent
@@ -426,7 +426,7 @@ describe('AIToolService - Integration Tests', () => {
 
 		it('should handle file not found error', async () => {
 			const error = new Error('File does not exist: missing.md');
-			mockFileSystemService.patchFile.mockResolvedValue(error);
+			mockFileSystemService.patchFileAtPath.mockResolvedValue(error);
 
 			const oldContent = ['old'];
 			const newContent = ['new'];
@@ -447,7 +447,7 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should handle complex multi-line replacement', async () => {
-			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('complex.md', 'complex'));
+			mockFileSystemService.patchFileAtPath.mockResolvedValue(createMockFile('complex.md', 'complex'));
 
 			const oldContent = ['# Title\nOld line 1\nContext line'];
 			const newContent = ['# Title\nNew line 1\nContext line'];
@@ -463,12 +463,12 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_patch_5'
 			} as any);
 
-			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('complex.md', oldContent, newContent);
+			expect(mockFileSystemService.patchFileAtPath).toHaveBeenCalledWith('complex.md', oldContent, newContent);
 			expect((result.payload.response as any).success).toBe(true);
 		});
 
 		it('should handle adding new content', async () => {
-			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('additions.md', 'additions'));
+			mockFileSystemService.patchFileAtPath.mockResolvedValue(createMockFile('additions.md', 'additions'));
 
 			const oldContent = ['# Title\nExisting content'];
 			const newContent = ['# Title\nExisting content\nNew line 1\nNew line 2'];
@@ -488,7 +488,7 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should handle removing content', async () => {
-			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('deletions.md', 'deletions'));
+			mockFileSystemService.patchFileAtPath.mockResolvedValue(createMockFile('deletions.md', 'deletions'));
 
 			const oldContent = ['# Title\nLine to remove 1\nLine to remove 2\nRemaining content'];
 			const newContent = ['# Title\nRemaining content'];
@@ -509,7 +509,7 @@ describe('AIToolService - Integration Tests', () => {
 
 		it('should handle permission denied error', async () => {
 			const error = new Error('Permission denied');
-			mockFileSystemService.patchFile.mockResolvedValue(error);
+			mockFileSystemService.patchFileAtPath.mockResolvedValue(error);
 
 			const oldContent = ['old'];
 			const newContent = ['new'];
@@ -530,7 +530,7 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should return correct toolId in response', async () => {
-			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('test.md', 'test'));
+			mockFileSystemService.patchFileAtPath.mockResolvedValue(createMockFile('test.md', 'test'));
 
 			const oldContent = 'old';
 			const newContent = 'new';
@@ -562,7 +562,7 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 
 			expect((result.payload.response as any).error).toContain('Invalid arguments for patch_vault_file');
-			expect(mockFileSystemService.patchFile).not.toHaveBeenCalled();
+			expect(mockFileSystemService.patchFileAtPath).not.toHaveBeenCalled();
 		});
 	});
 
@@ -836,7 +836,7 @@ describe('AIToolService - Integration Tests', () => {
 			const foundPath = (searchResult.payload.response as any)[0].results[0].path;
 
 			// Then read
-			mockFileSystemService.readFile.mockResolvedValue('File content here');
+			mockFileSystemService.readFilePath.mockResolvedValue('File content here');
 
 			const readResult = await service.performAITool({
 				name: AITool.ReadVaultFiles,
@@ -850,7 +850,7 @@ describe('AIToolService - Integration Tests', () => {
 
 		it('should handle write -> move workflow', async () => {
 			// First write
-			mockFileSystemService.writeFile.mockResolvedValue(undefined);
+			mockFileSystemService.writeToFilePath.mockResolvedValue(undefined);
 
 			const writeResult = await service.performAITool({
 				name: AITool.WriteVaultFile,
@@ -882,7 +882,7 @@ describe('AIToolService - Integration Tests', () => {
 
 		it('should handle read -> patch workflow', async () => {
 			// First read the file
-			mockFileSystemService.readFile.mockResolvedValue('# Original Title\n\nOriginal content');
+			mockFileSystemService.readFilePath.mockResolvedValue('# Original Title\n\nOriginal content');
 
 			const readResult = await service.performAITool({
 				name: AITool.ReadVaultFiles,
@@ -893,7 +893,7 @@ describe('AIToolService - Integration Tests', () => {
 			expect((readResult.payload.response as any).results[0].contents).toContain('Original');
 
 			// Then patch it
-			mockFileSystemService.patchFile.mockResolvedValue(createMockFile('document.md', 'document'));
+			mockFileSystemService.patchFileAtPath.mockResolvedValue(createMockFile('document.md', 'document'));
 
 			const oldContent = ['# Original Title'];
 			const newContent = ['# Updated Title'];
@@ -910,7 +910,7 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 
 			expect((patchResult.payload.response as any).success).toBe(true);
-			expect(mockFileSystemService.patchFile).toHaveBeenCalledWith('document.md', oldContent, newContent);
+			expect(mockFileSystemService.patchFileAtPath).toHaveBeenCalledWith('document.md', oldContent, newContent);
 		});
 	});
 });

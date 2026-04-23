@@ -12,8 +12,8 @@ describe('MemoriesService', () => {
     beforeEach(() => {
         mockFileSystemService = {
             exists: vi.fn(),
-            readFile: vi.fn(),
-            writeFile: vi.fn()
+            readFilePath: vi.fn(),
+            writeToFilePath: vi.fn()
         };
         mockWorkSpaceService = {
             openNoteByPath: vi.fn()
@@ -30,7 +30,7 @@ describe('MemoriesService', () => {
 
     describe('readMemories', () => {
         it('should return file contents when file exists', async () => {
-            mockFileSystemService.readFile.mockResolvedValue('Remember: user prefers TypeScript.');
+            mockFileSystemService.readFilePath.mockResolvedValue('Remember: user prefers TypeScript.');
 
             const result = await service.readMemories();
 
@@ -38,7 +38,7 @@ describe('MemoriesService', () => {
         });
 
         it('should return MemoriesEmpty copy when file does not exist', async () => {
-            mockFileSystemService.readFile.mockResolvedValue(new Error('File not found'));
+            mockFileSystemService.readFilePath.mockResolvedValue(new Error('File not found'));
 
             const result = await service.readMemories();
 
@@ -46,7 +46,7 @@ describe('MemoriesService', () => {
         });
 
         it('should return MemoriesEmpty copy when read returns any error', async () => {
-            mockFileSystemService.readFile.mockResolvedValue(new Error('Permission denied'));
+            mockFileSystemService.readFilePath.mockResolvedValue(new Error('Permission denied'));
 
             const result = await service.readMemories();
 
@@ -56,16 +56,16 @@ describe('MemoriesService', () => {
 
     describe('updateMemories', () => {
         it('should write memories and return success message', async () => {
-            mockFileSystemService.writeFile.mockResolvedValue(undefined);
+            mockFileSystemService.writeToFilePath.mockResolvedValue(undefined);
 
             const result = await service.updateMemories('Line one\nLine two');
 
-            expect(mockFileSystemService.writeFile).toHaveBeenCalledOnce();
+            expect(mockFileSystemService.writeToFilePath).toHaveBeenCalledOnce();
             expect(result).toBe(Copy.MemoriesUpdatedSuccess);
         });
 
         it('should write empty memories successfully', async () => {
-            mockFileSystemService.writeFile.mockResolvedValue(undefined);
+            mockFileSystemService.writeToFilePath.mockResolvedValue(undefined);
 
             const result = await service.updateMemories('');
 
@@ -74,7 +74,7 @@ describe('MemoriesService', () => {
 
         it('should return error when write fails', async () => {
             const writeError = new Error('Disk full');
-            mockFileSystemService.writeFile.mockResolvedValue(writeError);
+            mockFileSystemService.writeToFilePath.mockResolvedValue(writeError);
 
             const result = await service.updateMemories('some content');
 
@@ -86,13 +86,13 @@ describe('MemoriesService', () => {
 
             const result = await service.updateMemories(elevenLines);
 
-            expect(mockFileSystemService.writeFile).not.toHaveBeenCalled();
+            expect(mockFileSystemService.writeToFilePath).not.toHaveBeenCalled();
             expect(result).toBeTypeOf('string');
             expect(result as string).toContain('10');
         });
 
         it('should accept exactly 10 lines', async () => {
-            mockFileSystemService.writeFile.mockResolvedValue(undefined);
+            mockFileSystemService.writeToFilePath.mockResolvedValue(undefined);
             const tenLines = Array(10).fill('valid line').join('\n');
 
             const result = await service.updateMemories(tenLines);
@@ -105,13 +105,13 @@ describe('MemoriesService', () => {
 
             const result = await service.updateMemories(longLine);
 
-            expect(mockFileSystemService.writeFile).not.toHaveBeenCalled();
+            expect(mockFileSystemService.writeToFilePath).not.toHaveBeenCalled();
             expect(result).toBeTypeOf('string');
             expect(result as string).toContain('200');
         });
 
         it('should accept a line of exactly 200 characters', async () => {
-            mockFileSystemService.writeFile.mockResolvedValue(undefined);
+            mockFileSystemService.writeToFilePath.mockResolvedValue(undefined);
             const maxLine = 'a'.repeat(200);
 
             const result = await service.updateMemories(maxLine);
@@ -120,7 +120,7 @@ describe('MemoriesService', () => {
         });
 
         it('should handle Windows-style line endings (CRLF) in line count', async () => {
-            mockFileSystemService.writeFile.mockResolvedValue(undefined);
+            mockFileSystemService.writeToFilePath.mockResolvedValue(undefined);
             const tenLinesCRLF = Array(10).fill('valid line').join('\r\n');
 
             const result = await service.updateMemories(tenLinesCRLF);
@@ -133,7 +133,7 @@ describe('MemoriesService', () => {
 
             const result = await service.updateMemories(elevenLinesCRLF);
 
-            expect(mockFileSystemService.writeFile).not.toHaveBeenCalled();
+            expect(mockFileSystemService.writeToFilePath).not.toHaveBeenCalled();
         });
     });
 
@@ -143,17 +143,17 @@ describe('MemoriesService', () => {
 
             await service.openMemories();
 
-            expect(mockFileSystemService.writeFile).not.toHaveBeenCalled();
+            expect(mockFileSystemService.writeToFilePath).not.toHaveBeenCalled();
             expect(mockWorkSpaceService.openNoteByPath).toHaveBeenCalledOnce();
         });
 
         it('should create memories file before opening when it does not exist', async () => {
             mockFileSystemService.exists.mockResolvedValue(false);
-            mockFileSystemService.writeFile.mockResolvedValue(undefined);
+            mockFileSystemService.writeToFilePath.mockResolvedValue(undefined);
 
             await service.openMemories();
 
-            expect(mockFileSystemService.writeFile).toHaveBeenCalledOnce();
+            expect(mockFileSystemService.writeToFilePath).toHaveBeenCalledOnce();
             expect(mockWorkSpaceService.openNoteByPath).toHaveBeenCalledOnce();
         });
     });

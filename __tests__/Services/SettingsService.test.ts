@@ -41,6 +41,7 @@ describe('SettingsService', () => {
         it('should merge loaded settings with defaults', () => {
             const loadedSettings: Partial<IVaultkeeperAISettings> = {
                 firstTimeStart: false,
+                provider: AIProvider.Gemini,
                 model: AIProviderModel.GeminiFlash_2_5,
                 planningModel: AIProviderModel.GeminiPro_2_5,
                 apiKeys: {
@@ -65,6 +66,7 @@ describe('SettingsService', () => {
 
         it('should handle partially loaded settings and fill missing properties with defaults', () => {
             const loadedSettings: Partial<IVaultkeeperAISettings> = {
+                provider: AIProvider.OpenAI,
                 model: AIProviderModel.GPT_5_4,
                 apiKeys: {
                     claude: '',
@@ -178,8 +180,8 @@ describe('SettingsService', () => {
                 allowUpdatingMemories: true,
                 enableWebSearch: true,
                 enableWebViewer: false,
-                provider: AIProvider.Claude,
-                quickActionModel: AIProviderModel.ClaudeSonnet_4_6
+                provider: AIProvider.OpenAI,
+                quickActionModel: AIProviderModel.GPT_5_4_Mini
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -205,8 +207,8 @@ describe('SettingsService', () => {
                 allowUpdatingMemories: true,
                 enableWebSearch: true,
                 enableWebViewer: false,
-                provider: AIProvider.Claude,
-                quickActionModel: AIProviderModel.ClaudeSonnet_4_6
+                provider: AIProvider.Gemini,
+                quickActionModel: AIProviderModel.GeminiFlash_2_5
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -217,6 +219,7 @@ describe('SettingsService', () => {
         it('should use fromModel to determine provider', () => {
             // Test with various Claude models
             settingsService = new SettingsService({
+                provider: AIProvider.Claude,
                 model: AIProviderModel.ClaudeOpus_4,
                 apiKeys: { claude: 'opus-key', openai: '', gemini: '', mistral: '' }
             });
@@ -224,6 +227,7 @@ describe('SettingsService', () => {
 
             // Test with various Gemini models
             settingsService = new SettingsService({
+                provider: AIProvider.Gemini,
                 model: AIProviderModel.GeminiPro_2_5,
                 apiKeys: { claude: '', openai: '', gemini: 'pro-key', mistral: '' }
             });
@@ -231,6 +235,7 @@ describe('SettingsService', () => {
 
             // Test with various GPT models
             settingsService = new SettingsService({
+                provider: AIProvider.OpenAI,
                 model: AIProviderModel.GPT_5_4,
                 apiKeys: { claude: '', openai: 'gpt5-key', gemini: '', mistral: '' }
             });
@@ -382,6 +387,7 @@ describe('SettingsService', () => {
 
             geminiModels.forEach(model => {
                 settingsService = new SettingsService({
+                    provider: AIProvider.Gemini,
                     model,
                     apiKeys: { claude: '', openai: '', gemini: 'test-gemini', mistral: '' }
                 });
@@ -400,6 +406,7 @@ describe('SettingsService', () => {
 
             openaiModels.forEach(model => {
                 settingsService = new SettingsService({
+                    provider: AIProvider.OpenAI,
                     model,
                     apiKeys: { claude: '', openai: 'test-openai', gemini: '', mistral: '' }
                 });

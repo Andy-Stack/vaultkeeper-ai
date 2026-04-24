@@ -25,7 +25,7 @@
 - **AI Memory** - Persist vault conventions, preferences, and workflows across sessions so the AI remembers how you work
 - **Web Search** - Toggle web search on per-message so the AI can look up current information
 - **Web Viewer** - Allow the AI to fetch and read web page content directly
-- **Quick Actions** - Right-click context menu actions for lightweight, single-shot AI operations on selected text (desktop only)
+- **Quick Actions** - Lightweight, single-shot AI operations on selected text, available via right-click context menu and a dedicated editor toolbar button — both toggleable in settings and fully supported on mobile
 - **Mobile Compatible** - Full functionality on mobile devices with touch-friendly controls
 - **Streaming Responses** - See AI responses as they're generated
 - **Local & Private** - API keys stored locally, no data sent to third parties
@@ -173,9 +173,12 @@ If issues arise during execution, the orchestration agent can request a replan. 
 
 ### Quick Actions
 
-Quick Actions are lightweight, single-shot AI operations available from the right-click context menu in the editor on desktop. They let you run a focused AI task on selected text without opening the chat panel.
+Quick Actions are lightweight, single-shot AI operations that let you run a focused AI task on selected text without opening the chat panel. They're available in two ways:
 
-Quick Actions are currently only available on desktop and are not accessible on mobile.
+- **Right-click context menu** — select text in any markdown note and choose a Quick Action from the context menu
+- **Editor toolbar button** — a dedicated button appears in the editor header for one-click access
+
+Both entry points are individually toggleable in Settings and are fully supported on mobile.
 
 ### AI Memory
 

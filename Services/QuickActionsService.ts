@@ -1,29 +1,30 @@
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import { AbortService } from "./AbortService";
 import type { QuickAgent } from "./AIServices/QuickAgent";
 import type VaultkeeperAIPlugin from "main";
-import { FuzzySuggestModal, Notice, TFile, type Editor, type MarkdownFileInfo, type MarkdownView, type Menu } from "obsidian";
+import { FuzzySuggestModal, MarkdownView, Menu, Notice, setIcon, TFile, type Editor, type MarkdownFileInfo } from "obsidian";
 import { FileSystemService } from "./FileSystemService";
 import { BeautifyPrompt } from "AIPrompts/QuickActionPrompts/Beautify";
 import Spinner from "Components/Spinner.svelte";
 import { mount } from "svelte";
 import { ApplyTemplatePrompt } from "AIPrompts/QuickActionPrompts/ApplyTemplatePrompt";
 import { Copy } from "Enums/Copy";
+import type { WorkSpaceService } from "./WorkSpaceService";
 
 export class QuickActionsService {
 
     private readonly actionTimeout: number = 30000;
 
     private plugin: VaultkeeperAIPlugin;
-    private abortService: AbortService;
+    private workSpaceService: WorkSpaceService
     private fileSystemService: FileSystemService;
 
     public constructor() {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
-        this.abortService = Resolve<AbortService>(Services.AbortService);
+        this.workSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
         this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
 
+        this.registerViewActions();
         this.registerEditorMenuActions();
     }
 
@@ -117,6 +118,41 @@ export class QuickActionsService {
         );
     }
 
+    private registerViewActions() {
+        this.plugin.registerEvent(
+			this.plugin.app.workspace.on("layout-change", () => {
+                const actionsView = this.workSpaceService.getViewActionsView();
+                if (actionsView) {
+                    if (actionsView.querySelector(".vault-keeper-ai-actions")) {
+                        return;
+                    }
+                    const button = createEl("button", { cls: "clickable-icon view-action vault-keeper-ai-actions" });
+                    button.setAttribute('aria-label', 'AI Quick Actions');
+                    button.addEventListener('click', (evt) => {
+                        const view = this.workSpaceService.getActiveViewOfType(MarkdownView);
+                        if (view) {
+                            const { editor } = view;
+                            const menu = new Menu();
+                            menu.addItem((item) =>
+                                item.setTitle("Beautify")
+                                    .setIcon("palette")
+                                    .onClick(async () => this.beautify(menu, editor, view))
+                            );
+                            menu.addItem((item) =>
+                                item.setTitle("Apply template")
+                                    .setIcon("notepad-text-dashed")
+                                    .onClick(async () => this.applyTemplate(menu, editor, view))
+                            );
+                            menu.showAtMouseEvent(evt);
+                        }
+                    });
+                    setIcon(button, "sparkles");
+                    actionsView.prepend(button);
+                }  
+            })
+		);
+    }
+
     /* Helpers */
 
     private userSelectFile(plugin: VaultkeeperAIPlugin, onSelected: (file: TFile) => Promise<void>): void {
@@ -130,16 +166,14 @@ export class QuickActionsService {
     }
 
     private async newAction(action: string, context: string): Promise<string | null> {
-        return this.abortService.abortableOperation(async () => {
-            const agent = Resolve<QuickAgent>(Services.QuickAgent);
-            agent.resolveAIProvider();
+        const agent = Resolve<QuickAgent>(Services.QuickAgent);
+        agent.resolveAIProvider();
 
-            const timeoutPromise = new Promise<never>((_, reject) =>
-                activeWindow.setTimeout(() => reject(new DOMException(`Action timed out after ${this.actionTimeout}s`, "AbortError")), this.actionTimeout)
-            );
+        const timeoutPromise = new Promise<never>((_, reject) =>
+            activeWindow.setTimeout(() => reject(new DOMException(`Action timed out after ${this.actionTimeout}s`, "AbortError")), this.actionTimeout)
+        );
 
-            return Promise.race([agent.quickAction(action, context), timeoutPromise]);
-        });
+        return Promise.race([agent.quickAction(action, context), timeoutPromise]);
     }
 
     private showNotice(message: string): Notice {

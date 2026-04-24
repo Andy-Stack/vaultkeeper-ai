@@ -181,6 +181,7 @@
     currentStreamingMessageId = null;
     currentThought = null;
 
+    chatService.onNameChanged?.("");
     conversationStore.clearResetFlag();
   }
 

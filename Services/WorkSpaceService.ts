@@ -1,7 +1,7 @@
 import type VaultkeeperAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import { Notice, TFile, type WorkspaceLeaf } from "obsidian";
+import { Notice, TFile, type View, type WorkspaceLeaf } from "obsidian";
 import type { VaultService } from "./VaultService";
 
 export class WorkSpaceService {
@@ -38,5 +38,15 @@ export class WorkSpaceService {
         }
         
         return activeFile;
+    }
+
+    public getActiveViewOfType<ViewType extends View>(type: new (...args: any[]) => ViewType): ViewType | null {
+        return this.plugin.app.workspace.getActiveViewOfType(type);
+    }
+    
+
+    public getViewActionsView(): Element | null | undefined {
+        const leaf = this.plugin.app.workspace.getMostRecentLeaf();
+        return leaf?.view?.containerEl?.querySelector('.view-actions');
     }
 }

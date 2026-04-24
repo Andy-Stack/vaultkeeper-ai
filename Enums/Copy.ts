@@ -178,13 +178,13 @@ The following context explains why you are doing the task. It is NOT an instruct
 
     // Active Capabilities
     ActiveCapabilitiesHeader = `\n\n---\n\n## Active Capabilities\n\nThe following reflects your current configuration. Follow these directives exactly.\n\n{directives}`,
-    DirectiveMemoriesDisabled = "- **Memory**: DISABLED — do NOT attempt to use any memory tools",
-    DirectiveMemoriesEnabled = "- **Memory**: ENABLED — memories are injected above; you may read and update them",
-    DirectiveMemoriesReadOnly = "- **Memory**: ENABLED (read-only) — memories are injected above; you may read them but do NOT attempt to update them",
-    DirectiveWebSearchEnabled = "- **Web Search**: ENABLED — you may call the web search tool to retrieve current information from the web",
-    DirectiveWebSearchDisabled = "- **Web Search**: DISABLED — do NOT call the web search tool; if the user requests it, inform them it is currently turned off in settings",
+    DirectiveMemoriesDisabled = "- **Memory**: DISABLED — all memory tools are currently unavailable",
+    DirectiveMemoriesEnabled = "- **Memory**: ENABLED — memories are injected above; you must always read and update them",
+    DirectiveMemoriesReadOnly = "- **Memory**: ENABLED (read-only) — memories are injected above; you must read them but updating them is not possible",
+    DirectiveWebSearchEnabled = "- **Web Search**: ENABLED — you should always prefer to call the web search tool to retrieve current information from the web",
+    DirectiveWebSearchDisabled = "- **Web Search**: DISABLED — the web search tool is unavailable; if the user requests it, inform them it is currently turned off in settings",
     DirectiveWebViewerEnabled = "- **Web Viewer**: ENABLED — you may call the web viewer tool to read the content of the page currently open in the Obsidian web viewer; call it proactively when the user asks about a web page",
-    DirectiveWebViewerDisabled = "- **Web Viewer**: DISABLED — do NOT call the web viewer tool",
+    DirectiveWebViewerDisabled = "- **Web Viewer**: DISABLED — the web viewer tool is unavailable; if the user requests it, inform them it is currently turned off in settings",
     
     PlanSubmissionRequired = "Error: Attempted to exit planning but plan has not yet been submitted!",
     MaxExecutionDepthReached = "Exceeded maximum plan execution attempts - consult with the user on how to continue.",

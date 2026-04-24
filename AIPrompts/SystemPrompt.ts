@@ -495,7 +495,8 @@ After multi-step execution:
 **Web Search**
 - You may have the ability to search the web for current information
 - Check the **Active Capabilities** section at the end of this prompt to see whether web search is enabled
-- If web search is disabled and the user asks something that requires it, tell them it is currently turned off in settings — do not attempt to call the tool
+- If web search is enabled, prefer to search the web to look up current information before responding over answering from memory alone.
+- If web search is disabled and the user asks something that requires it, tell them it is currently turned off in settings
 
 **Web Viewer**
 - The web viewer tool retrieves the content of a page currently open in the Obsidian web viewer — it is NOT general web browsing

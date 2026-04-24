@@ -2,7 +2,7 @@ import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type { QuickAgent } from "./AIServices/QuickAgent";
 import type VaultkeeperAIPlugin from "main";
-import { FuzzySuggestModal, MarkdownView, Menu, Notice, setIcon, TFile, type Editor, type MarkdownFileInfo } from "obsidian";
+import { FuzzySuggestModal, MarkdownView, Menu, Notice, setIcon, TFile, type Editor, type EventRef, type MarkdownFileInfo } from "obsidian";
 import { FileSystemService } from "./FileSystemService";
 import { BeautifyPrompt } from "AIPrompts/QuickActionPrompts/Beautify";
 import Spinner from "Components/Spinner.svelte";
@@ -10,25 +10,40 @@ import { mount } from "svelte";
 import { ApplyTemplatePrompt } from "AIPrompts/QuickActionPrompts/ApplyTemplatePrompt";
 import { Copy } from "Enums/Copy";
 import type { WorkSpaceService } from "./WorkSpaceService";
+import type { SettingsService } from "./SettingsService";
+import type { EventService } from "./EventService";
+import { Event } from "Enums/Event";
+import { openPluginSettings } from "Helpers/Helpers";
 
 export class QuickActionsService {
 
-    private readonly actionTimeout: number = 30000;
-
     private plugin: VaultkeeperAIPlugin;
-    private workSpaceService: WorkSpaceService
+    private workSpaceService: WorkSpaceService;
     private fileSystemService: FileSystemService;
+    private settingsService: SettingsService;
+    private eventService: EventService;
+
+    private editorMenuEventRef: EventRef | null = null;
+    private layoutChangeEventRef: EventRef | null = null;
 
     public constructor() {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
         this.workSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
         this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
+        this.settingsService = Resolve<SettingsService>(Services.SettingsService);
+        this.eventService = Resolve<EventService>(Services.EventService);
 
-        this.registerViewActions();
+        this.plugin.registerEvent(
+            this.eventService.on(Event.QuickActionsSettingsChanged, () => {
+                this.updateRegistrations();
+            })
+        );
+
         this.registerEditorMenuActions();
+        this.registerViewActions();
     }
 
-    /* Edit Menu Action Definitions */
+    /* Action Definitions */
 
     private async beautify(menu: Menu, editor: Editor, view: MarkdownView | MarkdownFileInfo) {
         const file = view.file;
@@ -38,7 +53,7 @@ export class QuickActionsService {
 
         const selection = editor.getSelection();
         const content = await this.fileSystemService.readFile(file);
-        
+
         if (content instanceof Error || (selection.trim() === "" && content.trim() === "")) {
             return; // Either an excluded file or nothing to beautify
         }
@@ -92,65 +107,90 @@ export class QuickActionsService {
         });
     }
 
-    /* Registered Edit Menu Actions */
+    /* Action Registration */
 
     private registerEditorMenuActions() {
-        // Beautify
-        this.plugin.registerEvent(
-            this.plugin.app.workspace.on("editor-menu", (menu, editor, view) => {
-                menu.addItem((item) => {
+        if (!this.settingsService.settings.enableContextMenuActions) {
+            if (this.editorMenuEventRef) {
+                this.plugin.app.workspace.offref(this.editorMenuEventRef);
+                this.editorMenuEventRef = null;
+            }
+            return;
+        }
+        if (this.editorMenuEventRef) {
+            return;
+        }
+
+        this.editorMenuEventRef = this.plugin.app.workspace.on("editor-menu", (menu, editor, view) => {
+            menu.addItem((item) => {
                 item.setTitle("Beautify")
                     .setIcon("palette")
                     .onClick(async () => this.beautify(menu, editor, view));
-                });
-            })
-        );
-
-        // Apply Template
-        this.plugin.registerEvent(
-            this.plugin.app.workspace.on("editor-menu", (menu, editor, view) => {
-                menu.addItem((item) => {
+            });
+            menu.addItem((item) => {
                 item.setTitle("Apply template")
                     .setIcon("notepad-text-dashed")
                     .onClick(async () => this.applyTemplate(menu, editor, view));
-                });
-            })
-        );
+            });
+        });
+        this.plugin.registerEvent(this.editorMenuEventRef);
     }
 
     private registerViewActions() {
-        this.plugin.registerEvent(
-			this.plugin.app.workspace.on("layout-change", () => {
-                const actionsView = this.workSpaceService.getViewActionsView();
-                if (actionsView) {
-                    if (actionsView.querySelector(".vault-keeper-ai-actions")) {
-                        return;
-                    }
-                    const button = createEl("button", { cls: "clickable-icon view-action vault-keeper-ai-actions" });
-                    button.setAttribute('aria-label', 'AI Quick Actions');
-                    button.addEventListener('click', (evt) => {
-                        const view = this.workSpaceService.getActiveViewOfType(MarkdownView);
-                        if (view) {
-                            const { editor } = view;
-                            const menu = new Menu();
-                            menu.addItem((item) =>
-                                item.setTitle("Beautify")
-                                    .setIcon("palette")
-                                    .onClick(async () => this.beautify(menu, editor, view))
-                            );
-                            menu.addItem((item) =>
-                                item.setTitle("Apply template")
-                                    .setIcon("notepad-text-dashed")
-                                    .onClick(async () => this.applyTemplate(menu, editor, view))
-                            );
-                            menu.showAtMouseEvent(evt);
-                        }
-                    });
-                    setIcon(button, "sparkles");
-                    actionsView.prepend(button);
-                }  
-            })
-		);
+        if (!this.settingsService.settings.enableToolbarActions) {
+            if (this.layoutChangeEventRef) {
+                this.plugin.app.workspace.offref(this.layoutChangeEventRef);
+                this.layoutChangeEventRef = null;
+                // Remove any existing toolbar buttons
+                this.plugin.app.workspace.containerEl
+                    .querySelectorAll(".vault-keeper-ai-actions")
+                    .forEach(el => el.remove());
+            }
+            return;
+        }
+        if (this.layoutChangeEventRef) {
+            return;
+        }
+
+        this.layoutChangeEventRef = this.plugin.app.workspace.on("layout-change", () => {
+            this.injectToolbarButton();
+        });
+        this.plugin.registerEvent(this.layoutChangeEventRef);
+        this.injectToolbarButton();
+    }
+
+    private injectToolbarButton() {
+        const actionsView = this.workSpaceService.getViewActionsView();
+        if (!actionsView || actionsView.querySelector(".vault-keeper-ai-actions")) {
+            return;
+        }
+        const button = createEl("button", { cls: "clickable-icon view-action vault-keeper-ai-actions" });
+        button.setAttribute('aria-label', 'AI quick actions');
+        button.addEventListener('click', (evt) => {
+            const view = this.workSpaceService.getActiveViewOfType(MarkdownView);
+            if (view) {
+                const { editor } = view;
+                const menu = new Menu();
+                menu.addItem((item) =>
+                    item.setTitle("Beautify")
+                        .setIcon("palette")
+                        .onClick(async () => this.beautify(menu, editor, view))
+                );
+                menu.addItem((item) =>
+                    item.setTitle("Apply template")
+                        .setIcon("notepad-text-dashed")
+                        .onClick(async () => this.applyTemplate(menu, editor, view))
+                );
+                menu.showAtMouseEvent(evt);
+            }
+        });
+        setIcon(button, "sparkles");
+        actionsView.prepend(button);
+    }
+
+    private updateRegistrations() {
+        this.registerEditorMenuActions();
+        this.registerViewActions();
     }
 
     /* Helpers */
@@ -166,14 +206,13 @@ export class QuickActionsService {
     }
 
     private async newAction(action: string, context: string): Promise<string | null> {
+        if (this.settingsService.getApiKeyForCurrentModel().trim() == "") {
+            openPluginSettings(this.plugin);
+            return null;
+        }
         const agent = Resolve<QuickAgent>(Services.QuickAgent);
         agent.resolveAIProvider();
-
-        const timeoutPromise = new Promise<never>((_, reject) =>
-            activeWindow.setTimeout(() => reject(new DOMException(`Action timed out after ${this.actionTimeout}s`, "AbortError")), this.actionTimeout)
-        );
-
-        return Promise.race([agent.quickAction(action, context), timeoutPromise]);
+        return agent.quickAction(action, context);
     }
 
     private showNotice(message: string): Notice {
@@ -186,10 +225,10 @@ export class QuickActionsService {
             height: "var(--size-4-4)",
             background: "var(--background-modifier-message)"
         }});
-        
+
         container.createSpan({ text: message });
         fragment.appendChild(container);
-        
+
         return new Notice(fragment, 0);
     }
 }

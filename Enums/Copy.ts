@@ -84,6 +84,12 @@ export enum Copy {
     TooltipLearnMoreFileMonitoring = "Learn more in Plugin Guide",
     TooltipAccessMemories = "View Memories",
 
+    SettingQuickActions = "Quick Actions",
+    SettingEnableContextMenuActions = "Enable Context Menu Actions",
+    SettingEnableContextMenuActionsDesc = "Show quick actions in the right-click editor context menu.",
+    SettingEnableToolbarActions = "Enable Toolbar Actions",
+    SettingEnableToolbarActionsDesc = "Show a quick actions button in the editor toolbar (mobile friendly).",
+
     AIThoughtMessage = "Thinking...",
     AIThoughtGeneratingNote = "Generating note contents...",
     AIThoughtPreparingQuery = "Preparing user query...",

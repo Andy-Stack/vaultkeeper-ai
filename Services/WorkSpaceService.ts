@@ -40,7 +40,7 @@ export class WorkSpaceService {
         return activeFile;
     }
 
-    public getActiveViewOfType<ViewType extends View>(type: new (...args: any[]) => ViewType): ViewType | null {
+    public getActiveViewOfType<ViewType extends View>(type: new (...args: WorkspaceLeaf[]) => ViewType): ViewType | null {
         return this.plugin.app.workspace.getActiveViewOfType(type);
     }
     

@@ -107,7 +107,9 @@ describe('SettingsService', () => {
                 enableWebSearch: true,
                 enableWebViewer: false,
                 provider: AIProvider.Claude,
-                quickActionModel: AIProviderModel.ClaudeSonnet_4_6
+                quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
+                enableContextMenuActions: false,
+                enableToolbarActions: false
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -154,7 +156,9 @@ describe('SettingsService', () => {
                 enableWebSearch: true,
                 enableWebViewer: false,
                 provider: AIProvider.Claude,
-                quickActionModel: AIProviderModel.ClaudeSonnet_4_6
+                quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
+                enableContextMenuActions: false,
+                enableToolbarActions: false
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -181,7 +185,9 @@ describe('SettingsService', () => {
                 enableWebSearch: true,
                 enableWebViewer: false,
                 provider: AIProvider.OpenAI,
-                quickActionModel: AIProviderModel.GPT_5_4_Mini
+                quickActionModel: AIProviderModel.GPT_5_4_Mini,
+                enableContextMenuActions: false,
+                enableToolbarActions: false
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -208,7 +214,9 @@ describe('SettingsService', () => {
                 enableWebSearch: true,
                 enableWebViewer: false,
                 provider: AIProvider.Gemini,
-                quickActionModel: AIProviderModel.GeminiFlash_2_5
+                quickActionModel: AIProviderModel.GeminiFlash_2_5,
+                enableContextMenuActions: false,
+                enableToolbarActions: false
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -263,7 +271,9 @@ describe('SettingsService', () => {
                 enableWebSearch: true,
                 enableWebViewer: false,
                 provider: AIProvider.Claude,
-                quickActionModel: AIProviderModel.ClaudeSonnet_4_6
+                quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
+                enableContextMenuActions: false,
+                enableToolbarActions: false
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -324,7 +334,9 @@ describe('SettingsService', () => {
                 enableWebSearch: true,
                 enableWebViewer: false,
                 provider: AIProvider.Claude,
-                quickActionModel: AIProviderModel.ClaudeSonnet_4_6
+                quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
+                enableContextMenuActions: false,
+                enableToolbarActions: false
             };
             settingsService = new SettingsService(loadedSettings);
         });

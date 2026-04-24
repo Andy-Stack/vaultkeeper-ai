@@ -1,10 +1,12 @@
 import { AIProvider, AIProviderModel, fromModel, isValidProviderModel } from "Enums/ApiProvider";
 import { Copy } from "Enums/Copy";
+import { Event } from "Enums/Event";
 import { Selector } from "Enums/Selector";
 import type VaultkeeperAIPlugin from "main";
 import { HelpModal } from "Modals/HelpModal";
 import { DropdownComponent, PluginSettingTab, Setting, ToggleComponent, setIcon, setTooltip } from "obsidian";
 import { Resolve } from "Services/DependencyService";
+import type { EventService } from "Services/EventService";
 import type { SettingsService } from "Services/SettingsService";
 import { Services } from "Services/Services";
 import { RegisterAiProvider } from "Services/ServiceRegistration";
@@ -15,6 +17,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 	private readonly plugin: VaultkeeperAIPlugin;
 	private readonly settingsService: SettingsService;
 	private readonly memoriesService: MemoriesService;
+	private readonly eventService: EventService;
 
 	private apiKeySetting: Setting | null = null;
 	private apiKeyInputEl: HTMLInputElement | null = null;
@@ -32,6 +35,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 
 		this.settingsService = Resolve<SettingsService>(Services.SettingsService);
 		this.memoriesService = Resolve<MemoriesService>(Services.MemoriesService);
+		this.eventService = Resolve<EventService>(Services.EventService);
 	}
 
 	public display() {
@@ -263,7 +267,42 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				});
 			setIcon(button.extraSettingsEl, "clipboard-clock");
 		});
-		this.updateFileDisclaimer();	
+		this.updateFileDisclaimer();
+
+		/* Quick Actions Header */
+		new Setting(containerEl)
+			.setHeading()
+			.setName(Copy.SettingQuickActions);
+
+		/* Enable Context Menu Actions */
+		new Setting(containerEl)
+			.setName(Copy.SettingEnableContextMenuActions)
+			.setDesc(Copy.SettingEnableContextMenuActionsDesc)
+			.addToggle(toggle => {
+				toggle
+					.setValue(this.settingsService.settings.enableContextMenuActions)
+					.onChange(async (value) => {
+						this.settingsService.settings.enableContextMenuActions = value;
+						await this.settingsService.saveSettings(() =>
+							this.eventService.trigger(Event.QuickActionsSettingsChanged)
+						);
+					});
+			});
+
+		/* Enable Toolbar Actions */
+		new Setting(containerEl)
+			.setName(Copy.SettingEnableToolbarActions)
+			.setDesc(Copy.SettingEnableToolbarActionsDesc)
+			.addToggle(toggle => {
+				toggle
+					.setValue(this.settingsService.settings.enableToolbarActions)
+					.onChange(async (value) => {
+						this.settingsService.settings.enableToolbarActions = value;
+						await this.settingsService.saveSettings(() =>
+							this.eventService.trigger(Event.QuickActionsSettingsChanged)
+						);
+					});
+			});
 	}
 
 	private populateModelDropdown(dropdown: DropdownComponent, providerFilter?: AIProvider): void {

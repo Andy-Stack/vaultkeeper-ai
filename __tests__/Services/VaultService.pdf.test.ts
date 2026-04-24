@@ -65,7 +65,9 @@ const mockSettings: IVaultkeeperAISettings = {
 	enableWebSearch: true,
 	enableWebViewer: false,
 	provider: AIProvider.Claude,
-	quickActionModel: AIProviderModel.ClaudeSonnet_4_6
+	quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
+	enableContextMenuActions: false,
+	enableToolbarActions: false
 };
 
 const mockPlugin = {

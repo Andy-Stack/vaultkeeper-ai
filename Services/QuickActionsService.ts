@@ -161,7 +161,8 @@ export class QuickActionsService {
 
     private injectToolbarButton() {
         const actionsView = this.workSpaceService.getViewActionsView();
-        if (!actionsView || actionsView.querySelector(".vault-keeper-ai-actions")) {
+        const view = this.workSpaceService.getActiveViewOfType(MarkdownView);
+        if (!actionsView || !view || actionsView.querySelector(".vault-keeper-ai-actions")) {
             return;
         }
         const button = createEl("button", { cls: "clickable-icon view-action vault-keeper-ai-actions" });

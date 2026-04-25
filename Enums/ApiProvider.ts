@@ -81,7 +81,7 @@ export enum AIProviderModel {
     GeminiPro_3_1_Preview = "gemini-3.1-pro-preview",
 
     // OpenAI models
-    GPT_5_4 = "gpt-5.4",
+    GPT_5_5 = "gpt-5.5",
     GPT_5_4_Pro = "gpt-5.4-pro",
     GPT_5_4_Mini = "gpt-5.4-mini",
     GPT_5_4_Nano = "gpt-5.4-nano",
@@ -96,6 +96,7 @@ export enum AIProviderModel {
     GeminiNamer = GeminiFlash_2_5_Lite,
     OpenAINamer = GPT_5_4_Nano,
     MistralNamer = MistralSmall,
+    GPT_5_4 = "GPT_5_4",
 }
 
 export enum AIProviderURL {

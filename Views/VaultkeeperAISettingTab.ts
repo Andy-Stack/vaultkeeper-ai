@@ -342,7 +342,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		// OpenAI models
 		if (!providerFilter || providerFilter === AIProvider.OpenAI) {
 			const openaiGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderOpenAI } });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_4, text: Copy.GPT_5_4 });
+			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_5, text: Copy.GPT_5_5 });
 			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_4_Pro, text: Copy.GPT_5_4_Pro });
 			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_4_Mini, text: Copy.GPT_5_4_Mini });
 			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_4_Nano, text: Copy.GPT_5_4_Nano });

@@ -67,7 +67,7 @@ describe('SettingsService', () => {
         it('should handle partially loaded settings and fill missing properties with defaults', () => {
             const loadedSettings: Partial<IVaultkeeperAISettings> = {
                 provider: AIProvider.OpenAI,
-                model: AIProviderModel.GPT_5_4,
+                model: AIProviderModel.GPT_5_5,
                 apiKeys: {
                     claude: '',
                     openai: 'partial-key',
@@ -109,7 +109,8 @@ describe('SettingsService', () => {
                 provider: AIProvider.Claude,
                 quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
                 enableContextMenuActions: false,
-                enableToolbarActions: false
+                enableToolbarActions: false,
+                hideDrawerElements: false
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -158,7 +159,8 @@ describe('SettingsService', () => {
                 provider: AIProvider.Claude,
                 quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
                 enableContextMenuActions: false,
-                enableToolbarActions: false
+                enableToolbarActions: false,
+                hideDrawerElements: false
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -170,7 +172,7 @@ describe('SettingsService', () => {
             const loadedSettings: IVaultkeeperAISettings = {
                 firstTimeStart: false,
                 model: AIProviderModel.GPT_5_4_Mini,
-                planningModel: AIProviderModel.GPT_5_4,
+                planningModel: AIProviderModel.GPT_5_5,
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
@@ -187,7 +189,8 @@ describe('SettingsService', () => {
                 provider: AIProvider.OpenAI,
                 quickActionModel: AIProviderModel.GPT_5_4_Mini,
                 enableContextMenuActions: false,
-                enableToolbarActions: false
+                enableToolbarActions: false,
+                hideDrawerElements: false
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -216,7 +219,8 @@ describe('SettingsService', () => {
                 provider: AIProvider.Gemini,
                 quickActionModel: AIProviderModel.GeminiFlash_2_5,
                 enableContextMenuActions: false,
-                enableToolbarActions: false
+                enableToolbarActions: false,
+                hideDrawerElements: false
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -244,7 +248,7 @@ describe('SettingsService', () => {
             // Test with various GPT models
             settingsService = new SettingsService({
                 provider: AIProvider.OpenAI,
-                model: AIProviderModel.GPT_5_4,
+                model: AIProviderModel.GPT_5_5,
                 apiKeys: { claude: '', openai: 'gpt5-key', gemini: '', mistral: '' }
             });
             expect(settingsService.getApiKeyForCurrentModel()).toBe('gpt5-key');
@@ -273,7 +277,8 @@ describe('SettingsService', () => {
                 provider: AIProvider.Claude,
                 quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
                 enableContextMenuActions: false,
-                enableToolbarActions: false
+                enableToolbarActions: false,
+                hideDrawerElements: false
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -336,7 +341,8 @@ describe('SettingsService', () => {
                 provider: AIProvider.Claude,
                 quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
                 enableContextMenuActions: false,
-                enableToolbarActions: false
+                enableToolbarActions: false,
+                hideDrawerElements: false
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -412,7 +418,7 @@ describe('SettingsService', () => {
             const openaiModels = [
                 AIProviderModel.GPT_5_4_Nano,
                 AIProviderModel.GPT_5_4_Mini,
-                AIProviderModel.GPT_5_4,
+                AIProviderModel.GPT_5_5,
                 AIProviderModel.GPT_5_4_Mini
             ];
 

@@ -66,7 +66,8 @@ const mockSettings: IVaultkeeperAISettings = {
 	provider: AIProvider.Claude,
 	quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
 	enableContextMenuActions: false,
-	enableToolbarActions: false
+	enableToolbarActions: false,
+	hideDrawerElements: false
 };
 
 const mockPlugin = {

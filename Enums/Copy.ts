@@ -84,6 +84,10 @@ export enum Copy {
     TooltipLearnMoreFileMonitoring = "Learn more in Plugin Guide",
     TooltipAccessMemories = "View Memories",
 
+    SettingAdvancedSettings = "Advanced Settings",
+    SettingHideDrawerElements = "Hide Drawer Elements",
+    SettingHideDrawerElementsDesc = "Hide side drawer elements on mobile when typing. This provides more space when an on screen keyboard is used. The elements will reappear when the chat input is unfocused.",
+
     SettingQuickActions = "Quick Actions",
     SettingEnableContextMenuActions = "Enable Context Menu Actions",
     SettingEnableContextMenuActionsDesc = "Show quick actions in the right-click editor context menu.",

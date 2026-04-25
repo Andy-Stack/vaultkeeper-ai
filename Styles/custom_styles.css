@@ -1,13 +1,4 @@
 /* ============================== */
-/* Mobile Drawer Full Width */
-/* ============================== */
-
-body:not(.is-tablet) .workspace-drawer.mod-right {
-  max-width: 100%;
-  width: 100%;
-}
-
-/* ============================== */
 /* Main View Customization */
 /* ============================== */
 
@@ -20,6 +11,56 @@ body:not(.is-tablet) .workspace-drawer.mod-right {
   max-width: 1000px;
   background-color: var(--background-secondary);
   padding-top: 0;
+}
+
+/* ============================== */
+/* Mobile Drawer Full Width */
+/* ============================== */
+
+body:not(.is-tablet) .workspace-drawer.mod-right {
+  max-width: 100%;
+  width: 100%;
+}
+
+/* ============================== */
+/* Drawer element collapse animation */
+/* ============================== */
+
+.vaultKeeper-drawer-hiding {
+  overflow: hidden;
+  height: var(--vaultKeeper-drawer-height);
+  padding-top: var(--vaultKeeper-drawer-padding-top);
+  padding-bottom: var(--vaultKeeper-drawer-padding-bottom);
+  transition: height 0.25s ease, padding-top 0.25s ease, padding-bottom 0.25s ease;
+}
+
+.vaultKeeper-drawer-collapsed {
+  overflow: hidden;
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  transition: height 0.25s ease, padding-top 0.25s ease, padding-bottom 0.25s ease;
+}
+
+.vaultKeeper-drawer-hidden {
+  display: none;
+}
+
+.vaultKeeper-drawer-restoring {
+  overflow: hidden;
+  display: block;
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  transition: height 0.25s ease, padding-top 0.25s ease, padding-bottom 0.25s ease;
+}
+
+.vaultKeeper-drawer-expanding {
+  overflow: hidden;
+  height: var(--vaultKeeper-drawer-height);
+  padding-top: var(--vaultKeeper-drawer-padding-top);
+  padding-bottom: var(--vaultKeeper-drawer-padding-bottom);
+  transition: height 0.25s ease, padding-top 0.25s ease, padding-bottom 0.25s ease;
 }
 
 /* ============================== */

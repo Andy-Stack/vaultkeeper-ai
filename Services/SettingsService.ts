@@ -30,7 +30,9 @@ const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     enableWebViewer: false,
 
     enableContextMenuActions: true,
-    enableToolbarActions: true
+    enableToolbarActions: true,
+
+    hideDrawerElements: true
 }
 
 export interface IVaultkeeperAISettings {
@@ -61,6 +63,8 @@ export interface IVaultkeeperAISettings {
 
     enableContextMenuActions: boolean;
     enableToolbarActions: boolean;
+
+    hideDrawerElements: boolean;
 }
 
 export class SettingsService {

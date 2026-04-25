@@ -24,6 +24,7 @@
 	import type { IPrompt } from "AIPrompts/IPrompt";
   import type { SettingsService } from "Services/SettingsService";
   import { ChatMode, chatModeAllowsEdits, iconForChatMode } from "Enums/ChatMode";
+	import { hideDrawerElements, restoreDrawerElements } from "Helpers/ElementHelper";
 
   export let attachments: Attachment[] = [];
 
@@ -82,7 +83,8 @@
   });
 
   function checkStacked() {
-    if (textareaElement.textContent.trim() === "") {
+    // Mobile already uses the 'stacked' layout 
+    if (Platform.isMobile || textareaElement.textContent.trim() === "") {
       stacked = false;
       return;
     }
@@ -503,8 +505,17 @@
     }
   }
 
+  function handleFocusIn() {
+    if (Platform.isMobile && settingsService.settings.hideDrawerElements) {
+      hideDrawerElements();
+    }
+  }
+
   function handleFocusOut() {
     searchStateStore.resetSearch();
+    if (Platform.isMobile && settingsService.settings.hideDrawerElements) {
+      restoreDrawerElements();
+    }
   }
 </script>
 
@@ -565,6 +576,7 @@
     on:dragleave={handleDragLeave}
     on:click={handleCursorPositionChange}
     on:keyup={handleCursorPositionChange}
+    on:focus={handleFocusIn}
     on:focusout={handleFocusOut}
     data-placeholder={inputPlaceholder}
     role="textbox"

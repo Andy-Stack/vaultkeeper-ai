@@ -303,6 +303,24 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 						);
 					});
 			});
+
+		/* Advanced Settings Header */
+		new Setting(containerEl)
+			.setHeading()
+			.setName(Copy.SettingAdvancedSettings);
+
+		/* Hide Drawer Elements */
+		new Setting(containerEl)
+			.setName(Copy.SettingHideDrawerElements)
+			.setDesc(Copy.SettingHideDrawerElementsDesc)
+			.addToggle(toggle => {
+				toggle
+					.setValue(this.settingsService.settings.hideDrawerElements)
+					.onChange(async (value) => {
+						this.settingsService.settings.hideDrawerElements = value;
+						await this.settingsService.saveSettings();
+					});
+			});
 	}
 
 	private populateModelDropdown(dropdown: DropdownComponent, providerFilter?: AIProvider): void {

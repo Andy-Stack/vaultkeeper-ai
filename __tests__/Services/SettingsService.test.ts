@@ -78,7 +78,7 @@ describe('SettingsService', () => {
             settingsService = new SettingsService(loadedSettings as IVaultkeeperAISettings);
 
             expect(settingsService.settings.firstTimeStart).toBe(true); // Default
-            expect(settingsService.settings.model).toBe(AIProviderModel.GPT_5_4); // Loaded
+            expect(settingsService.settings.model).toBe(AIProviderModel.GPT_5_5); // Loaded
             expect(settingsService.settings.apiKeys.openai).toBe('partial-key'); // Loaded
             expect(settingsService.settings.exclusions).toEqual([]); // Default
             expect(settingsService.settings.userInstruction).toBe(''); // Default

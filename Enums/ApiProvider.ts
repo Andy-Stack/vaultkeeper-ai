@@ -95,8 +95,7 @@ export enum AIProviderModel {
     ClaudeNamer = ClaudeHaiku_4_5,
     GeminiNamer = GeminiFlash_2_5_Lite,
     OpenAINamer = GPT_5_4_Nano,
-    MistralNamer = MistralSmall,
-    GPT_5_4 = "GPT_5_4",
+    MistralNamer = MistralSmall
 }
 
 export enum AIProviderURL {

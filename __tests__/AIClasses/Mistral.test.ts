@@ -53,7 +53,8 @@ describe('Mistral', () => {
                 if (provider === AIProvider.Mistral) return 'test-mistral-key';
                 return '';
             }),
-            getApiKeyForCurrentModel: vi.fn(() => 'test-mistral-key')
+            getApiKeyForCurrentModel: vi.fn(() => 'test-mistral-key'),
+            subscribeToSettingsChanged: vi.fn()
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
 

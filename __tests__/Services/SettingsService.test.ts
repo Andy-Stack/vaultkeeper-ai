@@ -3,6 +3,7 @@ import { SettingsService, type IVaultkeeperAISettings } from '../../Services/Set
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { AIProvider, AIProviderModel, fromModel } from '../../Enums/ApiProvider';
+import { ChatMode } from 'Enums/ChatMode';
 
 describe('SettingsService', () => {
     let settingsService: SettingsService;
@@ -110,7 +111,8 @@ describe('SettingsService', () => {
                 quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
                 enableContextMenuActions: false,
                 enableToolbarActions: false,
-                hideDrawerElements: false
+                hideDrawerElements: false,
+                chatMode: ChatMode.ReadOnly
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -160,7 +162,8 @@ describe('SettingsService', () => {
                 quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
                 enableContextMenuActions: false,
                 enableToolbarActions: false,
-                hideDrawerElements: false
+                hideDrawerElements: false,
+                chatMode: ChatMode.ReadOnly
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -190,7 +193,8 @@ describe('SettingsService', () => {
                 quickActionModel: AIProviderModel.GPT_5_4_Mini,
                 enableContextMenuActions: false,
                 enableToolbarActions: false,
-                hideDrawerElements: false
+                hideDrawerElements: false,
+                chatMode: ChatMode.ReadOnly
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -220,7 +224,8 @@ describe('SettingsService', () => {
                 quickActionModel: AIProviderModel.GeminiFlash_2_5,
                 enableContextMenuActions: false,
                 enableToolbarActions: false,
-                hideDrawerElements: false
+                hideDrawerElements: false,
+                chatMode: ChatMode.ReadOnly
             };
             settingsService = new SettingsService(loadedSettings);
 
@@ -278,7 +283,8 @@ describe('SettingsService', () => {
                 quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
                 enableContextMenuActions: false,
                 enableToolbarActions: false,
-                hideDrawerElements: false
+                hideDrawerElements: false,
+                chatMode: ChatMode.ReadOnly
             };
             settingsService = new SettingsService(loadedSettings);
         });
@@ -342,23 +348,24 @@ describe('SettingsService', () => {
                 quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
                 enableContextMenuActions: false,
                 enableToolbarActions: false,
-                hideDrawerElements: false
+                hideDrawerElements: false,
+                chatMode: ChatMode.ReadOnly
             };
             settingsService = new SettingsService(loadedSettings);
+            mockPlugin.saveData.mockClear();
         });
 
         it('should call plugin.saveData with current settings', async () => {
-            await settingsService.saveSettings();
+            await settingsService.updateSettings(() => {});
 
             expect(mockPlugin.saveData).toHaveBeenCalledWith(settingsService.settings);
-            expect(mockPlugin.saveData).toHaveBeenCalledTimes(1);
         });
 
         it('should call plugin.saveData with updated settings after modification', async () => {
-            settingsService.setApiKeyForProvider(AIProvider.Claude, 'updated-key');
-            settingsService.settings.userInstruction = 'Updated instruction';
-
-            await settingsService.saveSettings();
+            await settingsService.updateSettings(settings => {
+                settings.apiKeys.claude = 'updated-key';
+                settings.userInstruction = 'Updated instruction';
+            });
 
             expect(mockPlugin.saveData).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -373,7 +380,7 @@ describe('SettingsService', () => {
         it('should handle saveData errors gracefully', async () => {
             mockPlugin.saveData.mockRejectedValue(new Error('Save failed'));
 
-            await expect(settingsService.saveSettings()).rejects.toThrow('Save failed');
+            await expect(settingsService.updateSettings(() => {})).rejects.toThrow('Save failed');
         });
     });
 
@@ -520,7 +527,7 @@ describe('SettingsService', () => {
                 snippetSizeLimit: 250
             });
 
-            await settingsService.saveSettings();
+            await settingsService.updateSettings(() => {});
 
             expect(mockPlugin.saveData).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -533,10 +540,10 @@ describe('SettingsService', () => {
         it('should handle modified limits in saveSettings', async () => {
             settingsService = new SettingsService({});
 
-            settingsService.settings.searchResultsLimit = 100;
-            settingsService.settings.snippetSizeLimit = 600;
-
-            await settingsService.saveSettings();
+            await settingsService.updateSettings(settings => {
+                settings.searchResultsLimit = 100;
+                settings.snippetSizeLimit = 600;
+            });
 
             expect(mockPlugin.saveData).toHaveBeenCalledWith(
                 expect.objectContaining({

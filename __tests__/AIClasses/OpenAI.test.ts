@@ -53,7 +53,8 @@ describe('OpenAI', () => {
                 if (provider === AIProvider.Gemini) return 'test-gemini-key';
                 return '';
             }),
-            getApiKeyForCurrentModel: vi.fn(() => 'test-openai-key')
+            getApiKeyForCurrentModel: vi.fn(() => 'test-openai-key'),
+            subscribeToSettingsChanged: vi.fn()
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
 

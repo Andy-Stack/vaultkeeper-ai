@@ -50,7 +50,8 @@ describe('Gemini', () => {
                 if (provider === AIProvider.Gemini) return 'test-gemini-key';
                 return '';
             }),
-            getApiKeyForCurrentModel: vi.fn(() => 'test-gemini-key')
+            getApiKeyForCurrentModel: vi.fn(() => 'test-gemini-key'),
+            subscribeToSettingsChanged: vi.fn()
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
 

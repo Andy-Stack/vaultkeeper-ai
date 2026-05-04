@@ -48,7 +48,8 @@ describe('BaseAIClass Shared Methods', () => {
                 if (provider === AIProvider.Gemini) return 'test-gemini-key';
                 return '';
             }),
-            getApiKeyForCurrentModel: vi.fn(() => 'test-claude-key')
+            getApiKeyForCurrentModel: vi.fn(() => 'test-claude-key'),
+            subscribeToSettingsChanged: vi.fn()
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
 

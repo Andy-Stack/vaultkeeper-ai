@@ -19,8 +19,9 @@ import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 
 export abstract class BaseAIClass implements IAIClass {
 
+    protected apiKey: string;
+    
     protected readonly provider: AIProvider;
-    protected readonly apiKey: string;
     protected readonly abortService: AbortService;
     protected readonly aiFileService: IAIFileService;
     protected readonly settingsService: SettingsService;
@@ -39,6 +40,9 @@ export abstract class BaseAIClass implements IAIClass {
         this.settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.streamingService = Resolve<StreamingService>(Services.StreamingService);
 
+        this.settingsService.subscribeToSettingsChanged(this, () => {
+            this.apiKey = this.settingsService.getApiKeyForProvider(provider);
+        });
         this.apiKey = this.settingsService.getApiKeyForProvider(provider);
     }
 

@@ -25,15 +25,12 @@ import { MoveVaultFolder } from "./Tools/MoveVaultFolder";
 import { ChatMode, chatModeAllowsEdits } from "Enums/ChatMode";
 
 export abstract class AIToolDefinitions {
-    
-    public static isGated: boolean = false;
 
     // Definitions list provides a list of function definitions that does not include any planning functions (used as reference in planning agent prompt)
     private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, GetWebViewerContent,
         WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles, CreateVaultFolder, DeleteVaultFolder, MoveVaultFolder];
 
     public static agentDefinitions(chatMode: ChatMode, memories: boolean, updateMemories: boolean, webViewer: boolean): IAIToolDefinition[] {
-        this.isGated = false;
         
         if (chatMode === ChatMode.Planning) {
             return [ExecuteWorkflow];

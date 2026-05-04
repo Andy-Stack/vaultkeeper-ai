@@ -94,11 +94,12 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		if (!settingsService.settings.firstTimeStart) {
 			return;
 		}
-		settingsService.settings.firstTimeStart = false;
-		await settingsService.saveSettings();
+
+		await settingsService.updateSettings(settings => {
+			settings.firstTimeStart = false;
+		});
 
 		const vaultService: VaultService = Resolve<VaultService>(Services.VaultService);
-
 		await vaultService.create(Path.ExampleUserInstructions, Copy.EXAMPLE_USER_INSTRUCTION, true, false);
 	}
 }

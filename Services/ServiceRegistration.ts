@@ -102,7 +102,7 @@ export function RegisterDependencies() {
     RegisterAiProvider();
 }
 
-export function RegisterAiProvider() {
+function RegisterAiProvider() {
     const settingsService = Resolve<SettingsService>(Services.SettingsService);
     const provider = fromModel(settingsService.settings.model);
 

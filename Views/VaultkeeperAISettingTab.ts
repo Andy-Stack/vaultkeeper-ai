@@ -9,7 +9,6 @@ import { Resolve } from "Services/DependencyService";
 import type { EventService } from "Services/EventService";
 import type { SettingsService } from "Services/SettingsService";
 import { Services } from "Services/Services";
-import { RegisterAiProvider } from "Services/ServiceRegistration";
 import { closePluginSettings } from "Helpers/Helpers";
 import type { MemoriesService } from "Services/MemoriesService";
 
@@ -54,9 +53,10 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					if (!isValidProviderModel(value)) {
 						return;
 					}
-					this.settingsService.settings.model = value;
-					this.settingsService.settings.provider = fromModel(value);
-					await this.settingsService.saveSettings(() => RegisterAiProvider());
+					await this.settingsService.updateSettings(settings => {
+						settings.model = value;
+						settings.provider = fromModel(value);
+					});
 					if (this.apiKeyInputEl) {
 						this.apiKeyInputEl.value = this.settingsService.getApiKeyForCurrentModel();
 						this.highlightApiKey();
@@ -84,8 +84,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					if (!isValidProviderModel(value)) {
 						return;
 					}
-					this.settingsService.settings.planningModel = value;
-					await this.settingsService.saveSettings();
+					await this.settingsService.updateSettings(settings => {
+						settings.planningModel = value;
+					});
 				});
 			});
 
@@ -101,8 +102,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					if (!isValidProviderModel(value)) {
 						return;
 					}
-					this.settingsService.settings.quickActionModel = value;
-					await this.settingsService.saveSettings();
+					await this.settingsService.updateSettings(settings => {
+						settings.quickActionModel = value;
+					});
 				});
 			});
 
@@ -114,9 +116,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				text.setPlaceholder(Copy.PlaceholderEnterApiKey)
 					.setValue(this.settingsService.getApiKeyForCurrentModel())
 					.onChange(async (value) => {
-						const provider = fromModel(this.settingsService.settings.model);
-						this.settingsService.setApiKeyForProvider(provider, value);
-						await this.settingsService.saveSettings(() => RegisterAiProvider());
+						await this.settingsService.updateSettings(async settings => {
+							await this.settingsService.setApiKeyForProvider(fromModel(settings.model), value);
+						});
 						this.highlightApiKey();
 					});
 				text.inputEl.type = "password";
@@ -162,8 +164,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				text.setPlaceholder(Copy.PlaceholderFileExclusions)
 					.setValue(this.settingsService.settings.exclusions.join("\n"))
 					.onChange(async (value) => {
-						this.settingsService.settings.exclusions = value.split("\n").map(line => line.trim()).filter(line => line.length > 0);
-						await this.settingsService.saveSettings();
+						await this.settingsService.updateSettings(settings => {
+							settings.exclusions = value.split("\n").map(line => line.trim()).filter(line => line.length > 0);
+						});
 					});
 				text.inputEl.classList.add(Selector.AIExclusionsInput);
 			});
@@ -183,8 +186,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					.setValue(this.settingsService.settings.searchResultsLimit)
 					.setDynamicTooltip()
 					.onChange(async (value) => {
-						this.settingsService.settings.searchResultsLimit = value;
-						await this.settingsService.saveSettings();
+						await this.settingsService.updateSettings(settings => {
+							settings.searchResultsLimit = value;
+						});
 					});
 			});
 
@@ -198,8 +202,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					.setValue(this.settingsService.settings.snippetSizeLimit)
 					.setDynamicTooltip()
 					.onChange(async (value) => {
-						this.settingsService.settings.snippetSizeLimit = value;
-						await this.settingsService.saveSettings();
+						await this.settingsService.updateSettings(settings => {
+							settings.snippetSizeLimit = value;
+						});
 					});
 			});
 
@@ -216,8 +221,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				toggle
 					.setValue(this.settingsService.settings.enableWebViewer)
 					.onChange(async (value) => {
-						this.settingsService.settings.enableWebViewer = value;
-						await this.settingsService.saveSettings();
+						await this.settingsService.updateSettings(settings => {
+							settings.enableWebViewer = value;
+						});
 					});
 			});
 
@@ -234,8 +240,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				toggle
 					.setValue(this.settingsService.settings.enableMemories)
 					.onChange(async (value) => {
-						this.settingsService.settings.enableMemories = value;
-						await this.settingsService.saveSettings();
+						await this.settingsService.updateSettings(settings => {
+							settings.enableMemories = value;
+						});
 						this.updateAllowUpdatingMemoriesSetting();
 					});
 			});
@@ -249,8 +256,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				toggle
 					.setValue(this.settingsService.settings.allowUpdatingMemories)
 					.onChange(async (value) => {
-						this.settingsService.settings.allowUpdatingMemories = value;
-						await this.settingsService.saveSettings();
+						await this.settingsService.updateSettings(settings => {
+							settings.allowUpdatingMemories = value;
+						});
 					})
 			});
 		this.updateAllowUpdatingMemoriesSetting();
@@ -282,10 +290,10 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				toggle
 					.setValue(this.settingsService.settings.enableContextMenuActions)
 					.onChange(async (value) => {
-						this.settingsService.settings.enableContextMenuActions = value;
-						await this.settingsService.saveSettings(() =>
-							this.eventService.trigger(Event.QuickActionsSettingsChanged)
-						);
+						await this.settingsService.updateSettings(settings => {
+							settings.enableContextMenuActions = value;
+						});
+						this.eventService.trigger(Event.QuickActionsSettingsChanged);
 					});
 			});
 
@@ -297,10 +305,10 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				toggle
 					.setValue(this.settingsService.settings.enableToolbarActions)
 					.onChange(async (value) => {
-						this.settingsService.settings.enableToolbarActions = value;
-						await this.settingsService.saveSettings(() =>
-							this.eventService.trigger(Event.QuickActionsSettingsChanged)
-						);
+						await this.settingsService.updateSettings(settings => {
+							settings.enableToolbarActions = value;
+						});
+						this.eventService.trigger(Event.QuickActionsSettingsChanged);
 					});
 			});
 
@@ -317,8 +325,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				toggle
 					.setValue(this.settingsService.settings.hideDrawerElements)
 					.onChange(async (value) => {
-						this.settingsService.settings.hideDrawerElements = value;
-						await this.settingsService.saveSettings();
+						await this.settingsService.updateSettings(settings => {
+							settings.hideDrawerElements = value;
+						});
 					});
 			});
 	}
@@ -369,38 +378,33 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 	}
 
 	private async updateModelDropdowns(): Promise<void> {
-		const currentProvider = fromModel(this.settingsService.settings.model);
-		let shouldSave = false;
+		await this.settingsService.updateSettings(settings => {
+			const currentProvider = fromModel(settings.model);
 
-		if (this.planningModelDropdown) {
-			const planningProvider = fromModel(this.settingsService.settings.planningModel);
-			this.planningModelDropdown.selectEl.empty();
-			this.populateModelDropdown(this.planningModelDropdown, currentProvider);
-
-			if (planningProvider !== currentProvider) {
-				this.settingsService.settings.planningModel = this.settingsService.settings.model;
-				shouldSave = true;
+			if (this.planningModelDropdown) {
+				const planningProvider = fromModel(settings.planningModel);
+				this.planningModelDropdown.selectEl.empty();
+				this.populateModelDropdown(this.planningModelDropdown, currentProvider);
+	
+				if (planningProvider !== currentProvider) {
+					settings.planningModel = settings.model;
+				}
+	
+				this.planningModelDropdown.setValue(settings.planningModel);
 			}
 
-			this.planningModelDropdown.setValue(this.settingsService.settings.planningModel);
-		}
-
-		if (this.quickActionModelDropdown) {
-			const quickActionProvider = fromModel(this.settingsService.settings.quickActionModel);
-			this.quickActionModelDropdown.selectEl.empty();
-			this.populateModelDropdown(this.quickActionModelDropdown);
-
-			if (quickActionProvider !== currentProvider) {
-				this.settingsService.settings.quickActionModel = this.settingsService.settings.model;
-				shouldSave = true;
+			if (this.quickActionModelDropdown) {
+				const quickActionProvider = fromModel(settings.quickActionModel);
+				this.quickActionModelDropdown.selectEl.empty();
+				this.populateModelDropdown(this.quickActionModelDropdown);
+	
+				if (quickActionProvider !== currentProvider) {
+					settings.quickActionModel = settings.model;
+				}
+	
+				this.quickActionModelDropdown.setValue(settings.quickActionModel);
 			}
-
-			this.quickActionModelDropdown.setValue(this.settingsService.settings.quickActionModel);
-		}
-
-		if (shouldSave) {
-			await this.settingsService.saveSettings();
-		}
+		});
 	}
 
 	private highlightApiKey() {

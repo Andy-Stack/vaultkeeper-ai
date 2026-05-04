@@ -1,10 +1,22 @@
 import type VaultkeeperAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import { AIProvider, AIProviderModel, DEFAULT_MODEL_BY_PROVIDER, DEFAULT_PLANNING_MODEL_BY_PROVIDER, fromModel, isvalidProvider, isValidProviderModel, modelMatchesProvider } from "Enums/ApiProvider";
+import { ChatMode } from "Enums/ChatMode";
+import {
+    AIProvider,
+    AIProviderModel,
+    DEFAULT_MODEL_BY_PROVIDER,
+    DEFAULT_PLANNING_MODEL_BY_PROVIDER,
+    fromModel,
+    isvalidProvider,
+    isValidProviderModel,
+    modelMatchesProvider
+} from "Enums/ApiProvider";
 
 const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     firstTimeStart: true,
+
+    chatMode: ChatMode.ReadOnly,
     userInstruction: "",
 
     provider: AIProvider.Claude,
@@ -37,6 +49,8 @@ const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
 
 export interface IVaultkeeperAISettings {
     firstTimeStart: boolean;
+
+    chatMode: ChatMode;
     userInstruction: string;
 
     provider: AIProvider;
@@ -69,21 +83,31 @@ export interface IVaultkeeperAISettings {
 
 export class SettingsService {
 
+    public readonly settings: Readonly<IVaultkeeperAISettings>;
+
     private readonly plugin: VaultkeeperAIPlugin;
-    
-    public readonly settings: IVaultkeeperAISettings;
+    private readonly subscribers: Map<object, (() => void) | (() => Promise<void>)> = new Map();
+
+    private settingsSnapshot: string;
 
     public constructor(loadedSettings: Partial<IVaultkeeperAISettings>) {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
+        this.settingsSnapshot = JSON.stringify(this.settings);
         this.ensureValidModels();
     }
 
-    public async saveSettings(onSave?: () => void) {
-        await this.plugin.saveData(this.settings);
-        if (onSave) {
-            onSave();
-        }
+    public subscribeToSettingsChanged(subscriber: object, callback: (() => void) | (() => Promise<void>)): void {
+        this.subscribers.set(subscriber, callback);
+    }
+
+    public unsubscribe(subscriber: object): void {
+        this.subscribers.delete(subscriber);
+    }
+
+    public async updateSettings(updateAction: ((settings: IVaultkeeperAISettings) => void) | ((settings: IVaultkeeperAISettings) => Promise<void>)) {
+        await updateAction(this.settings);
+        await this.saveSettings();
     }
 
     public getApiKeyForCurrentModel(): string {
@@ -104,51 +128,54 @@ export class SettingsService {
         }
     }
 
-    public setApiKeyForProvider(provider: AIProvider, key: string) {
+    public async setApiKeyForProvider(provider: AIProvider, key: string) {
         switch (provider) {
             case AIProvider.Claude:
-                this.settings.apiKeys.claude = key;
+                await this.updateSettings(settings => settings.apiKeys.claude = key);
                 break;
             case AIProvider.OpenAI:
-                this.settings.apiKeys.openai = key;
+                await this.updateSettings(settings => settings.apiKeys.openai = key);                
                 break;
             case AIProvider.Gemini:
-                this.settings.apiKeys.gemini = key;
+                await this.updateSettings(settings => settings.apiKeys.gemini = key);                
                 break;
             case AIProvider.Mistral:
-                this.settings.apiKeys.mistral = key;
+                await this.updateSettings(settings => settings.apiKeys.mistral = key);
                 break;
         }
     }
 
+    private async saveSettings() {
+        await this.plugin.saveData(this.settings);
+        const snapshot = JSON.stringify(this.settings);
+        if (this.settingsSnapshot !== snapshot) {
+            this.settingsSnapshot = snapshot;
+            for (const callback of this.subscribers.values()) {
+                await callback();
+            }
+        }
+    }
+
     private ensureValidModels(): void {
-        let changed = false;
+        void this.updateSettings(settings => {
+            let provider = settings.provider;
 
-        let provider = this.settings.provider;
-
-        if (!isvalidProvider(provider)) {
-            provider = DEFAULT_SETTINGS.provider;
-            changed = true;
-        }
-
-        if (!isValidProviderModel(this.settings.model) || !modelMatchesProvider(this.settings.model, provider)) {
-            this.settings.model = DEFAULT_MODEL_BY_PROVIDER[provider];
-            changed = true;
-        }
-
-        if (!isValidProviderModel(this.settings.planningModel) || !modelMatchesProvider(this.settings.planningModel, provider)) {
-            this.settings.planningModel = DEFAULT_PLANNING_MODEL_BY_PROVIDER[provider];
-            changed = true;
-        }
-
-        if (!isValidProviderModel(this.settings.quickActionModel) || !modelMatchesProvider(this.settings.quickActionModel, provider)) {
-            this.settings.quickActionModel = DEFAULT_MODEL_BY_PROVIDER[provider];
-            changed = true;
-        }
-
-        if (changed) {
-            void this.saveSettings();
-        }
+            if (!isvalidProvider(provider)) {
+                provider = DEFAULT_SETTINGS.provider;
+            }
+    
+            if (!isValidProviderModel(this.settings.model) || !modelMatchesProvider(this.settings.model, provider)) {
+                settings.model = DEFAULT_MODEL_BY_PROVIDER[provider];
+            }
+    
+            if (!isValidProviderModel(this.settings.planningModel) || !modelMatchesProvider(this.settings.planningModel, provider)) {
+                settings.planningModel = DEFAULT_PLANNING_MODEL_BY_PROVIDER[provider];
+            }
+    
+            if (!isValidProviderModel(this.settings.quickActionModel) || !modelMatchesProvider(this.settings.quickActionModel, provider)) {
+                settings.quickActionModel = DEFAULT_MODEL_BY_PROVIDER[provider];
+            }
+        });
     }
 
 }

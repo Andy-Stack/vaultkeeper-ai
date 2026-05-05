@@ -3,7 +3,7 @@ import { Services } from "../Services";
 import type { FileSystemService } from "../FileSystemService";
 import { AITool, fromString } from "Enums/AITool";
 import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
-import type { AIToolCall } from "AIClasses/AIToolCall";
+import { AIToolCall } from "AIClasses/AIToolCall";
 import type { ISearchMatch } from "../../Types/SearchTypes";
 import { AbortService } from "../AbortService";
 import { normalizePath, TAbstractFile, TFile } from "obsidian";
@@ -19,6 +19,8 @@ import { isDocumentMimeType, MimeType } from "Enums/MimeType";
 import { isTextFile, toFileType } from "Enums/FileType";
 import { FileTypeToMimeType } from "Enums/FileTypeMimeTypeMapping";
 import { StringTools } from "Helpers/StringTools";
+import { AIToolDefinitions } from "AIClasses/ToolDefinitions/AIToolDefinitions";
+import { chatModeAllowsEdits } from "Enums/ChatMode";
 import {
     SearchVaultFilesArgsSchema,
     ReadVaultFilesArgsSchema,
@@ -54,6 +56,16 @@ export class AIToolService {
     }
 
     public async performAITool(toolCall: AIToolCall): Promise<AIToolResponse> {
+        
+        // This can happen if the agent hallucinates a legitimate tool call it doesn't currently have access to
+        if (!chatModeAllowsEdits(this.settingsService.settings.chatMode) && AIToolDefinitions.requiresEditModeEnabled(toolCall.name)) {
+            Exception.log(`Invalid tool call: ${toolCall.name}. Agent has hallucinated a legitimate tool call that requires edit mode`);
+            return new AIToolResponse(
+                toolCall.name,
+                new AIToolResponsePayload({ error: `Invalid tool call: ${toolCall.name}. The user has not allowed edits to be made.` }),
+                toolCall.toolId
+            );
+        }
 
         if (toolCall.name !== AITool.ReadMemories && toolCall.name !== AITool.UpdateMemories) {
             this.lastToolReadMemories = false;

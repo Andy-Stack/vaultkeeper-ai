@@ -21,7 +21,6 @@
 	import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
 	import { HTMLService } from "Services/HTMLService";
 	import { AITool, fromString } from "Enums/AITool";
-  import { ChatMode } from "Enums/ChatMode";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);
@@ -40,7 +39,6 @@
   let hasNoApiKey = false;
   let isSubmitting = false;
   let busyPlanning = false;
-  let chatMode: ChatMode = ChatMode.ReadOnly;
   let currentStreamingMessageId: string | null = null;
 
   let conversation: Conversation = new Conversation();
@@ -103,7 +101,7 @@
 
     const currentRequest = userRequest;
 
-    await chatService.submit(conversation, chatMode, currentRequest, formattedRequest, attachments, {
+    await chatService.submit(conversation, settingsService.settings.chatMode, currentRequest, formattedRequest, attachments, {
       onSubmit: () => {
         isSubmitting = true;
         attachments = [];
@@ -206,10 +204,6 @@
     });
   }
 
-  $: if ($conversationStore.shouldDeactivateEditMode) {
-    conversationStore.clearEditModeFlag();
-    chatMode = ChatMode.ReadOnly;
-  }
 </script>
 
 <main class="container">
@@ -223,7 +217,6 @@
   <ChatInput
     bind:this={chatInput}
     bind:attachments
-    bind:chatMode={chatMode}
     {hasNoApiKey}
     {isSubmitting}
     onSubmit={handleSubmit}

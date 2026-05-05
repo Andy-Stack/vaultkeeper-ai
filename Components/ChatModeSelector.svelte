@@ -3,24 +3,34 @@
 	import { Copy } from "Enums/Copy";
 	import { tick } from "svelte";
 	import { setIcon } from "obsidian";
+	import type { SettingsService } from "Services/SettingsService";
+	import { Resolve } from "Services/DependencyService";
+	import { Services } from "Services/Services";
 
     export let focusInput: () => void;
     export let chatModeSelectionAreaActive: boolean;
-    export let currentChatMode: ChatMode;
+
+    const componentToken = {};
+
+    const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
+    
+    settingsService.subscribeToSettingsChanged(componentToken, () => currentChatMode = settingsService.settings.chatMode);
 
     let height = 0;
 
     let ChatModeSelectionContentDiv: HTMLDivElement;
     let chatModeSelectionContainer: HTMLDivElement;
 
-    let selectedChatMode: number = ChatMode.ReadOnly;
+    let currentChatMode: ChatMode = settingsService.settings.chatMode;
+    let selectedChatMode: ChatMode = ChatMode.ReadOnly;
 
     let iconElements: (HTMLDivElement | null)[] = [null, null, null];
+    let indexedModes: ChatMode[] = [ChatMode.ReadOnly, ChatMode.Edit, ChatMode.Planning];
 
     $: if (iconElements.some(element => element !== null)) {
         iconElements.forEach((element, index) => {
             if (element) {
-                setIcon(element, iconForChatMode(index));
+                setIcon(element, iconForChatMode(indexedModes[index]));
             }
         });
     }
@@ -59,9 +69,13 @@
         }
     }
 
-    function handleChatModeSelect(e?: MouseEvent) {
+    async function handleChatModeSelect(e?: MouseEvent) {
         currentChatMode = selectedChatMode;
         chatModeSelectionAreaActive = false;
+
+        await settingsService.updateSettings(settings => {
+            settings.chatMode = currentChatMode
+        });
 
         e?.preventDefault();
         focusInput();
@@ -74,11 +88,12 @@
         e.preventDefault();
 
         if (e.key.startsWith("Arrow")) {
+            const index = indexedModes.indexOf(selectedChatMode);
             if (e.key === "ArrowUp") {
-                selectedChatMode = selectedChatMode <= 0 ? 2 : selectedChatMode - 1;
+                selectedChatMode = index === 0 ? indexedModes[2] : indexedModes[index - 1];
             }
             if (e.key === "ArrowDown") {
-                selectedChatMode = selectedChatMode >= 2 ? 0 : selectedChatMode + 1;
+                selectedChatMode = index >= 2 ? indexedModes[0] : indexedModes[index + 1];
             }
             return;
         }
@@ -111,7 +126,7 @@
                 on:mouseenter={() => selectedChatMode = ChatMode.ReadOnly}
                 on:mousedown={handleChatModeSelect}
                 on:keydown={() => {}}>
-                <div class="chat-mode-selection-icon" bind:this={iconElements[ChatMode.ReadOnly]}></div>
+                <div class="chat-mode-selection-icon" bind:this={iconElements[indexedModes.indexOf(ChatMode.ReadOnly)]}></div>
                 <div class="chat-mode-selection-title">{Copy.ChatModeReadOnlyTitle}</div>
                 <div class="chat-mode-selection-subtitle">{Copy.ChatModeReadOnlyDesc}</div>
             </div>
@@ -124,7 +139,7 @@
                 on:mouseenter={() => selectedChatMode = ChatMode.Edit}
                 on:mousedown={handleChatModeSelect}
                 on:keydown={() => {}}>
-                <div class="chat-mode-selection-icon" bind:this={iconElements[ChatMode.Edit]}></div>
+                <div class="chat-mode-selection-icon" bind:this={iconElements[indexedModes.indexOf(ChatMode.Edit)]}></div>
                 <div class="chat-mode-selection-title">{Copy.ChatModeEditTitle}</div>
                 <div class="chat-mode-selection-subtitle">{Copy.ChatModeEditDesc}</div>
             </div>
@@ -137,7 +152,7 @@
                 on:mouseenter={() => selectedChatMode = ChatMode.Planning}
                 on:mousedown={handleChatModeSelect}
                 on:keydown={() => {}}>
-                <div class="chat-mode-selection-icon" bind:this={iconElements[ChatMode.Planning]}></div>
+                <div class="chat-mode-selection-icon" bind:this={iconElements[indexedModes.indexOf(ChatMode.Planning)]}></div>
                 <div class="chat-mode-selection-title">{Copy.ChatModePlanningTitle}</div>
                 <div class="chat-mode-selection-subtitle">{Copy.ChatModePlanningDesc}</div>
             </div>

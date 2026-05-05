@@ -6,6 +6,7 @@ import { AITool } from '../../Enums/AITool';
 import { TFile } from 'obsidian';
 import { Exception } from '../../Helpers/Exception';
 import { AbortService } from '../../Services/AbortService';
+import { ChatMode } from '../../Enums/ChatMode';
 
 /**
  * INTEGRATION TESTS - AIToolService
@@ -51,7 +52,7 @@ describe('AIToolService - Integration Tests', () => {
 			updateMemories: vi.fn().mockResolvedValue(undefined)
 		});
 		RegisterSingleton(Services.SettingsService, {
-			settings: { enableMemories: false, allowUpdatingMemories: false }
+			settings: { enableMemories: false, allowUpdatingMemories: false, chatMode: ChatMode.Edit }
 		});
 		RegisterSingleton(Services.WebViewerService, {
 			getWebViewContent: vi.fn(),

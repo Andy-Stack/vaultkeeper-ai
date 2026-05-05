@@ -4,24 +4,21 @@ import type { Conversation } from 'Conversations/Conversation';
 interface IConversationStoreState {
     shouldReset: boolean;
     conversationToLoad: { conversation: Conversation; filePath: string } | null;
-    shouldDeactivateEditMode: boolean;
 }
 
 function createConversationStore() {
     const { subscribe, set, update } = writable<IConversationStoreState>({
         shouldReset: false,
         conversationToLoad: null,
-        shouldDeactivateEditMode: false
     });
 
     return {
         subscribe,
-        reset: () => set({ shouldReset: true, conversationToLoad: null, shouldDeactivateEditMode: true }),
+        reset: () => set({ shouldReset: true, conversationToLoad: null }),
         clearResetFlag: () => update(state => ({ ...state, shouldReset: false })),
         loadConversation: (conversation: Conversation, filePath: string) =>
-            set({ shouldReset: false, conversationToLoad: { conversation, filePath }, shouldDeactivateEditMode: true }),
+            set({ shouldReset: false, conversationToLoad: { conversation, filePath } }),
         clearLoadFlag: () => update(state => ({ ...state, conversationToLoad: null })),
-        clearEditModeFlag: () => update(state => ({ ...state, shouldDeactivateEditMode: false }))
     };
 }
 

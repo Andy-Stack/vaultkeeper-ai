@@ -8,6 +8,7 @@ import { ExecutionPrompt } from "./ExecutionPrompt";
 import { OrchestrationPrompt } from "./OrchestrationPrompt";
 import type { MemoriesService } from "Services/MemoriesService";
 import { Copy, replaceCopy } from "Enums/Copy";
+import { ChatMode } from "Enums/ChatMode";
 
 export interface IPrompt {
   systemInstruction(): Promise<string>;
@@ -63,6 +64,12 @@ export class AIPrompt implements IPrompt {
   private buildActiveDirectives(): string {
     const s = this.settingsService.settings;
 
+    const chatModeDirective = s.chatMode === ChatMode.ReadOnly
+      ? Copy.DirectiveChatModeReadOnly
+      : s.chatMode === ChatMode.Edit
+      ? Copy.DirectiveChatModeEdit
+      : Copy.DirectiveChatModePlanning;
+
     const memoriesDirective = !s.enableMemories
       ? Copy.DirectiveMemoriesDisabled
       : s.allowUpdatingMemories
@@ -77,7 +84,7 @@ export class AIPrompt implements IPrompt {
       ? Copy.DirectiveWebViewerEnabled
       : Copy.DirectiveWebViewerDisabled;
 
-    const directives = [memoriesDirective, webSearchDirective, webViewerDirective].join("\n");
+    const directives = [chatModeDirective, memoriesDirective, webSearchDirective, webViewerDirective].join("\n");
     return replaceCopy(Copy.ActiveCapabilitiesHeader, [directives]);
   }
 

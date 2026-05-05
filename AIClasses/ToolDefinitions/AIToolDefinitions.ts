@@ -23,12 +23,16 @@ import { GetWebViewerContent } from "./Tools/GetWebViewerContent";
 import { DeleteVaultFolder } from "./Tools/DeleteVaultFolder";
 import { MoveVaultFolder } from "./Tools/MoveVaultFolder";
 import { ChatMode, chatModeAllowsEdits } from "Enums/ChatMode";
+import type { AITool } from "Enums/AITool";
 
 export abstract class AIToolDefinitions {
 
     // Definitions list provides a list of function definitions that does not include any planning functions (used as reference in planning agent prompt)
     private static readonly definitionsList = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, GetWebViewerContent,
         WriteVaultFile, PatchVaultFile, DeleteVaultFiles, MoveVaultFiles, CreateVaultFolder, DeleteVaultFolder, MoveVaultFolder];
+
+    public static readonly editModeDefinitionsList = [WriteVaultFile, PatchVaultFile, DeleteVaultFiles,
+        MoveVaultFiles, CreateVaultFolder, DeleteVaultFolder, MoveVaultFolder];
 
     public static agentDefinitions(chatMode: ChatMode, memories: boolean, updateMemories: boolean, webViewer: boolean): IAIToolDefinition[] {
         
@@ -55,15 +59,7 @@ export abstract class AIToolDefinitions {
         }
 
         if (chatModeAllowsEdits(chatMode)) {
-            actions = actions.concat([
-                WriteVaultFile,
-                PatchVaultFile,
-                DeleteVaultFiles,
-                MoveVaultFiles,
-                CreateVaultFolder,
-                DeleteVaultFolder,
-                MoveVaultFolder
-            ]);
+            actions = actions.concat(this.editModeDefinitionsList);
         }
 
         return actions;
@@ -109,6 +105,10 @@ export abstract class AIToolDefinitions {
 
     public static executionAgentDefinitions(): IAIToolDefinition[] {
         return [...this.agentDefinitions(ChatMode.Edit, false, false, false), CompleteTask];
+    }
+
+    public static requiresEditModeEnabled(definition: AITool): boolean {
+        return this.editModeDefinitionsList.map(definition => definition.name).includes(definition);
     }
 
     public static compactSummaryForPlanningAgent(): string {

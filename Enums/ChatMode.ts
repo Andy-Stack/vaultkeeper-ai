@@ -1,7 +1,7 @@
 export enum ChatMode {
-    ReadOnly = 0,
-    Edit = 1,
-    Planning = 2
+    ReadOnly = "read_only",
+    Edit = "edit",
+    Planning = "planning"
 }
 
 export function chatModeAllowsEdits(mode: ChatMode) {

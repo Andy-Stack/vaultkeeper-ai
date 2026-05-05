@@ -86,7 +86,8 @@ export class SettingsService {
     public readonly settings: Readonly<IVaultkeeperAISettings>;
 
     private readonly plugin: VaultkeeperAIPlugin;
-    private readonly subscribers: Map<object, (() => void) | (() => Promise<void>)> = new Map();
+    private readonly subscribers: WeakMap<object, (() => void) | (() => Promise<void>)> = new WeakMap();
+    private readonly subscriberRefs: Set<WeakRef<object>> = new Set();
 
     private settingsSnapshot: string;
 
@@ -99,6 +100,7 @@ export class SettingsService {
 
     public subscribeToSettingsChanged(subscriber: object, callback: (() => void) | (() => Promise<void>)): void {
         this.subscribers.set(subscriber, callback);
+        this.subscriberRefs.add(new WeakRef(subscriber));
     }
 
     public unsubscribe(subscriber: object): void {
@@ -150,8 +152,13 @@ export class SettingsService {
         const snapshot = JSON.stringify(this.settings);
         if (this.settingsSnapshot !== snapshot) {
             this.settingsSnapshot = snapshot;
-            for (const callback of this.subscribers.values()) {
-                await callback();
+            for (const ref of this.subscriberRefs) {
+                const subscriber = ref.deref();
+                if (!subscriber) { 
+                    this.subscriberRefs.delete(ref);
+                    continue;
+                }
+                await this.subscribers.get(subscriber)?.();
             }
         }
     }

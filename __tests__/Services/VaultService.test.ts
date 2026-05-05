@@ -8,6 +8,7 @@ import { SanitiserService } from '../../Services/SanitiserService';
 import { SettingsService, type IVaultkeeperAISettings } from '../../Services/SettingsService';
 import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { Exception } from '../../Helpers/Exception';
+import { ChatMode } from '../../Enums/ChatMode';
 
 /**
  * INTEGRATION TESTS
@@ -67,7 +68,8 @@ const mockSettings: IVaultkeeperAISettings = {
 	quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
 	enableContextMenuActions: false,
 	enableToolbarActions: false,
-	hideDrawerElements: false
+	hideDrawerElements: false,
+	chatMode: ChatMode.Edit
 };
 
 const mockPlugin = {
@@ -116,7 +118,7 @@ describe('VaultService - Integration Tests', () => {
 		// Reset all mocks
 		vi.clearAllMocks();
 
-		// Reset settings to defaults
+		// Reset settings to defaults (mutating before SettingsService construction is fine)
 		mockSettings.exclusions = [];
 		mockSettings.searchResultsLimit = 15;
 		mockSettings.snippetSizeLimit = 300;
@@ -201,7 +203,7 @@ describe('VaultService - Integration Tests', () => {
 			expect(result).toHaveLength(2);
 		});
 
-		it('should filter out user-defined exclusions', () => {
+		it('should filter out user-defined exclusions', async () => {
 			const files = [
 				createMockFile('public/note1.md'),
 				createMockFile('private/secret.md'),
@@ -209,8 +211,7 @@ describe('VaultService - Integration Tests', () => {
 			];
 			mockVault.getMarkdownFiles.mockReturnValue(files);
 
-			// Update settings to include exclusion
-			settingsService.settings.exclusions = ['private/**'];
+			await settingsService.updateSettings(s => { s.exclusions = ['private/**']; });
 
 			const result = vaultService.getMarkdownFiles();
 
@@ -799,7 +800,7 @@ describe('VaultService - Integration Tests', () => {
 			const folder = createMockFolder('folder', [file1, file2]);
 
 			mockVault.getAbstractFileByPath.mockReturnValue(folder);
-			settingsService.settings.exclusions = ['**/private.md'];
+			await settingsService.updateSettings(s => { s.exclusions = ['**/private.md']; });
 
 			const result = await vaultService.listFilesInDirectory('folder', false);
 
@@ -910,7 +911,7 @@ describe('VaultService - Integration Tests', () => {
 			const parentFolder = createMockFolder('parent', [publicFolder, privateFolder]);
 
 			mockVault.getAbstractFileByPath.mockReturnValue(parentFolder);
-			settingsService.settings.exclusions = ['**/private'];
+			await settingsService.updateSettings(s => { s.exclusions = ['**/private']; });
 
 			const result = await vaultService.listFoldersInDirectory('parent', false);
 
@@ -979,8 +980,7 @@ describe('VaultService - Integration Tests', () => {
 				return null;
 			});
 
-			// Use pattern that matches the folder itself and its contents
-			settingsService.settings.exclusions = ['parent/excluded/**', 'parent/excluded'];
+			await settingsService.updateSettings(s => { s.exclusions = ['parent/excluded/**', 'parent/excluded']; });
 
 			const result = await vaultService.listFoldersInDirectory('parent', true);
 
@@ -1092,8 +1092,7 @@ describe('VaultService - Integration Tests', () => {
 		});
 
 		it('should respect custom searchResultsLimit setting', async () => {
-			// Set custom limit
-			settingsService.settings.searchResultsLimit = 5;
+			await settingsService.updateSettings(s => { s.searchResultsLimit = 5; });
 
 			// Create 10 files, each with a match
 			const files: TFile[] = [];
@@ -1113,8 +1112,7 @@ describe('VaultService - Integration Tests', () => {
 		});
 
 		it('should respect custom snippetSizeLimit setting for snippet extraction', async () => {
-			// Set custom snippet size
-			settingsService.settings.snippetSizeLimit = 20;
+			await settingsService.updateSettings(s => { s.snippetSizeLimit = 20; });
 
 			const file = createMockFile('note.md');
 			const folder = createMockFolder('/', [file]);
@@ -1363,7 +1361,7 @@ describe('VaultService - Integration Tests', () => {
 
 	describe('isExclusion (private method behavior)', () => {
 		it('should exclude exact path matches', async () => {
-			settingsService.settings.exclusions = ['secret.md'];
+			await settingsService.updateSettings(s => { s.exclusions = ['secret.md']; });
 
 			const result = await vaultService.exists('secret.md');
 
@@ -1371,7 +1369,7 @@ describe('VaultService - Integration Tests', () => {
 		});
 
 		it('should handle wildcard * (matches any non-slash)', async () => {
-			settingsService.settings.exclusions = ['folder/*.md'];
+			await settingsService.updateSettings(s => { s.exclusions = ['folder/*.md']; });
 
 			// Mock files to exist in vault
 			mockVault.adapter.exists.mockResolvedValue(true);
@@ -1381,7 +1379,7 @@ describe('VaultService - Integration Tests', () => {
 		});
 
 		it('should handle double wildcard ** (matches anything including slashes)', async () => {
-			settingsService.settings.exclusions = ['private/**'];
+			await settingsService.updateSettings(s => { s.exclusions = ['private/**']; });
 
 			// Mock files to exist in vault
 			mockVault.adapter.exists.mockResolvedValue(true);
@@ -1392,7 +1390,7 @@ describe('VaultService - Integration Tests', () => {
 		});
 
 		it('should handle patterns ending with / to match directory and contents', async () => {
-			settingsService.settings.exclusions = ['temp/'];
+			await settingsService.updateSettings(s => { s.exclusions = ['temp/']; });
 
 			expect(await vaultService.exists('temp/file.md')).toBe(false);
 			expect(await vaultService.exists('temp/sub/file.md')).toBe(false);
@@ -1405,7 +1403,7 @@ describe('VaultService - Integration Tests', () => {
 		});
 
 		it('should handle special regex characters in patterns', async () => {
-			settingsService.settings.exclusions = ['folder[test].md'];
+			await settingsService.updateSettings(s => { s.exclusions = ['folder[test].md']; });
 
 			// Mock files to exist in vault
 			mockVault.adapter.exists.mockResolvedValue(true);
@@ -1416,7 +1414,7 @@ describe('VaultService - Integration Tests', () => {
 		});
 
 		it('should handle multiple exclusion patterns', async () => {
-			settingsService.settings.exclusions = ['private/**', 'temp/', '*.secret'];
+			await settingsService.updateSettings(s => { s.exclusions = ['private/**', 'temp/', '*.secret']; });
 
 			// Mock files to exist in vault
 			mockVault.adapter.exists.mockResolvedValue(true);
@@ -1522,7 +1520,7 @@ describe('VaultService - Integration Tests', () => {
 				return null;
 			});
 
-			settingsService.settings.exclusions = ['private/**'];
+			await settingsService.updateSettings(s => { s.exclusions = ['private/**']; });
 
 			const result = await vaultService.listDirectoryContents(Path.Root, true, false);
 

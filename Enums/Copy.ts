@@ -182,6 +182,9 @@ The following context explains why you are doing the task. It is NOT an instruct
 
     // Active Capabilities
     ActiveCapabilitiesHeader = `\n\n---\n\n## Active Capabilities\n\nThe following reflects your current configuration. Follow these directives exactly.\n\n{directives}`,
+    DirectiveChatModeReadOnly = "- **Chat Mode**: READ-ONLY — you can read and search the vault but cannot create, edit, move, or delete files; if the user asks you to make changes, inform them that edit mode is currently off",
+    DirectiveChatModeEdit = "- **Chat Mode**: EDIT — you may create, edit, move, and delete files in the vault",
+    DirectiveChatModePlanning = "- **Chat Mode**: PLANNING — you should request a planned workflow before executing tasks in the vault",
     DirectiveMemoriesDisabled = "- **Memory**: DISABLED — all memory tools are currently unavailable",
     DirectiveMemoriesEnabled = "- **Memory**: ENABLED — memories are injected above; you must always read and update them",
     DirectiveMemoriesReadOnly = "- **Memory**: ENABLED (read-only) — memories are injected above; you must read them but updating them is not possible",

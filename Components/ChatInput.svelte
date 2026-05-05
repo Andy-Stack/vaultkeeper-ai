@@ -30,9 +30,10 @@
 
   export let hasNoApiKey: boolean;
   export let isSubmitting: boolean;
-  export let chatMode: ChatMode;
   export let onSubmit: (userRequest: string, formattedRequest: string) => void;
   export let onStop: () => void;
+
+  const componentToken = {};
 
   const inputService: InputService = Resolve<InputService>(Services.InputService);
   const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
@@ -59,6 +60,7 @@
 
   let userRequest: string = "";
 
+  let chatMode: ChatMode = settingsService.settings.chatMode;
   let inputMode: InputMode = InputMode.Normal;
   let questionResolver: ((answer: string) => void) | null = null;
 
@@ -70,6 +72,8 @@
   const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { inputMode = InputMode.Normal; focusInput(); });
   const rateLimitCountdownRef: EventRef = eventService.on(Event.RateLimitCountdown, (delayMs: number) => { startCountdown(delayMs); });
 
+  settingsService.subscribeToSettingsChanged(componentToken, () => chatMode = settingsService.settings.chatMode);
+  
   onMount(async () => {
     userInstructionActive = (await aiPrompt.userInstruction()).trim() !== "";
     inputInitialHeight = textareaElement.innerHeight;
@@ -290,8 +294,9 @@
   }
 
   function toggleWebSearch() {
-    settingsService.settings.enableWebSearch = !settingsService.settings.enableWebSearch;
-    settingsService.saveSettings();
+    settingsService.updateSettings(settings => {
+      settings.enableWebSearch = !settingsService.settings.enableWebSearch;
+    });
   }
 
   function toggleChatModeSelectionArea() {
@@ -541,7 +546,7 @@
   </div>
 
   <div id="chat-mode-selector-container" style:padding-top={chatModeSelectionAreaActive ? "var(--size-4-2)" : 0}>
-    <ChatModeSelector focusInput={focusInput} bind:chatModeSelectionAreaActive={chatModeSelectionAreaActive} bind:currentChatMode={chatMode} />
+    <ChatModeSelector focusInput={focusInput} bind:chatModeSelectionAreaActive={chatModeSelectionAreaActive} />
   </div>
 
   <button

@@ -305,11 +305,14 @@ describe('SettingsService', () => {
         });
 
         it('should not affect other provider keys when updating one', () => {
-            settingsService.settings.apiKeys = {
-                claude: 'existing-claude',
-                openai: 'existing-openai',
-                gemini: 'existing-gemini', mistral: ''
-            };
+            settingsService = new SettingsService({
+                apiKeys: {
+                    claude: 'existing-claude',
+                    openai: 'existing-openai',
+                    gemini: 'existing-gemini',
+                    mistral: ''
+                }
+            });
 
             settingsService.setApiKeyForProvider(AIProvider.Claude, 'updated-claude');
 
@@ -455,17 +458,17 @@ describe('SettingsService', () => {
             expect(settingsRef.apiKeys.claude).toBe('new-key');
         });
 
-        it('should allow direct modification of settings properties', () => {
+        it('should allow modification of settings properties via updateSettings', async () => {
             settingsService = new SettingsService({
                 model: AIProviderModel.ClaudeSonnet_4_5,
                 apiKeys: { claude: '', openai: '', gemini: '', mistral: '' },
                 exclusions: []
             });
 
-            settingsService.settings.exclusions.push('test-exclusion');
+            await settingsService.updateSettings(s => { s.exclusions.push('test-exclusion'); });
             expect(settingsService.settings.exclusions).toContain('test-exclusion');
 
-            settingsService.settings.userInstruction = 'Direct modification';
+            await settingsService.updateSettings(s => { s.userInstruction = 'Direct modification'; });
             expect(settingsService.settings.userInstruction).toBe('Direct modification');
         });
     });
@@ -509,15 +512,15 @@ describe('SettingsService', () => {
             expect(settingsService.settings.snippetSizeLimit).toBe(0);
         });
 
-        it('should allow direct modification of searchResultsLimit', () => {
+        it('should allow modification of searchResultsLimit via updateSettings', async () => {
             settingsService = new SettingsService({});
-            settingsService.settings.searchResultsLimit = 50;
+            await settingsService.updateSettings(s => { s.searchResultsLimit = 50; });
             expect(settingsService.settings.searchResultsLimit).toBe(50);
         });
 
-        it('should allow direct modification of snippetSizeLimit', () => {
+        it('should allow modification of snippetSizeLimit via updateSettings', async () => {
             settingsService = new SettingsService({});
-            settingsService.settings.snippetSizeLimit = 500;
+            await settingsService.updateSettings(s => { s.snippetSizeLimit = 500; });
             expect(settingsService.settings.snippetSizeLimit).toBe(500);
         });
 

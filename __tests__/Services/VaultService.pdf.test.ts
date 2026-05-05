@@ -9,6 +9,7 @@ import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { Exception } from '../../Helpers/Exception';
 import * as PDFHelper from '../../Helpers/DocumentHelper';
 import type { IPageText } from '../../Types/SearchTypes';
+import { ChatMode } from '../../Enums/ChatMode';
 
 /**
  * PDF-SPECIFIC TESTS FOR VAULTSERVICE
@@ -68,7 +69,8 @@ const mockSettings: IVaultkeeperAISettings = {
 	quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
 	enableContextMenuActions: false,
 	enableToolbarActions: false,
-	hideDrawerElements: false
+	hideDrawerElements: false,
+	chatMode: ChatMode.Edit
 };
 
 const mockPlugin = {
@@ -471,7 +473,7 @@ describe('VaultService - PDF Tests', () => {
 		});
 
 		it('should respect snippetSizeLimit for PDF content', async () => {
-			settingsService.settings.snippetSizeLimit = 20;
+			await settingsService.updateSettings(s => { s.snippetSizeLimit = 20; });
 
 			const pdfFile = createMockPDFFile('limited.pdf');
 			const folder = createMockFolder('/', [pdfFile]);

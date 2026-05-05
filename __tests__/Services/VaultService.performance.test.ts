@@ -7,6 +7,7 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import type VaultkeeperAIPlugin from '../../main';
+import { ChatMode } from '../../Enums/ChatMode';
 
 /**
  * Performance Test Suite for VaultService.searchVaultFiles()
@@ -70,7 +71,8 @@ const mockSettings: IVaultkeeperAISettings = {
 	quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
 	enableContextMenuActions: false,
 	enableToolbarActions: false,
-	hideDrawerElements: false
+	hideDrawerElements: false,
+	chatMode: ChatMode.Edit
 };
 
 let settingsService: SettingsService;

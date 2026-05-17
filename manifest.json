@@ -1,1 +1,11 @@
-{"id":"vaultkeeper-ai","name":"Vaultkeeper AI","version":"1.3.4","minAppVersion":"1.9.14","description":"Multi-AI assistant. Read, search, create, and edit notes with multiple AI providers.","author":"Andy-Stack","authorUrl":"https://github.com/Andy-Stack","fundingUrl":"https://buymeacoffee.com/andy.stack","isDesktopOnly":false}
+{
+  "id": "vaultkeeper-ai",
+  "name": "Vaultkeeper AI",
+  "version": "1.3.4",
+  "minAppVersion": "1.9.14",
+  "description": "Multi-AI assistant. Read, search, create, and edit notes with multiple AI providers.",
+  "author": "Andy-Stack",
+  "authorUrl": "https://github.com/Andy-Stack",
+  "fundingUrl": "https://buymeacoffee.com/andy.stack",
+  "isDesktopOnly": false
+}

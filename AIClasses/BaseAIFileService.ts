@@ -115,7 +115,7 @@ export abstract class BaseAIFileService implements IAIFileService {
 	}
 
 	protected createFormData(displayName: string | undefined, mimeType: string, boundary: string, bytes: Uint8Array<ArrayBuffer>, additionalFields?: Record<string, string>): ArrayBuffer {
-		const parts: Uint8Array[] = [];
+		const parts: Uint8Array<ArrayBuffer>[] = [];
 		const encoder = new TextEncoder();
 
 		// Add the file field

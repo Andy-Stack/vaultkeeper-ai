@@ -12,12 +12,14 @@
 /* File header background */
 .d2h-file-header {
     height: 35px;
+    padding: 0 !important;
     background-color: var(--background-primary) !important;
     border-color: var(--background-modifier-border) !important;
 }
 
 /* File name container */
 .d2h-file-name-wrapper {
+    padding-left: 8px !important;
     background-color: var(--background-primary-alt) !important;
 }
 
@@ -134,14 +136,6 @@
 /* Toolbar */
 .d2h-file-diff-toolbar {
     background-color: var(--background-secondary) !important;
-}
-
-.d2h-file-header {
-  padding: 0 !important;
-}
-
-.d2h-file-name-wrapper {
-  padding-left: 8px !important;
 }
 
 /* Text colors */

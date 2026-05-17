@@ -278,6 +278,7 @@ body {
     var(--background-modifier-border-hover) 50%,
     var(--background-primary) 40%
   );
+  counter-reset: katexEqnNo mmlEqnNo;
 }
 
 /* ============================== */
@@ -396,9 +397,9 @@ a[data-footnote-backref] {
 /* ============================== */
 
 .katex {
-  font: normal 1.21em KaTeX_Main, "Times New Roman", serif;
+  font: normal 1.21em "KaTeX_Main", "Times New Roman", Times, serif;
   line-height: 1.2;
-  text-indent: 0;
+  text-indent: 0px;
   text-rendering: auto;
 }
 
@@ -446,21 +447,17 @@ a[data-footnote-backref] {
   font-family: KaTeX_Main;
 }
 
-.katex .textsf {
-  font-family: KaTeX_SansSerif;
-}
-
 .katex .texttt {
   font-family: KaTeX_Typewriter;
 }
 
 .katex .mathnormal {
-  font-family: KaTeX_Math;
+  font-family: "KaTeX_Math", "Times New Roman", Times, serif;
   font-style: italic;
 }
 
 .katex .mathit {
-  font-family: KaTeX_Main;
+  font-family: "KaTeX_Main", "Times New Roman", Times, serif;
   font-style: italic;
 }
 
@@ -469,7 +466,7 @@ a[data-footnote-backref] {
 }
 
 .katex .mathbf {
-  font-family: KaTeX_Main;
+  font-family: "KaTeX_Main", "Times New Roman", Times, serif;
   font-weight: 700;
 }
 
@@ -482,16 +479,16 @@ a[data-footnote-backref] {
 .katex .amsrm,
 .katex .mathbb,
 .katex .textbb {
-  font-family: KaTeX_AMS;
+  font-family: "KaTeX_AMS", "Times New Roman", Times, serif;
 }
 
 .katex .mathcal {
-  font-family: KaTeX_Caligraphic;
+  font-family: "KaTeX_Caligraphic", "Lucida Calligraphy", "Brush Script MT", cursive;
 }
 
 .katex .mathfrak,
 .katex .textfrak {
-  font-family: KaTeX_Fraktur;
+  font-family: "KaTeX_Fraktur", "Lucida Blackletter", fantasy;
 }
 
 .katex .mathboldfrak,
@@ -501,16 +498,17 @@ a[data-footnote-backref] {
 }
 
 .katex .mathtt {
-  font-family: KaTeX_Typewriter;
+  font-family: "KaTeX_Typewriter", "Courier New", Courier, monospace;
 }
 
 .katex .mathscr,
 .katex .textscr {
-  font-family: KaTeX_Script;
+  font-family: "KaTeX_Script", "Lucida Handwriting", "Segoe Script", cursive;
 }
 
-.katex .mathsf {
-  font-family: KaTeX_SansSerif;
+.katex .mathsf,
+.katex .textsf {
+  font-family: "KaTeX_SansSerif", Arial, Helvetica, sans-serif;
 }
 
 .katex .mathboldsf,
@@ -980,59 +978,6 @@ a[data-footnote-backref] {
   text-align: left;
 }
 
-body {
-  counter-reset: katexEqnNo mmlEqnNo;
-}
-
-/* ============================== */
-/* KaTeX Font Fallbacks */
-/* For Obsidian, we'll use system fonts as fallbacks */
-/* ============================== */
-
-.katex {
-  font-family: "KaTeX_Main", "Times New Roman", Times, serif;
-}
-
-.katex .mathit,
-.katex .mathnormal {
-  font-family: "KaTeX_Math", "Times New Roman", Times, serif;
-  font-style: italic;
-}
-
-.katex .mathbf {
-  font-family: "KaTeX_Main", "Times New Roman", Times, serif;
-  font-weight: bold;
-}
-
-.katex .amsrm,
-.katex .mathbb,
-.katex .textbb {
-  font-family: "KaTeX_AMS", "Times New Roman", Times, serif;
-}
-
-.katex .mathcal {
-  font-family: "KaTeX_Caligraphic", "Lucida Calligraphy", "Brush Script MT", cursive;
-}
-
-.katex .mathfrak,
-.katex .textfrak {
-  font-family: "KaTeX_Fraktur", "Lucida Blackletter", fantasy;
-}
-
-.katex .mathtt {
-  font-family: "KaTeX_Typewriter", "Courier New", Courier, monospace;
-}
-
-.katex .mathscr,
-.katex .textscr {
-  font-family: "KaTeX_Script", "Lucida Handwriting", "Segoe Script", cursive;
-}
-
-.katex .mathsf,
-.katex .textsf {
-  font-family: "KaTeX_SansSerif", Arial, Helvetica, sans-serif;
-}
-
 /* ============================== */
 /* Additional Markdown Styles */
 /* ============================== */
@@ -1284,7 +1229,8 @@ body {
 
 /* Abbreviations */
 .message-bubble.assistant abbr[title] {
-  text-decoration: underline dotted;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
   cursor: help;
 }
 
@@ -1378,22 +1324,22 @@ body {
 
 @media print {
   .message-bubble.assistant {
-    color: #000;
+    color: #000000;
   }
-  
+
   .message-bubble.assistant a {
     color: #0969da;
     text-decoration: underline;
   }
-  
+
   .message-bubble.assistant pre,
   .message-bubble.assistant code {
     background-color: #f6f8fa;
-    color: #000;
+    color: #000000;
   }
-  
+
   .hljs {
-    background: #fff;
-    color: #000;
+    background: #ffffff;
+    color: #000000;
   }
 }

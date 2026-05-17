@@ -399,7 +399,6 @@ a[data-footnote-backref] {
 .katex {
   font: normal 1.21em "KaTeX_Main", "Times New Roman", Times, serif;
   line-height: 1.2;
-  text-indent: 0px;
   text-rendering: auto;
 }
 
@@ -1227,12 +1226,6 @@ a[data-footnote-backref] {
   vertical-align: super;
 }
 
-/* Abbreviations */
-.message-bubble.assistant abbr[title] {
-  text-decoration-line: underline;
-  text-decoration-style: dotted;
-  cursor: help;
-}
 
 /* Definition lists */
 .message-bubble.assistant dl {

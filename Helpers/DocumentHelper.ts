@@ -41,7 +41,7 @@ export async function readDocument(arrayBuffer: ArrayBuffer): Promise<IPageText[
         });
 
         // OfficeParser doesn't currently expose page data (page number etc)
-        return [{ text: ast.toText(), pageNumber: 1 }] as IPageText[];
+        return [{ text: (await ast.to('text')).value, pageNumber: 1 }] as IPageText[];
     } catch (error) {
         return [{ text: `Failed to read document: ${Exception.messageFrom(error)}`, pageNumber: 1 }] as IPageText[];
     }

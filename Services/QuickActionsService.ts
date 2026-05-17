@@ -45,7 +45,7 @@ export class QuickActionsService {
 
     /* Action Definitions */
 
-    private async beautify(menu: Menu, editor: Editor, view: MarkdownView | MarkdownFileInfo) {
+    private async beautify(_menu: Menu, editor: Editor, view: MarkdownView | MarkdownFileInfo) {
         const file = view.file;
         if (!file) {
             return;
@@ -76,7 +76,7 @@ export class QuickActionsService {
         }
     }
 
-    private async applyTemplate(menu: Menu, editor: Editor, view: MarkdownView | MarkdownFileInfo) {
+    private async applyTemplate(_menu: Menu, _editor: Editor, view: MarkdownView | MarkdownFileInfo) {
         const file = view.file;
         if (!file) {
             return;
@@ -217,8 +217,8 @@ export class QuickActionsService {
     }
 
     private showNotice(message: string): Notice {
-        const fragment = activeDocument.createDocumentFragment();
-        const container = activeDocument.createElement("div");
+        const fragment = createFragment();
+        const container = activeDocument.createDiv();
 
         container.addClass("quick-action-notice");
         mount(Spinner, { target: container, props: {

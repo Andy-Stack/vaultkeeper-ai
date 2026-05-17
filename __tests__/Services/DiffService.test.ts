@@ -81,7 +81,7 @@ describe('DiffService', () => {
 				expect.stringContaining('old.md'),
 				expect.objectContaining({
 					outputFormat: 'line-by-line',
-					highlight: true
+					highlight: false
 				})
 			);
 
@@ -603,13 +603,13 @@ describe('DiffService', () => {
 			await diffPromise;
 		});
 
-		it('should enable highlighting in config', async () => {
+		it('should disable highlighting in config', async () => {
 			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
 
 			await new Promise(resolve => setTimeout(resolve, 10));
 
 			const configArg = mockPlugin.activateDiffView.mock.calls[0][1];
-			expect(configArg.highlight).toBe(true);
+			expect(configArg.highlight).toBe(false);
 
 			service.onAccept();
 			await diffPromise;

@@ -68,11 +68,11 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 
 		/* Planning Model Selection Setting */
 		const currentProvider = fromModel(this.settingsService.settings.model);
-		const planningModelDescFragment = activeDocument.createDocumentFragment();
+		const planningModelDescFragment = createFragment();
 		planningModelDescFragment.appendText(Copy.SettingPlanningModelDesc);
 		planningModelDescFragment.createEl("br");
 		planningModelDescFragment.createEl("br");
-		planningModelDescFragment.createEl("span", { text: Copy.SettingPlanningModelTip, cls: "planning-model-description-tip" });
+		planningModelDescFragment.createSpan({ text: Copy.SettingPlanningModelTip, cls: "planning-model-description-tip" });
 		new Setting(containerEl)
 			.setName(Copy.SettingPlanningModel)
 			.setDesc(planningModelDescFragment)

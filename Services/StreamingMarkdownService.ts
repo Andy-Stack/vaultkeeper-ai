@@ -104,7 +104,7 @@ export class StreamingMarkdownService {
     private debouncedRender(messageId: string, immediate: boolean = false) {
         const existingTimeout = this.renderTimeouts.get(messageId);
         if (existingTimeout) {
-            activeWindow.clearTimeout(existingTimeout);
+            window.clearTimeout(existingTimeout);
         }
 
         const render = () => {
@@ -127,7 +127,7 @@ export class StreamingMarkdownService {
         if (immediate) {
             render();
         } else {
-            const timeout = activeWindow.setTimeout(render, 50); // 50ms debounce
+            const timeout = window.setTimeout(render, 50); // 50ms debounce
             this.renderTimeouts.set(messageId, timeout);
         }
     }
@@ -148,7 +148,7 @@ export class StreamingMarkdownService {
         this.streamingStates.delete(messageId);
         const timeout = this.renderTimeouts.get(messageId);
         if (timeout) {
-            activeWindow.clearTimeout(timeout);
+            window.clearTimeout(timeout);
             this.renderTimeouts.delete(messageId);
         }
     }

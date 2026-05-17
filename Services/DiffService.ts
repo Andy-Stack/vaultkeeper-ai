@@ -4,7 +4,7 @@ import { Resolve } from './DependencyService';
 import { Services } from './Services';
 import type { EventService } from './EventService';
 import { Event } from 'Enums/Event';
-import type { Diff2HtmlUIConfig } from 'diff2html/lib/ui/js/diff2html-ui';
+import type { Diff2HtmlUIConfig } from 'diff2html/lib/ui/js/diff2html-ui-base';
 import { ColorSchemeType, OutputFormatType } from 'diff2html/lib/types';
 import { Component } from 'obsidian';
 import { AbortService } from './AbortService';
@@ -44,7 +44,7 @@ export class DiffService extends Component {
             drawFileList: false,
             matching: "words",
             outputFormat: outputFormat,
-            highlight: true,
+            highlight: false,
             fileListToggle: false,
             fileContentToggle: false,
             synchronisedScroll: true,

@@ -1,4 +1,4 @@
-import { Diff2HtmlUI, type Diff2HtmlUIConfig } from "diff2html/lib/ui/js/diff2html-ui";
+import { Diff2HtmlUI, type Diff2HtmlUIConfig } from "diff2html/lib/ui/js/diff2html-ui-base";
 import { Event } from "Enums/Event";
 import { ItemView, WorkspaceLeaf, Platform, type ViewStateResult } from "obsidian";
 import { Resolve } from "Services/DependencyService";
@@ -78,13 +78,12 @@ export class DiffView extends ItemView {
         const diff2htmlUi = new Diff2HtmlUI(this.diffContainer, this.diffString, this.config);
 
         diff2htmlUi.draw();
-        diff2htmlUi.highlightCode();
 
         if (Platform.isMobile) {
             this.mobileButtonsContainer = this.createMobileButtons();
         }
 
-        requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
             const firstChange = this.diffContainer?.querySelector('.d2h-change, .d2h-ins, .d2h-del');
             firstChange?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });

@@ -35,7 +35,7 @@ export function hideDrawerElements() {
         });
         element.addClass("vaultKeeper-drawer-hiding");
 
-        requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
             element.removeClass("vaultKeeper-drawer-hiding");
             element.addClass("vaultKeeper-drawer-collapsed");
         });
@@ -66,7 +66,7 @@ export function restoreDrawerElements() {
         element.removeClass("vaultKeeper-drawer-hidden");
         element.addClass("vaultKeeper-drawer-restoring");
 
-        requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
             element.removeClass("vaultKeeper-drawer-restoring");
             element.addClass("vaultKeeper-drawer-expanding");
         });

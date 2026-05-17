@@ -72,7 +72,7 @@ export class WebViewerService {
             if (Date.now() - start > timeoutMs) {
                 return false;
             }
-            await new Promise(r => activeWindow.setTimeout(r, 200));
+            await new Promise(r => window.setTimeout(r, 200));
         }
         return true;
     }    

@@ -39,7 +39,7 @@
 3. Reload Obsidian
 4. Enable "Vaultkeeper AI" in Settings → Community Plugins
 
-### From Community Plugins (Plugin has not yet been reviewed and accepted - hopefully coming soon)
+### From Community Plugins
 
 1. Open Obsidian Settings
 2. Navigate to Community Plugins

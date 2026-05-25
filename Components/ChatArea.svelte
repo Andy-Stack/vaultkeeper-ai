@@ -39,6 +39,7 @@
 
     requestAnimationFrame(() => {
       applyLayout(behavior, shouldSettle);
+      updateScrolledState();
     });
   }
 
@@ -98,7 +99,7 @@
   }
 
   function updateScrolledState() {
-    scrolledToBottom = chatContainer && Math.abs(chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < 1;
+    scrolledToBottom = chatContainer && Math.abs(chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < 100;
   }
 
   let scrolledToBottom: boolean = true;
@@ -247,7 +248,6 @@
   }
 
   #scroll-to-bottom-button {
-
     background-color: var(--interactive-accent);
   }
 

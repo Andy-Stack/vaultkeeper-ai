@@ -9,6 +9,8 @@
   import type { ConversationContent } from "Conversations/ConversationContent";
 	import { tick } from "svelte";
 	import { getOuterHeight, setElementIcon } from "Helpers/ElementHelper";
+	import { setIcon } from "obsidian";
+	import { fade } from "svelte/transition";
 
   export let messages: ConversationContent[] = [];
   export let currentThought: string | null = null;
@@ -95,6 +97,13 @@
     return { count: count, height: height };
   }
 
+  function updateScrolledState() {
+    scrolledToBottom = chatContainer && Math.abs(chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < 1;
+  }
+
+  let scrolledToBottom: boolean = true;
+
+  let scrollToBottomButton: HTMLButtonElement;
   let chatAreaPaddingElement: HTMLElement | undefined;
   let thoughtIndicatorElement: HTMLElement | undefined;
   let streamingIndicatorElement: HTMLElement | undefined;
@@ -137,6 +146,10 @@
     messageElements.push({ index: index, element: element, role: role });
   }
 
+  $: if (scrollToBottomButton) {
+    setIcon(scrollToBottomButton, "arrow-down");
+  }
+
   $: {
     if (messages.length === 0 && chatAreaPaddingElement) {
       chatAreaPaddingElement.style.padding = "0px";
@@ -148,7 +161,7 @@
   {#if messages.length > 0}
     <div class="top-fade"></div>
   {/if}
-  <div class="chat-area" bind:this={chatContainer}>
+  <div class="chat-area" bind:this={chatContainer} on:scroll={updateScrolledState}>
     {#each messages as message, index}
       {@const content = message.getDisplayContent()}
       {#if message.shouldDisplayContent && content.trim() !== ""}
@@ -204,14 +217,40 @@
         <div class="typing-in">{getGreetingByTime()}</div>
       </div>
     {/if}
+
   </div>
-  
+
   {#if messages.length > 0}
     <div class="bottom-fade"></div>
+  {/if}
+
+  {#if !scrolledToBottom}
+    <div class="scroll-to-bottom-container" transition:fade>
+      <button
+        id="scroll-to-bottom-button"
+        bind:this={scrollToBottomButton}
+        on:click={() => updateChatAreaLayout("smooth")}
+        aria-label="Scroll to bottom">
+      </button>
+    </div>
   {/if}
 </div>
 
 <style>
+  .scroll-to-bottom-container {
+    background-color: color-mix(in srgb, var(--background-primary) 70%, transparent);
+    border-radius: var(--radius-l);
+    padding: var(--size-4-2);
+    position: absolute;
+    bottom: var(--size-4-2);
+    right: 0px;
+  }
+
+  #scroll-to-bottom-button {
+
+    background-color: var(--interactive-accent);
+  }
+
   .chat-area-wrapper {
     position: relative;
     height: 100%;
@@ -270,10 +309,10 @@
   }
 
   .message-container {
-    animation: fadeInLeft 0.5s ease-out forwards;
+    animation: fadeIn 0.5s ease-out forwards;
   }
 
-  @keyframes fadeInLeft {
+  @keyframes fadeIn {
     from {
       opacity: 0;
       transform: translateY(5px);

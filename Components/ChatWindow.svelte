@@ -8,7 +8,6 @@
   import { Conversation } from "Conversations/Conversation";
 	import type VaultkeeperAIPlugin from "main";
 	import { openPluginSettings } from "Helpers/Helpers";
-	import { Selector } from "Enums/Selector";
 	import type { WorkSpaceService } from "Services/WorkSpaceService";
   import type { ChatService } from "Services/ChatService";
   import type { ConversationFileSystemService } from "Services/ConversationFileSystemService";
@@ -19,7 +18,6 @@
 	import ChatPlanArea from "./ChatPlanArea.svelte";
 	import type { ExecutionPlanStore } from "Stores/ExecutionPlanStore";
 	import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
-	import { HTMLService } from "Services/HTMLService";
 	import { AITool, fromString } from "Enums/AITool";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
@@ -29,7 +27,6 @@
   const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
   const conversationService: ConversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
   const streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
-  const htmlService: HTMLService = Resolve<HTMLService>(Services.HTMLService);
   const abortService: AbortService = Resolve<AbortService>(Services.AbortService);
 
   let chatContainer: HTMLDivElement;
@@ -39,7 +36,6 @@
   let hasNoApiKey = false;
   let isSubmitting = false;
   let busyPlanning = false;
-  let currentStreamingMessageId: string | null = null;
 
   let conversation: Conversation = new Conversation();
   let attachments: Attachment[] = [];
@@ -63,21 +59,19 @@
   async function handleLinkClick(evt: MouseEvent) {
     const target = evt.target as HTMLElement;
 
-    const link = target.closest(`.${Selector.MarkDownLink}`) as HTMLAnchorElement | null;
+    const link = target.closest('.internal-link') as HTMLAnchorElement | null;
     if (!link) {
-      return; 
+      return;
     }
 
-    const href = link.getAttribute('href');
-    if (!href || !href.startsWith('#/page/')) {
+    const notePath = link.getAttribute('data-href');
+    if (!notePath) {
       return;
     }
 
     evt.preventDefault();
     evt.stopPropagation();
 
-    const encodedPath = href.replace('#/page/', '');
-    const notePath = decodeURIComponent(encodedPath);
     await workSpaceService.openNote(notePath);
   }
 
@@ -107,9 +101,8 @@
         attachments = [];
         chatArea.resetAutoScroll();
       },
-      onStreamingUpdate: (streamingId) => {
+      onStreamingUpdate: () => {
         conversation = conversation;
-        currentStreamingMessageId = streamingId;
         chatArea.updateChatAreaLayout("smooth");
       },
       onThoughtUpdate: (thought) => {
@@ -141,8 +134,7 @@
       },
       onUserQuestion: async (question) => {
         const displayEl = createEl("div");
-        const formattedHtml = streamingMarkdownService.formatText(question);
-        htmlService.setHTMLContent(displayEl, formattedHtml);
+        await streamingMarkdownService.render(question, displayEl, true);
         chatInput.setDisplayItem(displayEl);
         return new Promise<string>((resolve) => {
           chatInput.enterQuestionMode(resolve);
@@ -176,7 +168,6 @@
     conversationService.resetCurrentConversation();
 
     isSubmitting = false;
-    currentStreamingMessageId = null;
     currentThought = null;
 
     chatService.onNameChanged?.("");
@@ -187,7 +178,6 @@
     conversation.contents = [];
 
     isSubmitting = false;
-    currentStreamingMessageId = null;
     currentThought = null;
 
     chatArea.resetChatArea();
@@ -210,8 +200,7 @@
   <ChatPlanArea executionPlanState={executionPlanStore.executionPlanState} {busyPlanning}/>
 
   <div id="chat-container">
-    <ChatArea messages={conversation.contents} bind:this={chatArea} bind:currentThought bind:isSubmitting bind:chatContainer
-      currentStreamingMessageId={currentStreamingMessageId}/>
+    <ChatArea messages={conversation.contents} bind:this={chatArea} bind:currentThought bind:isSubmitting bind:chatContainer/>
   </div>
 
   <ChatInput

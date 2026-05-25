@@ -64,6 +64,9 @@
   let inputMode: InputMode = InputMode.Normal;
   let questionResolver: ((answer: string) => void) | null = null;
 
+  let webSearchActive: boolean = settingsService.settings.enableWebSearch;
+  let editsAllowed: boolean = chatModeAllowsEdits(chatMode);
+
   let countdownIntervalId: ReturnType<typeof setInterval> | null = null;
   let countdownSecondsRemaining: number = 0;
   let inputInitialHeight: number = 0;
@@ -72,7 +75,13 @@
   const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { inputMode = InputMode.Normal; focusInput(); });
   const rateLimitCountdownRef: EventRef = eventService.on(Event.RateLimitCountdown, (delayMs: number) => { startCountdown(delayMs); });
 
-  settingsService.subscribeToSettingsChanged(componentToken, () => chatMode = settingsService.settings.chatMode);
+  settingsService.subscribeToSettingsChanged(componentToken, () => {
+    chatMode = settingsService.settings.chatMode;
+    editsAllowed = chatModeAllowsEdits(chatMode);
+    if (chatModeButton){
+      setIcon(chatModeButton, iconForChatMode(chatMode));
+    }
+  });
   
   onMount(async () => {
     userInstructionActive = (await aiPrompt.userInstruction()).trim() !== "";
@@ -294,13 +303,16 @@
   }
 
   function toggleWebSearch() {
+    const newState = !settingsService.settings.enableWebSearch;
     settingsService.updateSettings(settings => {
-      settings.enableWebSearch = !settingsService.settings.enableWebSearch;
+      settings.enableWebSearch = newState;
     });
+    webSearchActive = newState;
   }
 
   function toggleChatModeSelectionArea() {
     chatModeSelectionAreaActive = !chatModeSelectionAreaActive;
+
   }
 
   async function handleKeydown(e: KeyboardEvent) {
@@ -559,10 +571,10 @@
 
   <button
     id="web-search-button"
-    class:input-button-highlight={settingsService.settings.enableWebSearch}
+    class:input-button-highlight={webSearchActive}
     bind:this={webSearchButton}
     on:click={toggleWebSearch}
-    aria-label={settingsService.settings.enableWebSearch ? Copy.ButtonTurnOffWebSearch : Copy.ButtonTurnOnWebSearch}>
+    aria-label={webSearchActive ? Copy.ButtonTurnOffWebSearch : Copy.ButtonTurnOnWebSearch}>
   </button>
 
   <div
@@ -599,7 +611,7 @@
 
   <button
     id="chat-mode-button"
-    class:input-button-highlight={chatModeAllowsEdits(chatMode)}
+    class:input-button-highlight={editsAllowed}
     bind:this={chatModeButton}
     on:click={toggleChatModeSelectionArea}
     disabled={isSubmitting}

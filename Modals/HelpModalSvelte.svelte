@@ -41,16 +41,25 @@
 
 	let selectedTopic: number = initialTopic;
 	let title: string = topics[selectedTopic].title;
-	let content: string = streamingMarkdownService.formatText(topics[selectedTopic].content);
+	let contentVisible: boolean = true;
 
 	function selectTopic(topicNumber: number) {
 		title = "";
-		content = "";
+		contentVisible = false;
 		selectedTopic = topicNumber;
 		setTimeout(() => {
 			title = topics[selectedTopic].title;
-			content = streamingMarkdownService.formatText(topics[selectedTopic].content);
+			contentVisible = true;
 		}, 200);
+	}
+
+	function helpContentAction(element: HTMLElement, topic: number) {
+		streamingMarkdownService.render(topics[topic].content, element, true);
+		return {
+			update(newTopic: number) {
+				streamingMarkdownService.render(topics[newTopic].content, element, true);
+			}
+		};
 	}
 
 	$: if (closeButton) {
@@ -60,22 +69,19 @@
 	async function handleLinkClick(evt: MouseEvent) {
 		const target = evt.target as HTMLElement;
 
-		// Check for both internal wikilinks and regular markdown links
-		const link = target.closest('a') as HTMLAnchorElement | null;
+		const link = target.closest('.internal-link') as HTMLAnchorElement | null;
 		if (!link) {
 			return;
 		}
 
-		const href = link.getAttribute('href');
-		if (!href || !href.startsWith('#/page/')) {
+		const notePath = link.getAttribute('data-href');
+		if (!notePath) {
 			return;
 		}
 
 		evt.preventDefault();
 		evt.stopPropagation();
 
-		const encodedPath = href.replace('#/page/', '');
-		const notePath = decodeURIComponent(encodedPath);
 		await workSpaceService.openNote(notePath);
 		onClose();
 	}
@@ -176,9 +182,9 @@
 			</div>
 		</div>
 		<div class="help-modal-content" bind:this={contentContainer}>
-			{#if content !== ""}
+			{#if contentVisible}
+				<div transition:fade={{ duration: 100 }} use:helpContentAction={selectedTopic}></div>
 				<div transition:fade={{ duration: 100 }}>
-					{@html content}
 					{#if selectedTopic === 1}
 						<a
 							href="{plugin.manifest.authorUrl}/vaultkeeper-ai"

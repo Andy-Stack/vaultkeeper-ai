@@ -1,240 +1,103 @@
-import { unified, type Processor } from "unified";
-import remarkParse from "remark-parse";
-import remarkMath from "remark-math";
-import remarkGfm from "remark-gfm";
-import remarkEmoji from "remark-emoji";
-import remarkRehype from "remark-rehype";
-import rehypeKatex from "rehype-katex";
-import rehypeHighlight from "rehype-highlight";
-import rehypeStringify from "rehype-stringify";
-import wikiLinkPlugin from "remark-wiki-link";
-import type { Root as MdastRoot } from "mdast";
-import type { Root as HastRoot } from "hast";
+import { Component, MarkdownRenderer } from "obsidian";
+import type VaultkeeperAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import { Selector } from "Enums/Selector";
-import type { HTMLService } from "./HTMLService";
-import type { VaultCacheService } from "./VaultCacheService";
-import { Exception } from "Helpers/Exception";
 
-interface IStreamingState {
-    element: HTMLElement;
-    buffer: string;
-    lastProcessedLength: number;
-    isComplete: boolean;
+interface RenderState {
+    frozenContainer: HTMLElement;
+    liveContainer: HTMLElement;
+    frozenUpTo: number;
+    frozenText: string;
+    component: Component;
 }
 
 export class StreamingMarkdownService {
-    private readonly htmlService: HTMLService = Resolve<HTMLService>(Services.HTMLService);
-    private readonly vaultCacheService: VaultCacheService = Resolve<VaultCacheService>(Services.VaultCacheService);
+    private readonly plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
+    private readonly states = new WeakMap<HTMLElement, RenderState>();
 
-    private readonly processor: Processor<MdastRoot, MdastRoot, HastRoot, HastRoot, string>;
-    private streamingStates: Map<string, IStreamingState> = new Map<string, IStreamingState>();
-
-    constructor() {
-        this.processor = unified()
-            .use(remarkParse)
-            .use(remarkGfm)
-            .use(remarkEmoji)
-            .use(remarkMath)
-            .use(wikiLinkPlugin, {
-                permalinks: this.vaultCacheService.wikiLinks.links,
-                wikiLinkClassName: Selector.MarkDownLink,
-                pageResolver: (pageName: string) => [pageName],
-                hrefTemplate: (permalink: string) => `#/page/${encodeURIComponent(permalink)}`
-            })
-            .use(remarkRehype, {
-                allowDangerousHtml: false
-            })
-            .use(rehypeKatex)
-            .use(rehypeHighlight, {
-                detect: true,
-                plainText: ["txt", "text"],
-                aliases: {
-                    javascript: ["js", "jsx"],
-                    typescript: ["ts", "tsx"],
-                    python: ["py"],
-                    markdown: ["md", "mdx"],
-                    shell: ["bash", "sh", "zsh"]
-                }
-            })
-            .use(rehypeStringify, {
-                allowDangerousHtml: false,
-                allowDangerousCharacters: false,
-                closeSelfClosing: true
-            });
-    }
-
-    public formatText(text: string): string {
-        try {
-            const preprocessed = this.preprocessContent(text);
-            const result = this.processor.processSync(preprocessed);
-            return String(result);
-        } catch (error) {
-            Exception.warn(`Markdown processing failed:\n${Exception.messageFrom(error)}`);
-            return this.getFallbackHTML(text);
-        }
-    }
-
-    public initializeStream(messageId: string, container: HTMLElement) {
-        this.htmlService.clearElement(container);
-
-        this.streamingStates.set(messageId, {
-            element: container,
-            buffer: "",
-            lastProcessedLength: 0,
-            isComplete: false
-        });
-    }
-
-    public streamChunk(messageId: string, fullText: string) {
-        const state = this.streamingStates.get(messageId);
-        if (!state || state.isComplete) {
+    public async render(markdown: string, container: HTMLElement, isFinal: boolean = false): Promise<void> {
+        if (isFinal) {
+            const existing = this.states.get(container);
+            if (existing) {
+                existing.component.unload();
+                this.states.delete(container);
+            }
+            const component = new Component();
+            component.load();
+            container.empty();
+            await MarkdownRenderer.render(this.plugin.app, markdown, container, "", component);
+            component.unload();
             return;
         }
 
-        state.buffer = fullText;
+        const state = this.getOrCreateState(container);
+        const splitPoint = this.findSplitPoint(markdown);
+        const frozenCandidate = markdown.slice(0, splitPoint);
+        const liveTail = markdown.slice(splitPoint);
 
-        // Use debounced rendering for better performance
-        this.debouncedRender(messageId);
-    }
-
-    private renderTimeouts = new Map<string, ReturnType<typeof activeWindow.setTimeout>>();
-    
-    private debouncedRender(messageId: string, immediate: boolean = false) {
-        const existingTimeout = this.renderTimeouts.get(messageId);
-        if (existingTimeout) {
-            window.clearTimeout(existingTimeout);
+        if (frozenCandidate.length > state.frozenUpTo) {
+            const newSlice = frozenCandidate.slice(state.frozenUpTo);
+            const tempDiv = activeDocument.createElement("div");
+            await MarkdownRenderer.render(this.plugin.app, newSlice, tempDiv, "", state.component);
+            while (tempDiv.firstChild) {
+                state.frozenContainer.appendChild(tempDiv.firstChild);
+            }
+            state.frozenUpTo = frozenCandidate.length;
+            state.frozenText = frozenCandidate;
         }
 
-        const render = () => {
-            const state = this.streamingStates.get(messageId);
-            if (!state) {
-                return;
-            }
-
-            try {
-                const html = this.formatText(state.buffer);
-                this.htmlService.setHTMLContent(state.element, html);
-                state.lastProcessedLength = state.buffer.length;
-            } catch (error) {
-                Exception.warn(`Streaming render failed:\n${Exception.messageFrom(error)}`);
-            }
-
-            this.renderTimeouts.delete(messageId);
-        };
-
-        if (immediate) {
-            render();
-        } else {
-            const timeout = window.setTimeout(render, 50); // 50ms debounce
-            this.renderTimeouts.set(messageId, timeout);
+        state.liveContainer.empty();
+        if (liveTail.trim()) {
+            await MarkdownRenderer.render(this.plugin.app, liveTail, state.liveContainer, "", state.component);
         }
     }
 
-    public finalizeStream(messageId: string, fullText: string) {
-        const state = this.streamingStates.get(messageId);
-        if (!state) {
-            return;
+    private getOrCreateState(container: HTMLElement): RenderState {
+        if (this.states.has(container)) {
+            return this.states.get(container)!;
         }
 
-        state.isComplete = true;
-        state.buffer = fullText;
-        
-        // Final render without debounce
-        this.debouncedRender(messageId, true);
-        
-        // Cleanup
-        this.streamingStates.delete(messageId);
-        const timeout = this.renderTimeouts.get(messageId);
-        if (timeout) {
-            window.clearTimeout(timeout);
-            this.renderTimeouts.delete(messageId);
-        }
+        container.empty();
+        const frozenContainer = activeDocument.createElement("div");
+        const liveContainer = activeDocument.createElement("div");
+        container.appendChild(frozenContainer);
+        container.appendChild(liveContainer);
+
+        const component = new Component();
+        component.load();
+        const state: RenderState = { frozenContainer, liveContainer, frozenUpTo: 0, frozenText: "", component };
+        this.states.set(container, state);
+        return state;
     }
 
-    private preprocessContent(content: string): string {
-        // Simplified and safer preprocessing
-        return content
-            // Normalize line endings
-            .replace(/\r\n/g, "\n")
-            .replace(/\r/g, "\n")
-            // Convert LaTeX delimiters
-            .replace(/\\\[([\s\S]*?)\\\]/g, (_match: string, math: string) => {
-                // Ensure math blocks are on their own lines
-                return "\n$$\n" + math.trim() + "\n$$\n";
-            })
-            .replace(/\\\(([\s\S]*?)\\\)/g, "$$$1$$")
-            // Ensure headers have blank lines before them (but not at start)
-            .replace(/([^\n])\n(#{1,6}\s)/g, "$1\n\n$2")
-            // Collapse excessive newlines but preserve intentional spacing
-            .replace(/\n{4,}/g, "\n\n\n")
-            // Clean up list formatting - ensure consistent spacing
-            .replace(/^(\s*)([*+-]|\d+\.)\s+/gm, "$1$2 ")
-            // Ensure task list checkboxes are properly formatted
-            .replace(/^(\s*)([*+-])\s*\[([ x])\]/gm, "$1$2 [$3]");
-    }
+    // Returns the char index at which the "live tail" begins.
+    // Everything before this index is safe to freeze (complete blocks).
+    private findSplitPoint(text: string): number {
+        const lastDoubleNewline = text.lastIndexOf("\n\n");
+        if (lastDoubleNewline === -1) {
+            return 0;
+        }
 
-    private getFallbackHTML(text: string): string {
-        // Improved fallback with basic markdown support
-        const escaped = text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
-        
-        const lines = escaped.split("\n");
-        const html: string[] = [];
-        let inList = false;
-        let inCodeBlock = false;
-        
-        for (const line of lines) {
-            if (line.startsWith("```")) {
-                if (inCodeBlock) {
-                    html.push("</code></pre>");
-                    inCodeBlock = false;
-                } else {
-                    html.push("<pre><code>");
-                    inCodeBlock = true;
-                }
-                continue;
-            }
-            
-            if (inCodeBlock) {
-                html.push(line + "\n");
-                continue;
-            }
-            
-            // Basic list support
-            if (/^[*+-]\s/.test(line)) {
-                if (!inList) {
-                    html.push("<ul>");
-                    inList = true;
-                }
-                html.push(`<li>${line.substring(2)}</li>`);
-            } else if (inList && line.trim() === "") {
-                html.push("</ul>");
-                inList = false;
-            } else {
-                if (inList) {
-                    html.push("</ul>");
-                    inList = false;
-                }
-                
-                // Basic formatting
-                const formatted = line
-                    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-                    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-                    .replace(/`(.+?)`/g, "<code>$1</code>");
-                
-                if (line.trim()) {
-                    html.push(`<p>${formatted}</p>`);
-                }
+        const candidate = text.slice(0, lastDoubleNewline);
+
+        // Count unmatched opening code fences in the candidate.
+        // If odd, there's an open fence — walk back to before it.
+        const fenceRegex = /^```/gm;
+        let fenceCount = 0;
+        let lastOpenFenceIndex = -1;
+
+        for (const match of candidate.matchAll(fenceRegex)) {
+            fenceCount++;
+            if (fenceCount % 2 === 1) {
+                lastOpenFenceIndex = match.index!;
             }
         }
-        
-        if (inList) html.push("</ul>");
-        if (inCodeBlock) html.push("</code></pre>");
-        
-        return html.join("");
+
+        if (fenceCount % 2 === 1) {
+            // Odd number of fences — open code block, back up to before it
+            return lastOpenFenceIndex > 0 ? lastOpenFenceIndex : 0;
+        }
+
+        return lastDoubleNewline;
     }
 }

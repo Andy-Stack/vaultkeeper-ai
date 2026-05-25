@@ -151,7 +151,7 @@ export abstract class BaseAgent {
                 this.debugService?.log("StreamError", `AI stream error for ${agentType}: ${chunk.errorType}`);
                 conversationContent.content = chunk.error;
                 conversationContent.errorType = chunk.errorType;
-                callbacks.onStreamingUpdate(null);
+                callbacks.onStreamingUpdate();
                 break;
             }
 
@@ -197,13 +197,13 @@ export abstract class BaseAgent {
             }
 
             if (conversationContent.content?.trim() !== "") {
-                callbacks.onStreamingUpdate(conversationContent.timestamp.getTime().toString());
+                callbacks.onStreamingUpdate();
             } else {
                 conversationContent.shouldDisplayContent = false;
             }
         }
 
-        callbacks.onStreamingUpdate(null);
+        callbacks.onStreamingUpdate();
 
         return { toolCall: capturedToolCall, shouldContinue: capturedShouldContinue };
     }

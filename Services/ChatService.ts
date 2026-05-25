@@ -20,7 +20,7 @@ import type { ChatMode } from "Enums/ChatMode";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
-	onStreamingUpdate: (streamingMessageId: string | null) => void;
+	onStreamingUpdate: () => void;
 	onThoughtUpdate: (thought: string | null) => void;
 	onToolCallStarted: (toolName: string) => void;
 	onPlanningStarted: () => void;
@@ -85,7 +85,7 @@ export class ChatService {
 				conversation.contents.push(conversationContent);
 				
 				await this.saveConversation(conversation);
-				callbacks.onStreamingUpdate(conversationContent.timestamp.getTime().toString());
+				callbacks.onStreamingUpdate();
 
 				let namingPromise: Promise<void> | undefined;
 				if (firstMessage) {
@@ -107,7 +107,7 @@ export class ChatService {
 				await this.saveConversation(conversation);
 
 				callbacks.onSubmit();
-				callbacks.onStreamingUpdate(null);
+				callbacks.onStreamingUpdate();
 
 				await this.mainAgent.runMainAgent(conversation, chatMode, callbacks);
 

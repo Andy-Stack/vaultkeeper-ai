@@ -98,9 +98,11 @@ export class SettingsService {
         this.ensureValidModels();
     }
 
-    public subscribeToSettingsChanged(subscriber: object, callback: (() => void) | (() => Promise<void>)): void {
-        this.subscribers.set(subscriber, callback);
-        this.subscriberRefs.add(new WeakRef(subscriber));
+    public subscribeToSettingsChanged(callback: (() => void) | (() => Promise<void>)): object {
+        const token = {};
+        this.subscribers.set(token, callback);
+        this.subscriberRefs.add(new WeakRef(token));
+        return token;
     }
 
     public unsubscribe(subscriber: object): void {

@@ -80,8 +80,9 @@
 
     function handleInstructionSelect(e?: MouseEvent) {
         if (selectedInstruction < userInstructions.length) {
-            settingsService.settings.userInstruction = userInstructions[selectedInstruction];
-            settingsService.saveSettings();
+            settingsService.updateSettings(settings => {
+                settings.userInstruction = userInstructions[selectedInstruction];
+            });
         }
         userInstructionAreaActive = false;
 

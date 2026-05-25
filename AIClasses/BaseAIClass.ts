@@ -20,12 +20,14 @@ import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 export abstract class BaseAIClass implements IAIClass {
 
     protected apiKey: string;
-    
+
     protected readonly provider: AIProvider;
     protected readonly abortService: AbortService;
     protected readonly aiFileService: IAIFileService;
     protected readonly settingsService: SettingsService;
     protected readonly streamingService: StreamingService;
+
+    private readonly settingsSubscription: object;
 
     private _systemPrompt: string = "";
     private _userInstruction: string = "";
@@ -40,10 +42,14 @@ export abstract class BaseAIClass implements IAIClass {
         this.settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.streamingService = Resolve<StreamingService>(Services.StreamingService);
 
-        this.settingsService.subscribeToSettingsChanged(this, () => {
+        this.settingsSubscription = this.settingsService.subscribeToSettingsChanged(() => {
             this.apiKey = this.settingsService.getApiKeyForProvider(provider);
         });
         this.apiKey = this.settingsService.getApiKeyForProvider(provider);
+    }
+
+    public dispose(): void {
+        this.settingsService.unsubscribe(this.settingsSubscription);
     }
 
     public get currentProvider(): AIProvider {

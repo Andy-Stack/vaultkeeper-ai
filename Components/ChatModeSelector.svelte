@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ChatMode, iconForChatMode } from "Enums/ChatMode";
 	import { Copy } from "Enums/Copy";
-	import { tick } from "svelte";
+	import { onDestroy, tick } from "svelte";
 	import { setIcon } from "obsidian";
 	import type { SettingsService } from "Services/SettingsService";
 	import { Resolve } from "Services/DependencyService";
@@ -10,11 +10,11 @@
     export let focusInput: () => void;
     export let chatModeSelectionAreaActive: boolean;
 
-    const componentToken = {};
-
     const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
-    
-    settingsService.subscribeToSettingsChanged(componentToken, () => currentChatMode = settingsService.settings.chatMode);
+
+    const settingsSubscription: object = settingsService.subscribeToSettingsChanged(() => currentChatMode = settingsService.settings.chatMode);
+
+    onDestroy(() => settingsService.unsubscribe(settingsSubscription));
 
     let height = 0;
 

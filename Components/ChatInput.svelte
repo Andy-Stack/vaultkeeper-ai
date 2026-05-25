@@ -33,8 +33,6 @@
   export let onSubmit: (userRequest: string, formattedRequest: string) => void;
   export let onStop: () => void;
 
-  const componentToken = {};
-
   const inputService: InputService = Resolve<InputService>(Services.InputService);
   const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
   const userInputService: UserInputService = Resolve<UserInputService>(Services.UserInputService);
@@ -75,14 +73,14 @@
   const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { inputMode = InputMode.Normal; focusInput(); });
   const rateLimitCountdownRef: EventRef = eventService.on(Event.RateLimitCountdown, (delayMs: number) => { startCountdown(delayMs); });
 
-  settingsService.subscribeToSettingsChanged(componentToken, () => {
+  const settingsSubscription: object = settingsService.subscribeToSettingsChanged(() => {
     chatMode = settingsService.settings.chatMode;
     editsAllowed = chatModeAllowsEdits(chatMode);
     if (chatModeButton){
       setIcon(chatModeButton, iconForChatMode(chatMode));
     }
   });
-  
+
   onMount(async () => {
     userInstructionActive = (await aiPrompt.userInstruction()).trim() !== "";
     inputInitialHeight = textareaElement.innerHeight;
@@ -92,6 +90,7 @@
     eventService.offref(diffOpenedRef);
     eventService.offref(diffClosedRef);
     eventService.offref(rateLimitCountdownRef);
+    settingsService.unsubscribe(settingsSubscription);
     stopCountdown();
   });
 

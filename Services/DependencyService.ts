@@ -35,7 +35,13 @@ export function TryResolve<T>(type: symbol): T | undefined {
 
 export function DeregisterAllServices() {
     services.forEach((service) => {
-        if (service && typeof service === "object" && "unload" in service) {
+        if (!service || typeof service !== "object") {
+            return;
+        }
+        if ("dispose" in service && typeof service.dispose === "function") {
+            (service as { dispose: () => void }).dispose();
+        }
+        if ("unload" in service) {
             (service as Component).unload();
         }
     });

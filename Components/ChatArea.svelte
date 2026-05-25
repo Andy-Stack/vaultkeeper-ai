@@ -16,7 +16,6 @@
   export let chatContainer: HTMLDivElement;
 
   export function resetChatArea() {
-    autoScroll = true;
     messageElements = [];
     if (chatAreaPaddingElement) {
       chatAreaPaddingElement.style.padding = "0px";
@@ -24,11 +23,7 @@
     chatContainer.scroll({ top: 0, behavior: "instant" });
   }
 
-  export function resetAutoScroll() {
-    autoScroll = true;
-  }
-
-  export async function updateChatAreaLayout(behavior: ScrollBehavior | undefined, shouldSettle: boolean = false) {
+  export async function updateChatAreaLayout(behavior: ScrollBehavior | undefined = undefined, shouldSettle: boolean = false) {
     await tick();
 
     if (!chatAreaPaddingElement) {
@@ -76,7 +71,7 @@
 
     chatAreaPaddingElement.style.paddingBottom = `${padding}px`;
 
-    if (behavior && autoScroll) {
+    if (behavior) {
       chatContainer.scroll({ top: chatContainer.scrollHeight, behavior });
     }
   }
@@ -99,9 +94,6 @@
     }
     return { count: count, height: height };
   }
-
-  let autoScroll: boolean = true;
-  let lastScrollTop: number = 0;
 
   let chatAreaPaddingElement: HTMLElement | undefined;
   let thoughtIndicatorElement: HTMLElement | undefined;
@@ -145,35 +137,6 @@
     messageElements.push({ index: index, element: element, role: role });
   }
 
-  // decide if we should be auto scrolling
-  function handleScroll() {
-    if (!chatContainer) {
-      return;
-    }
-
-    const scrollTop = chatContainer.scrollTop;
-    const scrollHeight = chatContainer.scrollHeight;
-    const clientHeight = chatContainer.clientHeight;
-
-    // Only process if the user actually scrolled (scrollTop changed)
-    // This prevents false triggers when content grows and pushes things down
-    if (scrollTop === lastScrollTop) {
-      return;
-    }
-
-    const previousScrollTop = lastScrollTop;
-    lastScrollTop = scrollTop;
-
-    // Check if we're at the bottom (with a small tolerance for rounding errors)
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 5;
-
-    if (isAtBottom) {
-      autoScroll = true;
-    } else if (scrollTop < previousScrollTop) {
-      autoScroll = false; // user scrolled up
-    }
-  }
-
   $: {
     if (messages.length === 0 && chatAreaPaddingElement) {
       chatAreaPaddingElement.style.padding = "0px";
@@ -185,7 +148,7 @@
   {#if messages.length > 0}
     <div class="top-fade"></div>
   {/if}
-  <div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll}>
+  <div class="chat-area" bind:this={chatContainer}>
     {#each messages as message, index}
       {@const content = message.getDisplayContent()}
       {#if message.shouldDisplayContent && content.trim() !== ""}
@@ -304,6 +267,21 @@
   
   .message-container.assistant {
     justify-content: flex-start;
+  }
+
+  .message-container {
+    animation: fadeInLeft 0.5s ease-out forwards;
+  }
+
+  @keyframes fadeInLeft {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   
   .message-bubble {

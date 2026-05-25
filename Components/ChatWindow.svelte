@@ -99,11 +99,11 @@
       onSubmit: () => {
         isSubmitting = true;
         attachments = [];
-        chatArea.resetAutoScroll();
+        chatArea.updateChatAreaLayout("smooth");
       },
       onStreamingUpdate: () => {
         conversation = conversation;
-        chatArea.updateChatAreaLayout("smooth");
+        chatArea.updateChatAreaLayout();
       },
       onThoughtUpdate: (thought) => {
         if (thought !== Copy.AIThoughtMessage) {
@@ -156,9 +156,7 @@
         executionPlanStore.clearPlan();
         chatInput.clearDisplayItem();
         abortService.reset();
-        tick().then(() => {
-          chatArea.updateChatAreaLayout("smooth", true);
-        });
+        chatArea.updateChatAreaLayout();
       },
     });
   }

@@ -203,6 +203,22 @@ Preserve and extend the knowledge graph:
 - **Images/PDFs**: Must be read first, then referenced — plan explicit read steps so the execution agent has the content in its working memory
 - **Complex structures**: May need multi-step processing
 
+### 3. Obsidian Markdown
+
+Notes in this vault use Obsidian-flavored Markdown. Recognize these syntax elements during exploration so you understand the content correctly, and preserve them when planning edits.
+
+**Embeds vs. links** — \`[[Note]]\` is a reference; \`![[Note]]\` embeds content inline. Also \`![[image.png]]\`, \`![[doc.pdf#page=3]]\`, \`![[Note#Heading]]\`, \`![[Note#^block-id]]\`. When planning edits, never silently convert an embed to a link (or vice versa).
+
+**Callouts** — Obsidian renders \`> [!note]\`, \`> [!warning]\`, \`> [!tip]\`, etc. as styled blocks (not plain blockquotes). Common types: \`note\`, \`tip\`, \`info\`, \`important\`, \`warning\`, \`danger\`, \`success\`, \`question\`, \`example\`, \`quote\`, \`todo\`. Foldable with \`-\` (collapsed) or \`+\` (expanded). Preserve callout structure when editing notes that use them.
+
+**Tags & frontmatter** — Tags as \`#tag\` or nested \`#parent/child\` (no spaces; hyphens for multi-word). YAML frontmatter at the top of a note may contain special fields: \`tags\` (list, no \`#\` prefix), \`aliases\` (alternative note names — affects wiki-link resolution), \`cssclasses\`, plus arbitrary user fields used by Bases. **Never modify the \`created\` timestamp**; \`updated\` is managed automatically.
+
+**Tasks** — This vault uses the Tasks plugin. Extended checkboxes (\`[/]\` in progress, \`[-]\` cancelled, \`[>]\` forwarded, \`[<]\` scheduled, \`[!]\` important, \`[?]\` question) and emoji metadata (📅 due, ⏳ scheduled, 🛫 start, ✅ done, 🔁 recurrence, ⏫🔼🔽 priority) carry meaning — preserve them when editing task lines.
+
+**Other syntax to preserve**: block references (\`^block-id\`), highlights (\`==text==\`), comments (\`%%hidden%%\`), inline/block LaTeX (\`$...$\`, \`$$...$$\`), and mermaid diagrams (\`\`\`mermaid blocks). Treat all of these as load-bearing — do not strip or convert them to plain Markdown without explicit user instruction.
+
+**Implication for plan steps**: when step context describes content to add or modify, specify the Obsidian syntax to use (e.g., "wrap the warning in a \`> [!warning]\` callout", "add \`#project/active\` tag", "embed the diagram with \`![[architecture.canvas]]\`"). Don't leave the execution agent to choose between plain Markdown and Obsidian-flavored output.
+
 ## Obsidian Bases
 
 **Bases** is a core plugin (available since Obsidian 1.9) that creates database-like views of notes from their YAML frontmatter properties. Bases are stored as \`.base\` files — treat them like notes: reference with \`[[MyBase.base]]\`, embed with \`![[MyBase.base]]\` or \`![[MyBase.base#ViewName]]\`.

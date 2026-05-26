@@ -367,6 +367,84 @@ Example: If the user says "create a note in \`folder:"Projects/2025"\`", the fol
 
 ---
 
+## Obsidian Markdown
+
+**Obsidian extends standard Markdown.** When creating or editing notes, prefer Obsidian-flavored syntax over plain Markdown equivalents. Do NOT convert existing Obsidian syntax to standard Markdown.
+
+### Embeds (vs. links)
+
+Embeds render the target's content inline; links are clickable references. Same wiki-link rules apply (no folder paths, match casing).
+
+\`\`\`
+![[Note Name]]              embed entire note
+![[Note Name#Heading]]      embed a section
+![[image.png]]              embed image
+![[document.pdf#page=3]]    embed a PDF page
+![[Note Name#^block-id]]    embed a specific block
+\`\`\`
+
+Use embeds when the user wants content shown in place; use \`[[wiki-links]]\` for references.
+
+### Callouts
+
+Prefer callouts over plain blockquotes for emphasis, warnings, tips, and structured asides. Foldable with \`-\` (collapsed) or \`+\` (expanded).
+
+\`\`\`
+> [!note] Optional Title
+> Body text.
+
+> [!warning]- Foldable, starts collapsed
+> Body text.
+\`\`\`
+
+Common types: \`note\`, \`tip\`, \`info\`, \`important\`, \`warning\`, \`danger\`, \`success\`, \`question\`, \`example\`, \`quote\`, \`todo\`, \`bug\`, \`abstract\`.
+
+### Tags & Frontmatter
+
+**Tags** — inline as \`#tag\`, nested as \`#parent/child\`, multi-word with hyphens (\`#multi-word\`). No spaces, no special characters. Also valid as a YAML \`tags:\` list (without the \`#\`).
+
+**Frontmatter** — YAML block at the very top of the file. Preserve existing fields; do not modify \`created\`. Special properties:
+- \`tags\`: list of tag names (no \`#\` prefix in YAML)
+- \`aliases\`: alternative names the note resolves to
+- \`cssclasses\`: custom CSS classes applied to the note
+
+\`\`\`yaml
+---
+created: 2026-05-26T09:25
+updated: 2026-05-26T09:30
+tags:
+  - project
+  - ai/research
+aliases:
+  - Alternative Title
+status: in-progress
+---
+\`\`\`
+
+### Tasks Plugin
+
+This vault uses the Tasks plugin. Standard \`- [ ]\` / \`- [x]\` checkboxes work, plus extended states and emoji metadata:
+
+\`\`\`
+- [ ] Standard task     - [/] In progress    - [!] Important
+- [x] Done              - [-] Cancelled      - [?] Question
+- [>] Forwarded         - [<] Scheduled
+
+- [ ] Task with metadata 📅 2026-06-01 ⏳ 2026-05-28 🛫 2026-05-26 🔁 every week ⏫
+\`\`\`
+
+Emoji metadata: 📅 due, ⏳ scheduled, 🛫 start, ✅ done, 🔁 recurrence, ⏫ high / 🔼 medium / 🔽 low priority.
+
+### Other Syntax
+
+- **Block references**: append \`^block-id\` to a line; reference with \`[[Note#^block-id]]\` or embed with \`![[Note#^block-id]]\`
+- **Highlights**: \`==highlighted text==\`
+- **Comments** (hidden in reading view): \`%%comment%%\` or multi-line \`%% ... %%\`
+- **Math** (LaTeX): inline \`$e=mc^2$\`, block \`$$ ... $$\`
+- **Mermaid diagrams**: standard \`\`\`mermaid code blocks (flowchart, sequenceDiagram, classDiagram, gantt, pie, mindmap, timeline, etc.)
+
+---
+
 ## Obsidian Bases
 
 **Bases** is a core plugin (available since Obsidian 1.9) that creates database-like views of notes from their YAML frontmatter properties. Bases are stored as \`.base\` files — treat them like notes: reference with \`[[MyBase.base]]\`, embed with \`![[MyBase.base]]\` or \`![[MyBase.base#ViewName]]\`.

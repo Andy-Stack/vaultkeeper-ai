@@ -81,12 +81,15 @@ export interface IVaultkeeperAISettings {
     hideDrawerElements: boolean;
 }
 
+type SettingKey = keyof IVaultkeeperAISettings;
+type SettingsChangedCallback = ((changedKeys: SettingKey[]) => void) | ((changedKeys: SettingKey[]) => Promise<void>);
+
 export class SettingsService {
 
     public readonly settings: Readonly<IVaultkeeperAISettings>;
 
     private readonly plugin: VaultkeeperAIPlugin;
-    private readonly subscribers: WeakMap<object, (() => void) | (() => Promise<void>)> = new WeakMap();
+    private readonly subscribers: WeakMap<object, SettingsChangedCallback> = new WeakMap();
     private readonly subscriberRefs: Set<WeakRef<object>> = new Set();
 
     private settingsSnapshot: string;
@@ -98,7 +101,7 @@ export class SettingsService {
         this.ensureValidModels();
     }
 
-    public subscribeToSettingsChanged(callback: (() => void) | (() => Promise<void>)): object {
+    public subscribeToSettingsChanged(callback: SettingsChangedCallback): object {
         const token = {};
         this.subscribers.set(token, callback);
         this.subscriberRefs.add(new WeakRef(token));
@@ -150,17 +153,19 @@ export class SettingsService {
     }
 
     private async saveSettings() {
+        const oldSettings = JSON.parse(this.settingsSnapshot) as IVaultkeeperAISettings;
         await this.plugin.saveData(this.settings);
-        const snapshot = JSON.stringify(this.settings);
-        if (this.settingsSnapshot !== snapshot) {
-            this.settingsSnapshot = snapshot;
+        const changedKeys = (Object.keys(this.settings) as SettingKey[])
+            .filter(key => JSON.stringify(this.settings[key]) !== JSON.stringify(oldSettings[key]));
+        if (changedKeys.length > 0) {
+            this.settingsSnapshot = JSON.stringify(this.settings);
             for (const ref of this.subscriberRefs) {
                 const subscriber = ref.deref();
-                if (!subscriber) { 
+                if (!subscriber) {
                     this.subscriberRefs.delete(ref);
                     continue;
                 }
-                await this.subscribers.get(subscriber)?.();
+                await this.subscribers.get(subscriber)?.(changedKeys);
             }
         }
     }

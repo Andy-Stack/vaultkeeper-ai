@@ -73,11 +73,13 @@
   const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { inputMode = InputMode.Normal; focusInput(); });
   const rateLimitCountdownRef: EventRef = eventService.on(Event.RateLimitCountdown, (delayMs: number) => { startCountdown(delayMs); });
 
-  const settingsSubscription: object = settingsService.subscribeToSettingsChanged(() => {
-    chatMode = settingsService.settings.chatMode;
-    editsAllowed = chatModeAllowsEdits(chatMode);
-    if (chatModeButton){
-      setIcon(chatModeButton, iconForChatMode(chatMode));
+  const settingsSubscription: object = settingsService.subscribeToSettingsChanged(changed => {
+    if (changed.includes("chatMode")) {
+      chatMode = settingsService.settings.chatMode;
+      editsAllowed = chatModeAllowsEdits(chatMode);
+      if (chatModeButton) {
+        setIcon(chatModeButton, iconForChatMode(chatMode));
+      }
     }
   });
 

@@ -11,6 +11,7 @@ import type { SettingsService } from "Services/SettingsService";
 import { Services } from "Services/Services";
 import { closePluginSettings } from "Helpers/Helpers";
 import type { MemoriesService } from "Services/MemoriesService";
+import { RegisterAiProvider } from "Services/ServiceRegistration";
 
 export class VaultkeeperAISettingTab extends PluginSettingTab {
 	private readonly plugin: VaultkeeperAIPlugin;
@@ -63,6 +64,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					}
 					this.updateFileDisclaimer();
 					await this.updateModelDropdowns();
+					RegisterAiProvider();
 				});
 			});
 
@@ -87,6 +89,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					await this.settingsService.updateSettings(settings => {
 						settings.planningModel = value;
 					});
+					RegisterAiProvider();
 				});
 			});
 
@@ -105,6 +108,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					await this.settingsService.updateSettings(settings => {
 						settings.quickActionModel = value;
 					});
+					RegisterAiProvider();
 				});
 			});
 
@@ -120,6 +124,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 							await this.settingsService.setApiKeyForProvider(fromModel(settings.model), value);
 						});
 						this.highlightApiKey();
+						RegisterAiProvider();
 					});
 				text.inputEl.type = "password";
 				this.apiKeyInputEl = text.inputEl;

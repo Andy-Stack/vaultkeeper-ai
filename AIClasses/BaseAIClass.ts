@@ -27,8 +27,6 @@ export abstract class BaseAIClass implements IAIClass {
     protected readonly settingsService: SettingsService;
     protected readonly streamingService: StreamingService;
 
-    private readonly settingsSubscription: object;
-
     private _systemPrompt: string = "";
     private _userInstruction: string = "";
     private _agentType: AgentType = AgentType.Main;
@@ -42,14 +40,7 @@ export abstract class BaseAIClass implements IAIClass {
         this.settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.streamingService = Resolve<StreamingService>(Services.StreamingService);
 
-        this.settingsSubscription = this.settingsService.subscribeToSettingsChanged(() => {
-            this.apiKey = this.settingsService.getApiKeyForProvider(provider);
-        });
         this.apiKey = this.settingsService.getApiKeyForProvider(provider);
-    }
-
-    public dispose(): void {
-        this.settingsService.unsubscribe(this.settingsSubscription);
     }
 
     public get currentProvider(): AIProvider {

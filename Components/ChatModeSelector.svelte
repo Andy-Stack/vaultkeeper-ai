@@ -12,7 +12,11 @@
 
     const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
 
-    const settingsSubscription: object = settingsService.subscribeToSettingsChanged(() => currentChatMode = settingsService.settings.chatMode);
+    const settingsSubscription: object = settingsService.subscribeToSettingsChanged(changed => {
+        if (changed.includes("chatMode")) {
+            currentChatMode = settingsService.settings.chatMode;
+        }
+    });
 
     onDestroy(() => settingsService.unsubscribe(settingsSubscription));
 

@@ -7,7 +7,8 @@ import { PlanningPrompt } from "AIPrompts/PlanningPrompt";
 import { ExecutionPrompt } from "./ExecutionPrompt";
 import { OrchestrationPrompt } from "./OrchestrationPrompt";
 import type { MemoriesService } from "Services/MemoriesService";
-import { Copy, replaceCopy } from "Enums/Copy";
+import { replaceCopy } from 'Helpers/Helpers';
+import { Copy } from "Enums/Copy";
 import { ChatMode } from "Enums/ChatMode";
 
 export interface IPrompt {

@@ -13,6 +13,7 @@ import { WikiLinks } from "Helpers/WikiLinks";
 
 export class VaultCacheService {
 
+  public tags: Set<string> = new Set();
   public wikiLinks: WikiLinks = new WikiLinks();
 
   private readonly fuzzysortOptions = {
@@ -25,7 +26,6 @@ export class VaultCacheService {
   private readonly vaultService: VaultService;
   private readonly metaDataCache: MetadataCache;
 
-  private tags: Set<string> = new Set();
   private files: Map<string, TFile> = new Map();
   private folders: Map<string, TFolder> = new Map();
   private mapping: FileTagMapping = new FileTagMapping();

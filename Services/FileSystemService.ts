@@ -17,6 +17,10 @@ export class FileSystemService {
         return this.vaultService.getMarkdownFiles(allowAccessToPluginRoot);
     }
 
+    public isExclusion(filePath: string, allowAccessToPluginRoot: boolean = false): boolean {
+        return this.vaultService.isExclusion(filePath, allowAccessToPluginRoot);
+    }
+
     public async exists(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<boolean> {
         return await this.vaultService.exists(filePath, allowAccessToPluginRoot);
     }

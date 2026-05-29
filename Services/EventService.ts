@@ -6,7 +6,6 @@ export class EventService extends Events {
     public on(name: Event.DiffOpened, callback: () => void): EventRef;
     public on(name: Event.DiffClosed, callback: () => void): EventRef;
     public on(name: Event.RateLimitCountdown, callback: (delayMs: number) => void): EventRef;
-    public on(name: Event.QuickActionsSettingsChanged, callback: (data?: unknown) => void): EventRef;
 
     public on<T extends unknown[]>(name: string, callback: (...data: T) => unknown): EventRef {
         return super.on(name, callback as (...data: unknown[]) => unknown);
@@ -15,7 +14,6 @@ export class EventService extends Events {
     public trigger(name: Event.DiffOpened, data?: unknown): void;
     public trigger(name: Event.DiffClosed, data?: unknown): void;
     public trigger(name: Event.RateLimitCountdown, delayMs: number): void;
-    public trigger(name: Event.QuickActionsSettingsChanged, data?: unknown): void;
 
     public trigger(name: string, ...data: unknown[]): void {
         super.trigger(name, ...data);

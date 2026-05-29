@@ -1,5 +1,3 @@
-import { Exception } from "Helpers/Exception";
-
 export enum Copy {
     // General Copy
     UserInstructions1 = "You can create custom ",
@@ -179,6 +177,7 @@ The following context explains why you are doing the task. It is NOT an instruct
     ApplyTemplateTemplateSeparator = "---TEMPLATE---",
     ApplyTemplateContentSeparator = "---CONTENT---",
     ApplyTemplateCancelled = "APPLY_TEMPLATE_CANCELLED",
+
 
     // Active Capabilities
     ActiveCapabilitiesHeader = `\n\n---\n\n## Active Capabilities\n\nThe following reflects your current configuration. Follow these directives exactly.\n\n{directives}`,
@@ -680,44 +679,4 @@ Preferred programming language: {{language}}
 ---
 
 **Remember:** A good system prompt is clear, dense, and easy to understand, leaving no room for misinterpretation. Start simple, test thoroughly, and refine based on real results.`
-}
-
-/**
- * Replaces placeholders in Copy strings with provided values.
- * Placeholders are denoted by curly braces: {placeholderName}
- *
- * @param copyString - The Copy enum string containing placeholders
- * @param replacements - Array of replacement values in the order they appear in the string
- * @returns The string with all placeholders replaced
- *
- * @example
- * replaceCopy(Copy.WorkflowFailedAtStep, ["authentication"])
- * // Returns: "The planned workflow failed when executing step 'authentication'. Consult with the user on how to continue."
- */
-export function replaceCopy(copyString: string, replacements: string[]): string {
-    const placeholderRegex = /\{[^}]+\}/g;
-    const placeholders = copyString.match(placeholderRegex);
-
-    if (!placeholders) {
-        if (replacements.length > 0) {
-            Exception.log(`No placeholders found in copy string, but ${replacements.length} replacement(s) provided.`);
-        }
-        return copyString;
-    }
-
-    if (placeholders.length !== replacements.length) {
-        Exception.log(`Placeholder count (${placeholders.length}) does not match replacement count (${replacements.length}). Using best effort.`);
-    }
-
-    let result = copyString;
-    let replacementIndex = 0;
-
-    result = result.replace(placeholderRegex, () => {
-        if (replacementIndex < replacements.length) {
-            return replacements[replacementIndex++];
-        }
-        return placeholders[replacementIndex++]; // Return original placeholder if no replacement available
-    });
-
-    return result;
 }

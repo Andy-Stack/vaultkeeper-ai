@@ -12,6 +12,7 @@ export class Services {
     static ConversationFileSystemService = Symbol("ConversationFileSystemService");
     static ConversationNamingService = Symbol("ConversationNamingService");
     static QuickActionsService = Symbol("QuickActionsService");
+    static QuickActionsDefinitionsService = Symbol("QuickActionsDefinitionsService");
     static StreamingService = Symbol("StreamingService");
     static MarkdownService = Symbol("MarkdownService");
     static StreamingMarkdownService = Symbol("StreamingMarkdownService");

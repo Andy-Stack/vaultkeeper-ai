@@ -15,7 +15,8 @@ import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
-import { Copy, replaceCopy } from "Enums/Copy";
+import { replaceCopy } from 'Helpers/Helpers';
+import { Copy } from "Enums/Copy";
 
 export class OpenAI extends BaseAIClass {
 

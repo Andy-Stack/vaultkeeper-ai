@@ -1,6 +1,5 @@
 import { AIProvider, AIProviderModel, fromModel, isValidProviderModel } from "Enums/ApiProvider";
 import { Copy } from "Enums/Copy";
-import { Event } from "Enums/Event";
 import { Selector } from "Enums/Selector";
 import type VaultkeeperAIPlugin from "main";
 import { HelpModal } from "Modals/HelpModal";
@@ -298,7 +297,6 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 						await this.settingsService.updateSettings(settings => {
 							settings.enableContextMenuActions = value;
 						});
-						this.eventService.trigger(Event.QuickActionsSettingsChanged);
 					});
 			});
 
@@ -313,7 +311,6 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 						await this.settingsService.updateSettings(settings => {
 							settings.enableToolbarActions = value;
 						});
-						this.eventService.trigger(Event.QuickActionsSettingsChanged);
 					});
 			});
 

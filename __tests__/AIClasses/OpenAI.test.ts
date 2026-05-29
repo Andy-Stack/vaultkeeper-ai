@@ -12,7 +12,8 @@ import { SettingsService } from '../../Services/SettingsService';
 import { AIProvider } from '../../Enums/ApiProvider';
 import { Exception } from '../../Helpers/Exception';
 import { AbortService } from '../../Services/AbortService';
-import { Copy, replaceCopy } from 'Enums/Copy';
+import { Copy } from 'Enums/Copy';
+import { replaceCopy } from 'Helpers/Helpers';
 
 describe('OpenAI', () => {
     let openai: OpenAI;

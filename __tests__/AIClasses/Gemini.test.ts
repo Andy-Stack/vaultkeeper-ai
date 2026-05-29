@@ -12,7 +12,8 @@ import { SettingsService } from '../../Services/SettingsService';
 import { AIProvider } from '../../Enums/ApiProvider';
 import { AbortService } from '../../Services/AbortService';
 import { Exception } from '../../Helpers/Exception';
-import { Copy, replaceCopy } from 'Enums/Copy';
+import { Copy } from 'Enums/Copy';
+import { replaceCopy } from 'Helpers/Helpers';
 
 describe('Gemini', () => {
     let gemini: Gemini;

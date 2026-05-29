@@ -12,7 +12,7 @@ export class Semaphore {
         this.queue = [];
     }
 
-    async wait(): Promise<boolean> {
+    async wait(timeoutMs?: number): Promise<boolean> {
         if (this.count > 0) {
             this.count--;
             return true;
@@ -23,7 +23,38 @@ export class Semaphore {
         }
 
         return new Promise<boolean>((resolve) => {
-            this.queue.push(resolve);
+            let settled = false;
+            let timeoutId: number | null = null;
+
+            const waiter = (value: boolean) => {
+                if (settled) {
+                    if (value) {
+                        this.release();
+                    }
+                    return;
+                }
+                settled = true;
+                if (timeoutId !== null) {
+                    window.clearTimeout(timeoutId);
+                }
+                resolve(value);
+            };
+
+            this.queue.push(waiter);
+
+            if (timeoutMs !== undefined && timeoutMs >= 0) {
+                timeoutId = window.setTimeout(() => {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    const idx = this.queue.indexOf(waiter);
+                    if (idx !== -1) {
+                        this.queue.splice(idx, 1);
+                    }
+                    resolve(false);
+                }, timeoutMs);
+            }
         });
     }
 

@@ -18,7 +18,8 @@ import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import type { MistralStreamChunk, MistralToolDefinition, MistralMessage, MistralContentPart } from "./MistralTypes";
 import type { MistralFileService } from "./MistralFileService";
-import { Copy, replaceCopy } from "Enums/Copy";
+import { replaceCopy } from 'Helpers/Helpers';
+import { Copy } from "Enums/Copy";
 import { MistralAgent } from "./MistralAgent";
 import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
 

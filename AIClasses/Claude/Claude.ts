@@ -16,7 +16,8 @@ import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
-import { Copy, replaceCopy } from "Enums/Copy";
+import { Copy } from "Enums/Copy";
+import { replaceCopy } from 'Helpers/Helpers';
 
 export class Claude extends BaseAIClass {
 

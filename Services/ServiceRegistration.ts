@@ -57,7 +57,9 @@ import { OpenAIFileService } from "AIClasses/OpenAI/OpenAIFileService";
 // Prompts
 import { AIPrompt, type IPrompt } from "AIPrompts/IPrompt";
 import { QuickAgent } from "./AIServices/QuickAgent";
-import { QuickActionsService } from "./QuickActionsService";
+import { QuickActionsDefinitionsService } from "./QuickActions/QuickActionsDefinitionsService";
+import { QuickActionsService } from "./QuickActions/QuickActionsService";
+
 
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
     RegisterSingleton<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin, plugin);
@@ -84,6 +86,7 @@ export function RegisterDependencies() {
     RegisterSingleton<MemoriesService>(Services.MemoriesService, new MemoriesService());
     RegisterSingleton<ConversationFileSystemService>(Services.ConversationFileSystemService, new ConversationFileSystemService());
     RegisterSingleton<ConversationNamingService>(Services.ConversationNamingService, new ConversationNamingService());
+    RegisterSingleton<QuickActionsDefinitionsService>(Services.QuickActionsDefinitionsService, new QuickActionsDefinitionsService());
     RegisterSingleton<QuickActionsService>(Services.QuickActionsService, new QuickActionsService());
     
     RegisterTransient<WebViewerService>(Services.WebViewerService, () => new WebViewerService());

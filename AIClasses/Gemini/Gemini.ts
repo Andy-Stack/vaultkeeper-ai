@@ -18,7 +18,8 @@ import { ApiError, ApiErrorType } from "Types/ApiError";
 import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import type { GeminiRetryInfo, GeminiErrorResponse } from "./GeminiTypes";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
-import { Copy, replaceCopy } from "Enums/Copy";
+import { replaceCopy } from 'Helpers/Helpers';
+import { Copy } from "Enums/Copy";
 
 export class Gemini extends BaseAIClass {
 

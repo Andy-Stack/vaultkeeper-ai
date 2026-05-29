@@ -1,12 +1,12 @@
 import type VaultkeeperAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import { Notice, TFile, type View, type WorkspaceLeaf } from "obsidian";
-import type { VaultService } from "./VaultService";
+import { Notice, TFile, type WorkspaceLeaf } from "obsidian";
+import type { FileSystemService } from "./FileSystemService";
 
 export class WorkSpaceService {
     private readonly plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
-    private readonly vaultService: VaultService = Resolve<VaultService>(Services.VaultService);
+    private readonly fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
 
     public async openNote(noteName: string) {
         const file: TFile | null = this.plugin.app.metadataCache.getFirstLinkpathDest(noteName, "");
@@ -33,20 +33,14 @@ export class WorkSpaceService {
     public getActiveFile(allowAccessToPluginRoot: boolean = false): TFile | null {
         const activeFile = this.plugin.app.workspace.getActiveFile();
         
-        if (!activeFile || this.vaultService.isExclusion(activeFile.path, allowAccessToPluginRoot)) {
+        if (!activeFile || this.fileSystemService.isExclusion(activeFile.path, allowAccessToPluginRoot)) {
             return null;
         }
         
         return activeFile;
     }
 
-    public getActiveViewOfType<ViewType extends View>(type: new (...args: WorkspaceLeaf[]) => ViewType): ViewType | null {
-        return this.plugin.app.workspace.getActiveViewOfType(type);
-    }
-    
-
-    public getViewActionsView(): Element | null | undefined {
-        const leaf = this.plugin.app.workspace.getMostRecentLeaf();
-        return leaf?.view?.containerEl?.querySelector('.view-actions');
+    public getLeavesOfType(type: string): WorkspaceLeaf[] {
+        return this.plugin.app.workspace.getLeavesOfType(type);
     }
 }

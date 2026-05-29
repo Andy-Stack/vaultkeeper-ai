@@ -19,12 +19,13 @@
 	import ChatAttachments from "./ChatAttachments.svelte";
 	import InputDisplay from "./InputDisplay.svelte";
 	import { InputMode } from "Enums/InputMode";
-	import { Copy, replaceCopy } from "Enums/Copy";
+	import { Copy } from "Enums/Copy";
 	import { HelpModal } from "Modals/HelpModal";
 	import type { IPrompt } from "AIPrompts/IPrompt";
   import type { SettingsService } from "Services/SettingsService";
   import { ChatMode, chatModeAllowsEdits, iconForChatMode } from "Enums/ChatMode";
 	import { hideDrawerElements, restoreDrawerElements } from "Helpers/ElementHelper";
+	import { replaceCopy } from "Helpers/Helpers";
 
   export let attachments: Attachment[] = [];
 

@@ -13,7 +13,8 @@ import { AIProvider } from '../../Enums/ApiProvider';
 import { AbortService } from '../../Services/AbortService';
 import { Exception } from '../../Helpers/Exception';
 import { AITool } from 'Enums/AITool';
-import { Copy, replaceCopy } from 'Enums/Copy';
+import { Copy } from 'Enums/Copy';
+import { replaceCopy } from 'Helpers/Helpers';
 
 describe('Mistral', () => {
     let mistral: Mistral;

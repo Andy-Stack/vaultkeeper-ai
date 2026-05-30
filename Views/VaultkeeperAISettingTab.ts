@@ -341,12 +341,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		if (!providerFilter || providerFilter === AIProvider.Claude) {
 			const claudeGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderClaude } });
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeSonnet_4_6, text: Copy.ClaudeSonnet_4_6 });
-			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeSonnet_4_5, text: Copy.ClaudeSonnet_4_5 });
-			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeSonnet_4, text: Copy.ClaudeSonnet_4 });
-			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeOpus_4_6, text: Copy.ClaudeOpus_4_6 });
-			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeOpus_4_5, text: Copy.ClaudeOpus_4_5 });
-			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeOpus_4_1, text: Copy.ClaudeOpus_4_1 });
-			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeOpus_4, text: Copy.ClaudeOpus_4 });
+			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeOpus_4_8, text: Copy.ClaudeOpus_4_8 });
 			claudeGroup.createEl("option", { value: AIProviderModel.ClaudeHaiku_4_5, text: Copy.ClaudeHaiku_4_5 });
 		}
 
@@ -354,7 +349,6 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		if (!providerFilter || providerFilter === AIProvider.OpenAI) {
 			const openaiGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderOpenAI } });
 			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_5, text: Copy.GPT_5_5 });
-			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_4_Pro, text: Copy.GPT_5_4_Pro });
 			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_4_Mini, text: Copy.GPT_5_4_Mini });
 			openaiGroup.createEl("option", { value: AIProviderModel.GPT_5_4_Nano, text: Copy.GPT_5_4_Nano });
 		}
@@ -362,18 +356,15 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		// Gemini models
 		if (!providerFilter || providerFilter === AIProvider.Gemini) {
 			const geminiGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderGemini } });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_1_Lite, text: Copy.GeminiPro_3_1_Preview });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_Flash, text: Copy.GeminiPro_3_1_Preview });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_5_Flash, text: Copy.GeminiPro_3_1_Preview });
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_3_1_Preview, text: Copy.GeminiPro_3_1_Preview });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_1_Preview_Lite, text: Copy.GeminiFlash_3_1_Preview_Lite });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_Preview, text: Copy.GeminiFlash_3_Preview });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_2_5, text: Copy.GeminiPro_2_5 });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_2_5, text: Copy.GeminiFlash_2_5 });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_2_5_Lite, text: Copy.GeminiFlash_2_5_Lite });
 		}
 
 		// Mistral models
 		if (!providerFilter || providerFilter === AIProvider.Mistral) {
 			const mistralGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderMistral } });
-			mistralGroup.createEl("option", { value: AIProviderModel.MistralLarge, text: Copy.MistralLarge });
 			mistralGroup.createEl("option", { value: AIProviderModel.MistralMedium, text: Copy.MistralMedium });
 			mistralGroup.createEl("option", { value: AIProviderModel.MistralSmall, text: Copy.MistralSmall });
 		}

@@ -64,36 +64,27 @@ export enum AIProvider {
 export enum AIProviderModel {
     // Claude models
     ClaudeSonnet_4_6 = "claude-sonnet-4-6",
-    ClaudeSonnet_4_5 = "claude-sonnet-4-5-20250929",
-    ClaudeSonnet_4 = "claude-sonnet-4-20250514",
-    ClaudeOpus_4_6 = "claude-opus-4-6",
-    ClaudeOpus_4_5 = "claude-opus-4-5-20251101",
-    ClaudeOpus_4_1 = "claude-opus-4-1-20250805",
-    ClaudeOpus_4 = "claude-opus-4-20250514",
+    ClaudeOpus_4_8 = "claude-opus-4-8",
     ClaudeHaiku_4_5 = "claude-haiku-4-5-20251001",
 
     // Gemini models
-    GeminiFlash_2_5_Lite = "gemini-2.5-flash-lite",
-    GeminiFlash_2_5 = "gemini-2.5-flash",
-    GeminiPro_2_5 = "gemini-2.5-pro",
-    GeminiFlash_3_Preview = "gemini-3-flash-preview",
-    GeminiFlash_3_1_Preview_Lite = "gemini-3.1-flash-lite-preview",
+    GeminiFlash_3_1_Lite = "gemini-3.1-flash-lite",
+    GeminiFlash_3_Flash = "gemini-3-flash-preview",
+    GeminiFlash_3_5_Flash = "gemini-3.5-flash",
     GeminiPro_3_1_Preview = "gemini-3.1-pro-preview",
 
     // OpenAI models
     GPT_5_5 = "gpt-5.5",
-    GPT_5_4_Pro = "gpt-5.4-pro",
     GPT_5_4_Mini = "gpt-5.4-mini",
     GPT_5_4_Nano = "gpt-5.4-nano",
 
     // Mistral models
-    MistralLarge = "mistral-large-latest",
-    MistralMedium = "mistral-medium-latest",
-    MistralSmall = "mistral-small-latest",
+    MistralMedium = "mistral-medium-3-5",
+    MistralSmall = "mistral-small-2603",
 
     // Conversation naming models (aliases to existing models)
     ClaudeNamer = ClaudeHaiku_4_5,
-    GeminiNamer = GeminiFlash_2_5_Lite,
+    GeminiNamer = GeminiFlash_3_1_Lite,
     OpenAINamer = GPT_5_4_Nano,
     MistralNamer = MistralSmall
 }
@@ -118,16 +109,23 @@ export enum MistralAgentEndpoint {
     ConversationsUrl = "https://api.mistral.ai/v1/conversations"
 }
 
-export const DEFAULT_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
+export const DEFAULT_QUICK_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
     [AIProvider.Claude]:  AIProviderModel.ClaudeHaiku_4_5,
-    [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_2_5_Lite,
+    [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_1_Lite,
     [AIProvider.OpenAI]:  AIProviderModel.GPT_5_4_Nano,
     [AIProvider.Mistral]: AIProviderModel.MistralSmall,
-};
+}
+
+export const DEFAULT_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
+    [AIProvider.Claude]:  AIProviderModel.ClaudeSonnet_4_6,
+    [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_5_Flash,
+    [AIProvider.OpenAI]:  AIProviderModel.GPT_5_5,
+    [AIProvider.Mistral]: AIProviderModel.MistralMedium,
+}
 
 export const DEFAULT_PLANNING_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
-    [AIProvider.Claude]:  AIProviderModel.ClaudeSonnet_4_6,
-    [AIProvider.Gemini]:  AIProviderModel.GeminiPro_2_5,
-    [AIProvider.OpenAI]:  AIProviderModel.GPT_5_4_Pro,
-    [AIProvider.Mistral]: AIProviderModel.MistralLarge,
-};
+    [AIProvider.Claude]:  AIProviderModel.ClaudeOpus_4_8,
+    [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_5_Flash,
+    [AIProvider.OpenAI]:  AIProviderModel.GPT_5_5,
+    [AIProvider.Mistral]: AIProviderModel.MistralMedium,
+}

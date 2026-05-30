@@ -27,7 +27,7 @@ describe('SettingsService', () => {
             settingsService = new SettingsService({});
 
             expect(settingsService.settings.firstTimeStart).toBe(true);
-            expect(settingsService.settings.model).toBe(AIProviderModel.ClaudeHaiku_4_5);
+            expect(settingsService.settings.model).toBe(AIProviderModel.ClaudeSonnet_4_6);
             expect(settingsService.settings.apiKeys).toEqual({
                 claude: '',
                 openai: '',
@@ -43,8 +43,8 @@ describe('SettingsService', () => {
             const loadedSettings: Partial<IVaultkeeperAISettings> = {
                 firstTimeStart: false,
                 provider: AIProvider.Gemini,
-                model: AIProviderModel.GeminiFlash_2_5,
-                planningModel: AIProviderModel.GeminiPro_2_5,
+                model: AIProviderModel.GeminiFlash_3_5_Flash,
+                planningModel: AIProviderModel.GeminiPro_3_1_Preview,
                 apiKeys: {
                     claude: 'claude-key-123',
                     openai: 'openai-key-456',
@@ -57,7 +57,7 @@ describe('SettingsService', () => {
             settingsService = new SettingsService(loadedSettings as IVaultkeeperAISettings);
 
             expect(settingsService.settings.firstTimeStart).toBe(false);
-            expect(settingsService.settings.model).toBe(AIProviderModel.GeminiFlash_2_5);
+            expect(settingsService.settings.model).toBe(AIProviderModel.GeminiFlash_3_5_Flash);
             expect(settingsService.settings.apiKeys.claude).toBe('claude-key-123');
             expect(settingsService.settings.apiKeys.openai).toBe('openai-key-456');
             expect(settingsService.settings.apiKeys.gemini).toBe('gemini-key-789');
@@ -92,8 +92,8 @@ describe('SettingsService', () => {
         beforeEach(() => {
             const loadedSettings: IVaultkeeperAISettings = {
                 firstTimeStart: false,
-                model: AIProviderModel.ClaudeSonnet_4_5,
-                planningModel: AIProviderModel.ClaudeOpus_4,
+                model: AIProviderModel.ClaudeSonnet_4_6,
+                planningModel: AIProviderModel.ClaudeOpus_4_8,
                 apiKeys: {
                     claude: 'claude-api-key',
                     openai: 'openai-api-key',
@@ -143,8 +143,8 @@ describe('SettingsService', () => {
         it('should return Claude key when current model is Claude', () => {
             const loadedSettings: IVaultkeeperAISettings = {
                 firstTimeStart: false,
-                model: AIProviderModel.ClaudeSonnet_4_5,
-                planningModel: AIProviderModel.ClaudeOpus_4,
+                model: AIProviderModel.ClaudeSonnet_4_6,
+                planningModel: AIProviderModel.ClaudeOpus_4_8,
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
@@ -205,8 +205,8 @@ describe('SettingsService', () => {
         it('should return Gemini key when current model is Gemini', () => {
             const loadedSettings: IVaultkeeperAISettings = {
                 firstTimeStart: false,
-                model: AIProviderModel.GeminiFlash_2_5,
-                planningModel: AIProviderModel.GeminiPro_2_5,
+                model: AIProviderModel.GeminiFlash_3_5_Flash,
+                planningModel: AIProviderModel.GeminiPro_3_1_Preview,
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
@@ -221,7 +221,7 @@ describe('SettingsService', () => {
                 enableWebSearch: true,
                 enableWebViewer: false,
                 provider: AIProvider.Gemini,
-                quickActionModel: AIProviderModel.GeminiFlash_2_5,
+                quickActionModel: AIProviderModel.GeminiFlash_3_5_Flash,
                 enableContextMenuActions: false,
                 enableToolbarActions: false,
                 hideDrawerElements: false,
@@ -237,7 +237,7 @@ describe('SettingsService', () => {
             // Test with various Claude models
             settingsService = new SettingsService({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeOpus_4,
+                model: AIProviderModel.ClaudeOpus_4_8,
                 apiKeys: { claude: 'opus-key', openai: '', gemini: '', mistral: '' }
             });
             expect(settingsService.getApiKeyForCurrentModel()).toBe('opus-key');
@@ -245,7 +245,7 @@ describe('SettingsService', () => {
             // Test with various Gemini models
             settingsService = new SettingsService({
                 provider: AIProvider.Gemini,
-                model: AIProviderModel.GeminiPro_2_5,
+                model: AIProviderModel.GeminiPro_3_1_Preview,
                 apiKeys: { claude: '', openai: '', gemini: 'pro-key', mistral: '' }
             });
             expect(settingsService.getApiKeyForCurrentModel()).toBe('pro-key');
@@ -264,8 +264,8 @@ describe('SettingsService', () => {
         beforeEach(() => {
             const loadedSettings: IVaultkeeperAISettings = {
                 firstTimeStart: false,
-                model: AIProviderModel.ClaudeSonnet_4_5,
-                planningModel: AIProviderModel.ClaudeOpus_4,
+                model: AIProviderModel.ClaudeSonnet_4_6,
+                planningModel: AIProviderModel.ClaudeOpus_4_8,
                 apiKeys: {
                     claude: '',
                     openai: '',
@@ -332,8 +332,8 @@ describe('SettingsService', () => {
         beforeEach(() => {
             const loadedSettings: IVaultkeeperAISettings = {
                 firstTimeStart: false,
-                model: AIProviderModel.ClaudeSonnet_4_5,
-                planningModel: AIProviderModel.ClaudeOpus_4,
+                model: AIProviderModel.ClaudeSonnet_4_6,
+                planningModel: AIProviderModel.ClaudeOpus_4_8,
                 apiKeys: {
                     claude: 'test-key',
                     openai: '',
@@ -390,9 +390,9 @@ describe('SettingsService', () => {
     describe('Provider Detection from Model Names', () => {
         it('should correctly identify Claude models', () => {
             const claudeModels = [
-                AIProviderModel.ClaudeSonnet_4_5,
-                AIProviderModel.ClaudeSonnet_4,
-                AIProviderModel.ClaudeOpus_4,
+                AIProviderModel.ClaudeSonnet_4_6,
+                AIProviderModel.ClaudeSonnet_4_6,
+                AIProviderModel.ClaudeOpus_4_8,
                 AIProviderModel.ClaudeHaiku_4_5
             ];
 
@@ -408,9 +408,9 @@ describe('SettingsService', () => {
 
         it('should correctly identify Gemini models', () => {
             const geminiModels = [
-                AIProviderModel.GeminiFlash_2_5,
-                AIProviderModel.GeminiFlash_2_5_Lite,
-                AIProviderModel.GeminiPro_2_5
+                AIProviderModel.GeminiFlash_3_1_Lite,
+                AIProviderModel.GeminiFlash_3_5_Flash,
+                AIProviderModel.GeminiPro_3_1_Preview
             ];
 
             geminiModels.forEach(model => {
@@ -447,7 +447,7 @@ describe('SettingsService', () => {
     describe('Settings Immutability and Reference', () => {
         it('should maintain reference to settings object', () => {
             settingsService = new SettingsService({
-                model: AIProviderModel.ClaudeSonnet_4_5,
+                model: AIProviderModel.ClaudeSonnet_4_6,
                 apiKeys: { claude: 'key', openai: '', gemini: '', mistral: '' }
             });
 
@@ -460,7 +460,7 @@ describe('SettingsService', () => {
 
         it('should allow modification of settings properties via updateSettings', async () => {
             settingsService = new SettingsService({
-                model: AIProviderModel.ClaudeSonnet_4_5,
+                model: AIProviderModel.ClaudeSonnet_4_6,
                 apiKeys: { claude: '', openai: '', gemini: '', mistral: '' },
                 exclusions: []
             });

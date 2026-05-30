@@ -51,7 +51,7 @@ export class MistralAgent {
 
     private async createAgent(): Promise<string> {
         const requestBody: MistralAgentCreateRequest = {
-            model: AIProviderModel.MistralMedium,
+            model: AIProviderModel.MistralSmall,
             name: "VaultKeeper Web Search",
             instructions: "You are a web search assistant. **Always** search the web to look up current information before responding and never answer from memory alone.",
             tools: [{ type: "web_search" }]

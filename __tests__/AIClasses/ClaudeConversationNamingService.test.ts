@@ -19,7 +19,7 @@ describe('ClaudeConversationNamingService', () => {
         // Mock SettingsService
         mockSettingsService = {
             settings: {
-                model: AIProviderModel.ClaudeSonnet_4_5,
+                model: AIProviderModel.ClaudeSonnet_4_6,
                 apiKeys: {
                     claude: 'test-claude-key',
                     openai: 'test-openai-key',

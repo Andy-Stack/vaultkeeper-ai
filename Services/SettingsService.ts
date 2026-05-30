@@ -7,6 +7,7 @@ import {
     AIProviderModel,
     DEFAULT_MODEL_BY_PROVIDER,
     DEFAULT_PLANNING_MODEL_BY_PROVIDER,
+    DEFAULT_QUICK_MODEL_BY_PROVIDER,
     fromModel,
     isvalidProvider,
     isValidProviderModel,
@@ -20,8 +21,8 @@ const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     userInstruction: "",
 
     provider: AIProvider.Claude,
-    model: AIProviderModel.ClaudeHaiku_4_5,
-    planningModel: AIProviderModel.ClaudeSonnet_4_6,
+    model: AIProviderModel.ClaudeSonnet_4_6,
+    planningModel: AIProviderModel.ClaudeOpus_4_8,
     quickActionModel: AIProviderModel.ClaudeHaiku_4_5,
     
     apiKeys: {
@@ -187,7 +188,7 @@ export class SettingsService {
             }
     
             if (!isValidProviderModel(this.settings.quickActionModel) || !modelMatchesProvider(this.settings.quickActionModel, provider)) {
-                settings.quickActionModel = DEFAULT_MODEL_BY_PROVIDER[provider];
+                settings.quickActionModel = DEFAULT_QUICK_MODEL_BY_PROVIDER[provider];
             }
         });
     }

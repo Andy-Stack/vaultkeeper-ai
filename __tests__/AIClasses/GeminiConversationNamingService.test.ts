@@ -19,7 +19,7 @@ describe('GeminiConversationNamingService', () => {
         // Mock SettingsService
         mockSettingsService = {
             settings: {
-                model: AIProviderModel.GeminiFlash_2_5,
+                model: AIProviderModel.GeminiFlash_3_5_Flash,
                 apiKeys: {
                     claude: 'test-claude-key',
                     openai: 'test-openai-key',

@@ -1,4 +1,9 @@
 import { vi } from 'vitest';
+import { parse as parseYamlImpl } from 'yaml';
+
+export function parseYaml(content: string): unknown {
+	return parseYamlImpl(content);
+}
 
 export class Component {
 	public load() {}

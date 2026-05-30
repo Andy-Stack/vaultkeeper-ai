@@ -77,6 +77,16 @@ export class QuickActionsService {
                     .setIcon("tag")
                     .onClick(async () => this.quickActionsDefinitionsService.applyTags(menu, editor, view));
             });
+            menu.addItem((item) => {
+                item.setTitle("Suggest tags")
+                    .setIcon("tags")
+                    .onClick(async () => this.quickActionsDefinitionsService.suggestTags(menu, editor, view));
+            });
+            menu.addItem((item) => {
+                item.setTitle("Generate frontmatter")
+                    .setIcon("list-plus")
+                    .onClick(async () => this.quickActionsDefinitionsService.generateFrontmatter(menu, editor, view));
+            });
         });
         this.plugin.registerEvent(this.editorMenuEventRef);
     }
@@ -139,6 +149,16 @@ export class QuickActionsService {
                     item.setTitle("Apply tags")
                         .setIcon("tag")
                         .onClick(async () => this.quickActionsDefinitionsService.applyTags(menu, editor, view))
+                );
+                menu.addItem((item) =>
+                    item.setTitle("Suggest tags")
+                        .setIcon("tags")
+                        .onClick(async () => this.quickActionsDefinitionsService.suggestTags(menu, editor, view))
+                );
+                menu.addItem((item) =>
+                    item.setTitle("Generate frontmatter")
+                        .setIcon("list-plus")
+                        .onClick(async () => this.quickActionsDefinitionsService.generateFrontmatter(menu, editor, view))
                 );
                 menu.showAtMouseEvent(evt);
             });

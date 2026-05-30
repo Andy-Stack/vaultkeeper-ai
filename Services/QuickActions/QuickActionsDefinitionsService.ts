@@ -10,12 +10,15 @@ import { mount } from "svelte";
 import { ApplyTemplatePrompt } from "AIPrompts/QuickActionPrompts/ApplyTemplatePrompt";
 import { Copy } from "Enums/Copy";
 import type { SettingsService } from "../SettingsService";
-import { openPluginSettings, replaceCopy, splitFrontmatter, mergeTagsIntoFrontmatter } from "Helpers/Helpers";
+import { openPluginSettings, replaceCopy, splitFrontmatter } from "Helpers/Helpers";
+import { mergeFrontmatterFields, mergeListIntoFrontmatter, parseFrontmatterYaml } from "Helpers/FrontmatterHelpers";
 import { ProofreadPrompt } from "AIPrompts/QuickActionPrompts/ProofreadPrompt";
 import { VaultCacheService } from "Services/VaultCacheService";
 import { ApplyLinksPrompt } from "AIPrompts/QuickActionPrompts/ApplyLinksPrompt";
 import { ApplyTagsPrompt } from "AIPrompts/QuickActionPrompts/ApplyTagsPrompt";
+import { GenerateFrontmatterPrompt } from "AIPrompts/QuickActionPrompts/GenerateFrontmatterPrompt";
 import { Semaphore } from "Helpers/Semaphore";
+import { SuggestTagsPrompt } from "AIPrompts/QuickActionPrompts/SuggestTagsPrompt";
 
 export class QuickActionsDefinitionsService {
 
@@ -216,17 +219,64 @@ export class QuickActionsDefinitionsService {
                     .split(/\r?\n/)
                     .map(tag => tag.trim())
                     .map(tag => tag.length > 0 && !tag.startsWith("#") ? `#${tag}` : tag)
-                    .filter(tag => tag.length > 0 && allowedTags.has(tag));
+                    .filter(tag => tag.length > 0 && allowedTags.has(tag))
+                    .map(tag => tag.replace(/^#/, ""));
 
                 if (chosen.length === 0) {
                     return;
                 }
 
-                const updated = mergeTagsIntoFrontmatter(content, chosen);
+                await this.fileSystemService.updateFrontmatter(file, frontmatter => {
+                    mergeListIntoFrontmatter(frontmatter, "tags", chosen);
+                });
+            } finally {
+                notice.hide();
+            }
+        });
+    }
 
-                if (updated !== content) {
-                    await this.fileSystemService.writeToFile(file, updated, false, false);
+    public async suggestTags(_menu: Menu, _editor: Editor, view: MarkdownView | MarkdownFileInfo) {
+        await this.asSerialAction("Suggest tags", async () => {
+            const file = view.file;
+            if (!file) {
+                return;
+            }
+
+            const content = await this.fileSystemService.readFile(file);
+
+            if (content instanceof Error || content.trim() === "") {
+                return; // Either an excluded file or nothing to tag
+            }
+
+            const { body } = splitFrontmatter(content);
+            if (body.trim() === "") {
+                return; // Nothing to base tags on
+            }
+
+            const availableTags = this.vaultcacheService.tags;
+            const prompt = replaceCopy(SuggestTagsPrompt, [Array.from(availableTags).join("\n")]);
+
+            const notice = this.showNotice("Suggesting tags...");
+            try {
+                const result = await this.performAction(prompt, body);
+                if (!result || result.trim() === "") {
+                    return;
                 }
+
+                const chosen = result
+                    .split(/\r?\n/)
+                    .map(tag => tag.trim())
+                    .map(tag => tag.length > 0 && !tag.startsWith("#") ? `#${tag}` : tag)
+                    .filter(tag => tag.length > 0)
+                    .map(tag => tag.replace(/^#/, ""));
+
+                if (chosen.length === 0) {
+                    return;
+                }
+
+                await this.fileSystemService.updateFrontmatter(file, frontmatter => {
+                    mergeListIntoFrontmatter(frontmatter, "tags", chosen);
+                });
             } finally {
                 notice.hide();
             }
@@ -235,7 +285,43 @@ export class QuickActionsDefinitionsService {
 
     public async generateFrontmatter(_menu: Menu, _editor: Editor, view: MarkdownView | MarkdownFileInfo) {
         await this.asSerialAction("Generate frontmatter", async () => {
-            
+            const file = view.file;
+            if (!file) {
+                return;
+            }
+
+            const content = await this.fileSystemService.readFile(file);
+
+            if (content instanceof Error || content.trim() === "") {
+                return; // Either an excluded file or nothing to describe
+            }
+
+            const { body } = splitFrontmatter(content);
+            if (body.trim() === "") {
+                return; // Nothing to base frontmatter on
+            }
+
+            const availableTags = this.vaultcacheService.tags;
+            const prompt = replaceCopy(GenerateFrontmatterPrompt, [Array.from(availableTags).join("\n")]);
+
+            const notice = this.showNotice("Generating frontmatter...");
+            try {
+                const result = await this.performAction(prompt, body);
+                if (!result || result.trim() === "") {
+                    return;
+                }
+
+                const suggested = parseFrontmatterYaml(result);
+                if (!suggested) {
+                    return; // Model returned something that isn't a frontmatter object
+                }
+
+                await this.fileSystemService.updateFrontmatter(file, frontmatter => {
+                    mergeFrontmatterFields(frontmatter, suggested);
+                });
+            } finally {
+                notice.hide();
+            }
         });
     }
 

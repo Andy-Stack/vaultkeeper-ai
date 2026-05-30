@@ -78,11 +78,11 @@ export function RegisterDependencies() {
     RegisterSingleton<DiffService>(Services.DiffService, new DiffService());
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
     RegisterSingleton<VaultCacheService>(Services.VaultCacheService, new VaultCacheService());
+    RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());
     RegisterSingleton<SearchStateStore>(Services.SearchStateStore, new SearchStateStore());
     RegisterSingleton<ExecutionPlanStore>(Services.ExecutionPlanStore, new ExecutionPlanStore());
     RegisterSingleton<UserInputService>(Services.UserInputService, new UserInputService());
     RegisterSingleton<WorkSpaceService>(Services.WorkSpaceService, new WorkSpaceService());
-    RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());
     RegisterSingleton<MemoriesService>(Services.MemoriesService, new MemoriesService());
     RegisterSingleton<ConversationFileSystemService>(Services.ConversationFileSystemService, new ConversationFileSystemService());
     RegisterSingleton<ConversationNamingService>(Services.ConversationNamingService, new ConversationNamingService());

@@ -78,6 +78,10 @@ export class FileSystemService {
     public async patchFile(file: TFile, oldContent: string[], newContent: string[], allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         return await this.vaultService.patch(file, oldContent, newContent, allowAccessToPluginRoot, requiresConfirmation);
     }
+
+    public async updateFrontmatter(file: TFile, mutate: (frontmatter: Record<string, unknown>) => void, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
+        return await this.vaultService.updateFrontmatter(file, mutate, allowAccessToPluginRoot);
+    }
     
     public async patchFileAtPath(filePath: string, oldContent: string[], newContent: string[], allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, allowAccessToPluginRoot);

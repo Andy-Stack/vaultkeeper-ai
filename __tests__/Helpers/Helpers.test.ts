@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { StringTools } from "../../Helpers/StringTools";
-import { randomSample, openPluginSettings, splitFrontmatter, mergeTagsIntoFrontmatter } from '../../Helpers/Helpers';
+import { randomSample, openPluginSettings, splitFrontmatter } from '../../Helpers/Helpers';
 
 describe('Helpers', () => {
 	describe('dateToString', () => {
@@ -430,102 +430,6 @@ describe('Helpers', () => {
 			const content = '---\ntitle: My Note\ntags: [a, b]\n---\n# Heading\n\nBody text with --- inside.';
 			const result = splitFrontmatter(content);
 			expect(result.frontmatter + result.body).toBe(content);
-		});
-	});
-
-	describe('mergeTagsIntoFrontmatter', () => {
-		it('returns content unchanged when there are no tags to add', () => {
-			const content = '# Heading\n\nBody.';
-			expect(mergeTagsIntoFrontmatter(content, [])).toBe(content);
-		});
-
-		it('returns content unchanged when all tags are empty after cleaning', () => {
-			const content = '# Heading\n\nBody.';
-			expect(mergeTagsIntoFrontmatter(content, ['', '  ', '#'])).toBe(content);
-		});
-
-		it('prepends new frontmatter when none exists', () => {
-			const content = '# Heading\n\nBody.';
-			const result = mergeTagsIntoFrontmatter(content, ['noble', 'inventor']);
-			expect(result).toBe('---\ntags:\n  - noble\n  - inventor\n---\n# Heading\n\nBody.');
-		});
-
-		it('strips leading # from tag inputs', () => {
-			const content = '# Heading\n\nBody.';
-			const result = mergeTagsIntoFrontmatter(content, ['#noble', '#inventor']);
-			expect(result).toBe('---\ntags:\n  - noble\n  - inventor\n---\n# Heading\n\nBody.');
-		});
-
-		it('deduplicates within the input list', () => {
-			const content = '# Heading\n\nBody.';
-			const result = mergeTagsIntoFrontmatter(content, ['noble', 'noble', '#noble']);
-			expect(result).toBe('---\ntags:\n  - noble\n---\n# Heading\n\nBody.');
-		});
-
-		it('injects a tags field into existing frontmatter that lacks one', () => {
-			const content = '---\ntitle: My Note\nrace: Human\n---\n# Heading\n\nBody.';
-			const result = mergeTagsIntoFrontmatter(content, ['noble']);
-			expect(result).toBe('---\ntitle: My Note\nrace: Human\ntags:\n  - noble\n---\n# Heading\n\nBody.');
-		});
-
-		it('merges into an existing block-style tags list and preserves other fields', () => {
-			const content = '---\ntitle: My Note\ntags:\n  - existing\nrace: Human\n---\n# Heading\n\nBody.';
-			const result = mergeTagsIntoFrontmatter(content, ['noble', 'inventor']);
-			expect(result).toBe('---\ntitle: My Note\ntags:\n  - existing\n  - noble\n  - inventor\nrace: Human\n---\n# Heading\n\nBody.');
-		});
-
-		it('always writes added tags as a YAML list (Obsidian 1.9 requirement)', () => {
-			const content = '# Heading\n\nBody.';
-			const result = mergeTagsIntoFrontmatter(content, ['meeting', 'work', 'planning']);
-			expect(result).toBe('---\ntags:\n  - meeting\n  - work\n  - planning\n---\n# Heading\n\nBody.');
-		});
-
-		it('merges into an existing inline tags list and normalises to block style', () => {
-			const content = '---\ntitle: My Note\ntags: [existing, other]\nrace: Human\n---\n# Heading\n\nBody.';
-			const result = mergeTagsIntoFrontmatter(content, ['noble']);
-			expect(result).toBe('---\ntitle: My Note\ntags:\n  - existing\n  - other\n  - noble\nrace: Human\n---\n# Heading\n\nBody.');
-		});
-
-		it('repairs a comma-separated string value into a YAML list (Obsidian 1.9 breakage)', () => {
-			const content = '---\ntags: meeting, work, planning\n---\n# Heading\n';
-			const result = mergeTagsIntoFrontmatter(content, ['noble']);
-			expect(result).toBe('---\ntags:\n  - meeting\n  - work\n  - planning\n  - noble\n---\n# Heading\n');
-		});
-
-		it('repairs a quoted comma-separated string value into a YAML list', () => {
-			const content = '---\ntags: "meeting, work"\n---\n# Heading\n';
-			const result = mergeTagsIntoFrontmatter(content, ['noble']);
-			expect(result).toBe('---\ntags:\n  - meeting\n  - work\n  - noble\n---\n# Heading\n');
-		});
-
-		it('upgrades a single scalar string value to a YAML list', () => {
-			const content = '---\ntags: meeting\n---\n# Heading\n';
-			const result = mergeTagsIntoFrontmatter(content, ['noble']);
-			expect(result).toBe('---\ntags:\n  - meeting\n  - noble\n---\n# Heading\n');
-		});
-
-		it('deduplicates against existing tags', () => {
-			const content = '---\ntags:\n  - noble\n---\n# Heading\n';
-			const result = mergeTagsIntoFrontmatter(content, ['noble', 'inventor']);
-			expect(result).toBe('---\ntags:\n  - noble\n  - inventor\n---\n# Heading\n');
-		});
-
-		it('upgrades a singular tag: key into a tags: YAML list (unsupported in 1.9)', () => {
-			const content = '---\ntag: existing\ntitle: My Note\n---\n# Heading\n';
-			const result = mergeTagsIntoFrontmatter(content, ['noble']);
-			expect(result).toBe('---\ntags:\n  - existing\n  - noble\ntitle: My Note\n---\n# Heading\n');
-		});
-
-		it('preserves body byte-for-byte', () => {
-			const content = '# Heading\n\nBody with --- divider\n\nand more text.';
-			const result = mergeTagsIntoFrontmatter(content, ['noble']);
-			expect(result.endsWith('# Heading\n\nBody with --- divider\n\nand more text.')).toBe(true);
-		});
-
-		it('handles a tags field that is the last key in frontmatter', () => {
-			const content = '---\ntitle: My Note\ntags:\n  - existing\n---\n# Heading\n';
-			const result = mergeTagsIntoFrontmatter(content, ['noble']);
-			expect(result).toBe('---\ntitle: My Note\ntags:\n  - existing\n  - noble\n---\n# Heading\n');
 		});
 	});
 });

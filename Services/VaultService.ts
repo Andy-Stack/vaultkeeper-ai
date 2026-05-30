@@ -155,6 +155,27 @@ export class VaultService {
         });
     }
 
+    public async updateFrontmatter(file: TFile, mutate: (frontmatter: Record<string, unknown>) => void, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
+        const filePath = this.sanitiserService.sanitize(file.path);
+        if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
+            Exception.log(`Plugin attempted to update frontmatter of a file that is in the exclusion list: ${filePath}`);
+            return Exception.new(`File does not exist: ${filePath}`);
+        }
+
+        if (isFileType(file.extension.toLocaleLowerCase(), FileType.PDF)) {
+            return Exception.new("Modifying PDF files is not supported");
+        }
+
+        try {
+            // frontmatter updates are not fed through 'proposeChange'
+            await this.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => mutate(frontmatter));
+            return file;
+        } catch (error) {
+            Exception.log(error);
+            return Exception.new(error);
+        }
+    }
+
     public async patch(file: TFile, oldContent: string[], newContent: string[], allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const filePath = this.sanitiserService.sanitize(file.path);
         if (this.isExclusion(file.path, allowAccessToPluginRoot)) {

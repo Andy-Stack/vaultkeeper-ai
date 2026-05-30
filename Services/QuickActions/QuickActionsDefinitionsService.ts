@@ -133,10 +133,18 @@ export class QuickActionsDefinitionsService {
                     return; // Either an excluded file or the template is empty
                 }
 
+                const prompt = replaceCopy(ApplyTemplatePrompt,
+                    [
+                        new Date(file.stat.ctime).toString(),
+                        new Date(file.stat.mtime).toString(),
+                        file.stat.size.toString(),
+                        new Date().toString()
+                    ]);
+
                 const notice = this.showNotice("Applying template...");
                 try {
                     const context = `${Copy.ApplyTemplateTemplateSeparator}\n${templateContent}\n${Copy.ApplyTemplateContentSeparator}\n${content}`;
-                    const result = await this.performAction(ApplyTemplatePrompt, context);
+                    const result = await this.performAction(prompt, context);
                     if (result && result.trim() !== Copy.ApplyTemplateCancelled.toString()) {
                         await this.fileSystemService.writeToFile(file, result, false, false);
                     }
@@ -302,7 +310,12 @@ export class QuickActionsDefinitionsService {
             }
 
             const availableTags = this.vaultcacheService.tags;
-            const prompt = replaceCopy(GenerateFrontmatterPrompt, [Array.from(availableTags).join("\n")]);
+            const prompt = replaceCopy(GenerateFrontmatterPrompt,
+                [
+                    Array.from(availableTags).join("\n"),
+                    new Date(file.stat.ctime).toString(),
+                    new Date().toString()
+                ]);
 
             const notice = this.showNotice("Generating frontmatter...");
             try {

@@ -5,7 +5,7 @@ Infer reasonable values for the following fields where the content supports them
 - tags: a small set of specific, reusable tags. Use lowercase with no spaces and no # prefix. Prefer hierarchical tags using forward-slash notation (e.g. "type/person", "projects/active") over flat generic tags. Reuse the vault's existing tags (listed below) whenever one genuinely fits the note — this keeps the vault's tagging consistent. Only coin a new tag when none of the existing tags describes an important topic of the note.
 - title: a concise title for the note. Wrap in quotes if it contains colons, commas, or other punctuation.
 - summary: a single-sentence description of the note
-- created: today's date in YYYY-MM-DD format
+- created: the note's creation date in YYYY-MM-DD format. Use the "Created" value from the File stats section below — do NOT use today's date.
 
 CRITICAL — tags and aliases MUST always be emitted as YAML block-style lists, even when there is only a single value. A scalar string value for these fields is invalid in Obsidian 1.4+ and completely ignored in Obsidian 1.9+.
 
@@ -24,4 +24,10 @@ Only include fields you can fill in confidently from the content — do not inve
 Output ONLY the YAML frontmatter fields. Do NOT include the surrounding --- fences, do not repeat the note body, and do not add any explanation, preamble, or commentary. Existing frontmatter on the note will be merged automatically, so return only the fields you are suggesting.
 
 Existing vault tags (prefer reusing these):
-{tags}`;
+{tags}
+
+File stats:
+Created - {created}
+
+Current date:
+{date}`;

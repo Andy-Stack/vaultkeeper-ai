@@ -11,4 +11,12 @@ Rewrite the content so it fits the template's structure and headings. Preserve a
 If the template section does not resemble a document template (e.g. it is a journal entry, a regular note, or otherwise makes no sense as a template), do not apply it. Instead return exactly the following with no other text:
 ${Copy.ApplyTemplateCancelled}
 
-Return only the reformatted note with no explanation, preamble, or commentary.`;
+Return only the reformatted note with no explanation, preamble, or commentary.
+
+File stats:
+Created - {created}
+Modified - {modified}
+Size - {size}
+
+Current date:
+{date}`;

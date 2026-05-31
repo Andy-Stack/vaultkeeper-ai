@@ -87,16 +87,18 @@ body:not(.is-tablet) .workspace-drawer.mod-right {
 /* Settings Styles */
 /* ============================== */
 
-.api-key-setting-ok input[type="text"],
-.api-key-setting-ok input[type="password"],
-.api-key-setting-ok textarea {
-  border-color: var(--color-green) !important;
+/* Class is doubled to raise specificity above Obsidian's input border
+   styles without referencing their selectors (future-proof) or !important. */
+.api-key-setting-ok.api-key-setting-ok input[type="text"],
+.api-key-setting-ok.api-key-setting-ok input[type="password"],
+.api-key-setting-ok.api-key-setting-ok textarea {
+  border-color: var(--color-green);
 }
 
-.api-key-setting-error input[type="text"],
-.api-key-setting-error input[type="password"],
-.api-key-setting-error textarea {
-  border-color: var(--color-red) !important;
+.api-key-setting-error.api-key-setting-error input[type="text"],
+.api-key-setting-error.api-key-setting-error input[type="password"],
+.api-key-setting-error.api-key-setting-error textarea {
+  border-color: var(--color-red);
 }
 
 .api-key-setting-error .setting-item-control {
@@ -133,11 +135,17 @@ body:not(.is-tablet) .workspace-drawer.mod-right {
 /* CSS Variables for Common Components */
 /* ============================== */
 
-.transparent-button {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  background-color: transparent !important;
+/* Doubled class + explicit interactive states beat Obsidian's
+   button / button:hover / button:focus styles (specificity 0-1-1)
+   without referencing their selectors or using !important. */
+.transparent-button.transparent-button,
+.transparent-button.transparent-button:hover,
+.transparent-button.transparent-button:focus,
+.transparent-button.transparent-button:active {
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background-color: transparent;
 }
 
 .search-trigger {

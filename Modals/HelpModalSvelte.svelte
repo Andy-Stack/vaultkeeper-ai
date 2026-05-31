@@ -8,11 +8,13 @@
 	import type { WorkSpaceService } from "Services/WorkSpaceService";
 	import { fade } from "svelte/transition";
 	import { onMount } from "svelte";
+	import type { AssetsService } from "Services/AssetsService";
 
 	export let onClose: () => void;
 	export let initialTopic: number = 1;
 
 	const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
+	const assetsService: AssetsService = Resolve<AssetsService>(Services.AssetsService);
 	const streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
 	const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
 
@@ -166,6 +168,9 @@
 		</div>
 		<div class="help-modal-content" bind:this={contentContainer}>
 			{#if contentVisible}
+				{#if selectedTopic === 1}
+					<img class="help-modal-banner" src={assetsService.bannerSource} alt="Plugin Banner">
+				{/if}
 				<div transition:fade={{ duration: 100 }} use:helpContentAction={selectedTopic}></div>
 				<div transition:fade={{ duration: 100 }}>
 					{#if selectedTopic === 1}
@@ -190,7 +195,7 @@
 							<span>{Copy.CoffeeIcon}</span>
 							<span>{Copy.CoffeeLinkText}</span>
 						</a>
-						<p style="margin-top: 2em; font-style: italic;">{Copy.ThankYouMessage}</p>
+						<p style="margin-top: 1em; font-style: italic;">{Copy.ThankYouMessage}</p>
 					{/if}
 				</div>
 				{#if selectedTopic === 1}
@@ -321,6 +326,13 @@
 		background-color: var(--alt-background-primary);
 		padding: 0 var(--size-4-2) var(--size-4-2) var(--size-4-3);
 		overflow-y: auto;
+	}
+
+	.help-modal-banner {
+		margin-top: var(--size-2-2);
+		margin-left: calc(var(--size-4-2) * -1);
+		width: calc(100% + (var(--size-4-2) * 2) - var(--size-2-2));
+		border-radius: var(--radius-s);
 	}
 
 	.help-modal-version-string {

@@ -2,6 +2,9 @@ import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { mount, unmount } from 'svelte';
 import ChatWindow from 'Components/ChatWindow.svelte';
 import TopBar from 'Components/TopBar.svelte';
+import { AssetsService } from 'Services/AssetsService';
+import { Resolve } from 'Services/DependencyService';
+import { Services } from 'Services/Services';
 
 export const VIEW_TYPE_MAIN = 'vaultkeeper-ai-main-view';
 
@@ -12,8 +15,11 @@ interface ChatWindowComponent {
 
 export class MainView extends ItemView {
 
+  private readonly assetsService: AssetsService;
+
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
+    this.assetsService = Resolve<AssetsService>(Services.AssetsService);
   }
 
   topBar: ReturnType<typeof TopBar> | undefined;
@@ -28,7 +34,7 @@ export class MainView extends ItemView {
   }
 
   public getIcon(): string {
-    return 'sparkles';
+    return this.assetsService.pluginIcon;
   }
 
   protected override onOpen(): Promise<void> {

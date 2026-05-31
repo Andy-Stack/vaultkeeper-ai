@@ -6,10 +6,12 @@ import type { SettingsService } from "Services/SettingsService";
 import { WorkSpaceService } from "Services/WorkSpaceService";
 import type { QuickActionsDefinitionsService } from "./QuickActionsDefinitionsService";
 import type { HelpModal } from "Modals/HelpModal";
+import { AssetsService } from "Services/AssetsService";
 
 export class QuickActionsService {
 
     private readonly plugin: VaultkeeperAIPlugin;
+    private readonly assetsService: AssetsService;
     private readonly settingsService: SettingsService;
     private readonly workSpaceService: WorkSpaceService;
     private readonly quickActionsDefinitionsService: QuickActionsDefinitionsService;
@@ -21,6 +23,7 @@ export class QuickActionsService {
     
     public constructor() {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
+        this.assetsService = Resolve<AssetsService>(Services.AssetsService);
         this.settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.workSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
         this.quickActionsDefinitionsService = Resolve<QuickActionsDefinitionsService>(Services.QuickActionsDefinitionsService);
@@ -181,7 +184,7 @@ export class QuickActionsService {
                 );
                 menu.showAtMouseEvent(evt);
             });
-            setIcon(button, "sparkles");
+            setIcon(button, this.assetsService.pluginIcon);
             actionsEl.prepend(button);
         }
     }

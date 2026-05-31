@@ -2,6 +2,7 @@
 import { AIProvider, fromModel } from "Enums/ApiProvider";
 import { Environment } from "Enums/Environment";
 import type VaultkeeperAIPlugin from "main";
+import { AssetsService } from "./AssetsService";
 
 // Services
 import { RegisterSingleton, RegisterTransient, Resolve } from "./DependencyService";
@@ -64,6 +65,7 @@ import { QuickActionsService } from "./QuickActions/QuickActionsService";
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
     RegisterSingleton<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin, plugin);
     RegisterSingleton<SettingsService>(Services.SettingsService, new SettingsService(await plugin.loadData() as Partial<IVaultkeeperAISettings>));
+    RegisterSingleton<AssetsService>(Services.AssetsService, new AssetsService());
 } 
 
 export function RegisterDependencies() {

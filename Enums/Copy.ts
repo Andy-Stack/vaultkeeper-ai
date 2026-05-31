@@ -223,7 +223,7 @@ If you find any issues or have a feature request, please feel free to raise them
 
 1. **Add an API key**: Go to Settings and add at least one API key (Claude, Gemini, OpenAI, or Mistral)
 2. **Select a model**: Choose your preferred AI model from the dropdown
-3. **Open the chat**: Click the sparkles icon in the sidebar to start chatting`,
+3. **Open the chat**: Click the plugin icon in the sidebar to start chatting`,
 
     HelpModalChatModesTitle = "Chat modes",
     HelpModalChatModesContent = `#### Chat modes

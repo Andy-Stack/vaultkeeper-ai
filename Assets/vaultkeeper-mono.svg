@@ -1,0 +1,12 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Vaultkeeper AI ribbon icon. Uses currentColor so it adapts to Obsidian themes. -->
+  <circle cx="50" cy="50" r="30" stroke="currentColor" stroke-width="7" fill="none"/>
+  <g stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- locking bolts -->
+    <path d="M85 50 H92 M50 85 V92 M15 50 H8 M50 15 V8
+             M74.75 74.75 L79.70 79.70 M25.25 74.75 L20.30 79.70
+             M74.75 25.25 L79.70 20.30 M25.25 25.25 L20.30 20.30"/>
+    <!-- central spark -->
+    <path d="M50 33 L54.09 45.91 L67 50 L54.09 54.09 L50 67 L45.91 54.09 L33 50 L45.91 45.91 Z"/>
+  </g>
+</svg>

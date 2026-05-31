@@ -250,7 +250,7 @@ If you find any issues or have a feature request, please feel free to raise them
 Quickly provide context to the AI:
 
 - **@filename** - Reference specific files
-- **#tag** - Reference all notes with a tag
+- **&#35;tag** - Reference all notes with a tag
 - **/folder** - Reference entire directories
 
 The autocomplete dropdown supports keyboard navigation.
@@ -264,7 +264,7 @@ Customize AI behavior for specific workflows:
 3. Select your instruction set
 4. The AI follows these instructions for all interactions
 
-See [Example Template](#/page/Vaultkeeper%20AI%2FUser%20Instructions%2FEXAMPLE_INSTRUCTIONS) for help getting started.
+See [[Vaultkeeper AI/User Instructions/EXAMPLE_INSTRUCTIONS|Example Template]] for help getting started.
 
 ##### File Monitoring
 

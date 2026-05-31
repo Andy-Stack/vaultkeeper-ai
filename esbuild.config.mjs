@@ -296,6 +296,8 @@ const buildOptions = {
   minify: prod,
   loader: {
     ".css": "css",
+    ".svg": "text",
+    ".png": "dataurl",
     ".ttf": "file",
     ".woff": "file",
     ".woff2": "file",

@@ -20,10 +20,6 @@ export default class VaultkeeperAIPlugin extends Plugin {
 	
 	public async onload() {
 		await RegisterPlugin(this);
-
-		const assetsService = Resolve<AssetsService>(Services.AssetsService);
-
-		await assetsService.loadAssets();
 		RegisterDependencies();
 
 		this.registerView(
@@ -43,6 +39,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 			}
 		});
 
+		const assetsService = Resolve<AssetsService>(Services.AssetsService);
 		this.addRibbonIcon(assetsService.pluginIcon, "Vaultkeeper AI", async () => {
 			await this.activateMainView();
 		});

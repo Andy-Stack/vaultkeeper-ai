@@ -173,12 +173,24 @@ If issues arise during execution, the orchestration agent can request a replan. 
 
 ### Quick Actions
 
-Quick Actions are lightweight, single-shot AI operations that let you run a focused AI task on selected text without opening the chat panel. They're available in two ways:
+Quick Actions are one-click AI edits you run on the note you're currently editing, without opening the chat panel. Open the editor menu (right-click, or the command palette) and pick an action. Some actions work on your current selection if you have text selected, otherwise they apply to the whole note.
+
+They're available in two ways:
 
 - **Right-click context menu** — select text in any markdown note and choose a Quick Action from the context menu
 - **Editor toolbar button** — a dedicated button appears in the editor header for one-click access
 
 Both entry points are individually toggleable in Settings and are fully supported on mobile.
+
+**Available actions**
+
+- **Proofread** — Corrects spelling, grammar, punctuation, and typos without rewriting for style or changing your voice. Works on the selection if you have one, otherwise the whole note.
+- **Beautify** — Improves clarity, flow, and readability and adds Markdown formatting (headings, bold, lists, blockquotes) where it helps. Works on the selection if you have one, otherwise the whole note.
+- **Apply template** — Restructures the note to match a template you choose, fitting your content to the template's headings and structure while preserving the information. If the file you pick doesn't look like a template, no changes are made.
+- **Apply links** — Scans the note for mentions of pages that already exist in your vault and wraps them in wikilinks. It only links existing pages and never invents new ones. Works on the selection if you have one, otherwise the whole note.
+- **Apply tags** — Chooses tags for the note from the tags that already exist in your vault and merges them into the frontmatter. It won't create new tags — only ones already in use elsewhere.
+- **Suggest tags** — Like Apply tags, but free to suggest new tags as well as reuse existing ones. Suggested tags are merged into the note's frontmatter.
+- **Generate frontmatter** — Infers YAML frontmatter for the note (aliases, tags, title, summary, created) from its content and merges it into any existing frontmatter.
 
 ### AI Memory
 

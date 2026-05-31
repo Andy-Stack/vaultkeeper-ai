@@ -26,14 +26,34 @@
 			content: Copy.HelpModalAboutContent
 		},
 		2: {
-			title: Copy.HelpModalGuideTitle,
-			content: Copy.HelpModalGuideContent
+			title: Copy.HelpModalGettingStartedTitle,
+			content: Copy.HelpModalGettingStartedContent
 		},
 		3: {
+			title: Copy.HelpModalChatModesTitle,
+			content: Copy.HelpModalChatModesContent
+		},
+		4: {
+			title: Copy.HelpModalReferenceTitle,
+			content: Copy.HelpModalReferenceContent
+		},
+		5: {
+			title: Copy.HelpModalCustomInstructionsTitle,
+			content: Copy.HelpModalCustomInstructionsContent
+		},
+		6: {
+			title: Copy.HelpModalQuickActionsTitle,
+			content: Copy.HelpModalQuickActionsContent
+		},
+		7: {
+			title: Copy.HelpModalUploadedFilesTitle,
+			content: Copy.HelpModalUploadedFilesContent
+		},
+		8: {
 			title: Copy.HelpModalTroubleshootTitle,
 			content: Copy.HelpModalTroubleshootContent
 		},
-		4: {
+		9: {
 			title: Copy.HelpModalPrivacyTitle,
 			content: Copy.HelpModalPrivacyContent
 		}
@@ -129,57 +149,20 @@
 	</div>
 	<div class="help-modal-body">
 		<div class="help-modal-dropdown" bind:this={dropdownContainer}></div>
-		<div id="help-modal-version-string-mobile">
-			{Copy.PluginVersionPrefix}{plugin.manifest.version}
-		</div>
 		<div class="help-modal-topics">
-			<div
-				class="help-modal-topic-frame"
-				class:hidden={selectedTopic !== 1}
-				on:click={() => selectTopic(1)}
-				on:keydown={(e) => e.key === 'Enter' && selectTopic(1)}
-				role="button"
-				tabindex="0">
-				<div class="help-modal-topic-item">
-					{topics[1].title}
+			{#each Object.entries(topics) as [key, topic] (key)}
+				<div
+					class="help-modal-topic-frame"
+					class:hidden={selectedTopic !== Number(key)}
+					on:click={() => selectTopic(Number(key))}
+					on:keydown={(e) => e.key === 'Enter' && selectTopic(Number(key))}
+					role="button"
+					tabindex="0">
+					<div class="help-modal-topic-item">
+						{topic.title}
+					</div>
 				</div>
-			</div>
-			<div
-				class="help-modal-topic-frame"
-				class:hidden={selectedTopic !== 2}
-				on:click={() => selectTopic(2)}
-				on:keydown={(e) => e.key === 'Enter' && selectTopic(2)}
-				role="button"
-				tabindex="0">
-				<div class="help-modal-topic-item">
-					{topics[2].title}
-				</div>
-			</div>
-			<div
-				class="help-modal-topic-frame"
-				class:hidden={selectedTopic !== 3}
-				on:click={() => selectTopic(3)}
-				on:keydown={(e) => e.key === 'Enter' && selectTopic(3)}
-				role="button"
-				tabindex="0">
-				<div class="help-modal-topic-item">
-					{topics[3].title}
-				</div>
-			</div>
-			<div
-				class="help-modal-topic-frame"
-				class:hidden={selectedTopic !== 4}
-				on:click={() => selectTopic(4)}
-				on:keydown={(e) => e.key === 'Enter' && selectTopic(4)}
-				role="button"
-				tabindex="0">
-				<div class="help-modal-topic-item">
-					{topics[4].title}
-				</div>
-			</div>
-			<div id="help-modal-version-string">
-				{Copy.PluginVersionPrefix}{plugin.manifest.version}
-			</div>
+			{/each}
 		</div>
 		<div class="help-modal-content" bind:this={contentContainer}>
 			{#if contentVisible}
@@ -210,10 +193,20 @@
 						<p style="margin-top: 2em; font-style: italic;">{Copy.ThankYouMessage}</p>
 					{/if}
 				</div>
+				{#if selectedTopic === 1}
+					<div class="help-modal-version-string" transition:fade={{ duration: 100 }}>
+						<p>{Copy.PluginVersionPrefix}{plugin.manifest.version}</p>
+					</div>
+				{/if}
 			{/if}
 		</div>
 	</div>
 </div>
+
+<!-- margin-top: auto;
+		align-self: flex-end;
+		padding: var(--size-4-1) var(--size-4-3);
+		font-size: var(--font-smallest); -->
 
 <style>
 	.help-modal-container {
@@ -278,10 +271,6 @@
 		display: none;
 	}
 
-	#help-modal-version-string-mobile {
-		display: none;
-	}
-
 	.help-modal-topic-frame {
 		grid-column: 1 / 4;
 		display: grid;
@@ -299,33 +288,16 @@
 		background-color: transparent;
 	}
 
-	.help-modal-topic-frame:nth-child(1) {
-		grid-row: 1;
-	}
-
-	.help-modal-topic-frame:nth-child(2) {
-		grid-row: 3;
-	}
-
-	.help-modal-topic-frame:nth-child(3) {
-		grid-row: 5;
-	}
-
-	.help-modal-topic-frame:nth-child(4) {
-		grid-row: 7;
-	}
-
 	.help-modal-topics {
 		grid-row: 1 / 9;
 		grid-column: 1;
-		display: grid;
+		display: flex;
+		flex-direction: column;
+		gap: var(--size-4-3);
 		max-width: 150px;
-		grid-template-rows: auto var(--size-4-3) auto var(--size-4-3) auto var(--size-4-3) auto 1fr;
-		grid-template-columns: auto var(--size-4-2) 1fr;
 	}
 
 	.help-modal-topic-item {
-		grid-column: 1;
 		display: inline-block;
 		white-space: nowrap;
 		overflow: hidden;
@@ -339,38 +311,31 @@
 		color: var(--text-normal);
 	}
 
-	.help-modal-topic-item:nth-child(1) {
-		grid-row: 1;
-	}
-
-	.help-modal-topic-item:nth-child(2) {
-		grid-row: 3;
-	}
-
-	.help-modal-topic-item:nth-child(3) {
-		grid-row: 5;
-	}
-
-	.help-modal-topic-item:nth-child(4) {
-		grid-row: 7;
-	}
-
-	#help-modal-version-string {
-		grid-row: 8;
-		grid-column: 1;
-		align-self: flex-end;
-		padding: var(--size-4-1) var(--size-4-3);
-		font-size: var(--font-smallest);
-	}
-
 	.help-modal-content {
 		grid-row: 1 / 9;
 		grid-column: 3;
 		height: 100%;
+		display: flex;
+		flex-direction: column;
 		border-radius: var(--radius-m);
 		background-color: var(--alt-background-primary);
 		padding: 0 var(--size-4-2) var(--size-4-2) var(--size-4-3);
 		overflow-y: auto;
+	}
+
+	.help-modal-version-string {
+		/* Absorbs leftover vertical space so the version sits bottom-right on tall
+		   screens, but collapses and scrolls naturally when content overflows. */
+		margin-top: auto;
+		display: flex;
+		justify-content: flex-end;
+		padding-top: var(--size-4-2);
+	}
+
+	.help-modal-version-string p {
+		margin: 0;
+		font-size: var(--font-smallest);
+		color: var(--text-muted);
 	}
 
 	/* Mobile styles */
@@ -398,16 +363,6 @@
 		.help-modal-container {
 			margin: 0px;
 		}
-	}
-
-	:global(.is-mobile) #help-modal-version-string-mobile {
-		display: block;
-		grid-row: 5;
-		grid-column: 1;
-		align-self: flex-end;
-		padding: var(--size-4-1) var(--size-4-2);
-		font-size: var(--font-smallest);
-		color: var(--text-muted);
 	}
 
 	:global(.is-mobile) .help-modal-topics {

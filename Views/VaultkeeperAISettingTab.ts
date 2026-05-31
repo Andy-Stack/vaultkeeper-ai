@@ -154,7 +154,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				.setTooltip(Copy.TooltipLearnMoreFileMonitoring)
 				.onClick(() => {
 					const modal = Resolve<HelpModal>(Services.HelpModal);
-					modal.open(2); // Opens HelpModal to "Plugin Guide" (topic 2)
+					modal.open(7); // Opens HelpModal to "Uploaded Files" (topic 7)
 				});
 			setIcon(button.extraSettingsEl, "help-circle");
 		});

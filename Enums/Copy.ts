@@ -219,33 +219,34 @@ This plugin was originally created for a friend who found it useful, so I have d
 
 If you find any issues or have a feature request, please feel free to raise them on GitHub:`,
 
-    HelpModalGuideTitle = "Plugin Guide",
-    HelpModalGuideContent = `#### How to Use Vaultkeeper AI
+    HelpModalGettingStartedTitle = "Getting started",
+    HelpModalGettingStartedContent = `#### Getting started
 
-##### Getting Started
-1. **Add an API Key**: Go to Settings and add at least one API key (Claude, Gemini, OpenAI, or Mistral)
-2. **Select a Model**: Choose your preferred AI model from the dropdown
-3. **Open the Chat**: Click the sparkles icon in the sidebar to start chatting
+1. **Add an API key**: Go to Settings and add at least one API key (Claude, Gemini, OpenAI, or Mistral)
+2. **Select a model**: Choose your preferred AI model from the dropdown
+3. **Open the chat**: Click the sparkles icon in the sidebar to start chatting`,
 
-##### Operating Modes
+    HelpModalChatModesTitle = "Chat modes",
+    HelpModalChatModesContent = `#### Chat modes
 
-**Read-Only Mode (Default)** - The AI can safely explore your vault:
+**Read-only (default)** - The AI can safely explore your vault:
 - Search through your notes (including PDFs and Office/ODF documents)
 - Read file contents (including binary files like PDFs, Office documents, and images)
 - List directory structures
 - Cannot modify anything
 
-**Agent Mode** - Toggle when you need the AI to make changes:
+**Allow Edits** - Switch on when you need the AI to make changes:
 - Create new notes
 - Edit existing content
 - Delete or move files
 - Rename files
 
-**Planning Mode** - Have the AI plan before acting:
+**Planning** - Have the AI plan before acting:
 - A planning agent analyzes your vault and creates a strategy
-- An execution agent carries out the given plan
+- An execution agent carries out the given plan`,
 
-##### Reference System
+    HelpModalReferenceTitle = "Using references",
+    HelpModalReferenceContent = `#### Using references
 
 Quickly provide context to the AI:
 
@@ -253,9 +254,10 @@ Quickly provide context to the AI:
 - **&#35;tag** - Reference all notes with a tag
 - **/folder** - Reference entire directories
 
-The autocomplete dropdown supports keyboard navigation.
+The autocomplete dropdown supports keyboard navigation.`,
 
-##### Custom Instructions
+    HelpModalCustomInstructionsTitle = "Custom instructions",
+    HelpModalCustomInstructionsContent = `#### Custom instructions
 
 Customize AI behavior for specific workflows:
 
@@ -264,9 +266,36 @@ Customize AI behavior for specific workflows:
 3. Select your instruction set
 4. The AI follows these instructions for all interactions
 
-See [[Vaultkeeper AI/User Instructions/EXAMPLE_INSTRUCTIONS|Example Template]] for help getting started.
+See [[Vaultkeeper AI/User Instructions/EXAMPLE_INSTRUCTIONS|Example Template]] for help getting started.`,
 
-##### File Monitoring
+    HelpModalQuickActionsTitle = "Quick actions",
+    HelpModalQuickActionsContent = `#### Quick actions
+
+Quick actions are one-click AI edits you run on the note you're currently editing. Open the editor menu (right-click, or the command palette) and pick an action. Some actions work on your current selection if you have text selected, otherwise they apply to the whole note.
+
+##### Proofread
+Corrects spelling, grammar, punctuation, and typos without rewriting for style or changing your voice. Works on the selection if you have one, otherwise the whole note.
+
+##### Beautify
+Improves clarity, flow, and readability and adds Markdown formatting (headings, bold, lists, blockquotes) where it helps. Works on the selection if you have one, otherwise the whole note.
+
+##### Apply template
+Restructures the note to match a template you choose, fitting your content to the template's headings and structure while preserving the information. If the file you pick doesn't look like a template, no changes are made.
+
+##### Apply links
+Scans the note for mentions of pages that already exist in your vault and wraps them in wikilinks. It only links existing pages and never invents new ones. Works on the selection if you have one, otherwise the whole note.
+
+##### Apply tags
+Chooses tags for the note from the tags that already exist in your vault and merges them into the frontmatter. It won't create new tags — only ones already in use elsewhere.
+
+##### Suggest tags
+Like Apply tags, but free to suggest new tags as well as reuse existing ones. Suggested tags are merged into the note's frontmatter.
+
+##### Generate frontmatter
+Infers YAML frontmatter for the note (aliases, tags, title, summary, created) from its content and merges it into any existing frontmatter.`,
+
+    HelpModalUploadedFilesTitle = "Uploaded files",
+    HelpModalUploadedFilesContent = `#### Uploaded files
 
 When you upload files (PDFs, images) to conversations, they are stored by your AI provider. The plugin automatically attempts to delete these files when you delete conversations, but this may occasionally fail due to network issues or API rate limits.
 
@@ -275,16 +304,16 @@ When you upload files (PDFs, images) to conversations, they are stored by your A
 - Remove any old files that are no longer needed
 - Provider-specific details can be found in the plugin settings
 
-**Provider Dashboards:**
+**Provider dashboards:**
 - Claude: [Anthropic Console](https://console.anthropic.com/)
 - Gemini: [Google AI Studio](https://aistudio.google.com/)
 - OpenAI: [OpenAI Platform](https://platform.openai.com/)
 - Mistral: [Mistral Console](https://console.mistral.ai/)`,
 
     HelpModalTroubleshootTitle = "Troubleshooting",
-    HelpModalTroubleshootContent = `#### Common Issues & Solutions
+    HelpModalTroubleshootContent = `#### Common issues & solutions
 
-##### API Key Issues
+##### API key issues
 
 **Problem**: "Invalid API key" or authentication errors
 
@@ -294,7 +323,7 @@ When you upload files (PDFs, images) to conversations, they are stored by your A
 - Ensure no extra spaces when pasting
 - API keys are provider-specific - Claude keys only work with Claude models
 
-##### Error Code 429: Rate Limit Exceeded
+##### Error code 429: Rate limit exceeded
 
 This error means you've made too many API requests in a given time period. This is separate from your token usage limits.
 
@@ -318,7 +347,7 @@ This error means you've made too many API requests in a given time period. This 
 - **Long-term solution:** Enable billing to move from free tier to paid tier for significantly higher limits. Paid tier limits increase automatically with cumulative Google Cloud spending
 - [Gemini API Rate Limits Documentation](https://ai.google.dev/gemini-api/docs/rate-limits)
 
-##### Error Code 503: Service Unavailable
+##### Error code 503: Service unavailable
 
 This error indicates a temporary issue with the AI provider's servers.
 
@@ -332,9 +361,9 @@ This error indicates a temporary issue with the AI provider's servers.
 - If the issue persists, check the provider's status page for any ongoing incidents`,
 
     HelpModalPrivacyTitle = "Privacy",
-    HelpModalPrivacyContent = `#### Privacy & Security
+    HelpModalPrivacyContent = `#### Privacy & security
 
-##### Data Storage
+##### Data storage
 
 **Everything stays local** - This plugin does NOT send data to any third-party services except the AI providers you choose. It also doesn't collect any telemetry data and you can review the full source code on GitHub.
 
@@ -344,7 +373,7 @@ This error indicates a temporary issue with the AI provider's servers.
 - Custom instructions (stored in \`Vaultkeeper AI/User Instructions/\`)
 - Plugin settings (stored in \`.obsidian/plugins/vaultkeeper-ai/\`)
 
-##### API Communication
+##### API communication
 
 **Direct connections only** - The plugin communicates directly with your chosen AI provider:
 
@@ -364,7 +393,7 @@ This error indicates a temporary issue with the AI provider's servers.
 - Your vault structure (unless explicitly requested)
 - API keys to anyone except the respective provider
 
-##### File Exclusions
+##### File exclusions
 
 **Protect sensitive information** using glob patterns in settings:
 
@@ -377,9 +406,9 @@ This error indicates a temporary issue with the AI provider's servers.
 **How exclusions work**:
 - Excluded files are completely invisible to the AI
 - The AI cannot read, search, modify, or even list excluded files
-- Exclusions apply to All operations
+- Exclusions apply to all operations
 
-##### AI Provider Policies
+##### AI provider policies
 
 Each AI provider has their own data policies:
 

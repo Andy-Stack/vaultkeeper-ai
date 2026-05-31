@@ -5,6 +5,7 @@ import { Services } from "Services/Services";
 import type { SettingsService } from "Services/SettingsService";
 import { WorkSpaceService } from "Services/WorkSpaceService";
 import type { QuickActionsDefinitionsService } from "./QuickActionsDefinitionsService";
+import type { HelpModal } from "Modals/HelpModal";
 
 export class QuickActionsService {
 
@@ -87,6 +88,15 @@ export class QuickActionsService {
                     .setIcon("list-plus")
                     .onClick(async () => this.quickActionsDefinitionsService.generateFrontmatter(menu, editor, view));
             });
+            menu.addSeparator();
+            menu.addItem((item) =>
+                item.setTitle("Quick actions")
+                    .setIcon("circle-question-mark")
+                    .onClick(() => {
+                        const modal = Resolve<HelpModal>(Services.HelpModal);
+                        modal.open(6);
+                    })
+            );
         });
         this.plugin.registerEvent(this.editorMenuEventRef);
     }
@@ -159,6 +169,15 @@ export class QuickActionsService {
                     item.setTitle("Generate frontmatter")
                         .setIcon("list-plus")
                         .onClick(async () => this.quickActionsDefinitionsService.generateFrontmatter(menu, editor, view))
+                );
+                menu.addSeparator();
+                menu.addItem((item) =>
+                    item.setTitle("Quick actions")
+                        .setIcon("circle-question-mark")
+                        .onClick(() => {
+                            const modal = Resolve<HelpModal>(Services.HelpModal);
+                            modal.open(6);
+                        })
                 );
                 menu.showAtMouseEvent(evt);
             });

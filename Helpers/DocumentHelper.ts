@@ -6,7 +6,7 @@ import { parseOffice } from 'officeparser';
 // Handles PDF format
 export async function readPDF(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {
     try {
-        const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer));
+        const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer), { isEvalSupported: false });
         const pages = (await extractText(pdf, { mergePages: false })).text;
 
         const pageTexts: IPageText[] = pages.map((pageText, index) => ({

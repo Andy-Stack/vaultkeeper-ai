@@ -322,13 +322,17 @@ export class AIToolService {
             return new Attachment(fileName, mimeType, file.contents);
         });
 
+        const binaryMessage = "The requested file(s) have been attached to the conversation immediately after this result. " +
+            "This IS the content of the file(s) you read from the vault — PDFs, images, and documents are provided as attachments, " +
+            "not as text in this response. Read the attached content directly to answer the user. You do NOT need to read or fetch this file again.";
+
         const response = textResults.length > 0 || errorResults.length > 0
             ? {
                 results: [...textResults, ...errorResults],
-                ...(binaryResults.length > 0 && { message: "The contents of the files are included below." })
+                ...(binaryResults.length > 0 && { message: binaryMessage })
             }
             : {
-                message: "Files retrieved successfully. The contents of the files are included below.",
+                message: binaryMessage,
                 count: binaryResults.length
             };
 

@@ -123,8 +123,7 @@ export enum Copy {
     ButtonAttachFiles = "Attach Files",
 
     // Agent file message
-    AttachedFile = `The user has attached the file {fileName}. The contents of the file are included below.
-**Note that this is an attachment to the chat and the file is likely NOT present in the vault**`,
+    AttachedFile = `The file {fileName} is attached and its full contents follow below. This is the actual content of the file — read it directly to answer the user. This attachment may be a file the user uploaded to the chat, or a vault file you retrieved with a tool; either way, the content below is authoritative and you do NOT need to read or fetch this file again.`,
 
     // Execution Plan Messages
     PlanningFailedError = `Failed to generate plan. You should attempt to recover from this.

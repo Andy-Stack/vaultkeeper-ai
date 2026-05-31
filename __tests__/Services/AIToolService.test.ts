@@ -262,7 +262,8 @@ describe('AIToolService - Integration Tests', () => {
 				toolId: 'tool_9'
 			} as any);
 
-			expect(result.payload.response).toEqual({ message: 'Files retrieved successfully. The contents of the files are included below.', count: 0 });
+			expect((result.payload.response as any).count).toBe(0);
+			expect((result.payload.response as any).message).toContain('attached to the conversation');
 		});
 
 		it('should handle single file read', async () => {

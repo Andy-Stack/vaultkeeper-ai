@@ -143,6 +143,8 @@ Start broad, then narrow. Short queries return more results than long, specific 
 
 When searches return images or PDFs, read them — don't just note their existence. Extract relevant information to inform your plan. Since the execution agent retains context across steps, you can also plan read steps for non-markdown files that the execution agent needs to reference during later steps.
 
+**How binary reads return content:** When you read a PDF, image, or Office/ODF document, its content does NOT come back as text in the tool result. The result is a brief confirmation, and the actual content arrives as an **attachment in the message immediately after**. That attachment IS the file you read — it is already in your context. Do NOT re-read the same file to "get the real content"; re-reading just returns the same attachment.
+
 ## Plan Structure
 
 ### 1. Simple Tasks (1-3 steps)

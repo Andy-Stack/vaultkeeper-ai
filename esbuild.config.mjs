@@ -39,6 +39,68 @@ function copyDir(src, dest) {
   }
 }
 
+// Neutralises `new Function(...)` literals in the bundled output.
+//
+// All such literals come from dependencies, never from our own source:
+//   - unpdf/PDF.js: 3x feature-detection probes `new Function("")` wrapped in
+//     try/catch (a throw makes them return `false` = "eval not supported", the
+//     safe answer), plus 1x PostScript JIT compiler gated behind
+//     `isEvalSupported` (we pass `false`, so it is never entered).
+//   - diff2html/@profoundlogic/hogan: 2x template compilers reachable only via
+//     Hogan.compile(), which diff2html invokes only for runtime `rawTemplates`.
+//     We use diff2html's precompiled defaults, so these never run.
+//
+// Every occurrence is therefore dead code in our usage. We rewrite them to a
+// throwing stub so the bundle contains no `new Function(` literal, which clears
+// the Obsidian scanner's "Dynamic Code Execution" warning. The build FAILS if
+// the count drifts from EXPECTED_NEW_FUNCTION_COUNT, so a dependency change can
+// never silently reintroduce a live (or un-neutralised) dynamic-eval path.
+const EXPECTED_NEW_FUNCTION_COUNT = 6;
+const NEW_FUNCTION_STUB = "VKBlockedDynamicFn";
+function neutraliseDynamicEval(outfile) {
+  if (!existsSync(outfile)) return;
+  let contents = readFileSync(outfile, "utf-8");
+  const matches = contents.match(/new Function\s*\(/g) || [];
+  if (matches.length !== EXPECTED_NEW_FUNCTION_COUNT) {
+    throw new Error(
+      `neutraliseDynamicEval: expected ${EXPECTED_NEW_FUNCTION_COUNT} ` +
+        `\`new Function(\` literals in ${outfile} but found ${matches.length}. ` +
+        `A dependency changed — re-audit which library introduced/removed the ` +
+        `call and confirm it is unreachable before updating EXPECTED_NEW_FUNCTION_COUNT.`,
+    );
+  }
+  // Throwing stub: callable as `new VKBlockedDynamicFn(...)` with any args.
+  const stubDecl =
+    `function ${NEW_FUNCTION_STUB}(){throw new Error("Dynamic code execution is disabled in this build.")}`;
+  contents = contents.replace(/new Function\s*\(/g, `new ${NEW_FUNCTION_STUB}(`);
+  // Insert the stub right after the generated banner comment (a hoisted function
+  // declaration is in scope for the whole module regardless of position).
+  const bannerEnd = contents.indexOf("*/");
+  if (bannerEnd !== -1) {
+    const insertAt = contents.indexOf("\n", bannerEnd) + 1;
+    contents = contents.slice(0, insertAt) + stubDecl + "\n" + contents.slice(insertAt);
+  } else {
+    contents = `${stubDecl}\n${contents}`;
+  }
+  writeFileSync(outfile, contents);
+  console.log(
+    `🛡️  Neutralised ${matches.length} \`new Function(\` literal(s) in ${outfile}`,
+  );
+}
+
+// Runs the dynamic-eval neutralisation on every build and rebuild, for both dev
+// and production, so the dev bundle matches what ships and the post-build step
+// is exercised continuously rather than only at release time. Registered last so
+// it transforms the finalised main.js.
+const dynamicEvalPlugin = {
+  name: "neutralise-dynamic-eval",
+  setup(build) {
+    build.onEnd(() => {
+      neutraliseDynamicEval(build.initialOptions.outfile);
+    });
+  },
+};
+
 // Plugin to merge CSS files into styles.css and cleanup build artifacts
 const cssMergerPlugin = {
   name: "css-merger",
@@ -106,11 +168,15 @@ const cssMergerPlugin = {
 // set module.exports, so esbuild can't resolve its exports. This plugin intercepts the resolve
 // and appends a CJS export line so imports work correctly.
 //
-// The browser bundle contains dynamic require() patterns (from its own esbuild bundling) that
-// our esbuild would otherwise resolve against the `external` list, emitting require("fs") etc.
-// in the final output. On Obsidian mobile there is no "fs" module, so we must neutralise those
-// internal requires by replacing the dynamic-require shim with a stub that always throws, and
-// stripping eval("require")("stream") calls. This keeps the bundle self-contained.
+// The browser bundle contains a dynamic-require shim (from its own esbuild bundling) that our
+// esbuild would otherwise resolve against the `external` list, emitting require("fs") etc. in
+// the final output. On Obsidian mobile there is no "fs" module, so we replace that shim with a
+// stub that always throws, keeping the bundle self-contained.
+//
+// The shim's variable name is minified and churns between releases (Au in v5, Vm in v6, Gs in
+// v7.1.0), so the regex captures whatever identifier is used rather than hardcoding it. If the
+// shim shape changes such that nothing matches, the build FAILS loudly — a silent no-op here
+// previously let the stale v6 `Vm` regex match nothing on v7.
 const officeParserPlugin = {
   name: "officeparser-cjs-shim",
   setup(build) {
@@ -120,11 +186,19 @@ const officeParserPlugin = {
     }));
     build.onLoad({ filter: /.*/, namespace: 'officeparser-shim' }, async (args) => {
       let contents = readFileSync(args.path, 'utf-8');
-      // Replace the dynamic require shim so esbuild doesn't see real require() calls.
-      // The variable name changed from Au (v5) to Vm (v6).
+      // Capture the (minified) shim identifier in group 1 and reuse it in the replacement.
+      const shimPattern =
+        /var ([A-Za-z_$][\w$]*)=\(r=>typeof require<"u"\?require:typeof Proxy<"u"\?new Proxy\(r,\{get:\(t,e\)=>\(typeof require<"u"\?require:t\)\[e\]\}\):r\)\(function\(r\)\{if\(typeof require<"u"\)return require\.apply\(this,arguments\);throw Error\('Dynamic require of "'\+r\+'" is not supported'\)\}\)/;
+      if (!shimPattern.test(contents)) {
+        throw new Error(
+          "officeparser-cjs-shim: dynamic-require shim not found in officeparser browser bundle. " +
+            "officeparser's bundling likely changed shape — re-audit the IIFE and update shimPattern " +
+            "before shipping, or require(\"fs\") may leak into the mobile bundle.",
+        );
+      }
       contents = contents.replace(
-        /var Vm=\(r=>typeof require<"u"\?require:typeof Proxy<"u"\?new Proxy\(r,\{get:\(t,e\)=>\(typeof require<"u"\?require:t\)\[e\]\}\):r\)\(function\(r\)\{if\(typeof require<"u"\)return require\.apply\(this,arguments\);throw Error\('Dynamic require of "'\+r\+'" is not supported'\)\}\)/,
-        'var Vm=(function(r){throw Error(\'Dynamic require of "\'+r+\'" is not supported\')})'
+        shimPattern,
+        'var $1=(function(r){throw Error(\'Dynamic require of "\'+r+\'" is not supported\')})',
       );
       return {
         contents: contents + '\nmodule.exports = officeParser;\n',
@@ -142,6 +216,7 @@ const buildOptions = {
       preprocess: sveltePreprocess(),
     }),
     cssMergerPlugin,
+    dynamicEvalPlugin,
   ],
   banner: {
     js: banner,

@@ -88,15 +88,61 @@ function neutraliseDynamicEval(outfile) {
   );
 }
 
-// Runs the dynamic-eval neutralisation on every build and rebuild, for both dev
-// and production, so the dev bundle matches what ships and the post-build step
-// is exercised continuously rather than only at release time. Registered last so
-// it transforms the finalised main.js.
+// Neutralises the lone `.wasm` filename literal in the bundled output.
+//
+// The reference comes from unpdf's vendored PDF.js: `${this.#x}qcms_bg.wasm`,
+// where qcms is PDF.js's WebAssembly colour-management module (ICC profile
+// transforms, used only when *rendering* colour-accurate images). Our PDF code
+// (Helpers/DocumentHelper.ts) only calls extractText for text, never renders,
+// so the qcms loader is never entered. The loader is also gated behind two
+// private-field checks and would resolve the file via a relative URL we do not
+// ship, so even if reached it falls back to PDF.js's JS path.
+//
+// The literal is therefore dead, but its `.wasm` filename trips Obsidian's
+// "unrecognised .wasm" scanner (native binary that can't be statically
+// reviewed). We rewrite the `qcms_bg.wasm` filename to a non-.wasm name so no
+// `.wasm` literal remains; the surrounding (unreachable) code stays intact. The
+// build FAILS if the count drifts from EXPECTED_WASM_REF_COUNT, so a dependency
+// change can never silently reintroduce an undocumented .wasm reference.
+const EXPECTED_WASM_REF_COUNT = 1;
+const WASM_REF_FROM = "qcms_bg.wasm";
+const WASM_REF_TO = "qcms_bg.disabled-wasm";
+function neutraliseWasmRef(outfile) {
+  if (!existsSync(outfile)) return;
+  let contents = readFileSync(outfile, "utf-8");
+  const wasmLiterals = contents.match(/['"`][^'"`]*\.wasm['"`]/g) || [];
+  if (wasmLiterals.length !== EXPECTED_WASM_REF_COUNT) {
+    throw new Error(
+      `neutraliseWasmRef: expected ${EXPECTED_WASM_REF_COUNT} \`.wasm\` ` +
+        `string literal(s) in ${outfile} but found ${wasmLiterals.length} ` +
+        `(${wasmLiterals.join(", ")}). A dependency changed — re-audit which ` +
+        `library introduced/removed the reference and confirm it is unreachable ` +
+        `before updating EXPECTED_WASM_REF_COUNT.`,
+    );
+  }
+  if (!contents.includes(WASM_REF_FROM)) {
+    throw new Error(
+      `neutraliseWasmRef: expected to find \`${WASM_REF_FROM}\` in ${outfile} ` +
+        `but it was absent — the .wasm reference changed shape. Re-audit before shipping.`,
+    );
+  }
+  contents = contents.split(WASM_REF_FROM).join(WASM_REF_TO);
+  writeFileSync(outfile, contents);
+  console.log(
+    `🛡️  Neutralised \`.wasm\` reference (${WASM_REF_FROM} → ${WASM_REF_TO}) in ${outfile}`,
+  );
+}
+
+// Runs the dynamic-eval and .wasm neutralisation on every build and rebuild, for
+// both dev and production, so the dev bundle matches what ships and the post-build
+// step is exercised continuously rather than only at release time. Registered last
+// so it transforms the finalised main.js.
 const dynamicEvalPlugin = {
   name: "neutralise-dynamic-eval",
   setup(build) {
     build.onEnd(() => {
       neutraliseDynamicEval(build.initialOptions.outfile);
+      neutraliseWasmRef(build.initialOptions.outfile);
     });
   },
 };

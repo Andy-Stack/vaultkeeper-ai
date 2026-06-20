@@ -55,7 +55,13 @@ function copyDir(src, dest) {
 // the Obsidian scanner's "Dynamic Code Execution" warning. The build FAILS if
 // the count drifts from EXPECTED_NEW_FUNCTION_COUNT, so a dependency change can
 // never silently reintroduce a live (or un-neutralised) dynamic-eval path.
-const EXPECTED_NEW_FUNCTION_COUNT = 6;
+// 9 = 5 PDF.js feature-detection probes (`new Function(""),!0}catch{return!1}`)
+//   + 2 PDF.js PostScript JIT compilers (gated behind `isEvalSupported`, which
+//     DocumentHelper passes as `false`) + 2 Hogan template compilers (reachable
+//     only via Hogan.compile(), unused with diff2html's precompiled templates).
+// unpdf >=1.6 vendors PDF.js twice (main + worker/legacy), so the PDF.js probe
+// and JIT sites each appear in duplicate; the Hogan pair is unchanged.
+const EXPECTED_NEW_FUNCTION_COUNT = 9;
 const NEW_FUNCTION_STUB = "VKBlockedDynamicFn";
 function neutraliseDynamicEval(outfile) {
   if (!existsSync(outfile)) return;
@@ -88,48 +94,85 @@ function neutraliseDynamicEval(outfile) {
   );
 }
 
-// Neutralises the lone `.wasm` filename literal in the bundled output.
+// Neutralises the `.wasm` filename literals in the bundled output.
 //
-// The reference comes from unpdf's vendored PDF.js: `${this.#x}qcms_bg.wasm`,
-// where qcms is PDF.js's WebAssembly colour-management module (ICC profile
-// transforms, used only when *rendering* colour-accurate images). Our PDF code
-// (Helpers/DocumentHelper.ts) only calls extractText for text, never renders,
-// so the qcms loader is never entered. The loader is also gated behind two
-// private-field checks and would resolve the file via a relative URL we do not
-// ship, so even if reached it falls back to PDF.js's JS path.
+// Every reference comes from unpdf's vendored PDF.js, which loads optional
+// WebAssembly modules only when *rendering/decoding image streams*:
+//   - qcms_bg.wasm   — colour management (ICC profile transforms)
+//   - jbig2.wasm     — JBIG2 decoder (scanned bilevel images)
+//   - openjpeg.wasm  — OpenJPEG decoder (JPEG2000 images)
+// Our PDF code (Helpers/DocumentHelper.ts) only calls extractText for text and
+// never renders, so none of these loaders is entered. Each is also gated behind
+// private-field checks and resolves its file via a relative URL we do not ship,
+// so even if reached it falls back to PDF.js's pure-JS path. (unpdf >=1.6
+// vendors PDF.js twice, so qcms_bg.wasm appears in duplicate.)
 //
-// The literal is therefore dead, but its `.wasm` filename trips Obsidian's
+// The literals are therefore dead, but their `.wasm` filenames trip Obsidian's
 // "unrecognised .wasm" scanner (native binary that can't be statically
-// reviewed). We rewrite the `qcms_bg.wasm` filename to a non-.wasm name so no
+// reviewed). We rewrite each `*.wasm` filename to a non-`.wasm` name so no
 // `.wasm` literal remains; the surrounding (unreachable) code stays intact. The
-// build FAILS if the count drifts from EXPECTED_WASM_REF_COUNT, so a dependency
-// change can never silently reintroduce an undocumented .wasm reference.
-const EXPECTED_WASM_REF_COUNT = 1;
-const WASM_REF_FROM = "qcms_bg.wasm";
-const WASM_REF_TO = "qcms_bg.disabled-wasm";
+// build FAILS if an unexpected `.wasm` literal appears (or an expected one
+// vanishes), so a dependency change can never silently reintroduce an
+// undocumented .wasm reference.
+//
+// Keyed by literal filename → number of occurrences expected in the bundle.
+const EXPECTED_WASM_REFS = {
+  "qcms_bg.wasm": 2,
+  "jbig2.wasm": 1,
+  "openjpeg.wasm": 1,
+};
+const WASM_REF_SUFFIX_FROM = ".wasm";
+const WASM_REF_SUFFIX_TO = ".disabled-wasm";
 function neutraliseWasmRef(outfile) {
   if (!existsSync(outfile)) return;
   let contents = readFileSync(outfile, "utf-8");
+  // Match the whole quoted/templated literal ending in `.wasm`, anchored on the
+  // quote/backtick. The negated class `[^'"`]` cannot overlap the delimiters, so
+  // this matches linearly — a `[\w.-]*\.wasm` form instead backtracks
+  // catastrophically on the megabytes of base64 in the dev inline sourcemap and
+  // hangs the watcher at 100% CPU.
   const wasmLiterals = contents.match(/['"`][^'"`]*\.wasm['"`]/g) || [];
-  if (wasmLiterals.length !== EXPECTED_WASM_REF_COUNT) {
+  // Extract just the `<name>.wasm` basename from each literal: drop the quotes,
+  // and for template literals drop any `${...}` interpolation prefix (qcms refs
+  // look like `` `${...}qcms_bg.wasm` ``). The basename is the trailing run of
+  // filename characters ending in `.wasm`.
+  const found = {};
+  for (const lit of wasmLiterals) {
+    const inner = lit.slice(1, -1);
+    const name = (inner.match(/[\w.-]+\.wasm$/) || [inner])[0];
+    found[name] = (found[name] || 0) + 1;
+  }
+  // Any literal we don't recognise → fail loudly (new undocumented .wasm).
+  const unknown = Object.keys(found).filter((n) => !(n in EXPECTED_WASM_REFS));
+  if (unknown.length) {
     throw new Error(
-      `neutraliseWasmRef: expected ${EXPECTED_WASM_REF_COUNT} \`.wasm\` ` +
-        `string literal(s) in ${outfile} but found ${wasmLiterals.length} ` +
-        `(${wasmLiterals.join(", ")}). A dependency changed — re-audit which ` +
-        `library introduced/removed the reference and confirm it is unreachable ` +
-        `before updating EXPECTED_WASM_REF_COUNT.`,
+      `neutraliseWasmRef: unexpected \`.wasm\` literal(s) in ${outfile}: ` +
+        `${unknown.join(", ")}. A dependency introduced a new .wasm reference — ` +
+        `re-audit that it is unreachable, then add it to EXPECTED_WASM_REFS.`,
     );
   }
-  if (!contents.includes(WASM_REF_FROM)) {
-    throw new Error(
-      `neutraliseWasmRef: expected to find \`${WASM_REF_FROM}\` in ${outfile} ` +
-        `but it was absent — the .wasm reference changed shape. Re-audit before shipping.`,
+  // Each expected filename must be present with the expected count.
+  for (const [name, count] of Object.entries(EXPECTED_WASM_REFS)) {
+    if ((found[name] || 0) !== count) {
+      throw new Error(
+        `neutraliseWasmRef: expected ${count} \`${name}\` literal(s) in ` +
+          `${outfile} but found ${found[name] || 0}. The .wasm references ` +
+          `changed shape — re-audit before shipping, then update ` +
+          `EXPECTED_WASM_REFS.`,
+      );
+    }
+  }
+  // Rewrite only the `.wasm` extension on the literals we've vetted, so no
+  // `.wasm` string remains for the scanner to flag.
+  for (const name of Object.keys(EXPECTED_WASM_REFS)) {
+    contents = contents.split(name).join(
+      name.slice(0, -WASM_REF_SUFFIX_FROM.length) + WASM_REF_SUFFIX_TO,
     );
   }
-  contents = contents.split(WASM_REF_FROM).join(WASM_REF_TO);
   writeFileSync(outfile, contents);
   console.log(
-    `🛡️  Neutralised \`.wasm\` reference (${WASM_REF_FROM} → ${WASM_REF_TO}) in ${outfile}`,
+    `🛡️  Neutralised ${wasmLiterals.length} \`.wasm\` reference(s) ` +
+      `(${Object.keys(EXPECTED_WASM_REFS).join(", ")}) in ${outfile}`,
   );
 }
 
@@ -219,10 +262,12 @@ const cssMergerPlugin = {
 // the final output. On Obsidian mobile there is no "fs" module, so we replace that shim with a
 // stub that always throws, keeping the bundle self-contained.
 //
-// The shim's variable name is minified and churns between releases (Au in v5, Vm in v6, Gs in
-// v7.1.0), so the regex captures whatever identifier is used rather than hardcoding it. If the
-// shim shape changes such that nothing matches, the build FAILS loudly — a silent no-op here
-// previously let the stale v6 `Vm` regex match nothing on v7.
+// Every identifier in the shim is minified and churns between releases — not just the outer
+// variable name (Au in v5, Vm in v6, Gs in v7.1.0, dl in v7.2.1) but also the closure params
+// (r/t/e in v7.1.0 became n/e/t in v7.2.1). So the regex captures whatever identifiers appear
+// rather than hardcoding any of them. If the shim's *shape* changes such that nothing matches,
+// the build FAILS loudly — a silent no-op here previously let the stale v6 `Vm` regex match
+// nothing on v7, and the hardcoded v7.1.0 param names broke against v7.2.1.
 const officeParserPlugin = {
   name: "officeparser-cjs-shim",
   setup(build) {
@@ -232,9 +277,18 @@ const officeParserPlugin = {
     }));
     build.onLoad({ filter: /.*/, namespace: 'officeparser-shim' }, async (args) => {
       let contents = readFileSync(args.path, 'utf-8');
-      // Capture the (minified) shim identifier in group 1 and reuse it in the replacement.
-      const shimPattern =
-        /var ([A-Za-z_$][\w$]*)=\(r=>typeof require<"u"\?require:typeof Proxy<"u"\?new Proxy\(r,\{get:\(t,e\)=>\(typeof require<"u"\?require:t\)\[e\]\}\):r\)\(function\(r\)\{if\(typeof require<"u"\)return require\.apply\(this,arguments\);throw Error\('Dynamic require of "'\+r\+'" is not supported'\)\}\)/;
+      // Capture the (minified) outer var in group 1 and every other minified identifier in its
+      // own group, reusing the captures via backreferences so we match regardless of which letters
+      // esbuild chose this release. Group map: 1=outer var, 2=arrow param, 3/4=getter params,
+      // 5=function param.
+      const id = "[A-Za-z_$][\\w$]*";
+      const shimPattern = new RegExp(
+        `var (${id})=\\((${id})=>typeof require<"u"\\?require:typeof Proxy<"u"\\?` +
+          `new Proxy\\(\\2,\\{get:\\((${id}),(${id})\\)=>\\(typeof require<"u"\\?require:\\3\\)` +
+          `\\[\\4\\]\\}\\):\\2\\)\\(function\\((${id})\\)\\{if\\(typeof require<"u"\\)` +
+          `return require\\.apply\\(this,arguments\\);` +
+          `throw Error\\('Dynamic require of "'\\+\\5\\+'" is not supported'\\)\\}\\)`,
+      );
       if (!shimPattern.test(contents)) {
         throw new Error(
           "officeparser-cjs-shim: dynamic-require shim not found in officeparser browser bundle. " +

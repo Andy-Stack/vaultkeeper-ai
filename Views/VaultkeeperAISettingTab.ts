@@ -188,7 +188,6 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				slider
 					.setLimits(5, 40, 1)
 					.setValue(this.settingsService.settings.searchResultsLimit)
-					.setDynamicTooltip()
 					.onChange(async (value) => {
 						await this.settingsService.updateSettings(settings => {
 							settings.searchResultsLimit = value;
@@ -204,7 +203,6 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				slider
 					.setLimits(50, 1000, 10)
 					.setValue(this.settingsService.settings.snippetSizeLimit)
-					.setDynamicTooltip()
 					.onChange(async (value) => {
 						await this.settingsService.updateSettings(settings => {
 							settings.snippetSizeLimit = value;

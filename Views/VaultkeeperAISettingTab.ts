@@ -354,9 +354,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		// Gemini models
 		if (!providerFilter || providerFilter === AIProvider.Gemini) {
 			const geminiGroup = select.createEl("optgroup", { attr: { label: Copy.ProviderGemini } });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_1_Lite, text: Copy.GeminiPro_3_1_Preview });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_Flash, text: Copy.GeminiPro_3_1_Preview });
-			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_5_Flash, text: Copy.GeminiPro_3_1_Preview });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_1_Lite, text: Copy.GeminiFlash_3_1_Lite });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_Flash, text: Copy.GeminiFlash_3_Flash });
+			geminiGroup.createEl("option", { value: AIProviderModel.GeminiFlash_3_5_Flash, text: Copy.GeminiFlash_3_5_Flash });
 			geminiGroup.createEl("option", { value: AIProviderModel.GeminiPro_3_1_Preview, text: Copy.GeminiPro_3_1_Preview });
 		}
 

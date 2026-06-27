@@ -16,6 +16,7 @@ import type { AbortService } from "Services/AbortService";
 import type { IAIFileService } from "./IAIFileService";
 import { AgentType } from "Enums/AgentType";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
+import type { MimeType } from "Enums/MimeType";
 
 export abstract class BaseAIClass implements IAIClass {
 
@@ -94,6 +95,103 @@ export abstract class BaseAIClass implements IAIClass {
     protected abstract parseStreamChunk(chunk: string): IStreamChunk;
     protected abstract extractContents(conversationContent: ConversationContent[]): unknown;
     protected abstract mapFunctionDefinitions(aiToolDefinitions: IAIToolDefinition[]): object;
+
+    /** The MIME types this provider can accept as attachments. */
+    protected abstract get supportedMimeTypes(): MimeType[];
+
+    protected isSupportedMimeType(mimeType: MimeType): boolean {
+        return this.supportedMimeTypes.includes(mimeType);
+    }
+
+    /**
+     * Maps the current AIToolUsageMode to a provider-specific tool-choice value.
+     * The branching is identical across providers; only the returned shape differs
+     * (a bare string for Chat Completions/Responses, an object for Claude/Gemini),
+     * so callers supply the three concrete values.
+     */
+    protected buildToolChoice<T>(choices: { auto: T; enabled: T; disabled: T }): T {
+        if (this.aiToolDefinitions.length === 0) {
+            return choices.auto;
+        }
+
+        switch (this.aiToolUsageMode) {
+            case AIToolUsageMode.Auto:
+                return choices.auto;
+            case AIToolUsageMode.Enabled:
+                return choices.enabled;
+            case AIToolUsageMode.Disabled:
+                return choices.disabled;
+        }
+    }
+
+    /**
+     * Extracts a retry delay (in seconds) from a rate-limit error's HTTP response headers.
+     * Shared by providers that surface rate limits via the standard `Retry-After` header
+     * (Claude, OpenAI, Mistral). Providers that signal retry timing in the response body
+     * (e.g. Gemini's RetryInfo) override this instead.
+     */
+    protected extractRetryDelay(error: ApiError): number | undefined {
+        if (error.info.type !== ApiErrorType.RATE_LIMIT || !error.info.responseHeaders) {
+            return undefined;
+        }
+
+        const headers = error.info.responseHeaders;
+
+        // 1. Prefer the standard Retry-After header (seconds or HTTP-date)
+        const retryAfter = headers.get('retry-after');
+        if (retryAfter) {
+            const seconds = Number(retryAfter);
+            if (!Number.isNaN(seconds)) {
+                return Math.max(0, seconds);
+            }
+
+            const date = new Date(retryAfter);
+            if (!Number.isNaN(date.getTime())) {
+                const delayMs = date.getTime() - Date.now();
+                return Math.max(0, Math.ceil(delayMs / 1000));
+            }
+        }
+
+        // 2. Fall back to provider-specific reset headers (e.g. OpenAI)
+        const resetHeader =
+            headers.get('x-ratelimit-reset-requests') ??
+            headers.get('x-ratelimit-reset-tokens');
+
+        if (resetHeader) {
+            return this.parseDurationToSeconds(resetHeader);
+        }
+
+        return undefined;
+    }
+
+    /**
+     * Parses duration strings (e.g. "15s", "600ms", "2m", "1h") into seconds.
+     * Returns undefined if parsing fails.
+     */
+    protected parseDurationToSeconds(value: string): number | undefined {
+        const trimmed = value.trim();
+        const numericValue = parseFloat(trimmed);
+
+        if (Number.isNaN(numericValue)) {
+            return undefined;
+        }
+
+        if (trimmed.endsWith('ms')) {
+            return Math.max(0, Math.ceil(numericValue / 1000));
+        }
+        if (trimmed.endsWith('s')) {
+            return Math.max(0, numericValue);
+        }
+        if (trimmed.endsWith('m')) {
+            return Math.max(0, numericValue * 60);
+        }
+        if (trimmed.endsWith('h')) {
+            return Math.max(0, numericValue * 3600);
+        }
+
+        // Fallback: treat as raw seconds
+        return Math.max(0, numericValue);
+    }
 
     protected model(): string {
         switch (this._agentType) {

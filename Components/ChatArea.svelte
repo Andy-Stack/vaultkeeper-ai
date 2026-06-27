@@ -23,6 +23,7 @@
       chatAreaPaddingElement.style.padding = "0px";
     }
     chatContainer.scroll({ top: 0, behavior: "instant" });
+    tick().then(updateScrolledState);
   }
 
   export async function updateChatAreaLayout(behavior: ScrollBehavior | undefined = undefined, shouldSettle: boolean = false) {
@@ -99,7 +100,11 @@
   }
 
   function updateScrolledState() {
-    scrolledToBottom = chatContainer && Math.abs(chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < 100;
+    if (!chatContainer) {
+      return;
+    }
+    const isScrollable = chatContainer.scrollHeight > chatContainer.clientHeight;
+    scrolledToBottom = !isScrollable || Math.abs(chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < 100;
   }
 
   let scrolledToBottom: boolean = true;

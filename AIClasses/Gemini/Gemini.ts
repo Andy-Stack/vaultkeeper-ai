@@ -17,7 +17,6 @@ import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
 import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
 import type { GeminiRetryInfo, GeminiErrorResponse } from "./GeminiTypes";
-import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import { replaceCopy } from 'Helpers/Helpers';
 import { Copy } from "Enums/Copy";
 
@@ -72,6 +71,10 @@ export class Gemini extends BaseAIClass {
     MimeType.TEXT_YAML,
     MimeType.APPLICATION_YAML
   ];
+
+  protected get supportedMimeTypes(): MimeType[] {
+    return this.SUPPORTED_MIMETYPES;
+  }
 
   private accumulatedFunctionName: string | null = null;
   private accumulatedFunctionArgs: Record<string, unknown> = {};
@@ -368,22 +371,16 @@ export class Gemini extends BaseAIClass {
   }
 
   private buildGeminiToolConfig(): { function_calling_config: { mode: string } } {
-    // If no tools defined, fall back to auto
-    if (this.aiToolDefinitions.length === 0) {
-      return { function_calling_config: { mode: "AUTO" } };
-    }
-
-    switch (this.aiToolUsageMode) {
-      case AIToolUsageMode.Auto:
-        return { function_calling_config: { mode: "AUTO" } };
-      case AIToolUsageMode.Enabled:
-        return { function_calling_config: { mode: "ANY" } };
-      case AIToolUsageMode.Disabled:
-        return { function_calling_config: { mode: "NONE" } };
-    }
+    return this.buildToolChoice<{ function_calling_config: { mode: string } }>({
+      auto: { function_calling_config: { mode: "AUTO" } },
+      enabled: { function_calling_config: { mode: "ANY" } },
+      disabled: { function_calling_config: { mode: "NONE" } }
+    });
   }
 
-  private extractRetryDelay(error: ApiError): number | undefined {
+  // Gemini signals retry timing in the response body (RetryInfo), not the
+  // Retry-After header, so it overrides the header-based base implementation.
+  protected extractRetryDelay(error: ApiError): number | undefined {
     if (error.info.type !== ApiErrorType.RATE_LIMIT || !error.info.responseBody) {
       return undefined;
     }
@@ -464,12 +461,8 @@ export class Gemini extends BaseAIClass {
     if (Number.isNaN(value)) return undefined;
     
     const unit = match[2];
-    return unit === 'ms' 
-      ? Math.ceil(value / 1000) 
+    return unit === 'ms'
+      ? Math.ceil(value / 1000)
       : Math.ceil(value);
-  }
-
-  private isSupportedMimeType(mimeType: MimeType): boolean {
-    return this.SUPPORTED_MIMETYPES.includes(mimeType);
   }
 }

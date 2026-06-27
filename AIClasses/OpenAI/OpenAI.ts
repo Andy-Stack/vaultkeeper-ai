@@ -9,18 +9,17 @@ import { fromString as aiToolFromString } from "Enums/AITool";
 import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
 import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemAdded, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, OpenAIToolTool, ResponsesAPIInput } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
-import { ApiError, ApiErrorType } from "Types/ApiError";
+import { ApiErrorType } from "Types/ApiError";
 import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
-import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import { replaceCopy } from 'Helpers/Helpers';
 import { Copy } from "Enums/Copy";
 
 export class OpenAI extends BaseAIClass {
 
-    private readonly SUPPORTED_MIMETYPES = [
+    protected readonly SUPPORTED_MIMETYPES = [
         MimeType.TEXT_PLAIN,
         MimeType.APPLICATION_PDF,
         MimeType.IMAGE_JPEG,
@@ -30,6 +29,10 @@ export class OpenAI extends BaseAIClass {
 
     public constructor() {
         super(AIProvider.OpenAI);
+    }
+
+    protected get supportedMimeTypes(): MimeType[] {
+        return this.SUPPORTED_MIMETYPES;
     }
 
     public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
@@ -376,80 +379,10 @@ export class OpenAI extends BaseAIClass {
     }
     
     private buildOpenAIToolChoice(): string {
-        // If no tools defined, fall back to auto
-        if (this.aiToolDefinitions.length === 0) {
-            return "auto";
-        }
-
-        switch (this.aiToolUsageMode) {
-            case AIToolUsageMode.Auto:
-                return "auto";
-            case AIToolUsageMode.Enabled:
-                return "required";
-            case AIToolUsageMode.Disabled:
-                return "none";
-        }
-    }
-
-    private extractRetryDelay(error: ApiError): number | undefined {
-        if (error.info.type !== ApiErrorType.RATE_LIMIT || !error.info.responseHeaders) {
-            return undefined;
-        }
-
-        const headers = error.info.responseHeaders;
-
-        // 1. Prefer standard Retry-After header (seconds or HTTP-date)
-        const retryAfter = headers.get('retry-after');
-        if (retryAfter) {
-            const seconds = Number(retryAfter);
-            if (!Number.isNaN(seconds)) {
-                return Math.max(0, seconds);
-            }
-        }
-
-        // 2. Fallback to provider-specific headers (e.g., OpenAI)
-        const resetHeader =
-            headers.get('x-ratelimit-reset-requests') ??
-            headers.get('x-ratelimit-reset-tokens');
-
-        if (resetHeader) {
-            return this.parseDurationToSeconds(resetHeader);
-        }
-
-        return undefined;
-    }
-
-    /**
-     * Parses duration strings (e.g., "15s", "600ms", "2m", "1h") into seconds.
-     * Returns undefined if parsing fails.
-     */
-    private parseDurationToSeconds(value: string): number | undefined {
-        const trimmed = value.trim();
-        const numericValue = parseFloat(trimmed);
-        
-        if (Number.isNaN(numericValue)) {
-            return undefined;
-        }
-        
-        // Parse based on suffix
-        if (trimmed.endsWith('ms')) {
-            return Math.max(0, Math.ceil(numericValue / 1000));
-        }
-        if (trimmed.endsWith('s')) {
-            return Math.max(0, numericValue);
-        }
-        if (trimmed.endsWith('m')) {
-            return Math.max(0, numericValue * 60);
-        }
-        if (trimmed.endsWith('h')) {
-            return Math.max(0, numericValue * 3600);
-        }
-        
-        // Fallback: treat as raw seconds
-        return Math.max(0, numericValue);
-    }
-
-    private isSupportedMimeType(mimeType: MimeType): boolean {
-        return this.SUPPORTED_MIMETYPES.includes(mimeType);
+        return this.buildToolChoice<string>({
+            auto: "auto",
+            enabled: "required",
+            disabled: "none"
+        });
     }
 }

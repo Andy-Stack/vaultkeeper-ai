@@ -13,9 +13,7 @@ import { Exception } from "Helpers/Exception";
 import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
-import { ApiError, ApiErrorType } from "Types/ApiError";
 import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
-import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import { Copy } from "Enums/Copy";
 import { replaceCopy } from 'Helpers/Helpers';
 
@@ -31,6 +29,10 @@ export class Claude extends BaseAIClass {
         MimeType.IMAGE_GIF,
         MimeType.IMAGE_WEBP
     ];
+
+    protected get supportedMimeTypes(): MimeType[] {
+        return this.SUPPORTED_MIMETYPES;
+    }
 
     private accumulatedFunctionName: string | null = null;
     private accumulatedFunctionArgs: string = "";
@@ -316,10 +318,6 @@ export class Claude extends BaseAIClass {
         return JSON.stringify(contentBlocks);
     }
 
-    private isSupportedMimeType(mimeType: MimeType): boolean {
-        return this.SUPPORTED_MIMETYPES.includes(mimeType);
-    }
-
     // Adds cache control to the last tool in the tools array.
     private addCacheControlToTools(tools: ToolUnion[]): ToolUnion[] {
         if (tools.length === 0) {
@@ -384,41 +382,10 @@ export class Claude extends BaseAIClass {
     }
 
     private buildClaudeToolChoice(): { type: string } {
-        // If no tools defined, fall back to auto
-        if (this.aiToolDefinitions.length === 0) {
-            return { type: "auto" };
-        }
-
-        switch (this.aiToolUsageMode) {
-            case AIToolUsageMode.Auto:
-                return { type: "auto" };
-            case AIToolUsageMode.Enabled:
-                return { type: "any" };
-            case AIToolUsageMode.Disabled:
-                return { type: "none" };
-        }
-    }
-
-    private extractRetryDelay(error: ApiError): number | undefined {
-        if (error.info.type !== ApiErrorType.RATE_LIMIT || !error.info.responseHeaders) {
-            return undefined;
-        }
-
-        const retryAfter = error.info.responseHeaders.get('Retry-After');
-        if (!retryAfter) return undefined;
-
-        // Try parsing as seconds (number)
-        const seconds = parseInt(retryAfter, 10);
-        if (!isNaN(seconds)) return seconds;
-
-        // Try parsing as HTTP date
-        const date = new Date(retryAfter);
-        if (!isNaN(date.getTime())) {
-            const now = Date.now();
-            const delayMs = date.getTime() - now;
-            return Math.max(0, Math.ceil(delayMs / 1000));
-        }
-
-        return undefined;
+        return this.buildToolChoice<{ type: string }>({
+            auto: { type: "auto" },
+            enabled: { type: "any" },
+            disabled: { type: "none" }
+        });
     }
 }

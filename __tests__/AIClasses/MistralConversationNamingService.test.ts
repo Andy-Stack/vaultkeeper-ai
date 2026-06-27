@@ -120,7 +120,7 @@ describe('MistralConversationNamingService', () => {
             });
 
             await expect(service.generateName('Test'))
-                .rejects.toThrow('Mistral API error: 401 Unauthorized - Invalid API key');
+                .rejects.toThrow('Chat Completions API error: 401 Unauthorized - Invalid API key');
         });
 
         it('should throw error when response has no content', async () => {

@@ -146,19 +146,16 @@ export abstract class BaseAIFileService implements IAIFileService {
 
 		// Calculate total length and concatenate
 		const totalLength = parts.reduce((sum, part) => sum + part.byteLength, 0);
-		const result = new Uint8Array(totalLength);
+		const buffer = new ArrayBuffer(totalLength);
+		const result = new Uint8Array(buffer);
 		let offset = 0;
 		for (const part of parts) {
 			result.set(part, offset);
 			offset += part.byteLength;
 		}
 
-		return this.bytesToBuffer(result);
+		return buffer;
     }
-
-	protected bytesToBuffer(bytes: Uint8Array): ArrayBuffer {
-		return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-	}
 
 	protected getHeader(headerName: string, headers: Record<string, string>): string | undefined {
 		const header = Object.keys(headers).find(header => header.toLowerCase() === headerName.toLowerCase());

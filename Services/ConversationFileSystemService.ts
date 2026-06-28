@@ -229,8 +229,7 @@ export class ConversationFileSystemService {
             return filePath;
         }
 
-        const bytes = StringTools.toBytes(attachment.base64);
-        const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+        const arrayBuffer = StringTools.toBuffer(attachment.base64);
 
         const result = await this.fileSystemService.writeBinaryFile(filePath, arrayBuffer, true);
 

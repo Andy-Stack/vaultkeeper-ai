@@ -78,17 +78,21 @@ export abstract class StringTools {
     }
 
     public static toBytes(input: string): Uint8Array {
+        return new Uint8Array(this.toBuffer(input));
+    }
+
+    public static toBuffer(input: string): ArrayBuffer {
         const binaryString = atob(input);
-        const bytes = new Uint8Array(new ArrayBuffer(binaryString.length));
+        const buffer = new ArrayBuffer(binaryString.length);
+        const bytes = new Uint8Array(buffer);
         for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i);
         }
-        return bytes;
+        return buffer;
     }
 
     public static async computeSHA256Hash(base64: string): Promise<string> {
-        const bytes = this.toBytes(base64);
-        const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+        const buffer = this.toBuffer(base64);
         const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');

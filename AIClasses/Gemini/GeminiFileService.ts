@@ -40,8 +40,8 @@ export class GeminiFileService extends BaseAIFileService {
 
     protected async uploadFileToAPI(data: string, mimeType: string, displayName?: string): Promise<string> {
         return this.withRetry("Upload file", async () => {
-            const bytes = StringTools.toBytes(data);
-            const numBytes = bytes.byteLength;
+            const buffer = StringTools.toBuffer(data);
+            const numBytes = buffer.byteLength;
 
             const metadata = displayName ? { file: { displayName } } : {};
 
@@ -78,7 +78,7 @@ export class GeminiFileService extends BaseAIFileService {
                     "X-Goog-Upload-Offset": "0",
                     "X-Goog-Upload-Command": "upload, finalize"
                 },
-                body: this.bytesToBuffer(bytes),
+                body: buffer,
                 throw: false
             });
 

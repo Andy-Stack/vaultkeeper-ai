@@ -410,8 +410,9 @@ This plugin is built on the shoulders of many excellent projects:
 - Official SDKs: [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript), [@google/genai](https://github.com/google/generative-ai-js), [openai](https://github.com/openai/openai-node)
 
 **Document Processing**
-- [unpdf](https://github.com/unjs/unpdf) - PDF parsing and text extraction
-- [officeparser](https://github.com/nicktomlin/officeparser) - Office document parsing (DOCX, PPTX, XLSX, ODT, ODP, ODS)
+- [mammoth](https://github.com/mwilliamson/mammoth.js) - DOCX text extraction
+- [fflate](https://github.com/101arrowz/fflate) - Unzipping Office Open XML / OpenDocument files (PPTX, XLSX, ODT, ODP, ODS)
+- PDF text extraction via Obsidian's bundled [PDF.js](https://mozilla.github.io/pdf.js/) (`loadPdfJs()`)
 
 **UI Framework**
 - [Svelte](https://svelte.dev) - Reactive UI components

@@ -48,7 +48,7 @@ export class InputService {
                 }
                 
                 if (isDocumentFile(fileType)) {
-                    const content = await readDocument(await file.arrayBuffer(), fileType);
+                    const content = readDocument(await file.arrayBuffer(), fileType);
                     attachments.push(new Attachment(
                         file.name,
                         MimeType.TEXT_PLAIN,

@@ -43,11 +43,6 @@ function copyDir(src, dest) {
 //
 // All such literals come from dependencies, never from our own source, and every
 // one is dead code in our usage:
-//   - bluebird (transitive via mammoth): 7x promise-method JIT compilers, ALL
-//     gated behind `canEvaluate = typeof navigator == "undefined"`. Obsidian always
-//     defines `navigator`, so `canEvaluate` is false and bluebird takes its pure-JS
-//     fallbacks — the `new Function` branches are never entered. (call_get.js x2,
-//     join.js x3, promisify.js x2.)
 //   - diff2html/@profoundlogic/hogan: 2x template compilers reachable only via
 //     Hogan.compile(), which diff2html invokes only for runtime `rawTemplates`.
 //     We use diff2html's precompiled defaults, so these never run.
@@ -57,8 +52,8 @@ function copyDir(src, dest) {
 // build FAILS if the count drifts from EXPECTED_NEW_FUNCTION_COUNT, so a dependency
 // change can never silently reintroduce a live (or un-neutralised) dynamic-eval path.
 //
-// 9 = 7 bluebird (canEvaluate-gated) + 2 Hogan.
-const EXPECTED_NEW_FUNCTION_COUNT = 9;
+// 2 = Hogan.
+const EXPECTED_NEW_FUNCTION_COUNT = 2;
 const NEW_FUNCTION_STUB = "VKBlockedDynamicFn";
 function neutraliseDynamicEval(outfile) {
   if (!existsSync(outfile)) return;

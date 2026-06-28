@@ -1,13 +1,30 @@
 import { loadPdfJs } from 'obsidian';
 import { unzipSync, strFromU8 } from 'fflate';
-import mammoth from 'mammoth/mammoth.browser.js';
 import type { IPageText } from '../Types/SearchTypes';
 import { Exception } from './Exception';
+
+// Minimal structural types for the slice of PDF.js we use. Obsidian's `loadPdfJs()`
+// is typed as `Promise<any>` and we don't bundle pdfjs-dist, so we describe just the
+// shape we touch to keep this file free of unsafe-`any` access.
+interface PdfTextItem { str?: string; }
+interface PdfTextContent { items: PdfTextItem[]; }
+interface PdfPage {
+    getTextContent(): Promise<PdfTextContent>;
+    cleanup?(): void;
+}
+interface PdfDocument {
+    numPages: number;
+    getPage(pageNumber: number): Promise<PdfPage>;
+    destroy?(): Promise<void>;
+}
+interface PdfJs {
+    getDocument(src: { data: Uint8Array }): { promise: Promise<PdfDocument> };
+}
 
 // Uses Obsidian's own bundled PDF.js via loadPdfJs() rather than shipping our own
 export async function readPDF(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {
     try {
-        const pdfjs = await loadPdfJs();
+        const pdfjs = (await loadPdfJs()) as PdfJs;
         const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
 
         const pageTexts: IPageText[] = [];
@@ -15,7 +32,7 @@ export async function readPDF(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {
             const page = await pdf.getPage(i);
             const content = await page.getTextContent();
             const text = content.items
-                .map((item: { str?: string }) => item.str ?? '')
+                .map((item) => item.str ?? '')
                 .join(' ');
             pageTexts.push({ text, pageNumber: i });
             page.cleanup?.();
@@ -41,16 +58,15 @@ export async function readPDF(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {
 
 // Handles document formats: DOCX, PPTX, XLSX, ODT, ODP, ODS.
 //
-// DOCX goes through mammoth (battle-tested: tables, lists, footnotes). The remaining
-// formats are ZIP-of-XML containers we read with fflate + the platform DOMParser, so
-// no heavy parser is bundled. We only extract plain text (no OCR, no images) — the LLM
-// can read files directly and use its own vision engine when it needs to.
-export async function readDocument(arrayBuffer: ArrayBuffer, extension: string): Promise<IPageText[]> {
+// Every format is a ZIP-of-XML container we read with fflate + the platform DOMParser,
+// so no heavy parser is bundled. We only extract plain text (no OCR, no images) — the
+// LLM can read files directly and use its own vision engine when it needs to.
+export function readDocument(arrayBuffer: ArrayBuffer, extension: string): IPageText[] {
     try {
         let text: string;
         switch (extension.toLowerCase()) {
             case 'docx':
-                text = (await mammoth.extractRawText({ arrayBuffer })).value;
+                text = extractDocx(arrayBuffer);
                 break;
             case 'xlsx':
                 text = extractXlsx(arrayBuffer);
@@ -74,7 +90,7 @@ export async function readDocument(arrayBuffer: ArrayBuffer, extension: string):
     }
 }
 
-// --- Shared helpers for the ZIP-of-XML formats (xlsx / pptx / odf) ---
+// --- Shared helpers for the ZIP-of-XML formats (docx / xlsx / pptx / odf) ---
 
 // Throws on legacy OLE2 binaries (.xls/.ppt/.doc) — they aren't ZIPs. Callers wrap
 // this so the failure surfaces as a clean "failed to read" message.
@@ -90,6 +106,40 @@ function parseXml(bytes: Uint8Array): Document {
 function ordinal(path: string): number {
     const match = path.match(/(\d+)\.xml$/);
     return match ? Number(match[1]) : 0;
+}
+
+// --- DOCX: body in word/document.xml; <w:p> = paragraph, <w:t> = text run.
+// Headers/footers and foot/endnotes live in sibling parts that share the same
+// <w:p>/<w:t> shape, so they run through the same paragraph extractor. ---
+function extractDocx(arrayBuffer: ArrayBuffer): string {
+    const files = unzip(arrayBuffer);
+
+    // Joined text of every <w:p> paragraph in a parsed part. Runs are joined with
+    // '' (not a space) because Word splits a single word across multiple <w:t> runs
+    // for spell-check / formatting — a space here would shred words like "Hel"+"lo".
+    // Empty paragraphs (incl. the separator entries in foot/endnotes) are dropped.
+    const paragraphs = (bytes: Uint8Array): string =>
+        Array.from(parseXml(bytes).getElementsByTagName('w:p'))
+            .map((p) =>
+                Array.from(p.getElementsByTagName('w:t'))
+                    .map((t) => t.textContent ?? '')
+                    .join('')
+            )
+            .filter((line) => line.length > 0)
+            .join('\n');
+
+    // Body first, then headers/footers (grouped + numerically ordered), then notes.
+    const headerFooter = Object.keys(files)
+        .filter((name) => /^word\/(header|footer)\d+\.xml$/.test(name))
+        .sort();
+
+    const parts: string[] = [];
+    if (files['word/document.xml']) parts.push(paragraphs(files['word/document.xml']));
+    for (const name of headerFooter) parts.push(paragraphs(files[name]));
+    if (files['word/footnotes.xml']) parts.push(paragraphs(files['word/footnotes.xml']));
+    if (files['word/endnotes.xml']) parts.push(paragraphs(files['word/endnotes.xml']));
+
+    return parts.filter((p) => p.length > 0).join('\n\n');
 }
 
 // --- XLSX: values live as indices into a shared-strings table ---

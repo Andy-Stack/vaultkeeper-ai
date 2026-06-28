@@ -98,7 +98,7 @@ export class VaultService {
         if (isDocumentFile(fileExtension)) {
             const arrayBuffer = await this.readBinaryData(file, allowAccessToPluginRoot);
             if (arrayBuffer) {
-                return (await readDocument(arrayBuffer, fileExtension))[0].text;
+                return (readDocument(arrayBuffer, fileExtension))[0].text;
             }
         }
 
@@ -418,7 +418,7 @@ export class VaultService {
                         content = await readPDF(arrayBuffer);
                     } else if (isDocumentFile(fileExtension)) {
                         const arrayBuffer = await this.vault.readBinary(file);
-                        content = await readDocument(arrayBuffer, fileExtension);
+                        content = readDocument(arrayBuffer, fileExtension);
                     } else {
                         content = [{ text: await this.vault.cachedRead(file), pageNumber: 1 }] as IPageText[];
                     }

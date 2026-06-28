@@ -114,8 +114,8 @@ export abstract class BaseAIFileService implements IAIFileService {
 		return `----FormBoundary${Date.now()}${Math.random().toString(36).substring(2)}`;
 	}
 
-	protected createFormData(displayName: string | undefined, mimeType: string, boundary: string, bytes: Uint8Array<ArrayBuffer>, additionalFields?: Record<string, string>): ArrayBuffer {
-		const parts: Uint8Array<ArrayBuffer>[] = [];
+	protected createFormData(displayName: string | undefined, mimeType: string, boundary: string, bytes: Uint8Array, additionalFields?: Record<string, string>): ArrayBuffer {
+		const parts: Uint8Array[] = [];
 		const encoder = new TextEncoder();
 
 		// Add the file field
@@ -156,8 +156,8 @@ export abstract class BaseAIFileService implements IAIFileService {
 		return this.bytesToBuffer(result);
     }
 
-	protected bytesToBuffer(bytes: Uint8Array<ArrayBuffer>): ArrayBuffer {
-		return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+	protected bytesToBuffer(bytes: Uint8Array): ArrayBuffer {
+		return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 	}
 
 	protected getHeader(headerName: string, headers: Record<string, string>): string | undefined {

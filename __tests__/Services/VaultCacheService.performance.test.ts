@@ -3,10 +3,10 @@ import { TFile, TFolder, TAbstractFile, MetadataCache, FileManager } from 'obsid
 import { VaultCacheService } from '../../Services/VaultCacheService';
 import { VaultService } from '../../Services/VaultService';
 import { SettingsService, type IVaultkeeperAISettings } from '../../Services/SettingsService';
+import { makeTestSettings } from '../Helpers/makeTestSettings';
 import { SanitiserService } from '../../Services/SanitiserService';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import type VaultkeeperAIPlugin from '../../main';
 import { ChatMode } from '../../Enums/ChatMode';
 
@@ -88,30 +88,17 @@ const mockPlugin = {
 	registerEvent: vi.fn()
 } as unknown as VaultkeeperAIPlugin;
 
-const mockSettings: IVaultkeeperAISettings = {
+const mockSettings: IVaultkeeperAISettings = makeTestSettings({
 	firstTimeStart: false,
-	model: AIProviderModel.ClaudeSonnet_4_6,
-	planningModel: AIProviderModel.ClaudeSonnet_4_6,
 	apiKeys: {
 		claude: 'test-claude-key',
 		openai: 'test-openai-key',
 		gemini: 'test-gemini-key', mistral: 'test-mistral-key'
 	},
-	exclusions: [],
-	userInstruction: '',
 	searchResultsLimit: 15,
 	snippetSizeLimit: 300,
-	enableMemories: false,
-	allowUpdatingMemories: true,
-	enableWebSearch: true,
-	enableWebViewer: false,
-	provider: AIProvider.Claude,
-	quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
-	enableContextMenuActions: false,
-	enableToolbarActions: false,
-	hideDrawerElements: false,
 	chatMode: ChatMode.Edit
-};
+});
 
 let settingsService: SettingsService;
 let vaultService: VaultService;

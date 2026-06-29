@@ -5,7 +5,7 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { SanitiserService } from '../../Services/SanitiserService';
 import { SettingsService, type IVaultkeeperAISettings } from '../../Services/SettingsService';
-import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
+import { makeTestSettings } from '../Helpers/makeTestSettings';
 import { Exception } from '../../Helpers/Exception';
 import * as PDFHelper from '../../Helpers/DocumentHelper';
 import type { IPageText } from '../../Types/SearchTypes';
@@ -48,30 +48,17 @@ const mockFileManager = {
 	trashFile: ReturnType<typeof vi.fn>;
 };
 
-const mockSettings: IVaultkeeperAISettings = {
+const mockSettings: IVaultkeeperAISettings = makeTestSettings({
 	firstTimeStart: false,
-	model: AIProviderModel.ClaudeSonnet_4_6,
-	planningModel: AIProviderModel.ClaudeSonnet_4_6,
 	apiKeys: {
 		claude: 'test-claude-key',
 		openai: 'test-openai-key',
 		gemini: 'test-gemini-key', mistral: 'test-mistral-key'
 	},
-	exclusions: [],
-	userInstruction: '',
 	searchResultsLimit: 15,
 	snippetSizeLimit: 300,
-	enableMemories: false,
-	allowUpdatingMemories: true,
-	enableWebSearch: true,
-	enableWebViewer: false,
-	provider: AIProvider.Claude,
-	quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
-	enableContextMenuActions: false,
-	enableToolbarActions: false,
-	hideDrawerElements: false,
 	chatMode: ChatMode.Edit
-};
+});
 
 const mockPlugin = {
 	app: {

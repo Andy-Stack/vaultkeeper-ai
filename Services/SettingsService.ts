@@ -14,7 +14,7 @@ import {
     modelMatchesProvider
 } from "Enums/ApiProvider";
 
-const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
+export const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     firstTimeStart: true,
 
     chatMode: ChatMode.ReadOnly,
@@ -25,6 +25,25 @@ const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     planningModel: AIProviderModel.ClaudeOpus_4_8,
     quickActionModel: AIProviderModel.ClaudeHaiku_4_5,
     
+    cachedModelSettings: {
+        [AIProvider.Claude]: {
+            planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.Claude],
+            quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.Claude]
+        },
+        [AIProvider.OpenAI]: {
+            planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.OpenAI],
+            quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.OpenAI]
+        },
+        [AIProvider.Gemini]: {
+            planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.Gemini],
+            quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.Gemini]
+        },
+        [AIProvider.Mistral]: {
+            planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.Mistral],
+            quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.Mistral]
+        }
+    },
+
     apiKeys: {
         claude: "",
         openai: "",
@@ -59,6 +78,8 @@ export interface IVaultkeeperAISettings {
     planningModel: AIProviderModel;
     quickActionModel: AIProviderModel;
 
+    cachedModelSettings: Record<AIProvider, ProviderModelCache>;
+
     apiKeys: {
         claude: string;
         openai: string;
@@ -82,6 +103,11 @@ export interface IVaultkeeperAISettings {
     hideDrawerElements: boolean;
 }
 
+export interface ProviderModelCache {
+    planningModel: AIProviderModel;
+    quickActionModel: AIProviderModel;
+}
+
 type SettingKey = keyof IVaultkeeperAISettings;
 type SettingsChangedCallback = ((changedKeys: SettingKey[]) => void) | ((changedKeys: SettingKey[]) => Promise<void>);
 
@@ -99,7 +125,7 @@ export class SettingsService {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
         this.settingsSnapshot = JSON.stringify(this.settings);
-        this.ensureValidModels();
+        void this.ensureValidModels();
     }
 
     public subscribeToSettingsChanged(callback: SettingsChangedCallback): object {
@@ -153,6 +179,34 @@ export class SettingsService {
         }
     }
 
+    public async ensureValidModels(): Promise<void> {
+        await this.updateSettings(settings => {
+            if (!isvalidProvider(settings.provider)) {
+                settings.provider = DEFAULT_SETTINGS.provider;
+            }
+    
+            if (!isValidProviderModel(settings.model) || !modelMatchesProvider(settings.model, settings.provider)) {
+                settings.model = DEFAULT_MODEL_BY_PROVIDER[settings.provider];
+            }
+    
+            if (!isValidProviderModel(settings.planningModel) || !modelMatchesProvider(settings.planningModel, settings.provider)) {
+                settings.planningModel = DEFAULT_PLANNING_MODEL_BY_PROVIDER[settings.provider];
+            }
+    
+            if (!isValidProviderModel(settings.quickActionModel) || !modelMatchesProvider(settings.quickActionModel, settings.provider)) {
+                settings.quickActionModel = DEFAULT_QUICK_MODEL_BY_PROVIDER[settings.provider];
+            }
+
+            const cached = settings.cachedModelSettings[settings.provider];
+            if (!isValidProviderModel(cached.planningModel) || !modelMatchesProvider(cached.planningModel, settings.provider)) {
+                settings.cachedModelSettings[settings.provider].planningModel = DEFAULT_PLANNING_MODEL_BY_PROVIDER[settings.provider];
+            }
+            if (!isValidProviderModel(cached.quickActionModel) || !modelMatchesProvider(cached.quickActionModel, settings.provider)) {
+                settings.cachedModelSettings[settings.provider].quickActionModel = DEFAULT_QUICK_MODEL_BY_PROVIDER[settings.provider];
+            }
+        });
+    }
+
     private async saveSettings() {
         const oldSettings = JSON.parse(this.settingsSnapshot) as IVaultkeeperAISettings;
         await this.plugin.saveData(this.settings);
@@ -169,28 +223,6 @@ export class SettingsService {
                 await this.subscribers.get(subscriber)?.(changedKeys);
             }
         }
-    }
-
-    private ensureValidModels(): void {
-        void this.updateSettings(settings => {
-            let provider = settings.provider;
-
-            if (!isvalidProvider(provider)) {
-                provider = DEFAULT_SETTINGS.provider;
-            }
-    
-            if (!isValidProviderModel(this.settings.model) || !modelMatchesProvider(this.settings.model, provider)) {
-                settings.model = DEFAULT_MODEL_BY_PROVIDER[provider];
-            }
-    
-            if (!isValidProviderModel(this.settings.planningModel) || !modelMatchesProvider(this.settings.planningModel, provider)) {
-                settings.planningModel = DEFAULT_PLANNING_MODEL_BY_PROVIDER[provider];
-            }
-    
-            if (!isValidProviderModel(this.settings.quickActionModel) || !modelMatchesProvider(this.settings.quickActionModel, provider)) {
-                settings.quickActionModel = DEFAULT_QUICK_MODEL_BY_PROVIDER[provider];
-            }
-        });
     }
 
 }

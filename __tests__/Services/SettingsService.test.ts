@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { SettingsService, type IVaultkeeperAISettings } from '../../Services/SettingsService';
+import { makeTestSettings } from '../Helpers/makeTestSettings';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import { AIProvider, AIProviderModel, fromModel } from '../../Enums/ApiProvider';
-import { ChatMode } from 'Enums/ChatMode';
+import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 
 describe('SettingsService', () => {
     let settingsService: SettingsService;
@@ -90,30 +90,15 @@ describe('SettingsService', () => {
 
     describe('getApiKeyForProvider', () => {
         beforeEach(() => {
-            const loadedSettings: IVaultkeeperAISettings = {
-                firstTimeStart: false,
+            const loadedSettings = makeTestSettings({
+                provider: AIProvider.Claude,
                 model: AIProviderModel.ClaudeSonnet_4_6,
-                planningModel: AIProviderModel.ClaudeOpus_4_8,
                 apiKeys: {
                     claude: 'claude-api-key',
                     openai: 'openai-api-key',
                     gemini: 'gemini-api-key', mistral: ''
-                },
-                exclusions: [],
-                userInstruction: '',
-                searchResultsLimit: 15,
-                snippetSizeLimit: 300,
-                enableMemories: false,
-                allowUpdatingMemories: true,
-                enableWebSearch: true,
-                enableWebViewer: false,
-                provider: AIProvider.Claude,
-                quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
-                enableContextMenuActions: false,
-                enableToolbarActions: false,
-                hideDrawerElements: false,
-                chatMode: ChatMode.ReadOnly
-            };
+                }
+            });
             settingsService = new SettingsService(loadedSettings);
         });
 
@@ -141,30 +126,15 @@ describe('SettingsService', () => {
 
     describe('getApiKeyForCurrentModel', () => {
         it('should return Claude key when current model is Claude', () => {
-            const loadedSettings: IVaultkeeperAISettings = {
-                firstTimeStart: false,
+            const loadedSettings = makeTestSettings({
+                provider: AIProvider.Claude,
                 model: AIProviderModel.ClaudeSonnet_4_6,
-                planningModel: AIProviderModel.ClaudeOpus_4_8,
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
                     gemini: 'gemini-key', mistral: ''
-                },
-                exclusions: [],
-                userInstruction: '',
-                searchResultsLimit: 15,
-                snippetSizeLimit: 300,
-                enableMemories: false,
-                allowUpdatingMemories: true,
-                enableWebSearch: true,
-                enableWebViewer: false,
-                provider: AIProvider.Claude,
-                quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
-                enableContextMenuActions: false,
-                enableToolbarActions: false,
-                hideDrawerElements: false,
-                chatMode: ChatMode.ReadOnly
-            };
+                }
+            });
             settingsService = new SettingsService(loadedSettings);
 
             const key = settingsService.getApiKeyForCurrentModel();
@@ -172,30 +142,15 @@ describe('SettingsService', () => {
         });
 
         it('should return OpenAI key when current model is GPT', () => {
-            const loadedSettings: IVaultkeeperAISettings = {
-                firstTimeStart: false,
+            const loadedSettings = makeTestSettings({
+                provider: AIProvider.OpenAI,
                 model: AIProviderModel.GPT_5_4_Mini,
-                planningModel: AIProviderModel.GPT_5_5,
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
                     gemini: 'gemini-key', mistral: ''
-                },
-                exclusions: [],
-                userInstruction: '',
-                searchResultsLimit: 15,
-                snippetSizeLimit: 300,
-                enableMemories: false,
-                allowUpdatingMemories: true,
-                enableWebSearch: true,
-                enableWebViewer: false,
-                provider: AIProvider.OpenAI,
-                quickActionModel: AIProviderModel.GPT_5_4_Mini,
-                enableContextMenuActions: false,
-                enableToolbarActions: false,
-                hideDrawerElements: false,
-                chatMode: ChatMode.ReadOnly
-            };
+                }
+            });
             settingsService = new SettingsService(loadedSettings);
 
             const key = settingsService.getApiKeyForCurrentModel();
@@ -203,30 +158,15 @@ describe('SettingsService', () => {
         });
 
         it('should return Gemini key when current model is Gemini', () => {
-            const loadedSettings: IVaultkeeperAISettings = {
-                firstTimeStart: false,
+            const loadedSettings = makeTestSettings({
+                provider: AIProvider.Gemini,
                 model: AIProviderModel.GeminiFlash_3_5_Flash,
-                planningModel: AIProviderModel.GeminiPro_3_1_Preview,
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
                     gemini: 'gemini-key', mistral: ''
-                },
-                exclusions: [],
-                userInstruction: '',
-                searchResultsLimit: 15,
-                snippetSizeLimit: 300,
-                enableMemories: false,
-                allowUpdatingMemories: true,
-                enableWebSearch: true,
-                enableWebViewer: false,
-                provider: AIProvider.Gemini,
-                quickActionModel: AIProviderModel.GeminiFlash_3_5_Flash,
-                enableContextMenuActions: false,
-                enableToolbarActions: false,
-                hideDrawerElements: false,
-                chatMode: ChatMode.ReadOnly
-            };
+                }
+            });
             settingsService = new SettingsService(loadedSettings);
 
             const key = settingsService.getApiKeyForCurrentModel();
@@ -262,30 +202,10 @@ describe('SettingsService', () => {
 
     describe('setApiKeyForProvider', () => {
         beforeEach(() => {
-            const loadedSettings: IVaultkeeperAISettings = {
-                firstTimeStart: false,
-                model: AIProviderModel.ClaudeSonnet_4_6,
-                planningModel: AIProviderModel.ClaudeOpus_4_8,
-                apiKeys: {
-                    claude: '',
-                    openai: '',
-                    gemini: '', mistral: ''
-                },
-                exclusions: [],
-                userInstruction: '',
-                searchResultsLimit: 15,
-                snippetSizeLimit: 300,
-                enableMemories: false,
-                allowUpdatingMemories: true,
-                enableWebSearch: true,
-                enableWebViewer: false,
+            const loadedSettings = makeTestSettings({
                 provider: AIProvider.Claude,
-                quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
-                enableContextMenuActions: false,
-                enableToolbarActions: false,
-                hideDrawerElements: false,
-                chatMode: ChatMode.ReadOnly
-            };
+                model: AIProviderModel.ClaudeSonnet_4_6
+            });
             settingsService = new SettingsService(loadedSettings);
         });
 
@@ -330,30 +250,17 @@ describe('SettingsService', () => {
 
     describe('saveSettings', () => {
         beforeEach(() => {
-            const loadedSettings: IVaultkeeperAISettings = {
-                firstTimeStart: false,
+            const loadedSettings = makeTestSettings({
+                provider: AIProvider.Claude,
                 model: AIProviderModel.ClaudeSonnet_4_6,
-                planningModel: AIProviderModel.ClaudeOpus_4_8,
                 apiKeys: {
                     claude: 'test-key',
                     openai: '',
                     gemini: '', mistral: ''
                 },
                 exclusions: ['node_modules'],
-                userInstruction: 'Be helpful',
-                searchResultsLimit: 15,
-                snippetSizeLimit: 300,
-                enableMemories: false,
-                allowUpdatingMemories: true,
-                enableWebSearch: true,
-                enableWebViewer: false,
-                provider: AIProvider.Claude,
-                quickActionModel: AIProviderModel.ClaudeSonnet_4_6,
-                enableContextMenuActions: false,
-                enableToolbarActions: false,
-                hideDrawerElements: false,
-                chatMode: ChatMode.ReadOnly
-            };
+                userInstruction: 'Be helpful'
+            });
             settingsService = new SettingsService(loadedSettings);
             mockPlugin.saveData.mockClear();
         });

@@ -1,11 +1,10 @@
-import { AIProvider, AIProviderModel, fromModel, isValidProviderModel } from "Enums/ApiProvider";
+import { AIProvider, AIProviderModel, DEFAULT_PLANNING_MODEL_BY_PROVIDER, DEFAULT_QUICK_MODEL_BY_PROVIDER, fromModel, isValidProviderModel } from "Enums/ApiProvider";
 import { Copy } from "Enums/Copy";
 import { Selector } from "Enums/Selector";
 import type VaultkeeperAIPlugin from "main";
 import { HelpModal } from "Modals/HelpModal";
 import { DropdownComponent, PluginSettingTab, Setting, ToggleComponent, setIcon, setTooltip } from "obsidian";
 import { Resolve } from "Services/DependencyService";
-import type { EventService } from "Services/EventService";
 import type { SettingsService } from "Services/SettingsService";
 import { Services } from "Services/Services";
 import { closePluginSettings } from "Helpers/Helpers";
@@ -16,7 +15,6 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 	private readonly plugin: VaultkeeperAIPlugin;
 	private readonly settingsService: SettingsService;
 	private readonly memoriesService: MemoriesService;
-	private readonly eventService: EventService;
 
 	private apiKeySetting: Setting | null = null;
 	private apiKeyInputEl: HTMLInputElement | null = null;
@@ -34,7 +32,6 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 
 		this.settingsService = Resolve<SettingsService>(Services.SettingsService);
 		this.memoriesService = Resolve<MemoriesService>(Services.MemoriesService);
-		this.eventService = Resolve<EventService>(Services.EventService);
 	}
 
 	public display() {
@@ -54,15 +51,23 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 						return;
 					}
 					await this.settingsService.updateSettings(settings => {
-						settings.model = value;
 						settings.provider = fromModel(value);
+						settings.model = value;
+						const cached = settings.cachedModelSettings[settings.provider];
+						if (cached.planningModel) {
+							settings.planningModel = cached.planningModel;
+						}
+						if (cached.quickActionModel) {
+							settings.quickActionModel = cached.quickActionModel;
+						}
 					});
 					if (this.apiKeyInputEl) {
 						this.apiKeyInputEl.value = this.settingsService.getApiKeyForCurrentModel();
 						this.highlightApiKey();
 					}
-					this.updateFileDisclaimer();
+					await this.settingsService.ensureValidModels();
 					await this.updateModelDropdowns();
+					this.updateFileDisclaimer();
 					RegisterAiProvider();
 				});
 			});
@@ -87,6 +92,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					}
 					await this.settingsService.updateSettings(settings => {
 						settings.planningModel = value;
+						settings.cachedModelSettings[settings.provider].planningModel = value;
 					});
 					RegisterAiProvider();
 				});
@@ -106,6 +112,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					}
 					await this.settingsService.updateSettings(settings => {
 						settings.quickActionModel = value;
+						settings.cachedModelSettings[settings.provider].quickActionModel = value;
 					});
 					RegisterAiProvider();
 				});
@@ -378,7 +385,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				this.populateModelDropdown(this.planningModelDropdown, currentProvider);
 	
 				if (planningProvider !== currentProvider) {
-					settings.planningModel = settings.model;
+					settings.planningModel = settings.cachedModelSettings[currentProvider].planningModel ?? DEFAULT_PLANNING_MODEL_BY_PROVIDER[currentProvider];
 				}
 	
 				this.planningModelDropdown.setValue(settings.planningModel);
@@ -390,7 +397,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				this.populateModelDropdown(this.quickActionModelDropdown);
 	
 				if (quickActionProvider !== currentProvider) {
-					settings.quickActionModel = settings.model;
+					settings.quickActionModel = settings.cachedModelSettings[currentProvider].quickActionModel ?? DEFAULT_QUICK_MODEL_BY_PROVIDER[currentProvider];
 				}
 	
 				this.quickActionModelDropdown.setValue(settings.quickActionModel);

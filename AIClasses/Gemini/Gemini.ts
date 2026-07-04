@@ -151,6 +151,7 @@ export class Gemini extends BaseAIClass {
 
       let text = "";
       let toolCall: AIToolCall | undefined = undefined;
+      let toolCallStarted: string | undefined = undefined;
       const candidate = data.candidates?.[0];
 
       if (candidate) {
@@ -163,6 +164,12 @@ export class Gemini extends BaseAIClass {
         const parts = candidate.content?.parts || [];
         for (const part of parts) {
           if (part.functionCall) {
+            // Signal tool call start the first time we see its name
+            // Gemini delivers the whole call - name, args, and finishReason - in a single chunk, so this must NOT short-circuit the finalize logic below
+            if (!this.accumulatedFunctionName && part.functionCall.name) {
+              toolCallStarted = part.functionCall.name;
+            }
+
             // Accumulate function name
             if (part.functionCall.name) {
               this.accumulatedFunctionName = part.functionCall.name;
@@ -204,6 +211,7 @@ export class Gemini extends BaseAIClass {
         content: text,
         isComplete: isComplete,
         toolCall: toolCall,
+        toolCallStarted: toolCallStarted,
         shouldContinue: shouldContinue,
       };
     } catch (error) {

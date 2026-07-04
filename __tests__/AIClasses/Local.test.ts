@@ -424,6 +424,28 @@ describe('Local', () => {
             expect(result.isComplete).toBe(false);
         });
 
+        it('should emit toolCallStarted when a tool call delta first reveals a function name', () => {
+            const chunk = JSON.stringify({
+                choices: [{
+                    delta: {
+                        tool_calls: [{
+                            index: 0,
+                            id: 'call_123',
+                            type: 'function',
+                            function: {
+                                name: 'search_vault_files',
+                                arguments: '{"query":'
+                            }
+                        }]
+                    },
+                    finish_reason: null
+                }]
+            });
+
+            const result = (local as any).parseStreamChunk(chunk);
+            expect(result.toolCallStarted).toBe('search_vault_files');
+        });
+
         it('should extract simple text content via the shared extractContents', async () => {
             const contents = [
                 new ConversationContent({ role: Role.User, content: 'Hello', displayContent: 'Hello' })

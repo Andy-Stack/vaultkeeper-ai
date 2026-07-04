@@ -130,6 +130,24 @@ describe('OpenAI', () => {
             expect(result.isComplete).toBe(false);
         });
 
+        it('should emit toolCallStarted on output_item.added for a function_call item', () => {
+            const chunk = JSON.stringify({
+                type: 'response.output_item.added',
+                output_index: 0,
+                item: {
+                    id: 'item_123',
+                    type: 'function_call',
+                    name: 'search_vault_files',
+                    call_id: 'call_123'
+                }
+            });
+
+            const result = (openai as any).parseStreamChunk(chunk);
+
+            expect(result.toolCallStarted).toBe('search_vault_files');
+            expect(result.isComplete).toBe(false);
+        });
+
         it('should handle complete function call in output_item.done event', () => {
             // Responses API provides the complete function call in response.output_item.done event
             const chunk = JSON.stringify({

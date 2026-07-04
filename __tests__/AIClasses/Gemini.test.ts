@@ -160,6 +160,41 @@ describe('Gemini', () => {
             expect((gemini as any).accumulatedFunctionArgs).toEqual({ query: 'test' });
         });
 
+        it('should emit toolCallStarted on the first chunk revealing the function name, and not again for subsequent chunks', () => {
+            const startChunk = JSON.stringify({
+                candidates: [{
+                    content: {
+                        parts: [{
+                            functionCall: {
+                                name: 'search_vault_files',
+                                args: { query: 'test' }
+                            }
+                        }]
+                    }
+                }]
+            });
+
+            const startResult = (gemini as any).parseStreamChunk(startChunk);
+            expect(startResult.toolCallStarted).toBe('search_vault_files');
+            expect(startResult.isComplete).toBe(false);
+
+            const continuationChunk = JSON.stringify({
+                candidates: [{
+                    content: {
+                        parts: [{
+                            functionCall: {
+                                name: 'search_vault_files',
+                                args: { limit: 10 }
+                            }
+                        }]
+                    }
+                }]
+            });
+
+            const continuationResult = (gemini as any).parseStreamChunk(continuationChunk);
+            expect(continuationResult.toolCallStarted).toBeUndefined();
+        });
+
         it('should capture thoughtSignature when present in part', () => {
             const signature = 'base64EncodedSignature==';
             const chunk = JSON.stringify({

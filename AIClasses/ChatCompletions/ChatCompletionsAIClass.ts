@@ -28,6 +28,8 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
 
     // Accumulation state for streaming tool calls
     private accumulatedToolCalls: Map<number, { id: string; name: string; args: string }> = new Map();
+    // Indices for which toolCallStarted has already been emitted this stream
+    private startedToolCalls: Set<number> = new Set();
 
     public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
         const messages = await this.buildMessages(conversation);
@@ -62,6 +64,7 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
 
     private async buildMessages(conversation: Conversation): Promise<ChatCompletionMessage[]> {
         this.accumulatedToolCalls.clear();
+        this.startedToolCalls.clear();
 
         // Refresh file cache only if conversation has attachments
         if (conversation.hasAttachments()) {
@@ -115,16 +118,20 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
                             name: tc.function?.name || "",
                             args: tc.function?.arguments || ""
                         });
-
-                        if (tc.function?.name) {
-                            toolCallStarted = tc.function.name;
-                        }
                     } else {
                         // Accumulate arguments for existing tool call
                         const existing = this.accumulatedToolCalls.get(index)!;
                         if (tc.id) existing.id = tc.id;
                         if (tc.function?.name) existing.name += tc.function.name;
                         if (tc.function?.arguments) existing.args += tc.function.arguments;
+                    }
+
+                    // Some providers stream the function name fragmented across multiple deltas rather than
+                    // whole in the first one, so fire "started" the moment the accumulated name first becomes non-empty.
+                    const accumulated = this.accumulatedToolCalls.get(index)!;
+                    if (!this.startedToolCalls.has(index) && accumulated.name) {
+                        this.startedToolCalls.add(index);
+                        toolCallStarted = accumulated.name;
                     }
                 }
             }

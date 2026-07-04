@@ -19,6 +19,7 @@
 	import type { ExecutionPlanStore } from "Stores/ExecutionPlanStore";
 	import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
 	import { AITool, fromString } from "Enums/AITool";
+	import { AIProvider } from "Enums/ApiProvider";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);
@@ -76,10 +77,13 @@
   }
 
   function handleNoApiKey(): boolean {
-    hasNoApiKey = settingsService.getApiKeyForCurrentModel().trim() == "";
+    hasNoApiKey = settingsService.settings.provider !== AIProvider.Local
+      && settingsService.getApiKeyForCurrentProvider().trim() == "";
+    
     if (hasNoApiKey) {
       openPluginSettings(plugin);
     }
+
     return hasNoApiKey;
   }
 

@@ -3,13 +3,22 @@ import { unzipSync, strFromU8 } from 'fflate';
 import type { IPageText } from '../Types/SearchTypes';
 import { Exception } from './Exception';
 
-// Minimal structural types for the slice of PDF.js we use. Obsidian's `loadPdfJs()`
-// is typed as `Promise<any>` and we don't bundle pdfjs-dist, so we describe just the
-// shape we touch to keep this file free of unsafe-`any` access.
+/** Minimal structural types for the slice of PDF.js we use. Obsidian's `loadPdfJs()`
+ * is typed as `Promise<any>` and we don't bundle pdfjs-dist, so we describe just the
+ * shape we touch to keep this file free of unsafe-`any` access. **/
+
+/** PDF Interfaces Start **/
 interface PdfTextItem { str?: string; }
 interface PdfTextContent { items: PdfTextItem[]; }
+interface PdfViewport { width: number; height: number; }
+interface PdfRenderParams {
+    canvasContext: CanvasRenderingContext2D;
+    viewport: PdfViewport;
+}
 interface PdfPage {
     getTextContent(): Promise<PdfTextContent>;
+    getViewport(params: { scale: number }): PdfViewport;
+    render(params: PdfRenderParams): { promise: Promise<void> };
     cleanup?(): void;
 }
 interface PdfDocument {
@@ -20,8 +29,14 @@ interface PdfDocument {
 interface PdfJs {
     getDocument(src: { data: Uint8Array }): { promise: Promise<PdfDocument> };
 }
+export interface IPageImage {
+    image: ArrayBuffer;
+    pageNumber: number;
+    mimeType: string;
+}
+/** PDF Interfaces End **/
 
-// Uses Obsidian's own bundled PDF.js via loadPdfJs() rather than shipping our own
+
 export async function readPDF(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {
     try {
         const pdfjs = (await loadPdfJs()) as PdfJs;
@@ -53,6 +68,59 @@ export async function readPDF(arrayBuffer: ArrayBuffer): Promise<IPageText[]> {
             return [{ text: "PDF is password protected!", pageNumber: 1 }] as IPageText[];
         }
         return [{ text: `Failed to read PDF: ${Exception.messageFrom(error)}`, pageNumber: 1 }] as IPageText[];
+    }
+}
+
+// Best effort attempt to convert PDF pages to images
+export async function pdfToImages(arrayBuffer: ArrayBuffer,
+    options: { scale?: number; mimeType?: 'image/png' | 'image/jpeg'; quality?: number } = {}
+): Promise<IPageImage[]> {
+    const { scale = 2, mimeType = 'image/png', quality = 0.92 } = options;
+
+    try {
+        const pdfjs = (await loadPdfJs()) as PdfJs;
+        const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+
+        const pageImages: IPageImage[] = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale });
+
+            const canvas = activeDocument.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+                continue; // Failed to extract page, move on.
+            }
+
+            await page.render({ canvasContext: ctx, viewport }).promise;
+
+            const blob: Blob | null = await new Promise((resolve) =>
+                canvas.toBlob(resolve, mimeType, quality)
+            );
+            if (!blob) {
+                continue; // Failed to extract page, move on.
+            }
+
+            pageImages.push({
+                image: await blob.arrayBuffer(),
+                pageNumber: i,
+                mimeType,
+            });
+
+            page.cleanup?.();
+            // release canvas memory promptly
+            canvas.width = 0;
+            canvas.height = 0;
+        }
+        await pdf.destroy?.();
+
+        return pageImages;
+    } catch (error) {
+        Exception.log(error);
+        return []; // Failed to extract any pages
     }
 }
 

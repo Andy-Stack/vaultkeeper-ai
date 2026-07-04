@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { MistralConversationNamingService } from '../../AIClasses/Mistral/MistralConversationNamingService';
+import { MistralConversationNamingAgent } from '../../AIClasses/Mistral/MistralConversationNamingAgent';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { Role } from '../../Enums/Role';
 
-describe('MistralConversationNamingService', () => {
-    let service: MistralConversationNamingService;
+describe('MistralConversationNamingAgent', () => {
+    let service: MistralConversationNamingAgent;
     let mockPlugin: any;
     let mockSettingsService: any;
     let mockAbortService: any;
@@ -34,7 +34,7 @@ describe('MistralConversationNamingService', () => {
                 if (provider === AIProvider.Mistral) return 'test-mistral-key';
                 return '';
             }),
-            getApiKeyForCurrentModel: vi.fn(() => 'test-mistral-key')
+            getApiKeyForCurrentProvider: vi.fn(() => 'test-mistral-key')
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
 
@@ -49,7 +49,7 @@ describe('MistralConversationNamingService', () => {
         fetchMock = vi.fn();
         global.fetch = fetchMock;
 
-        service = new MistralConversationNamingService();
+        service = new MistralConversationNamingAgent();
     });
 
     afterEach(() => {

@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { OpenAIConversationNamingService } from '../../AIClasses/OpenAI/OpenAIConversationNamingService';
+import { OpenAIConversationNamingAgent } from '../../AIClasses/OpenAI/OpenAIConversationNamingAgent';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { Role } from '../../Enums/Role';
 
-describe('OpenAIConversationNamingService', () => {
-    let service: OpenAIConversationNamingService;
+describe('OpenAIConversationNamingAgent', () => {
+    let service: OpenAIConversationNamingAgent;
     let mockPlugin: any;
     let mockSettingsService: any;
     let mockAbortService: any;
@@ -32,7 +32,7 @@ describe('OpenAIConversationNamingService', () => {
                 if (provider === AIProvider.Gemini) return 'test-gemini-key';
                 return '';
             }),
-            getApiKeyForCurrentModel: vi.fn(() => 'test-openai-key')
+            getApiKeyForCurrentProvider: vi.fn(() => 'test-openai-key')
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
 
@@ -47,7 +47,7 @@ describe('OpenAIConversationNamingService', () => {
         fetchMock = vi.fn();
         global.fetch = fetchMock;
 
-        service = new OpenAIConversationNamingService();
+        service = new OpenAIConversationNamingAgent();
     });
 
     afterEach(() => {

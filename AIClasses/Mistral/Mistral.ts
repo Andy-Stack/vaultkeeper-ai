@@ -56,7 +56,7 @@ export class Mistral extends ChatCompletionsAIClass {
         return new AIToolResponse(toolCall.name, new AIToolResponsePayload({ result }), toolCall.toolId);
     }
 
-    protected formatBinaryFiles(attachments: Attachment[]): string {
+    protected formatBinaryFiles(attachments: Attachment[]): Promise<string> {
         const contentParts: ChatCompletionContentPart[] = [];
         const fileService = this.aiFileService as MistralFileService;
 
@@ -76,7 +76,7 @@ export class Mistral extends ChatCompletionsAIClass {
             if (!isPlainText && !this.isSupportedMimeType(mimeType)) {
                 contentParts.push({
                     type: "text",
-                    text: `Unsupported mime type '${mimeType}': ${attachment.fileName}`
+                    text: `User attempted to share a file with an unsupported mime type '${mimeType}': ${attachment.fileName}`
                 });
                 continue;
             }
@@ -105,7 +105,7 @@ export class Mistral extends ChatCompletionsAIClass {
                     { type: "text", text: replaceCopy(Copy.AttachedFile, [attachment.fileName]) },
                     {
                         type: "image_url",
-                        image_url: signedUrl
+                        image_url: { url: signedUrl }
                     }
                 );
             } else {
@@ -116,7 +116,7 @@ export class Mistral extends ChatCompletionsAIClass {
             }
         }
 
-        return JSON.stringify(contentParts);
+        return Promise.resolve(JSON.stringify(contentParts));
     }
 
     protected getTools(): ChatCompletionToolDefinition[] {

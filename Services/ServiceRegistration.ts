@@ -1,5 +1,5 @@
 // Core and Enums
-import { AIProvider, fromModel } from "Enums/ApiProvider";
+import { AIProvider } from "Enums/ApiProvider";
 import { Environment } from "Enums/Environment";
 import type VaultkeeperAIPlugin from "main";
 import { AssetsService } from "./AssetsService";
@@ -41,19 +41,22 @@ import { HelpModal } from "Modals/HelpModal";
 // AI Classes
 import type { IAIClass } from "AIClasses/IAIClass";
 import type { IAIFileService } from "AIClasses/IAIFileService";
-import type { IConversationNamingService } from "AIClasses/IConversationNamingService";
+import type { IConversationNamingAgent } from "AIClasses/IConversationNamingAgent";
 import { Claude } from "AIClasses/Claude/Claude";
-import { ClaudeConversationNamingService } from "AIClasses/Claude/ClaudeConversationNamingService";
+import { ClaudeConversationNamingAgent } from "AIClasses/Claude/ClaudeConversationNamingAgent";
 import { ClaudeFileService } from "AIClasses/Claude/ClaudeFileService";
 import { Gemini } from "AIClasses/Gemini/Gemini";
-import { GeminiConversationNamingService } from "AIClasses/Gemini/GeminiConversationNamingService";
+import { GeminiConversationNamingAgent } from "AIClasses/Gemini/GeminiConversationNamingAgent";
 import { GeminiFileService } from "AIClasses/Gemini/GeminiFileService";
 import { Mistral } from "AIClasses/Mistral/Mistral";
-import { MistralConversationNamingService } from "AIClasses/Mistral/MistralConversationNamingService";
+import { MistralConversationNamingAgent } from "AIClasses/Mistral/MistralConversationNamingAgent";
 import { MistralFileService } from "AIClasses/Mistral/MistralFileService";
 import { OpenAI } from "AIClasses/OpenAI/OpenAI";
-import { OpenAIConversationNamingService } from "AIClasses/OpenAI/OpenAIConversationNamingService";
+import { OpenAIConversationNamingAgent } from "AIClasses/OpenAI/OpenAIConversationNamingAgent";
 import { OpenAIFileService } from "AIClasses/OpenAI/OpenAIFileService";
+import { Local } from "AIClasses/Local/Local";
+import { LocalConversationNamingAgent } from "AIClasses/Local/LocalConversationNamingAgent";
+import { LocalFileService } from "AIClasses/Local/LocalFileService";
 
 // Prompts
 import { AIPrompt, type IPrompt } from "AIPrompts/IPrompt";
@@ -109,27 +112,32 @@ export function RegisterDependencies() {
 
 export function RegisterAiProvider() {
     const settingsService = Resolve<SettingsService>(Services.SettingsService);
-    const provider = fromModel(settingsService.settings.model);
+    const provider = settingsService.settings.provider;
 
     if (provider == AIProvider.Claude) {
         RegisterSingleton<IAIFileService>(Services.IAIFileService, new ClaudeFileService());
         RegisterSingleton<IAIClass>(Services.IAIClass, new Claude());
-        RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new ClaudeConversationNamingService());
+        RegisterSingleton<IConversationNamingAgent>(Services.IConversationNamingService, new ClaudeConversationNamingAgent());
     }
     else if (provider == AIProvider.Gemini) {
         RegisterSingleton<IAIFileService>(Services.IAIFileService, new GeminiFileService());
         RegisterSingleton<IAIClass>(Services.IAIClass, new Gemini());
-        RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new GeminiConversationNamingService());
+        RegisterSingleton<IConversationNamingAgent>(Services.IConversationNamingService, new GeminiConversationNamingAgent());
     }
     else if (provider == AIProvider.OpenAI) {
         RegisterSingleton<IAIFileService>(Services.IAIFileService, new OpenAIFileService());
         RegisterSingleton<IAIClass>(Services.IAIClass, new OpenAI());
-        RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new OpenAIConversationNamingService());
+        RegisterSingleton<IConversationNamingAgent>(Services.IConversationNamingService, new OpenAIConversationNamingAgent());
     }
     else if (provider == AIProvider.Mistral) {
         RegisterSingleton<IAIFileService>(Services.IAIFileService, new MistralFileService());
         RegisterSingleton<IAIClass>(Services.IAIClass, new Mistral());
-        RegisterSingleton<IConversationNamingService>(Services.IConversationNamingService, new MistralConversationNamingService());
+        RegisterSingleton<IConversationNamingAgent>(Services.IConversationNamingService, new MistralConversationNamingAgent());
+    }
+    else if (provider == AIProvider.Local) {
+        RegisterSingleton<IAIFileService>(Services.IAIFileService, new LocalFileService());
+        RegisterSingleton<IAIClass>(Services.IAIClass, new Local());
+        RegisterSingleton<IConversationNamingAgent>(Services.IConversationNamingService, new LocalConversationNamingAgent());
     }
 
     Resolve<MainAgent>(Services.MainAgent).resolveAIProvider();

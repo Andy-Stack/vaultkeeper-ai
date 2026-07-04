@@ -230,10 +230,11 @@ export class AIToolService {
                 }
     
                 // This is only used by gemini
-                case AITool.RequestWebSearch:
-                    return new AIToolResponse(toolCall.name, new AIToolResponsePayload({}), toolCall.toolId)
+                case AITool.RequestWebSearch: {
+                    return new AIToolResponse(toolCall.name, new AIToolResponsePayload({}), toolCall.toolId);
+                }
 
-                // multi-agent functions are handled elsewhere - this shouldn't really ever get hit
+                // Multi-agent functions are handled elsewhere - this shouldn't really ever get hit
                 case AITool.ExecuteWorkflow:
                 case AITool.ContinuePlanExecution:
                 case AITool.SubmitPlan:

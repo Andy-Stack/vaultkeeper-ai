@@ -8,7 +8,6 @@ import {
     DEFAULT_MODEL_BY_PROVIDER,
     DEFAULT_PLANNING_MODEL_BY_PROVIDER,
     DEFAULT_QUICK_MODEL_BY_PROVIDER,
-    fromModel,
     isvalidProvider,
     isValidProviderModel,
     modelMatchesProvider
@@ -20,35 +19,53 @@ export const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     chatMode: ChatMode.ReadOnly,
     userInstruction: "",
 
-    provider: AIProvider.Claude,
+    provider: AIProvider.Local,
     model: AIProviderModel.ClaudeSonnet_4_6,
     planningModel: AIProviderModel.ClaudeOpus_4_8,
     quickActionModel: AIProviderModel.ClaudeHaiku_4_5,
     
     cachedModelSettings: {
         [AIProvider.Claude]: {
+            model: DEFAULT_MODEL_BY_PROVIDER[AIProvider.Claude],
             planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.Claude],
             quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.Claude]
         },
         [AIProvider.OpenAI]: {
+            model: DEFAULT_MODEL_BY_PROVIDER[AIProvider.OpenAI],
             planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.OpenAI],
             quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.OpenAI]
         },
         [AIProvider.Gemini]: {
+            model: DEFAULT_MODEL_BY_PROVIDER[AIProvider.Gemini],
             planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.Gemini],
             quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.Gemini]
         },
         [AIProvider.Mistral]: {
+            model: DEFAULT_MODEL_BY_PROVIDER[AIProvider.Mistral],
             planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.Mistral],
             quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.Mistral]
+        },
+        [AIProvider.Local]: {
+            model: DEFAULT_MODEL_BY_PROVIDER[AIProvider.Local],
+            planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.Local],
+            quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.Local]
         }
+    },
+
+    localUrl: "",
+
+    localModels: {
+        model: "",
+        planningModel: "",
+        quickActionModel: ""
     },
 
     apiKeys: {
         claude: "",
         openai: "",
         gemini: "",
-        mistral: ""
+        mistral: "",
+        local: ""
     },
     exclusions: [],
 
@@ -80,12 +97,21 @@ export interface IVaultkeeperAISettings {
 
     cachedModelSettings: Record<AIProvider, ProviderModelCache>;
 
+    localUrl: string;
+
+    localModels: {
+        model: string;
+        planningModel: string;
+        quickActionModel: string;   
+    }
+
     apiKeys: {
         claude: string;
         openai: string;
         gemini: string;
         mistral: string;
-    };
+        local: string;
+    }
     exclusions: string[];
 
     searchResultsLimit: number;
@@ -104,6 +130,7 @@ export interface IVaultkeeperAISettings {
 }
 
 export interface ProviderModelCache {
+    model: AIProviderModel;
     planningModel: AIProviderModel;
     quickActionModel: AIProviderModel;
 }
@@ -123,7 +150,10 @@ export class SettingsService {
 
     public constructor(loadedSettings: Partial<IVaultkeeperAISettings>) {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings, {
+            apiKeys: Object.assign({}, DEFAULT_SETTINGS.apiKeys, loadedSettings.apiKeys),
+            localModels: Object.assign({}, DEFAULT_SETTINGS.localModels, loadedSettings.localModels)
+        });
         this.settingsSnapshot = JSON.stringify(this.settings);
         void this.ensureValidModels();
     }
@@ -144,9 +174,8 @@ export class SettingsService {
         await this.saveSettings();
     }
 
-    public getApiKeyForCurrentModel(): string {
-        const provider = fromModel(this.settings.model);
-        return this.getApiKeyForProvider(provider);
+    public getApiKeyForCurrentProvider(): string {
+        return this.getApiKeyForProvider(this.settings.provider);
     }
 
     public getApiKeyForProvider(provider: AIProvider): string {
@@ -159,6 +188,8 @@ export class SettingsService {
                 return this.settings.apiKeys.gemini;
             case AIProvider.Mistral:
                 return this.settings.apiKeys.mistral;
+            case AIProvider.Local:
+                return this.settings.apiKeys.local;
         }
     }
 
@@ -175,6 +206,9 @@ export class SettingsService {
                 break;
             case AIProvider.Mistral:
                 await this.updateSettings(settings => settings.apiKeys.mistral = key);
+                break;
+            case AIProvider.Local:
+                await this.updateSettings(settings => settings.apiKeys.local = key);
                 break;
         }
     }
@@ -198,6 +232,9 @@ export class SettingsService {
             }
 
             const cached = settings.cachedModelSettings[settings.provider];
+            if (!isValidProviderModel(cached.model) || !modelMatchesProvider(cached.model, settings.provider)) {
+                settings.cachedModelSettings[settings.provider].model = DEFAULT_MODEL_BY_PROVIDER[settings.provider];
+            }
             if (!isValidProviderModel(cached.planningModel) || !modelMatchesProvider(cached.planningModel, settings.provider)) {
                 settings.cachedModelSettings[settings.provider].planningModel = DEFAULT_PLANNING_MODEL_BY_PROVIDER[settings.provider];
             }

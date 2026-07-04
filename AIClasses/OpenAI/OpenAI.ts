@@ -331,7 +331,7 @@ export class OpenAI extends BaseAIClass {
         }));
     }
 
-    protected formatBinaryFiles(attachments: Attachment[]): string {
+    protected formatBinaryFiles(attachments: Attachment[]): Promise<string> {
         const contentBlocks: unknown[] = [];
 
         for (const attachment of attachments) {
@@ -350,7 +350,7 @@ export class OpenAI extends BaseAIClass {
             }
 
             if (!isPlainText && !this.isSupportedMimeType(mimeType)) {
-                contentBlocks.push({ type: "input_text", text: `Unsupported mime type '${mimeType}': ${attachment.fileName}` });
+                contentBlocks.push({ type: "input_text", text: `User attempted to share a file with an unsupported mime type '${mimeType}': ${attachment.fileName}` });
                 continue;
             }
 
@@ -363,10 +363,10 @@ export class OpenAI extends BaseAIClass {
             );
         }
 
-        return JSON.stringify([{
+        return Promise.resolve(JSON.stringify([{
             role: "user",
             content: contentBlocks
-        }]);
+        }]));
     }
 
     private getTools(): (OpenAIToolTool | { type: string })[] {

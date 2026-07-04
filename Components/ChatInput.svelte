@@ -26,6 +26,7 @@
   import { ChatMode, chatModeAllowsEdits, iconForChatMode } from "Enums/ChatMode";
 	import { hideDrawerElements, restoreDrawerElements } from "Helpers/ElementHelper";
 	import { replaceCopy } from "Helpers/Helpers";
+	import { AIProvider } from "Enums/ApiProvider";
 
   export let attachments: Attachment[] = [];
 
@@ -64,6 +65,7 @@
   let questionResolver: ((answer: string) => void) | null = null;
 
   let webSearchActive: boolean = settingsService.settings.enableWebSearch;
+  let webSearchUnavailable: boolean = settingsService.settings.provider === AIProvider.Local;
   let editsAllowed: boolean = chatModeAllowsEdits(chatMode);
 
   let countdownIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -81,6 +83,9 @@
       if (chatModeButton) {
         setIcon(chatModeButton, iconForChatMode(chatMode));
       }
+    }
+    if (changed.includes("provider")) {
+      webSearchUnavailable = settingsService.settings.provider === AIProvider.Local;
     }
   });
 
@@ -200,7 +205,7 @@
   }
 
   $: if (webSearchButton) {
-    setIcon(webSearchButton, "globe");
+    setIcon(webSearchButton, webSearchUnavailable ? "globe-lock" : "globe");
   }
 
   $: userInstructionAreaActive, (() => {
@@ -305,6 +310,9 @@
   }
 
   function toggleWebSearch() {
+    if (webSearchUnavailable) {
+      return;
+    }
     const newState = !settingsService.settings.enableWebSearch;
     settingsService.updateSettings(settings => {
       settings.enableWebSearch = newState;
@@ -573,10 +581,11 @@
 
   <button
     id="web-search-button"
-    class:input-button-highlight={webSearchActive}
+    class:input-button-highlight={webSearchActive && !webSearchUnavailable}
     bind:this={webSearchButton}
+    disabled={webSearchUnavailable}
     on:click={toggleWebSearch}
-    aria-label={webSearchActive ? Copy.ButtonTurnOffWebSearch : Copy.ButtonTurnOnWebSearch}>
+    aria-label={webSearchUnavailable ? Copy.ButtonWebSearchUnavailable : (webSearchActive ? Copy.ButtonTurnOffWebSearch : Copy.ButtonTurnOnWebSearch)}>
   </button>
 
   <div

@@ -53,7 +53,7 @@ describe('Claude', () => {
                 if (provider === AIProvider.Gemini) return 'test-gemini-key';
                 return '';
             }),
-            getApiKeyForCurrentModel: vi.fn(() => 'test-claude-key'),
+            getApiKeyForCurrentProvider: vi.fn(() => 'test-claude-key'),
             subscribeToSettingsChanged: vi.fn()
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
@@ -1227,7 +1227,7 @@ describe('Claude', () => {
     });
 
     describe('formatBinaryFiles', () => {
-        it('should format PDF files with document type', () => {
+        it('should format PDF files with document type', async () => {
             const attachment = {
                 fileName: 'report.pdf',
                 mimeType: 'application/pdf',
@@ -1238,7 +1238,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (claude as any).formatBinaryFiles([attachment as any]);
+            const result = await (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1255,7 +1255,7 @@ describe('Claude', () => {
             });
         });
 
-        it('should format JPEG images with image type', () => {
+        it('should format JPEG images with image type', async () => {
             const attachment = {
                 fileName: 'photo.jpg',
                 mimeType: 'image/jpeg',
@@ -1266,7 +1266,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (claude as any).formatBinaryFiles([attachment as any]);
+            const result = await (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1283,7 +1283,7 @@ describe('Claude', () => {
             });
         });
 
-        it('should format PNG images with image type', () => {
+        it('should format PNG images with image type', async () => {
             const attachment = {
                 fileName: 'diagram.png',
                 mimeType: 'image/png',
@@ -1294,7 +1294,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (claude as any).formatBinaryFiles([attachment as any]);
+            const result = await (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1307,7 +1307,7 @@ describe('Claude', () => {
             });
         });
 
-        it('should format GIF images with image type', () => {
+        it('should format GIF images with image type', async () => {
             const attachment = {
                 fileName: 'animation.gif',
                 mimeType: 'image/gif',
@@ -1318,7 +1318,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (claude as any).formatBinaryFiles([attachment as any]);
+            const result = await (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1331,7 +1331,7 @@ describe('Claude', () => {
             });
         });
 
-        it('should format WebP images with image type', () => {
+        it('should format WebP images with image type', async () => {
             const attachment = {
                 fileName: 'modern.webp',
                 mimeType: 'image/webp',
@@ -1342,7 +1342,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (claude as any).formatBinaryFiles([attachment as any]);
+            const result = await (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1355,7 +1355,7 @@ describe('Claude', () => {
             });
         });
 
-        it('should handle unsupported image formats with error message', () => {
+        it('should handle unsupported image formats with error message', async () => {
             const attachment = {
                 fileName: 'photo.bmp',
                 mimeType: 'image/bmp',
@@ -1366,17 +1366,17 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (claude as any).formatBinaryFiles([attachment as any]);
+            const result = await (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
             expect(parsed[0]).toEqual({
                 type: 'text',
-                text: 'Unsupported mime type \'image/bmp\': photo.bmp'
+                text: 'User attempted to share a file with an unsupported mime type \'image/bmp\': photo.bmp'
             });
         });
 
-        it('should handle multiple files of different types', () => {
+        it('should handle multiple files of different types', async () => {
             const attachments = [
                 {
                     fileName: 'doc.pdf',
@@ -1407,7 +1407,7 @@ describe('Claude', () => {
                 }
             ];
 
-            const result = (claude as any).formatBinaryFiles(attachments as any);
+            const result = await (claude as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(6);
@@ -1443,7 +1443,7 @@ describe('Claude', () => {
             });
         });
 
-        it('should handle mixed supported and unsupported files', () => {
+        it('should handle mixed supported and unsupported files', async () => {
             const attachments = [
                 {
                     fileName: 'good.jpg',
@@ -1474,7 +1474,7 @@ describe('Claude', () => {
                 }
             ];
 
-            const result = (claude as any).formatBinaryFiles(attachments as any);
+            const result = await (claude as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(5);
@@ -1484,14 +1484,14 @@ describe('Claude', () => {
             expect(parsed[1].type).toBe('image');
             expect(parsed[2]).toEqual({
                 type: 'text',
-                text: 'Unsupported mime type \'image/bmp\': bad.bmp'
+                text: 'User attempted to share a file with an unsupported mime type \'image/bmp\': bad.bmp'
             });
             expect(parsed[3].type).toBe('text');
             expect(parsed[3].text).toBe(replaceCopy(Copy.AttachedFile, ["doc.pdf"]));
             expect(parsed[4].type).toBe('document');
         });
 
-        it('should skip files without file IDs', () => {
+        it('should skip files without file IDs', async () => {
             const attachment = {
                 fileName: 'image.png',
                 mimeType: 'image/png',
@@ -1502,14 +1502,14 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (claude as any).formatBinaryFiles([attachment as any]);
+            const result = await (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             // Should return empty array when no file ID is available
             expect(parsed).toHaveLength(0);
         });
 
-        it('should handle files with uppercase extensions', () => {
+        it('should handle files with uppercase extensions', async () => {
             const attachments = [
                 {
                     fileName: 'document.PDF',
@@ -1531,7 +1531,7 @@ describe('Claude', () => {
                 }
             ];
 
-            const result = (claude as any).formatBinaryFiles(attachments as any);
+            const result = await (claude as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(4);
@@ -1541,16 +1541,16 @@ describe('Claude', () => {
             expect(parsed[3].type).toBe('image');
         });
 
-        it('should handle empty files array', () => {
+        it('should handle empty files array', async () => {
             const attachments: any[] = [];
 
-            const result = (claude as any).formatBinaryFiles(attachments);
+            const result = await (claude as any).formatBinaryFiles(attachments);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(0);
         });
 
-        it('should properly encode filenames with special characters', () => {
+        it('should properly encode filenames with special characters', async () => {
             const attachment = {
                 fileName: 'report (final) v2.pdf',
                 mimeType: 'application/pdf',
@@ -1561,13 +1561,13 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (claude as any).formatBinaryFiles([attachment as any]);
+            const result = await (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed[0].text).toBe(replaceCopy(Copy.AttachedFile, ["report (final) v2.pdf"]));
         });
 
-        it('should handle JPEG files with .jpeg extension', () => {
+        it('should handle JPEG files with .jpeg extension', async () => {
             const attachment = {
                 fileName: 'photo.jpeg',
                 mimeType: 'image/jpeg',
@@ -1578,7 +1578,7 @@ describe('Claude', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (claude as any).formatBinaryFiles([attachment as any]);
+            const result = await (claude as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed[1]).toEqual({

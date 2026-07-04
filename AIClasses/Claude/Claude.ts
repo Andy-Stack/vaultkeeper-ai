@@ -284,7 +284,7 @@ export class Claude extends BaseAIClass {
         }));
     }
 
-    protected formatBinaryFiles(attachments: Attachment[]): string {
+    protected formatBinaryFiles(attachments: Attachment[]): Promise<string> {
         const contentBlocks = attachments.flatMap(attachment => {
             const fileID = attachment.getFileID(this.provider);
             if (!fileID) {
@@ -301,7 +301,7 @@ export class Claude extends BaseAIClass {
             }
 
             if (!isPlainText && !this.isSupportedMimeType(mimeType)) {
-                return [{ type: "text", text: `Unsupported mime type '${mimeType}': ${attachment.fileName}` }];
+                return [{ type: "text", text: `User attempted to share a file with an unsupported mime type '${mimeType}': ${attachment.fileName}` }];
             }
 
             return [
@@ -315,7 +315,7 @@ export class Claude extends BaseAIClass {
                 }
             ];
         });
-        return JSON.stringify(contentBlocks);
+        return Promise.resolve(JSON.stringify(contentBlocks));
     }
 
     // Adds cache control to the last tool in the tools array.

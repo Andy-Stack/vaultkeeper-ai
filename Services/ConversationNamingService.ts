@@ -1,6 +1,6 @@
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import type { IConversationNamingService } from "AIClasses/IConversationNamingService";
+import type { IConversationNamingAgent } from "AIClasses/IConversationNamingAgent";
 import type { ConversationFileSystemService } from "./ConversationFileSystemService";
 import type { Conversation } from "Conversations/Conversation";
 import type { VaultService } from "./VaultService";
@@ -12,7 +12,7 @@ import { AbortService } from "./AbortService";
 export class ConversationNamingService {
     private readonly stackLimit: number = 1000;
 
-    private namingProvider: IConversationNamingService | undefined;
+    private namingProvider: IConversationNamingAgent | undefined;
     private conversationService: ConversationFileSystemService;
     private vaultService: VaultService;
     private abortService: AbortService;
@@ -24,7 +24,7 @@ export class ConversationNamingService {
     }
 
     public resolveNamingProvider() {
-        this.namingProvider = Resolve<IConversationNamingService>(Services.IConversationNamingService);
+        this.namingProvider = Resolve<IConversationNamingAgent>(Services.IConversationNamingService);
     }
 
     public async requestName(conversation: Conversation, userPrompt: string, onNameChanged: ((name: string) => void) | undefined) {

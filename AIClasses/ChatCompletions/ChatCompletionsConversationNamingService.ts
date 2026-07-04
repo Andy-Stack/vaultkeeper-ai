@@ -1,6 +1,6 @@
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
-import type { IConversationNamingService } from "AIClasses/IConversationNamingService";
+import type { IConversationNamingAgent } from "AIClasses/IConversationNamingAgent";
 import type { AIProvider } from "Enums/ApiProvider";
 import { Role } from "Enums/Role";
 import { NamePrompt } from "AIPrompts/NamePrompt";
@@ -10,11 +10,11 @@ import type { AbortService } from "Services/AbortService";
 import type { ChatCompletionResponse } from "./ChatCompletionsTypes";
 
 /**
- * Base conversation-naming service for providers speaking the OpenAI-compatible
+ * Base conversation-naming agent for providers speaking the OpenAI-compatible
  * Chat Completions protocol. Subclasses supply only the endpoint and namer model;
  * the request shape and response parsing are identical across such providers.
  */
-export abstract class ChatCompletionsConversationNamingService implements IConversationNamingService {
+export abstract class ChatCompletionsConversationNamingAgent implements IConversationNamingAgent {
 
     private readonly apiKey: string;
     private readonly abortService: AbortService;

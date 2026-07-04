@@ -1,3 +1,3 @@
-export interface IConversationNamingService {
+export interface IConversationNamingAgent {
     generateName(userPrompt: string): Promise<string>;
 }

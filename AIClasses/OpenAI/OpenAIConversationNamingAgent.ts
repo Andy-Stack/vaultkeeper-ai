@@ -1,6 +1,6 @@
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
-import type { IConversationNamingService } from "AIClasses/IConversationNamingService";
+import type { IConversationNamingAgent } from "AIClasses/IConversationNamingAgent";
 import { AIProvider, AIProviderURL, AIProviderModel } from "Enums/ApiProvider";
 import { Role } from "Enums/Role";
 import { NamePrompt } from "AIPrompts/NamePrompt";
@@ -9,7 +9,7 @@ import { Exception } from "Helpers/Exception";
 import type { AbortService } from "Services/AbortService";
 import type { ResponsesAPINonStreamingResponse } from "./OpenAITypes";
 
-export class OpenAIConversationNamingService implements IConversationNamingService {
+export class OpenAIConversationNamingAgent implements IConversationNamingAgent {
     private readonly apiKey: string;
     private readonly abortService: AbortService;
 

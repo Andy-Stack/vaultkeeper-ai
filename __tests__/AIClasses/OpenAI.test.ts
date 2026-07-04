@@ -54,7 +54,7 @@ describe('OpenAI', () => {
                 if (provider === AIProvider.Gemini) return 'test-gemini-key';
                 return '';
             }),
-            getApiKeyForCurrentModel: vi.fn(() => 'test-openai-key'),
+            getApiKeyForCurrentProvider: vi.fn(() => 'test-openai-key'),
             subscribeToSettingsChanged: vi.fn()
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
@@ -1001,7 +1001,7 @@ describe('OpenAI', () => {
     });
 
     describe('formatBinaryFiles', () => {
-        it('should format PDF files with file_id reference', () => {
+        it('should format PDF files with file_id reference', async () => {
             const attachment = {
                 fileName: 'report.pdf',
                 mimeType: 'application/pdf',
@@ -1012,7 +1012,7 @@ describe('OpenAI', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (openai as any).formatBinaryFiles([attachment as any]);
+            const result = await (openai as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1028,7 +1028,7 @@ describe('OpenAI', () => {
             });
         });
 
-        it('should format JPEG images with file_id reference', () => {
+        it('should format JPEG images with file_id reference', async () => {
             const attachment = {
                 fileName: 'photo.jpg',
                 mimeType: 'image/jpeg',
@@ -1039,7 +1039,7 @@ describe('OpenAI', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (openai as any).formatBinaryFiles([attachment as any]);
+            const result = await (openai as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1055,7 +1055,7 @@ describe('OpenAI', () => {
             });
         });
 
-        it('should format PNG images with file_id reference', () => {
+        it('should format PNG images with file_id reference', async () => {
             const attachment = {
                 fileName: 'diagram.png',
                 mimeType: 'image/png',
@@ -1066,7 +1066,7 @@ describe('OpenAI', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (openai as any).formatBinaryFiles([attachment as any]);
+            const result = await (openai as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1081,7 +1081,7 @@ describe('OpenAI', () => {
             });
         });
 
-        it('should format WebP images with file_id reference', () => {
+        it('should format WebP images with file_id reference', async () => {
             const attachment = {
                 fileName: 'modern.webp',
                 mimeType: 'image/webp',
@@ -1092,7 +1092,7 @@ describe('OpenAI', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (openai as any).formatBinaryFiles([attachment as any]);
+            const result = await (openai as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1107,7 +1107,7 @@ describe('OpenAI', () => {
             });
         });
 
-        it('should handle unsupported image formats with error message', () => {
+        it('should handle unsupported image formats with error message', async () => {
             const attachment = {
                 fileName: 'photo.gif',
                 mimeType: 'image/gif',
@@ -1118,18 +1118,18 @@ describe('OpenAI', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (openai as any).formatBinaryFiles([attachment as any]);
+            const result = await (openai as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
             expect(parsed[0].content).toHaveLength(1);
             expect(parsed[0].content[0]).toEqual({
                 type: 'input_text',
-                text: 'Unsupported mime type \'image/gif\': photo.gif'
+                text: 'User attempted to share a file with an unsupported mime type \'image/gif\': photo.gif'
             });
         });
 
-        it('should skip files without file IDs (failed uploads)', () => {
+        it('should skip files without file IDs (failed uploads)', async () => {
             const attachment = {
                 fileName: 'failed.pdf',
                 mimeType: 'application/pdf',
@@ -1140,7 +1140,7 @@ describe('OpenAI', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (openai as any).formatBinaryFiles([attachment as any]);
+            const result = await (openai as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1148,7 +1148,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(0); // No content blocks
         });
 
-        it('should handle multiple files of different types', () => {
+        it('should handle multiple files of different types', async () => {
             const attachments = [
                 {
                     fileName: 'doc.pdf',
@@ -1179,7 +1179,7 @@ describe('OpenAI', () => {
                 }
             ];
 
-            const result = (openai as any).formatBinaryFiles(attachments as any);
+            const result = await (openai as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1214,7 +1214,7 @@ describe('OpenAI', () => {
             });
         });
 
-        it('should handle mixed supported and unsupported files', () => {
+        it('should handle mixed supported and unsupported files', async () => {
             const attachments = [
                 {
                     fileName: 'good.jpg',
@@ -1245,7 +1245,7 @@ describe('OpenAI', () => {
                 }
             ];
 
-            const result = (openai as any).formatBinaryFiles(attachments as any);
+            const result = await (openai as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1258,7 +1258,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content[1].type).toBe('input_image');
             expect(parsed[0].content[2]).toEqual({
                 type: 'input_text',
-                text: 'Unsupported mime type \'image/bmp\': bad.bmp'
+                text: 'User attempted to share a file with an unsupported mime type \'image/bmp\': bad.bmp'
             });
             expect(parsed[0].content[3]).toEqual({
                 type: 'input_text',
@@ -1267,7 +1267,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content[4].type).toBe('input_file');
         });
 
-        it('should handle mixed successful and failed uploads', () => {
+        it('should handle mixed successful and failed uploads', async () => {
             const attachments = [
                 {
                     fileName: 'success.pdf',
@@ -1289,7 +1289,7 @@ describe('OpenAI', () => {
                 }
             ];
 
-            const result = (openai as any).formatBinaryFiles(attachments as any);
+            const result = await (openai as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1304,8 +1304,8 @@ describe('OpenAI', () => {
             });
         });
 
-        it('should handle empty attachments array', () => {
-            const result = (openai as any).formatBinaryFiles([]);
+        it('should handle empty attachments array', async () => {
+            const result = await (openai as any).formatBinaryFiles([]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
@@ -1313,7 +1313,7 @@ describe('OpenAI', () => {
             expect(parsed[0].content).toHaveLength(0);
         });
 
-        it('should handle all files with failed uploads', () => {
+        it('should handle all files with failed uploads', async () => {
             const attachments = [
                 {
                     fileName: 'failed1.pdf',
@@ -1335,7 +1335,7 @@ describe('OpenAI', () => {
                 }
             ];
 
-            const result = (openai as any).formatBinaryFiles(attachments as any);
+            const result = await (openai as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);

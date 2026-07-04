@@ -51,7 +51,7 @@ describe('Gemini', () => {
                 if (provider === AIProvider.Gemini) return 'test-gemini-key';
                 return '';
             }),
-            getApiKeyForCurrentModel: vi.fn(() => 'test-gemini-key'),
+            getApiKeyForCurrentProvider: vi.fn(() => 'test-gemini-key'),
             subscribeToSettingsChanged: vi.fn()
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
@@ -1149,7 +1149,7 @@ describe('Gemini', () => {
     });
 
     describe('formatBinaryFiles', () => {
-        it('should format PDF files with fileData', () => {
+        it('should format PDF files with fileData', async () => {
             const attachment = {
                 fileName: 'report.pdf',
                 mimeType: 'application/pdf',
@@ -1160,7 +1160,7 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (gemini as any).formatBinaryFiles([attachment as any]);
+            const result = await (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1175,7 +1175,7 @@ describe('Gemini', () => {
             });
         });
 
-        it('should format JPEG images with fileData', () => {
+        it('should format JPEG images with fileData', async () => {
             const attachment = {
                 fileName: 'photo.jpg',
                 mimeType: 'image/jpeg',
@@ -1186,7 +1186,7 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (gemini as any).formatBinaryFiles([attachment as any]);
+            const result = await (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1201,7 +1201,7 @@ describe('Gemini', () => {
             });
         });
 
-        it('should format PNG images with fileData', () => {
+        it('should format PNG images with fileData', async () => {
             const attachment = {
                 fileName: 'diagram.png',
                 mimeType: 'image/png',
@@ -1212,7 +1212,7 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (gemini as any).formatBinaryFiles([attachment as any]);
+            const result = await (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -1224,7 +1224,7 @@ describe('Gemini', () => {
             });
         });
 
-        it('should handle unsupported image formats (GIF) with error message', () => {
+        it('should handle unsupported image formats (GIF) with error message', async () => {
             const attachment = {
                 fileName: 'animation.gif',
                 mimeType: 'image/gif',
@@ -1235,16 +1235,16 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (gemini as any).formatBinaryFiles([attachment as any]);
+            const result = await (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
             expect(parsed[0]).toEqual({
-                text: 'Unsupported mime type \'image/gif\': animation.gif'
+                text: 'User attempted to share a file with an unsupported mime type \'image/gif\': animation.gif'
             });
         });
 
-        it('should handle unsupported image formats (BMP) with error message', () => {
+        it('should handle unsupported image formats (BMP) with error message', async () => {
             const attachment = {
                 fileName: 'photo.bmp',
                 mimeType: 'image/bmp',
@@ -1255,16 +1255,16 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (gemini as any).formatBinaryFiles([attachment as any]);
+            const result = await (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
             expect(parsed[0]).toEqual({
-                text: 'Unsupported mime type \'image/bmp\': photo.bmp'
+                text: 'User attempted to share a file with an unsupported mime type \'image/bmp\': photo.bmp'
             });
         });
 
-        it('should handle multiple files of different types', () => {
+        it('should handle multiple files of different types', async () => {
             const attachments = [
                 {
                     fileName: 'doc.pdf',
@@ -1295,7 +1295,7 @@ describe('Gemini', () => {
                 }
             ];
 
-            const result = (gemini as any).formatBinaryFiles(attachments as any);
+            const result = await (gemini as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(6);
@@ -1328,7 +1328,7 @@ describe('Gemini', () => {
             });
         });
 
-        it('should handle mixed supported and unsupported files', () => {
+        it('should handle mixed supported and unsupported files', async () => {
             const attachments = [
                 {
                     fileName: 'good.jpg',
@@ -1359,7 +1359,7 @@ describe('Gemini', () => {
                 }
             ];
 
-            const result = (gemini as any).formatBinaryFiles(attachments as any);
+            const result = await (gemini as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(5);
@@ -1367,13 +1367,13 @@ describe('Gemini', () => {
             expect(parsed[0]).toEqual({ text: replaceCopy(Copy.AttachedFile, ["good.jpg"]) });
             expect(parsed[1]).toHaveProperty('fileData');
             expect(parsed[2]).toEqual({
-                text: 'Unsupported mime type \'image/bmp\': bad.bmp'
+                text: 'User attempted to share a file with an unsupported mime type \'image/bmp\': bad.bmp'
             });
             expect(parsed[3]).toEqual({ text: replaceCopy(Copy.AttachedFile, ["doc.pdf"]) });
             expect(parsed[4]).toHaveProperty('fileData');
         });
 
-        it('should skip files without file IDs (failed uploads)', () => {
+        it('should skip files without file IDs (failed uploads)', async () => {
             const attachments = [
                 {
                     fileName: 'success.pdf',
@@ -1395,7 +1395,7 @@ describe('Gemini', () => {
                 }
             ];
 
-            const result = (gemini as any).formatBinaryFiles(attachments as any);
+            const result = await (gemini as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2); // Only successful upload
@@ -1408,14 +1408,14 @@ describe('Gemini', () => {
             });
         });
 
-        it('should handle empty attachments array', () => {
-            const result = (gemini as any).formatBinaryFiles([]);
+        it('should handle empty attachments array', async () => {
+            const result = await (gemini as any).formatBinaryFiles([]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(0);
         });
 
-        it('should properly encode filenames with special characters', () => {
+        it('should properly encode filenames with special characters', async () => {
             const attachment = {
                 fileName: 'report (final) v2.pdf',
                 mimeType: 'application/pdf',
@@ -1426,13 +1426,13 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (gemini as any).formatBinaryFiles([attachment as any]);
+            const result = await (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed[0].text).toBe(replaceCopy(Copy.AttachedFile, ["report (final) v2.pdf"]));
         });
 
-        it('should handle JPEG files with .jpeg extension', () => {
+        it('should handle JPEG files with .jpeg extension', async () => {
             const attachment = {
                 fileName: 'photo.jpeg',
                 mimeType: 'image/jpeg',
@@ -1443,7 +1443,7 @@ describe('Gemini', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (gemini as any).formatBinaryFiles([attachment as any]);
+            const result = await (gemini as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed[1]).toEqual({

@@ -115,6 +115,15 @@ export function normalizePath(path: string): string {
 	return path.replace(/\\/g, '/');
 }
 
+export function arrayBufferToBase64(buffer: ArrayBuffer): string {
+	return Buffer.from(buffer).toString('base64');
+}
+
+export function base64ToArrayBuffer(base64: string): ArrayBuffer {
+	const buffer = Buffer.from(base64, 'base64');
+	return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+}
+
 export const requestUrl = vi.fn(() => Promise.resolve({
 	status: 200,
 	text: '',

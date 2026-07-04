@@ -19,6 +19,7 @@ import { ApplyTagsPrompt } from "AIPrompts/QuickActionPrompts/ApplyTagsPrompt";
 import { GenerateFrontmatterPrompt } from "AIPrompts/QuickActionPrompts/GenerateFrontmatterPrompt";
 import { Semaphore } from "Helpers/Semaphore";
 import { SuggestTagsPrompt } from "AIPrompts/QuickActionPrompts/SuggestTagsPrompt";
+import { AIProvider } from "Enums/ApiProvider";
 
 export class QuickActionsDefinitionsService {
 
@@ -364,7 +365,7 @@ export class QuickActionsDefinitionsService {
     }
 
     private async performAction(action: string, context: string): Promise<string | null> {
-        if (this.settingsService.getApiKeyForCurrentModel().trim() == "") {
+        if (this.settingsService.settings.provider !== AIProvider.Local && this.settingsService.getApiKeyForCurrentProvider().trim() == "") {
             openPluginSettings(this.plugin);
             return null;
         }

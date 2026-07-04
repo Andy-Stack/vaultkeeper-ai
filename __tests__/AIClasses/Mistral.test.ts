@@ -54,7 +54,7 @@ describe('Mistral', () => {
                 if (provider === AIProvider.Mistral) return 'test-mistral-key';
                 return '';
             }),
-            getApiKeyForCurrentModel: vi.fn(() => 'test-mistral-key'),
+            getApiKeyForCurrentProvider: vi.fn(() => 'test-mistral-key'),
             subscribeToSettingsChanged: vi.fn()
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
@@ -563,7 +563,7 @@ describe('Mistral', () => {
 
             const imagePart = contentParts.find(p => p.type === 'image_url');
             expect(imagePart).toBeDefined();
-            expect(imagePart.image_url).toBe('https://signed-url.com/file_123');
+            expect(imagePart.image_url).toStrictEqual({ 'url': 'https://signed-url.com/file_123' });
         });
 
         it('should handle attachments with PDFs correctly', async () => {
@@ -624,7 +624,7 @@ describe('Mistral', () => {
             expect(contentParts.length).toBeGreaterThan(1);
 
             // Should have text part with error message
-            const errorPart = contentParts.find(p => p.text?.includes('Unsupported mime type'));
+            const errorPart = contentParts.find(p => p.text?.includes('unsupported mime type'));
             expect(errorPart).toBeDefined();
         });
     });
@@ -691,7 +691,7 @@ describe('Mistral', () => {
     });
 
     describe('formatBinaryFiles', () => {
-        it('should format PDF files with document_url type', () => {
+        it('should format PDF files with document_url type', async () => {
             const attachment = {
                 fileName: 'report.pdf',
                 mimeType: 'application/pdf',
@@ -702,7 +702,7 @@ describe('Mistral', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (mistral as any).formatBinaryFiles([attachment as any]);
+            const result = await (mistral as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -716,7 +716,7 @@ describe('Mistral', () => {
             });
         });
 
-        it('should format JPEG images with image_url type', () => {
+        it('should format JPEG images with image_url type', async () => {
             const attachment = {
                 fileName: 'photo.jpg',
                 mimeType: 'image/jpeg',
@@ -727,7 +727,7 @@ describe('Mistral', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (mistral as any).formatBinaryFiles([attachment as any]);
+            const result = await (mistral as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
@@ -737,11 +737,11 @@ describe('Mistral', () => {
             });
             expect(parsed[1]).toEqual({
                 type: 'image_url',
-                image_url: 'https://signed-url.com/file_img_jpeg'
+                image_url: { 'url': 'https://signed-url.com/file_img_jpeg' }
             });
         });
 
-        it('should format PNG images with image_url type', () => {
+        it('should format PNG images with image_url type', async () => {
             const attachment = {
                 fileName: 'diagram.png',
                 mimeType: 'image/png',
@@ -752,17 +752,17 @@ describe('Mistral', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (mistral as any).formatBinaryFiles([attachment as any]);
+            const result = await (mistral as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(2);
             expect(parsed[1]).toEqual({
                 type: 'image_url',
-                image_url: 'https://signed-url.com/file_img_png'
+                image_url: { 'url': 'https://signed-url.com/file_img_png' }
             });
         });
 
-        it('should handle unsupported image formats with error message', () => {
+        it('should handle unsupported image formats with error message', async () => {
             const attachment = {
                 fileName: 'photo.bmp',
                 mimeType: 'image/bmp',
@@ -773,17 +773,17 @@ describe('Mistral', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (mistral as any).formatBinaryFiles([attachment as any]);
+            const result = await (mistral as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(1);
             expect(parsed[0]).toEqual({
                 type: 'text',
-                text: 'Unsupported mime type \'image/bmp\': photo.bmp'
+                text: 'User attempted to share a file with an unsupported mime type \'image/bmp\': photo.bmp'
             });
         });
 
-        it('should handle multiple files of different types', () => {
+        it('should handle multiple files of different types', async () => {
             const attachments = [
                 {
                     fileName: 'doc.pdf',
@@ -805,7 +805,7 @@ describe('Mistral', () => {
                 }
             ];
 
-            const result = (mistral as any).formatBinaryFiles(attachments as any);
+            const result = await (mistral as any).formatBinaryFiles(attachments as any);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(4);
@@ -821,11 +821,11 @@ describe('Mistral', () => {
             expect(parsed[2]).toEqual({ type: 'text', text: replaceCopy(Copy.AttachedFile, ["image.jpg"]) });
             expect(parsed[3]).toEqual({
                 type: 'image_url',
-                image_url: 'https://signed-url.com/file_2'
+                image_url: { 'url': 'https://signed-url.com/file_2' }
             });
         });
 
-        it('should skip files without file IDs', () => {
+        it('should skip files without file IDs', async () => {
             const attachment = {
                 fileName: 'image.png',
                 mimeType: 'image/png',
@@ -836,17 +836,17 @@ describe('Mistral', () => {
                 deleteFileID: vi.fn()
             };
 
-            const result = (mistral as any).formatBinaryFiles([attachment as any]);
+            const result = await (mistral as any).formatBinaryFiles([attachment as any]);
             const parsed = JSON.parse(result);
 
             // Should return empty array when no file ID is available
             expect(parsed).toHaveLength(0);
         });
 
-        it('should handle empty files array', () => {
+        it('should handle empty files array', async () => {
             const attachments: any[] = [];
 
-            const result = (mistral as any).formatBinaryFiles(attachments);
+            const result = await (mistral as any).formatBinaryFiles(attachments);
             const parsed = JSON.parse(result);
 
             expect(parsed).toHaveLength(0);

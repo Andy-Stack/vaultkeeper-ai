@@ -92,6 +92,6 @@ export interface ChatCompletionMessage {
 export interface ChatCompletionContentPart {
     type: "text" | "image_url" | "document_url";
     text?: string;
-    image_url?: string;
+    image_url?: { url: string };
     document_url?: string;
 }

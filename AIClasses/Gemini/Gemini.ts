@@ -318,7 +318,7 @@ export class Gemini extends BaseAIClass {
     }));
   }
 
-  protected formatBinaryFiles(attachments: Attachment[]): string {
+  protected formatBinaryFiles(attachments: Attachment[]): Promise<string> {
     const parts: unknown[] = [];
 
     for (const attachment of attachments) {
@@ -337,7 +337,7 @@ export class Gemini extends BaseAIClass {
       }
 
       if (!isPlainText && !this.isSupportedMimeType(mimeType)) {
-        parts.push({ text: `Unsupported mime type '${mimeType}': ${attachment.fileName}` });
+        parts.push({ text: `User attempted to share a file with an unsupported mime type '${mimeType}': ${attachment.fileName}` });
         continue;
       }
 
@@ -350,7 +350,7 @@ export class Gemini extends BaseAIClass {
       });
     }
 
-    return JSON.stringify(parts);
+    return Promise.resolve(JSON.stringify(parts));
   }
 
   private getTools(): { functionDeclarations: FunctionDeclaration[] } {

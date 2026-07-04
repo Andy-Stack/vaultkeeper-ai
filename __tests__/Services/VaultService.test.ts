@@ -52,7 +52,7 @@ const mockSettings: IVaultkeeperAISettings = makeTestSettings({
 	apiKeys: {
 		claude: 'test-claude-key',
 		openai: 'test-openai-key',
-		gemini: 'test-gemini-key', mistral: 'test-mistral-key'
+		gemini: 'test-gemini-key', mistral: 'test-mistral-key', local: 'test-local-key'
 	},
 	searchResultsLimit: 15,
 	snippetSizeLimit: 300,

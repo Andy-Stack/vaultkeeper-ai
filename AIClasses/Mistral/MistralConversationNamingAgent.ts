@@ -1,7 +1,7 @@
-import { ChatCompletionsConversationNamingService } from "AIClasses/ChatCompletions/ChatCompletionsConversationNamingService";
+import { ChatCompletionsConversationNamingAgent } from "AIClasses/ChatCompletions/ChatCompletionsConversationNamingService";
 import { AIProvider, AIProviderURL, AIProviderModel } from "Enums/ApiProvider";
 
-export class MistralConversationNamingService extends ChatCompletionsConversationNamingService {
+export class MistralConversationNamingAgent extends ChatCompletionsConversationNamingAgent {
 
     public constructor() {
         super(AIProvider.Mistral);

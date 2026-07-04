@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { GeminiConversationNamingService } from '../../AIClasses/Gemini/GeminiConversationNamingService';
+import { ClaudeConversationNamingAgent } from '../../AIClasses/Claude/ClaudeConversationNamingAgent';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { Role } from '../../Enums/Role';
 
-describe('GeminiConversationNamingService', () => {
-    let service: GeminiConversationNamingService;
+describe('ClaudeConversationNamingAgent', () => {
+    let service: ClaudeConversationNamingAgent;
     let mockPlugin: any;
     let mockSettingsService: any;
     let mockAbortService: any;
@@ -19,7 +19,7 @@ describe('GeminiConversationNamingService', () => {
         // Mock SettingsService
         mockSettingsService = {
             settings: {
-                model: AIProviderModel.GeminiFlash_3_5_Flash,
+                model: AIProviderModel.ClaudeSonnet_4_6,
                 apiKeys: {
                     claude: 'test-claude-key',
                     openai: 'test-openai-key',
@@ -32,7 +32,7 @@ describe('GeminiConversationNamingService', () => {
                 if (provider === AIProvider.Gemini) return 'test-gemini-key';
                 return '';
             }),
-            getApiKeyForCurrentModel: vi.fn(() => 'test-gemini-key')
+            getApiKeyForCurrentProvider: vi.fn(() => 'test-claude-key')
         };
         RegisterSingleton(Services.SettingsService, mockSettingsService);
 
@@ -47,7 +47,7 @@ describe('GeminiConversationNamingService', () => {
         fetchMock = vi.fn();
         global.fetch = fetchMock;
 
-        service = new GeminiConversationNamingService();
+        service = new ClaudeConversationNamingAgent();
     });
 
     afterEach(() => {
@@ -61,44 +61,40 @@ describe('GeminiConversationNamingService', () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    candidates: [{ content: { parts: [{ text: 'Test Conversation' }] } }]
+                    content: [{ type: 'text', text: 'Test Conversation' }]
                 })
             });
 
             await service.generateName('User prompt');
-
-            expect(fetchMock).toHaveBeenCalled();
-            const fetchUrl = fetchMock.mock.calls[0][0];
-            expect(fetchUrl).toContain(AIProviderModel.GeminiNamer);
-            expect(fetchUrl).toContain('generateContent');
-            expect(fetchUrl).toContain('key=test-gemini-key');
 
             expect(fetchMock).toHaveBeenCalledWith(
                 expect.any(String),
                 expect.objectContaining({
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'x-api-key': 'test-claude-key',
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true',
+                        'content-type': 'application/json'
                     },
                     body: expect.any(String)
                 })
             );
 
             const requestBody = JSON.parse(fetchMock.mock.calls[0][1].body);
-            expect(requestBody.system_instruction).toBeDefined();
-            expect(requestBody.system_instruction.parts).toHaveLength(1);
-            expect(requestBody.system_instruction.parts[0].text).toBeDefined();
-            expect(requestBody.contents).toHaveLength(1);
-            expect(requestBody.contents[0].role).toBe(Role.User);
-            expect(requestBody.contents[0].parts).toHaveLength(1);
-            expect(requestBody.contents[0].parts[0].text).toBe('User prompt');
+            expect(requestBody.model).toBe(AIProviderModel.ClaudeNamer);
+            expect(requestBody.max_tokens).toBe(100);
+            expect(requestBody.system).toBeDefined();
+            expect(requestBody.messages).toHaveLength(1);
+            expect(requestBody.messages[0].role).toBe(Role.User);
+            expect(requestBody.messages[0].content).toBe('User prompt');
         });
 
         it('should return generated name from response', async () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    candidates: [{ content: { parts: [{ text: 'Generated Name' }] } }]
+                    content: [{ type: 'text', text: 'Generated Name' }]
                 })
             });
 
@@ -110,20 +106,20 @@ describe('GeminiConversationNamingService', () => {
         it('should throw error on API error response', async () => {
             fetchMock.mockResolvedValue({
                 ok: false,
-                status: 400,
-                statusText: 'Bad Request',
-                text: async () => 'Invalid request'
+                status: 401,
+                statusText: 'Unauthorized',
+                text: async () => 'Invalid API key'
             });
 
             await expect(service.generateName('Test'))
-                .rejects.toThrow('Gemini API error: 400 Bad Request - Invalid request');
+                .rejects.toThrow('Claude API error: 401 Unauthorized - Invalid API key');
         });
 
         it('should throw error when response has no content', async () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    candidates: []
+                    content: []
                 })
             });
 
@@ -135,7 +131,7 @@ describe('GeminiConversationNamingService', () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    candidates: [{ content: { parts: [{ text: 'Name' }] } }]
+                    content: [{ type: 'text', text: 'Name' }]
                 })
             });
 
@@ -153,7 +149,7 @@ describe('GeminiConversationNamingService', () => {
             fetchMock.mockResolvedValue({
                 ok: true,
                 json: async () => ({
-                    // Missing candidates
+                    // Missing content array
                     other: 'data'
                 })
             });

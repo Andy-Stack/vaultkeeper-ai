@@ -31,7 +31,7 @@ describe('SettingsService', () => {
             expect(settingsService.settings.apiKeys).toEqual({
                 claude: '',
                 openai: '',
-                gemini: '', mistral: ''
+                gemini: '', mistral: '', local: ''
             });
             expect(settingsService.settings.exclusions).toEqual([]);
             expect(settingsService.settings.userInstruction).toBe('');
@@ -48,7 +48,7 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: 'claude-key-123',
                     openai: 'openai-key-456',
-                    gemini: 'gemini-key-789', mistral: ''
+                    gemini: 'gemini-key-789', mistral: '', local: ''
                 },
                 searchResultsLimit: 25,
                 snippetSizeLimit: 200
@@ -72,7 +72,7 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: '',
                     openai: 'partial-key',
-                    gemini: '', mistral: ''
+                    gemini: '', mistral: '', local: ''
                 }
             };
 
@@ -86,6 +86,86 @@ describe('SettingsService', () => {
             expect(settingsService.settings.searchResultsLimit).toBe(30); // Default
             expect(settingsService.settings.snippetSizeLimit).toBe(100); // Default
         });
+
+        it('should default localUrl and localModels when not provided', () => {
+            settingsService = new SettingsService({});
+
+            expect(settingsService.settings.localUrl).toBe('');
+            expect(settingsService.settings.localModels).toEqual({
+                model: '',
+                planningModel: '',
+                quickActionModel: ''
+            });
+        });
+
+        it('should merge loaded localUrl and localModels with defaults', () => {
+            const loadedSettings: Partial<IVaultkeeperAISettings> = {
+                provider: AIProvider.Local,
+                localUrl: 'http://localhost:11434',
+                localModels: {
+                    model: 'llama3',
+                    planningModel: 'llama3',
+                    quickActionModel: 'llama3-mini'
+                },
+                apiKeys: {
+                    claude: '', openai: '', gemini: '', mistral: '', local: 'local-key'
+                }
+            };
+
+            settingsService = new SettingsService(loadedSettings as IVaultkeeperAISettings);
+
+            expect(settingsService.settings.localUrl).toBe('http://localhost:11434');
+            expect(settingsService.settings.localModels).toEqual({
+                model: 'llama3',
+                planningModel: 'llama3',
+                quickActionModel: 'llama3-mini'
+            });
+            expect(settingsService.settings.apiKeys.local).toBe('local-key');
+        });
+
+        it('should partially merge localModels, filling missing properties with defaults', () => {
+            const loadedSettings: Partial<IVaultkeeperAISettings> = {
+                localModels: {
+                    model: 'llama3',
+                    planningModel: '',
+                    quickActionModel: ''
+                } as IVaultkeeperAISettings['localModels']
+            };
+
+            settingsService = new SettingsService(loadedSettings as IVaultkeeperAISettings);
+
+            expect(settingsService.settings.localModels.model).toBe('llama3');
+        });
+
+        it('should merge loaded Mistral API key with defaults', () => {
+            const loadedSettings: Partial<IVaultkeeperAISettings> = {
+                provider: AIProvider.Mistral,
+                model: AIProviderModel.MistralMedium,
+                apiKeys: {
+                    claude: '', openai: '', gemini: '', mistral: 'mistral-key-123', local: ''
+                }
+            };
+
+            settingsService = new SettingsService(loadedSettings as IVaultkeeperAISettings);
+
+            expect(settingsService.settings.apiKeys.mistral).toBe('mistral-key-123');
+            expect(settingsService.settings.model).toBe(AIProviderModel.MistralMedium);
+        });
+
+        it('should default cachedModelSettings for Mistral and Local providers', () => {
+            settingsService = new SettingsService({});
+
+            expect(settingsService.settings.cachedModelSettings[AIProvider.Mistral]).toEqual({
+                model: AIProviderModel.MistralMedium,
+                planningModel: AIProviderModel.MistralMedium,
+                quickActionModel: AIProviderModel.MistralSmall
+            });
+            expect(settingsService.settings.cachedModelSettings[AIProvider.Local]).toEqual({
+                model: AIProviderModel.None,
+                planningModel: AIProviderModel.None,
+                quickActionModel: AIProviderModel.None
+            });
+        });
     });
 
     describe('getApiKeyForProvider', () => {
@@ -96,7 +176,7 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: 'claude-api-key',
                     openai: 'openai-api-key',
-                    gemini: 'gemini-api-key', mistral: ''
+                    gemini: 'gemini-api-key', mistral: '', local: ''
                 }
             });
             settingsService = new SettingsService(loadedSettings);
@@ -117,6 +197,18 @@ describe('SettingsService', () => {
             expect(key).toBe('gemini-api-key');
         });
 
+        it('should return Mistral API key for Mistral provider', () => {
+            settingsService.settings.apiKeys.mistral = 'mistral-api-key';
+            const key = settingsService.getApiKeyForProvider(AIProvider.Mistral);
+            expect(key).toBe('mistral-api-key');
+        });
+
+        it('should return Local API key for Local provider', () => {
+            settingsService.settings.apiKeys.local = 'local-api-key';
+            const key = settingsService.getApiKeyForProvider(AIProvider.Local);
+            expect(key).toBe('local-api-key');
+        });
+
         it('should return empty string when no API key is set', () => {
             settingsService.settings.apiKeys.claude = '';
             const key = settingsService.getApiKeyForProvider(AIProvider.Claude);
@@ -124,7 +216,7 @@ describe('SettingsService', () => {
         });
     });
 
-    describe('getApiKeyForCurrentModel', () => {
+    describe('getApiKeyForCurrentProvider', () => {
         it('should return Claude key when current model is Claude', () => {
             const loadedSettings = makeTestSettings({
                 provider: AIProvider.Claude,
@@ -132,12 +224,12 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
-                    gemini: 'gemini-key', mistral: ''
+                    gemini: 'gemini-key', mistral: '', local: ''
                 }
             });
             settingsService = new SettingsService(loadedSettings);
 
-            const key = settingsService.getApiKeyForCurrentModel();
+            const key = settingsService.getApiKeyForCurrentProvider();
             expect(key).toBe('claude-key');
         });
 
@@ -148,12 +240,12 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
-                    gemini: 'gemini-key', mistral: ''
+                    gemini: 'gemini-key', mistral: '', local: ''
                 }
             });
             settingsService = new SettingsService(loadedSettings);
 
-            const key = settingsService.getApiKeyForCurrentModel();
+            const key = settingsService.getApiKeyForCurrentProvider();
             expect(key).toBe('openai-key');
         });
 
@@ -164,12 +256,12 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
-                    gemini: 'gemini-key', mistral: ''
+                    gemini: 'gemini-key', mistral: '', local: ''
                 }
             });
             settingsService = new SettingsService(loadedSettings);
 
-            const key = settingsService.getApiKeyForCurrentModel();
+            const key = settingsService.getApiKeyForCurrentProvider();
             expect(key).toBe('gemini-key');
         });
 
@@ -178,25 +270,65 @@ describe('SettingsService', () => {
             settingsService = new SettingsService({
                 provider: AIProvider.Claude,
                 model: AIProviderModel.ClaudeOpus_4_8,
-                apiKeys: { claude: 'opus-key', openai: '', gemini: '', mistral: '' }
+                apiKeys: { claude: 'opus-key', openai: '', gemini: '', mistral: '', local: '' }
             });
-            expect(settingsService.getApiKeyForCurrentModel()).toBe('opus-key');
+            expect(settingsService.getApiKeyForCurrentProvider()).toBe('opus-key');
 
             // Test with various Gemini models
             settingsService = new SettingsService({
                 provider: AIProvider.Gemini,
                 model: AIProviderModel.GeminiPro_3_1_Preview,
-                apiKeys: { claude: '', openai: '', gemini: 'pro-key', mistral: '' }
+                apiKeys: { claude: '', openai: '', gemini: 'pro-key', mistral: '', local: '' }
             });
-            expect(settingsService.getApiKeyForCurrentModel()).toBe('pro-key');
+            expect(settingsService.getApiKeyForCurrentProvider()).toBe('pro-key');
 
             // Test with various GPT models
             settingsService = new SettingsService({
                 provider: AIProvider.OpenAI,
                 model: AIProviderModel.GPT_5_5,
-                apiKeys: { claude: '', openai: 'gpt5-key', gemini: '', mistral: '' }
+                apiKeys: { claude: '', openai: 'gpt5-key', gemini: '', mistral: '', local: '' }
             });
-            expect(settingsService.getApiKeyForCurrentModel()).toBe('gpt5-key');
+            expect(settingsService.getApiKeyForCurrentProvider()).toBe('gpt5-key');
+
+            // Test with various Mistral models
+            settingsService = new SettingsService({
+                provider: AIProvider.Mistral,
+                model: AIProviderModel.MistralMedium,
+                apiKeys: { claude: '', openai: '', gemini: '', mistral: 'mistral-key', local: '' }
+            });
+            expect(settingsService.getApiKeyForCurrentProvider()).toBe('mistral-key');
+        });
+
+        it('should return Mistral key when current model is Mistral', () => {
+            const loadedSettings = makeTestSettings({
+                provider: AIProvider.Mistral,
+                model: AIProviderModel.MistralMedium,
+                apiKeys: {
+                    claude: 'claude-key',
+                    openai: 'openai-key',
+                    gemini: 'gemini-key', mistral: 'mistral-key', local: ''
+                }
+            });
+            settingsService = new SettingsService(loadedSettings);
+
+            const key = settingsService.getApiKeyForCurrentProvider();
+            expect(key).toBe('mistral-key');
+        });
+
+        it('should return Local key when current provider is Local', () => {
+            const loadedSettings = makeTestSettings({
+                provider: AIProvider.Local,
+                model: AIProviderModel.None,
+                apiKeys: {
+                    claude: 'claude-key',
+                    openai: 'openai-key',
+                    gemini: 'gemini-key', mistral: '', local: 'local-key'
+                }
+            });
+            settingsService = new SettingsService(loadedSettings);
+
+            const key = settingsService.getApiKeyForCurrentProvider();
+            expect(key).toBe('local-key');
         });
     });
 
@@ -224,13 +356,23 @@ describe('SettingsService', () => {
             expect(settingsService.settings.apiKeys.gemini).toBe('new-gemini-key');
         });
 
+        it('should update Mistral API key', () => {
+            settingsService.setApiKeyForProvider(AIProvider.Mistral, 'new-mistral-key');
+            expect(settingsService.settings.apiKeys.mistral).toBe('new-mistral-key');
+        });
+
+        it('should update Local API key', () => {
+            settingsService.setApiKeyForProvider(AIProvider.Local, 'new-local-key');
+            expect(settingsService.settings.apiKeys.local).toBe('new-local-key');
+        });
+
         it('should not affect other provider keys when updating one', () => {
             settingsService = new SettingsService({
                 apiKeys: {
                     claude: 'existing-claude',
                     openai: 'existing-openai',
                     gemini: 'existing-gemini',
-                    mistral: ''
+                    mistral: 'existing-mistral', local: 'existing-local'
                 }
             });
 
@@ -239,6 +381,8 @@ describe('SettingsService', () => {
             expect(settingsService.settings.apiKeys.claude).toBe('updated-claude');
             expect(settingsService.settings.apiKeys.openai).toBe('existing-openai');
             expect(settingsService.settings.apiKeys.gemini).toBe('existing-gemini');
+            expect(settingsService.settings.apiKeys.mistral).toBe('existing-mistral');
+            expect(settingsService.settings.apiKeys.local).toBe('existing-local');
         });
 
         it('should allow setting empty string as API key', () => {
@@ -256,7 +400,7 @@ describe('SettingsService', () => {
                 apiKeys: {
                     claude: 'test-key',
                     openai: '',
-                    gemini: '', mistral: ''
+                    gemini: '', mistral: '', local: ''
                 },
                 exclusions: ['node_modules'],
                 userInstruction: 'Be helpful'
@@ -305,11 +449,12 @@ describe('SettingsService', () => {
 
             claudeModels.forEach(model => {
                 settingsService = new SettingsService({
+                    provider: AIProvider.Claude,
                     model,
-                    apiKeys: { claude: 'test-claude', openai: '', gemini: '', mistral: '' }
+                    apiKeys: { claude: 'test-claude', openai: '', gemini: '', mistral: '', local: '' }
                 });
 
-                expect(settingsService.getApiKeyForCurrentModel()).toBe('test-claude');
+                expect(settingsService.getApiKeyForCurrentProvider()).toBe('test-claude');
             });
         });
 
@@ -324,10 +469,10 @@ describe('SettingsService', () => {
                 settingsService = new SettingsService({
                     provider: AIProvider.Gemini,
                     model,
-                    apiKeys: { claude: '', openai: '', gemini: 'test-gemini', mistral: '' }
+                    apiKeys: { claude: '', openai: '', gemini: 'test-gemini', mistral: '', local: '' }
                 });
 
-                expect(settingsService.getApiKeyForCurrentModel()).toBe('test-gemini');
+                expect(settingsService.getApiKeyForCurrentProvider()).toBe('test-gemini');
             });
         });
 
@@ -343,11 +488,38 @@ describe('SettingsService', () => {
                 settingsService = new SettingsService({
                     provider: AIProvider.OpenAI,
                     model,
-                    apiKeys: { claude: '', openai: 'test-openai', gemini: '', mistral: '' }
+                    apiKeys: { claude: '', openai: 'test-openai', gemini: '', mistral: '', local: '' }
                 });
 
-                expect(settingsService.getApiKeyForCurrentModel()).toBe('test-openai');
+                expect(settingsService.getApiKeyForCurrentProvider()).toBe('test-openai');
             });
+        });
+
+        it('should correctly identify Mistral models', () => {
+            const mistralModels = [
+                AIProviderModel.MistralMedium,
+                AIProviderModel.MistralSmall
+            ];
+
+            mistralModels.forEach(model => {
+                settingsService = new SettingsService({
+                    provider: AIProvider.Mistral,
+                    model,
+                    apiKeys: { claude: '', openai: '', gemini: '', mistral: 'test-mistral', local: '' }
+                });
+
+                expect(settingsService.getApiKeyForCurrentProvider()).toBe('test-mistral');
+            });
+        });
+
+        it('should correctly identify Local provider regardless of model', () => {
+            settingsService = new SettingsService({
+                provider: AIProvider.Local,
+                model: AIProviderModel.None,
+                apiKeys: { claude: '', openai: '', gemini: '', mistral: '', local: 'test-local' }
+            });
+
+            expect(settingsService.getApiKeyForCurrentProvider()).toBe('test-local');
         });
     });
 
@@ -355,7 +527,7 @@ describe('SettingsService', () => {
         it('should maintain reference to settings object', () => {
             settingsService = new SettingsService({
                 model: AIProviderModel.ClaudeSonnet_4_6,
-                apiKeys: { claude: 'key', openai: '', gemini: '', mistral: '' }
+                apiKeys: { claude: 'key', openai: '', gemini: '', mistral: '', local: '' }
             });
 
             const settingsRef = settingsService.settings;
@@ -368,7 +540,7 @@ describe('SettingsService', () => {
         it('should allow modification of settings properties via updateSettings', async () => {
             settingsService = new SettingsService({
                 model: AIProviderModel.ClaudeSonnet_4_6,
-                apiKeys: { claude: '', openai: '', gemini: '', mistral: '' },
+                apiKeys: { claude: '', openai: '', gemini: '', mistral: '', local: '' },
                 exclusions: []
             });
 

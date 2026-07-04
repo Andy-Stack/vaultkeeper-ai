@@ -14,18 +14,6 @@ import type {
     ChatCompletionContentPart
 } from "./ChatCompletionsTypes";
 
-/**
- * Intermediate base for providers speaking the OpenAI-compatible Chat Completions
- * protocol (`/v1/chat/completions`): `messages` array, `tool_calls` nested on
- * assistant messages, `role:"tool"` results, and delta-accumulation streaming.
- *
- * Mistral is the reference implementation; future Chat Completions providers
- * (e.g. a LocalAI class for Ollama/LM Studio/llama.cpp) should be thin subclasses
- * supplying only `apiUrl`, `supportedMimeTypes`, and `formatBinaryFiles`.
- *
- * NOTE: This is deliberately separate from the OpenAI class, which targets the
- * newer Responses API (`/v1/responses`) — a different wire protocol.
- */
 export abstract class ChatCompletionsAIClass extends BaseAIClass {
 
     private readonly STOP_REASON_TOOL_CALLS: string = "tool_calls";

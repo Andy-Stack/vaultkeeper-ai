@@ -90,7 +90,7 @@ export abstract class BaseAIClass implements IAIClass {
 
     public abstract streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown>;
 
-    protected abstract formatBinaryFiles(attachments: Attachment[]): string;
+    protected abstract formatBinaryFiles(attachments: Attachment[]): Promise<string>;
 
     protected abstract parseStreamChunk(chunk: string): IStreamChunk;
     protected abstract extractContents(conversationContent: ConversationContent[]): unknown;
@@ -275,7 +275,7 @@ export abstract class BaseAIClass implements IAIClass {
 
     protected async processAttachments<T>(
         attachments: Attachment[],
-        formatBinaryFiles: (attachments: Attachment[]) => string
+        formatBinaryFiles: (attachments: Attachment[]) => Promise<string>
     ): Promise<{ formattedParts: T[], uploadErrors: Error[] }> {
         const uploadErrors: Error[] = [];
 
@@ -293,7 +293,7 @@ export abstract class BaseAIClass implements IAIClass {
             }
         }
 
-        const formattedContent = formatBinaryFiles(attachments);
+        const formattedContent = await formatBinaryFiles(attachments);
         const formattedParts = JSON.parse(formattedContent) as T[];
 
         return { formattedParts, uploadErrors };

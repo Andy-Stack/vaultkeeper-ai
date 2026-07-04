@@ -51,6 +51,8 @@ export function modelMatchesProvider(model: AIProviderModel, provider: AIProvide
             return isOpenAIModel(model);
         case AIProvider.Mistral:
             return isMistralModel(model);
+        case AIProvider.Local:
+            return true; // Local models are freely typed
     }
 }
 
@@ -58,7 +60,8 @@ export enum AIProvider {
     Claude = "Claude",
     Gemini = "Gemini",
     OpenAI = "OpenAI",
-    Mistral = "Mistral"
+    Mistral = "Mistral",
+    Local = "Local"
 }
 
 export enum AIProviderModel {
@@ -86,7 +89,10 @@ export enum AIProviderModel {
     ClaudeNamer = ClaudeHaiku_4_5,
     GeminiNamer = GeminiFlash_3_1_Lite,
     OpenAINamer = GPT_5_4_Nano,
-    MistralNamer = MistralSmall
+    MistralNamer = MistralSmall,
+
+    // Local models are freely typed so no default is given
+    None = "none"
 }
 
 export enum AIProviderURL {
@@ -114,6 +120,7 @@ export const DEFAULT_QUICK_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel
     [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_1_Lite,
     [AIProvider.OpenAI]:  AIProviderModel.GPT_5_4_Nano,
     [AIProvider.Mistral]: AIProviderModel.MistralSmall,
+    [AIProvider.Local]: AIProviderModel.None
 }
 
 export const DEFAULT_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
@@ -121,6 +128,7 @@ export const DEFAULT_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
     [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_5_Flash,
     [AIProvider.OpenAI]:  AIProviderModel.GPT_5_5,
     [AIProvider.Mistral]: AIProviderModel.MistralMedium,
+    [AIProvider.Local]: AIProviderModel.None
 }
 
 export const DEFAULT_PLANNING_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
@@ -128,4 +136,5 @@ export const DEFAULT_PLANNING_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderMo
     [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_5_Flash,
     [AIProvider.OpenAI]:  AIProviderModel.GPT_5_5,
     [AIProvider.Mistral]: AIProviderModel.MistralMedium,
+    [AIProvider.Local]: AIProviderModel.None
 }

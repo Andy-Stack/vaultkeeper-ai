@@ -10,6 +10,7 @@ import type { MemoriesService } from "Services/MemoriesService";
 import { replaceCopy } from 'Helpers/Helpers';
 import { Copy } from "Enums/Copy";
 import { ChatMode } from "Enums/ChatMode";
+import { AIProvider } from "Enums/ApiProvider";
 
 export interface IPrompt {
   systemInstruction(): Promise<string>;
@@ -77,7 +78,7 @@ export class AIPrompt implements IPrompt {
         ? Copy.DirectiveMemoriesEnabled
         : Copy.DirectiveMemoriesReadOnly;
 
-    const webSearchDirective = s.enableWebSearch
+    const webSearchDirective = s.enableWebSearch && s.provider !== AIProvider.Local
       ? Copy.DirectiveWebSearchEnabled
       : Copy.DirectiveWebSearchDisabled;
 

@@ -119,6 +119,10 @@ body:not(.is-tablet) .workspace-drawer.mod-right {
   resize: none;
 }
 
+.local-url-input {
+  min-width: 80%;
+}
+
 .setting-item-memories-disabled-accent .checkbox-container {
   background-color: var(--interactive-accent-disabled-accent);
 }

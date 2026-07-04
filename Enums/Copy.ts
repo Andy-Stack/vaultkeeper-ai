@@ -40,6 +40,7 @@ export enum Copy {
     SettingLocalUrl = "Local URL",
     SettingLocalUrlDesc = "Enter the URL for the local server",
     SettingApiKeyLocalDesc = "Enter your API key if authentication is required - optional.",
+    SettingExclusionsHeading = "Exclusions",
     SettingFileExclusions = "File exclusions",
     SettingContext = "Context",
     SettingSearchResultsLimit = "Search results limit",
@@ -64,14 +65,17 @@ export enum Copy {
     SettingPlanningModelTip = "Tip: You can reduce cost by using a more powerful model for planning and a cheaper model for the regular agent.",
     SettingQuickActionModelDesc = "Select the AI model to use for quick actions. A fast, lightweight model is recommended.",
     SettingLocalQuickActionModelDesc = "For best results a smaller local model with a minimum of an 8K context window is recommended.",
+    SettingLocalModelTemplateWarning = "Note that some models may have very strict templates that require exact 'user' -> 'agent' turns. VaultKeeper AI may chain multiple tool calls and results, so you may find that some models need their Jinja templates adjusting, see: ",
+    SettingLocalModelTemplateWarningLinkText = "LM Studio prompt template docs (external link)",
     SettingApiKeyDesc = "Enter your API key here.",
     SettingFileExclusionsDesc = "Set which directories and files the AI should ignore. Enter one path per line - supports glob patterns like folder/**, *.md",
     SettingSearchResultsLimitDesc = "Set the maximum number of results provided to the AI when it searches through files in your vault. Higher values provide more context but increase search time.",
     SettingSnippetSizeLimitDesc = "Set the character limit of search previews provided to the AI when it searches through files in your vault. Higher values provide more context per result.",
-    SettingFileMonitoringGemini = "Files uploaded to Gemini are automatically deleted after 48 hours and will be re-uploaded during conversations as needed. No manual cleanup is typically required.",
-    SettingFileMonitoringClaude = "Files uploaded to Claude remain stored indefinitely. Periodically check the Anthropic Console (https://console.anthropic.com/) to review and remove old files that are no longer needed.",
-    SettingFileMonitoringOpenAI = "Files uploaded to OpenAI remain stored indefinitely. Periodically check the OpenAI Platform (https://platform.openai.com/) to review and remove old files that are no longer needed.",
-    SettingFileMonitoringMistral = "Documents uploaded to Mistral are stored on their platform. Images are sent inline and not stored. Periodically check the Mistral Console (https://console.mistral.ai/) to review and remove old files that are no longer needed.",
+    SettingFileMonitoringGemini = "Files uploaded to Gemini are automatically deleted after 48 hours and will be re-uploaded during conversations as needed. No manual cleanup is typically required. ",
+    SettingFileMonitoringClaude = "Files uploaded to Claude remain stored indefinitely. Periodically check the Anthropic Console to review and remove old files that are no longer needed. ",
+    SettingFileMonitoringOpenAI = "Files uploaded to OpenAI remain stored indefinitely. Periodically check the OpenAI Platform to review and remove old files that are no longer needed. ",
+    SettingFileMonitoringMistral = "Documents uploaded to Mistral are stored on their platform. Images are sent inline and not stored. Periodically check the Mistral Console to review and remove old files that are no longer needed. ",
+    SettingFileMonitoringLinkText = "See the plugin guide for more information.",
     SettingAccessMemories = "Memories let the AI retain preferences and context across conversations. You can view and edit them at any time.",
 
     // Settings Placeholders
@@ -84,7 +88,6 @@ export enum Copy {
     // Settings Tooltips
     TooltipShowApiKey = "Show API Key",
     TooltipHideApiKey = "Hide API Key",
-    TooltipLearnMoreFileMonitoring = "Learn more in Plugin Guide",
     TooltipAccessMemories = "View Memories",
 
     SettingAdvancedSettings = "Advanced Settings",

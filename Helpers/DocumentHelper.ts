@@ -86,7 +86,7 @@ export async function pdfToImages(arrayBuffer: ArrayBuffer,
             const page = await pdf.getPage(i);
             const viewport = page.getViewport({ scale });
 
-            const canvas = activeDocument.createElement('canvas');
+            const canvas = createEl('canvas');
             canvas.width = viewport.width;
             canvas.height = viewport.height;
             const ctx = canvas.getContext('2d');

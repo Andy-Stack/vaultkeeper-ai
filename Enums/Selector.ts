@@ -7,6 +7,10 @@ export enum Selector {
     ConversationHistoryModal =  "conversation-history-modal",
     HelpModal = "help-modal",
     ContextSettingItemDescription = "context-setting-item-description",
+    SettingDescIconGrid = "setting-desc-icon-grid",
+    TemplateWarningIcon = "template-warning-icon",
+    FileDisclaimerIcon = "file-disclaimer-icon",
+    FileDisclaimerLink = "file-disclaimer-link",
 
     ErrorSelector = "error-selector"
 }

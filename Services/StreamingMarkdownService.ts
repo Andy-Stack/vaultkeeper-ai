@@ -37,7 +37,7 @@ export class StreamingMarkdownService {
 
         if (frozenCandidate.length > state.frozenUpTo) {
             const newSlice = frozenCandidate.slice(state.frozenUpTo);
-            const tempDiv = activeDocument.createElement("div");
+            const tempDiv = createDiv();
             await MarkdownRenderer.render(this.plugin.app, newSlice, tempDiv, "", state.component);
             while (tempDiv.firstChild) {
                 state.frozenContainer.appendChild(tempDiv.firstChild);
@@ -58,8 +58,8 @@ export class StreamingMarkdownService {
         }
 
         container.empty();
-        const frozenContainer = activeDocument.createElement("div");
-        const liveContainer = activeDocument.createElement("div");
+        const frozenContainer = createDiv();
+        const liveContainer = createDiv();
         container.appendChild(frozenContainer);
         container.appendChild(liveContainer);
 

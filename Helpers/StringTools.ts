@@ -117,7 +117,7 @@ export abstract class StringTools {
                     }
                 }
 
-                const canvas = activeDocument.createElement("canvas");
+                const canvas = createEl("canvas");
                 canvas.width = width;
                 canvas.height = height;
                 const context = canvas.getContext("2d");

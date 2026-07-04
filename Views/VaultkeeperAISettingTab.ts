@@ -79,6 +79,11 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		this.providerSectionEl = containerEl.createDiv();
 		this.renderProviderSection();
 
+		/* Exclusions Header */
+		new Setting(containerEl)
+			.setHeading()
+			.setName(Copy.SettingExclusionsHeading);
+
 		/* Exclusions Setting */
 		new Setting(containerEl)
 			.setName(Copy.SettingFileExclusions)
@@ -346,6 +351,20 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 							});
 						});
 				});
+
+			const templateWarningDescFragment = createFragment();
+			const templateWarningGridEl = templateWarningDescFragment.createDiv({ cls: Selector.SettingDescIconGrid });
+			setIcon(templateWarningGridEl.createDiv({ cls: Selector.TemplateWarningIcon }), "circle-alert");
+			const templateWarningTextEl = templateWarningGridEl.createDiv();
+			templateWarningTextEl.appendText(Copy.SettingLocalModelTemplateWarning);
+			templateWarningTextEl.createEl("a", {
+				text: Copy.SettingLocalModelTemplateWarningLinkText,
+				href: "https://lmstudio.ai/docs/app/advanced/prompt-template",
+				cls: Selector.FileDisclaimerLink
+			});
+			new Setting(containerEl)
+				.setDesc(templateWarningDescFragment);
+
 		} else {
 			/* API Key Setting */
 			this.apiKeySetting = new Setting(containerEl)
@@ -446,17 +465,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				});
 
 			/* Model files API disclaimer */
-			this.fileDisclaimerSetting = new Setting(containerEl)
-			.setDesc(Copy.SettingFileMonitoringClaude)
-			.addExtraButton(button => {
-				button
-					.setTooltip(Copy.TooltipLearnMoreFileMonitoring)
-					.onClick(() => {
-						const modal = Resolve<HelpModal>(Services.HelpModal);
-						modal.open(7); // Opens HelpModal to "Uploaded Files" (topic 7)
-					});
-				setIcon(button.extraSettingsEl, "help-circle");
-			});
+			this.fileDisclaimerSetting = new Setting(containerEl);
 			this.updateFileDisclaimer();
 		}
 	}
@@ -578,7 +587,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 	private updateFileDisclaimer() {
 		if (this.fileDisclaimerSetting) {
 			const provider = this.settingsService.settings.provider;
-			let disclaimerText;
+			let disclaimerText: string | null;
 
 			switch(provider) {
 				case AIProvider.Gemini:
@@ -594,10 +603,28 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					disclaimerText = Copy.SettingFileMonitoringMistral;
 					break;
 				case AIProvider.Local:
-					disclaimerText = ""; // Not shown when a local model is being used
+					disclaimerText = null; // Not shown when a local model is being used
 			}
 
-			this.fileDisclaimerSetting.setDesc(disclaimerText);
+			if (disclaimerText === null) {
+				this.fileDisclaimerSetting.setDesc("");
+				return;
+			}
+
+			const disclaimerFragment = createFragment();
+			const disclaimerGridEl = disclaimerFragment.createDiv({ cls: Selector.SettingDescIconGrid });
+			setIcon(disclaimerGridEl.createDiv({ cls: Selector.FileDisclaimerIcon }), "help-circle");
+			const disclaimerTextEl = disclaimerGridEl.createDiv();
+			disclaimerTextEl.appendText(disclaimerText);
+			disclaimerTextEl.createEl("a", {
+				text: Copy.SettingFileMonitoringLinkText,
+				cls: Selector.FileDisclaimerLink
+			}).addEventListener("click", () => {
+				const modal = Resolve<HelpModal>(Services.HelpModal);
+				modal.open(7); // Opens HelpModal to "Uploaded Files" (topic 7)
+			});
+
+			this.fileDisclaimerSetting.setDesc(disclaimerFragment);
 		}
 	}
 }

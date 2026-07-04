@@ -212,6 +212,36 @@ body:not(.is-tablet) .workspace-drawer.mod-right {
   color: var(--text-muted);
 }
 
+.setting-desc-icon-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--size-4-2);
+  align-items: start;
+}
+
+.template-warning-icon {
+  display: flex;
+  align-self: anchor-center;
+  margin: var(--size-4-1);
+  color: var(--text-warning);
+}
+
+.file-disclaimer-icon {
+  display: flex;
+  align-self: anchor-center;
+  margin: var(--size-4-1);
+  color: var(--text-muted);
+}
+
+.file-disclaimer-link {
+  color: var(--text-accent);
+  cursor: pointer;
+}
+
+.file-disclaimer-link:hover {
+  text-decoration: underline;
+}
+
 .top-bar-button {
   margin: var(--size-4-2) 0px var(--size-4-2) 0px;
   padding: var(--size-4-1) var(--size-4-2) var(--size-4-1) var(--size-4-2);

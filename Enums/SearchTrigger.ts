@@ -55,7 +55,7 @@ export function toNode(trigger: SearchTrigger, content: string): Node {
             break;
     }
 
-    const node = createEl("span", {
+    const node = createSpan({
         text: text,
         cls: "search-trigger",
         attr: {

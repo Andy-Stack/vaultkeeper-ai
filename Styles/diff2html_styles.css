@@ -118,7 +118,7 @@
 
 .diff-view-mobile .diff-mobile-controls {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: var(--size-4-2);
     position: absolute;
     bottom: 0;
@@ -128,7 +128,7 @@
     z-index: 10;
 }
 
-.diff-mobile-button {
+.diff-mobile-controls .diff-mobile-button {
     min-height: 44px;
     font-size: var(--font-ui-medium);
     font-weight: var(--font-semibold);
@@ -138,7 +138,7 @@
     color: var(--text-on-accent);
 }
 
-.diff-mobile-accept {
+.diff-mobile-controls .diff-mobile-accept {
     background-color: color-mix(
         in srgb,
         var(--color-green) 75%,
@@ -146,11 +146,19 @@
     );
 }
 
-.diff-mobile-accept:active {
+.diff-mobile-controls .diff-mobile-accept:active {
     background-color: var(--color-green);
 }
 
-.diff-mobile-reject {
+.diff-mobile-controls .diff-mobile-suggest {
+    background-color: var(--interactive-accent);
+}
+
+.diff-mobile-controls .diff-mobile-suggest:active {
+    background-color: var(--interactive-accent-hover);
+}
+
+.diff-mobile-controls .diff-mobile-reject {
     background-color: color-mix(
         in srgb,
         var(--color-red) 75%,
@@ -158,7 +166,7 @@
     );
 }
 
-.diff-mobile-reject:active {
+.diff-mobile-controls .diff-mobile-reject:active {
     background-color: var(--color-red);
 }
 

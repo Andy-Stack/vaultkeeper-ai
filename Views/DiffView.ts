@@ -5,7 +5,7 @@ import { Resolve } from "Services/DependencyService";
 import type { EventService } from "Services/EventService";
 import type { DiffService } from "Services/DiffService";
 import { Services } from "Services/Services";
-import { VIEW_TYPE_MAIN } from "./MainView";
+import { VIEW_TYPE_MAIN, type MainView } from "./MainView";
 import { tick } from "svelte";
 
 export const VIEW_TYPE_DIFF = 'vaultkeeper-ai-diff-view';
@@ -115,6 +115,12 @@ export class DiffView extends ItemView {
         });
         acceptButton.setAttribute('aria-label', 'Accept changes');
 
+        const suggestButton = container.createEl('button', {
+            cls: 'diff-mobile-button diff-mobile-suggest',
+            text: 'Suggest'
+        });
+        suggestButton.setAttribute('aria-label', 'Make a suggestion');
+
         const rejectButton = container.createEl('button', {
             cls: 'diff-mobile-button diff-mobile-reject',
             text: 'Reject'
@@ -126,6 +132,10 @@ export class DiffView extends ItemView {
             await this.refocusMainView();
         });
 
+        this.registerDomEvent(suggestButton, 'click', async () => {
+            await this.refocusMainView(true);
+        });
+
         this.registerDomEvent(rejectButton, 'click', async () => {
             this.diffService.onReject();
             await this.refocusMainView();
@@ -134,7 +144,7 @@ export class DiffView extends ItemView {
         return container;
     }
 
-    private async refocusMainView(): Promise<void> {
+    private async refocusMainView(focusChatInput: boolean = false): Promise<void> {
         await tick().then(async () => {
             const { workspace } = this.app;
             const leaves = workspace.getLeavesOfType(VIEW_TYPE_MAIN);
@@ -142,6 +152,10 @@ export class DiffView extends ItemView {
             if (leaves.length > 0) {
                 await workspace.revealLeaf(leaves[0]);
                 workspace.setActiveLeaf(leaves[0], { focus: true });
+
+                if (focusChatInput) {
+                    (leaves[0].view as MainView).input?.focusInput(true);
+                }
             }
         });
     }

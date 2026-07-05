@@ -43,8 +43,8 @@
 
   let currentThought: string | null = null;
 
-  export function focusInput() {
-    chatInput?.focusInput();
+  export function focusInput(force: boolean = false) {
+    chatInput?.focusInput(force);
   }
 
   export function resetChatArea() {

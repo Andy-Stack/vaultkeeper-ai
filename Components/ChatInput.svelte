@@ -115,9 +115,9 @@
     }
   }
 
-  export function focusInput(onMobile: boolean = false) {
-    // don't focus on mobile, it's annoying
-    if (onMobile || !Platform.isMobile) {
+  export function focusInput(force: boolean = false) {
+    // Generally don't focus on mobile, it's annoying
+    if (force || !Platform.isMobile) {
       tick().then(() => {
         textareaElement?.focus();
       });

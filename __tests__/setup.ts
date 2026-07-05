@@ -92,7 +92,7 @@ if (typeof HTMLElement !== 'undefined') {
 		options?: string | DomElementInfo,
 		callback?: (el: HTMLElementTagNameMap[K]) => void
 	): HTMLElementTagNameMap[K] {
-		const el = document.createElement(tag);
+		const el = document.createElement(tag) as HTMLElementTagNameMap[K];
 		applyElementInfo(el, options);
 		if (this instanceof HTMLElement && el.parentNode !== this) {
 			this.appendChild(el);
@@ -101,9 +101,9 @@ if (typeof HTMLElement !== 'undefined') {
 		return el;
 	}
 
-	HTMLElement.prototype.createEl = function(tag: string, options?: string | DomElementInfo, callback?: (el: HTMLElement) => void) {
+	HTMLElement.prototype.createEl = function(this: HTMLElement, tag: string, options?: string | DomElementInfo, callback?: (el: HTMLElement) => void) {
 		return createElImpl.call(this, tag as keyof HTMLElementTagNameMap, options, callback as any);
-	};
+	} as HTMLElement['createEl'];
 	HTMLElement.prototype.createDiv = function(options?: string | DomElementInfo, callback?: (el: HTMLDivElement) => void) {
 		return this.createEl('div', options, callback as any);
 	};

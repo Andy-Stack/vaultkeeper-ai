@@ -9,7 +9,7 @@ import { Services } from 'Services/Services';
 export const VIEW_TYPE_MAIN = 'vaultkeeper-ai-main-view';
 
 interface ChatWindowComponent {
-  focusInput: () => void;
+  focusInput: (force?: boolean) => void;
   resetChatArea: () => void;
 }
 

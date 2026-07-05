@@ -1,6 +1,6 @@
 # Vaultkeeper AI for Obsidian
 
-> A powerful AI assistant plugin that brings Claude, Gemini, OpenAI, and Mistral directly into your Obsidian vault with intelligent note management capabilities.
+> A powerful AI assistant plugin that brings Claude, Gemini, OpenAI, Mistral, and local models directly into your Obsidian vault with intelligent note management capabilities.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Obsidian Plugin](https://img.shields.io/badge/Obsidian-Plugin-purple.svg)](https://obsidian.md)
@@ -9,9 +9,11 @@
 	<img width="1280" height="640" alt="vaultkeeper-social-1280x640" src="https://github.com/user-attachments/assets/47a5ba6c-e59a-4f95-895a-8abc988369dd" />
 </p>
 
+> **New!** Local model support - Point Vaultkeeper AI at a self-hosted server (LM Studio, Ollama, vLLM, etc.) and chat with your own models, no API key or cloud provider required. See [Local Models](#local-models) below.
+
 ## Features
 
-- **Multi-Provider AI Support** - Switch seamlessly between Claude (Anthropic), Gemini (Google), OpenAI, and Mistral models
+- **Multi-Provider AI Support** - Switch seamlessly between Claude (Anthropic), Gemini (Google), OpenAI, Mistral, and self-hosted local models
 - **Three Chat Modes**
   - 🔍 **Read-Only Mode**: AI can search, read, and list your notes safely
   - ✏️ **Edit Mode**: AI can create, edit, delete, and move notes and folders (when you need it)
@@ -28,6 +30,7 @@
 - **Quick Actions** - Lightweight, single-shot AI operations on selected text, available via right-click context menu and a dedicated editor toolbar button — both toggleable in settings and fully supported on mobile
 - **Mobile Compatible** - Full functionality on mobile devices with touch-friendly controls
 - **Streaming Responses** - See AI responses as they're generated
+- **Local Model Support** - Connect to a self-hosted, OpenAI-compatible server (LM Studio, Ollama, vLLM, etc.) for fully local, private inference
 - **Local & Private** - API keys stored locally, no data sent to third parties
 
 ## Installation
@@ -48,11 +51,12 @@
 
 ## Quick Start
 
-1. **Add API Keys**: Open plugin settings and add at least one API key:
+1. **Add API Keys (or connect a local server)**: Open plugin settings and configure at least one provider:
    - **Claude**: Get from [Anthropic Console](https://console.anthropic.com/)
    - **Gemini**: Get from [Google AI Studio](https://aistudio.google.com/)
    - **OpenAI**: Get from [OpenAI Platform](https://platform.openai.com/)
    - **Mistral**: Get from [Mistral Console](https://console.mistral.ai/)
+   - **Local**: No API key needed - just point it at your local server's URL. See [Local Models](#local-models)
 
 2. **Select a Model**: Choose your preferred AI model from the dropdown
 
@@ -92,6 +96,10 @@ The plugin supports multiple AI models:
 - Mistral Large
 - Mistral Medium
 - Mistral Small
+
+**Local**
+
+- Any model served by an OpenAI-compatible local server (LM Studio, Ollama, vLLM, etc.) - enter the model name yourself, no preset list
 
 Switch models anytime in the settings without losing your conversation context.
 
@@ -209,7 +217,7 @@ Memories are stored in a plain markdown file at `Vaultkeeper AI/memories.md`. Th
 
 Toggle web search on a per-message basis using the globe button in the chat input toolbar. When active, the AI can perform live web searches to answer questions requiring current or external information.
 
-Web search is supported on all four providers. Mistral uses its native Agents API for search; Claude, Gemini, and OpenAI use their respective built-in search tools.
+Web search is supported on all cloud providers (Claude, Gemini, OpenAI, and Mistral) but not on Local models. Mistral uses its native Agents API for search; Claude, Gemini, and OpenAI use their respective built-in search tools.
 
 You can also disable web search access entirely from Settings if you prefer the AI to stay within your vault.
 
@@ -218,6 +226,33 @@ You can also disable web search access entirely from Settings if you prefer the 
 When enabled, the AI can fetch and read the content of web pages — useful for summarising articles, pulling in documentation, or referencing any URL you share.
 
 Web viewer access can be toggled on or off in Settings.
+
+### Local Models
+
+Run Vaultkeeper AI entirely against a self-hosted, OpenAI-compatible server instead of a cloud provider — no API key required, and nothing leaves your machine.
+
+**Setup**
+
+1. Select **Local** from the provider dropdown in Settings (under the "Self Hosted" group)
+2. **Local URL**: Enter your server's chat completions endpoint, e.g. `http://localhost:1234/v1/chat/completions` (LM Studio's default)
+3. **API Key**: Optional — only needed if your local server requires authentication
+4. **Model**: Type the name of the model to use, exactly as your server expects it
+5. Optionally set separate **Planning Model** and **Quick Action Model** names if you want lighter/faster models handling those roles
+
+This works with LM Studio, Ollama, vLLM, and other servers that expose an OpenAI-compatible chat completions API.
+
+**What works**
+
+- Streaming responses
+- Tool/function calling (vault search, file operations, etc.)
+- Quick Actions
+- Image attachments (inlined as base64)
+- PDF and Office/ODF document attachments (PDFs are automatically rasterized to images, since local models can't read raw PDF bytes) and text-based file attachments
+
+**Limitations**
+
+- No web search (cloud-only feature)
+- Many local models need their chat template adjusted to reliably handle multi-turn tool-calling; check your server's documentation (e.g. LM Studio's prompt template settings) if tool use behaves unexpectedly
 
 ### Reference System
 
@@ -282,9 +317,17 @@ See `EXAMPLE_INSTRUCTIONS.md` in your vault for a template.
 - Keys stored locally in your vault
 - Never transmitted except to respective AI providers
 
+**Local Provider**
+
+- Select **Local** from the provider dropdown to use a self-hosted, OpenAI-compatible server instead of a cloud provider
+- **Local URL**: The chat completions endpoint of your server (e.g. `http://localhost:1234/v1/chat/completions`)
+- **API Key**: Optional — only required if your server enforces authentication
+- **Model**, **Planning Model**, **Quick Action Model**: Free-text fields — enter the model name(s) exactly as your server expects them
+- See [Local Models](#local-models) for full details and limitations
+
 **Model Selection**
 
-- Choose from 15+ supported models
+- Choose from 15+ supported cloud models, or connect your own local model
 - Switch anytime without conversation loss
 
 **Planning Model**
@@ -388,6 +431,7 @@ I'm currently **not accepting contributions** (pull requests are disabled), but 
 
 - **API Keys**: Stored locally in your Obsidian vault, never transmitted to third parties
 - **No External Servers**: Direct communication with AI providers only
+- **Fully Local Option**: Use the [Local](#local-models) provider with a self-hosted server to keep all inference on your own machine, with no cloud provider involved at all
 - **File Exclusions**: Protect sensitive information by excluding individual files or entire directories from AI access using glob patterns - excluded files are completely inaccessible in both read-only and agent modes
 - **Local Storage**: All conversations and settings stored in your vault
 - **Open Source**: Fully auditable codebase
@@ -406,7 +450,7 @@ This plugin is built on the shoulders of many excellent projects:
 
 **Platform & AI**
 - Built for [Obsidian](https://obsidian.md)
-- Powered by [Anthropic Claude](https://anthropic.com), [Google Gemini](https://deepmind.google/technologies/gemini/), [OpenAI](https://openai.com), and [Mistral AI](https://mistral.ai)
+- Powered by [Anthropic Claude](https://anthropic.com), [Google Gemini](https://deepmind.google/technologies/gemini/), [OpenAI](https://openai.com), [Mistral AI](https://mistral.ai), and any OpenAI-compatible local server (LM Studio, Ollama, vLLM, etc.)
 - Official SDKs: [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript), [@google/genai](https://github.com/google/generative-ai-js), [openai](https://github.com/openai/openai-node)
 
 **Document Processing**
@@ -415,19 +459,10 @@ This plugin is built on the shoulders of many excellent projects:
 
 **UI Framework**
 - [Svelte](https://svelte.dev) - Reactive UI components
-- [svelte-exmarkdown](https://github.com/ssssota/svelte-exmarkdown) - Markdown rendering for Svelte
-
-**Markdown Processing**
-- [unified](https://unifiedjs.com/) - Markdown processing pipeline
-- [remark](https://github.com/remarkjs/remark) - Markdown parser and compiler
-- [rehype](https://github.com/rehypejs/rehype) - HTML processor
-- [remark-gfm](https://github.com/remarkjs/remark-gfm) - GitHub Flavored Markdown support
-- [remark-wiki-link](https://github.com/landakram/remark-wiki-link) - Obsidian-style wiki links
 
 **Rich Content Rendering**
 - [KaTeX](https://katex.org/) - Mathematical notation rendering
 - [Shiki](https://shiki.style/) - Modern syntax highlighting
-- [rehype-sanitize](https://github.com/rehypejs/rehype-sanitize) - HTML sanitization for security
 
 **Diff & Code Review**
 - [diff](https://github.com/kpdecker/jsdiff) - Text diffing library for change detection
@@ -450,4 +485,4 @@ This plugin is built on the shoulders of many excellent projects:
 
 ---
 
-**Note**: This plugin requires API keys from AI providers. API usage is billed by the respective providers according to their pricing. Monitor your usage through provider dashboards.
+**Note**: Using a cloud provider (Claude, Gemini, OpenAI, or Mistral) requires an API key, and usage is billed by the respective provider according to their pricing — monitor your usage through provider dashboards. The Local provider requires no API key and no billing, since inference runs on your own server.

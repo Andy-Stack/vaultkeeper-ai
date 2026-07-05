@@ -239,7 +239,7 @@ If you find any issues or have a feature request, please feel free to raise them
     HelpModalGettingStartedTitle = "Getting started",
     HelpModalGettingStartedContent = `#### Getting started
 
-1. **Add an API key**: Go to Settings and add at least one API key (Claude, Gemini, OpenAI, or Mistral)
+1. **Add an API key**: Go to Settings and add at least one API key (Claude, Gemini, OpenAI, or Mistral) — or select **Local** to connect a self-hosted server instead, no API key required
 2. **Select a model**: Choose your preferred AI model from the dropdown
 3. **Open the chat**: Click the plugin icon in the sidebar to start chatting`,
 
@@ -325,7 +325,9 @@ When you upload files (PDFs, images) to conversations, they are stored by your A
 - Claude: [Anthropic Console](https://console.anthropic.com/)
 - Gemini: [Google AI Studio](https://aistudio.google.com/)
 - OpenAI: [OpenAI Platform](https://platform.openai.com/)
-- Mistral: [Mistral Console](https://console.mistral.ai/)`,
+- Mistral: [Mistral Console](https://console.mistral.ai/)
+
+**Local**: Files aren't uploaded anywhere - they're sent inline with your message directly to your local server, so there's nothing to clean up on a dashboard.`,
 
     HelpModalTroubleshootTitle = "Troubleshooting",
     HelpModalTroubleshootContent = `#### Common issues & solutions
@@ -375,7 +377,23 @@ This error indicates a temporary issue with the AI provider's servers.
 **How to resolve:**
 - Wait a few minutes and try again
 - There is no action you can take to prevent this error - it's on the provider's side
-- If the issue persists, check the provider's status page for any ongoing incidents`,
+- If the issue persists, check the provider's status page for any ongoing incidents
+
+##### Local model issues
+
+**Problem**: Can't connect to the local server
+
+**Solutions**:
+- Make sure your local server (LM Studio, Ollama, vLLM, etc.) is actually running
+- Double-check the **Local URL** in settings, including the path (e.g. \`/v1/chat/completions\`) and port
+- If your server requires authentication, make sure the API key field is filled in
+
+**Problem**: Tool calls fail, loop, or the AI ignores tool results
+
+**Solutions**:
+- Not all local models support multi-turn tool calling reliably - this is a model/template limitation, not a plugin bug
+- Check your server's chat template settings (e.g. LM Studio's prompt template) and adjust it for tool-calling if needed
+- Try a model known to support tool/function calling well`,
 
     HelpModalPrivacyTitle = "Privacy",
     HelpModalPrivacyContent = `#### Privacy & security
@@ -398,6 +416,7 @@ This error indicates a temporary issue with the AI provider's servers.
 - **Gemini**: Google's API
 - **OpenAI**: OpenAI's API
 - **Mistral**: Mistral AI's API
+- **Local**: Your own self-hosted server - no cloud provider is involved at all, so nothing leaves your machine
 
 **What gets sent**:
 - Your messages and referenced file contents (including binary files like PDFs, Office documents, and images)

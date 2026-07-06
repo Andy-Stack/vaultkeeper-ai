@@ -26,9 +26,9 @@
 		"@types/express": "^5.0.6",
 		"@types/node": "^26.1.0",
 		"@types/path-browserify": "^1.0.3",
-		"@typescript-eslint/eslint-plugin": "8.62.1",
-		"@typescript-eslint/parser": "8.62.1",
-		"@vitest/ui": "^4.1.9",
+		"@typescript-eslint/eslint-plugin": "8.63.0",
+		"@typescript-eslint/parser": "8.63.0",
+		"@vitest/ui": "^4.1.10",
 		"esbuild": "^0.28.1",
 		"esbuild-svelte": "^0.9.5",
 		"eslint": "^10.6.0",
@@ -41,7 +41,7 @@
 		"svelte-preprocess": "^6.0.5",
 		"tslib": "2.8.1",
 		"typescript": "^6.0.3",
-		"vitest": "^4.1.9",
+		"vitest": "^4.1.10",
 		"yaml": "^2.9.0"
 	},
 	"dependencies": {

@@ -11,6 +11,7 @@
 	import { getOuterHeight, setElementIcon } from "Helpers/ElementHelper";
 	import { setIcon } from "obsidian";
 	import { fade } from "svelte/transition";
+	import GraphAnimation from "./GraphAnimation.svelte";
 
   export let messages: ConversationContent[] = [];
   export let currentThought: string | null = null;
@@ -199,7 +200,6 @@
             </div>
           </div>
         {:else}
-          {@const messageId = message.timestamp.getTime().toString()}
           <div class="message-container {Role.Assistant}" use:trackingAction={{ index, role: Role.Assistant }}>
             <div class="message-bubble {Role.Assistant}">
               <div class="markdown-content">
@@ -219,8 +219,14 @@
     <div bind:this={chatAreaPaddingElement} style:user-select=none></div>
 
     {#if messages.length === 0}
-      <div class="conversation-empty-state">
-        <div class="typing-in">{getGreetingByTime()}</div>
+      <div class="conversation-empty-container">
+        <div class="conversation-empty-animation">
+          <GraphAnimation/>
+        </div>
+        <div class="conversation-empty-greeting">
+          <div class="conversation-empty-greeting-backdrop"></div>
+          <div class="conversation-empty-greeting-label">{getGreetingByTime()}</div>
+        </div>
       </div>
     {/if}
 
@@ -360,12 +366,46 @@
     padding-bottom: var(--size-4-2);
   }
   
-  .conversation-empty-state {
+  .conversation-empty-container {
+    display: grid;
+    height: 100%;
+    width: 100%;
+  }
+
+  .conversation-empty-animation {
+    grid-row: 1;
+    grid-column: 1;
+    height: 100%;
+    width: 100%;
+  }
+
+  .conversation-empty-greeting-backdrop {
+    position: absolute;
+    inset: -48px;
+    background: radial-gradient(
+      ellipse closest-side,
+      var(--background-secondary) 0%,
+      color-mix(in srgb, var(--background-secondary) 80%, transparent) 65%,
+      transparent 100%
+    );
+  }
+
+  .conversation-empty-greeting {
+    grid-row: 1;
+    grid-column: 1;
+    position: relative;
     margin: auto;
     font-style: italic;
     font-size: var(--font-ui-medium);
     color: var(--text-muted);
     pointer-events: none;
+  }
+
+  .conversation-empty-greeting-label {
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: var(--size-2-2);
   }
 
   .streaming-content {

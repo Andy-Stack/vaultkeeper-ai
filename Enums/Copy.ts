@@ -6,7 +6,8 @@ export enum Copy {
     NoUserInstruction = "No custom instructions",
 
     // Model Display Names
-    ClaudeSonnet_4_6 = "Claude Sonnet 4.6",
+    ClaudeFable_5 = "Claude Fable 5",
+    ClaudeSonnet_5 = "Claude Sonnet 5",
     ClaudeOpus_4_8 = "Claude Opus 4.8",
     ClaudeHaiku_4_5 = "Claude Haiku 4.5",
 
@@ -15,6 +16,7 @@ export enum Copy {
     GeminiFlash_3_5_Flash = "Gemini 3.5 Flash",
     GeminiPro_3_1_Preview = "Gemini 3.1 Pro Preview",
 
+    GPT_5_5_Pro = "GPT-5.5 Pro",
     GPT_5_5 = "GPT-5.5",
     GPT_5_4_Mini = "GPT-5.4 Mini",
     GPT_5_4_Nano = "GPT-5.4 Nano",

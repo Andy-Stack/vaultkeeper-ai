@@ -27,7 +27,7 @@ describe('SettingsService', () => {
             settingsService = new SettingsService({});
 
             expect(settingsService.settings.firstTimeStart).toBe(true);
-            expect(settingsService.settings.model).toBe(AIProviderModel.ClaudeSonnet_4_6);
+            expect(settingsService.settings.model).toBe(AIProviderModel.ClaudeSonnet_5);
             expect(settingsService.settings.apiKeys).toEqual({
                 claude: '',
                 openai: '',
@@ -172,7 +172,7 @@ describe('SettingsService', () => {
         beforeEach(() => {
             const loadedSettings = makeTestSettings({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeSonnet_4_6,
+                model: AIProviderModel.ClaudeSonnet_5,
                 apiKeys: {
                     claude: 'claude-api-key',
                     openai: 'openai-api-key',
@@ -220,7 +220,7 @@ describe('SettingsService', () => {
         it('should return Claude key when current model is Claude', () => {
             const loadedSettings = makeTestSettings({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeSonnet_4_6,
+                model: AIProviderModel.ClaudeSonnet_5,
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
@@ -336,7 +336,7 @@ describe('SettingsService', () => {
         beforeEach(() => {
             const loadedSettings = makeTestSettings({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeSonnet_4_6
+                model: AIProviderModel.ClaudeSonnet_5
             });
             settingsService = new SettingsService(loadedSettings);
         });
@@ -396,7 +396,7 @@ describe('SettingsService', () => {
         beforeEach(() => {
             const loadedSettings = makeTestSettings({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeSonnet_4_6,
+                model: AIProviderModel.ClaudeSonnet_5,
                 apiKeys: {
                     claude: 'test-key',
                     openai: '',
@@ -441,8 +441,8 @@ describe('SettingsService', () => {
     describe('Provider Detection from Model Names', () => {
         it('should correctly identify Claude models', () => {
             const claudeModels = [
-                AIProviderModel.ClaudeSonnet_4_6,
-                AIProviderModel.ClaudeSonnet_4_6,
+                AIProviderModel.ClaudeSonnet_5,
+                AIProviderModel.ClaudeSonnet_5,
                 AIProviderModel.ClaudeOpus_4_8,
                 AIProviderModel.ClaudeHaiku_4_5
             ];
@@ -526,7 +526,7 @@ describe('SettingsService', () => {
     describe('Settings Immutability and Reference', () => {
         it('should maintain reference to settings object', () => {
             settingsService = new SettingsService({
-                model: AIProviderModel.ClaudeSonnet_4_6,
+                model: AIProviderModel.ClaudeSonnet_5,
                 apiKeys: { claude: 'key', openai: '', gemini: '', mistral: '', local: '' }
             });
 
@@ -539,7 +539,7 @@ describe('SettingsService', () => {
 
         it('should allow modification of settings properties via updateSettings', async () => {
             settingsService = new SettingsService({
-                model: AIProviderModel.ClaudeSonnet_4_6,
+                model: AIProviderModel.ClaudeSonnet_5,
                 apiKeys: { claude: '', openai: '', gemini: '', mistral: '', local: '' },
                 exclusions: []
             });

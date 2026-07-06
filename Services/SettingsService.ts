@@ -21,7 +21,7 @@ export const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     userInstruction: "",
 
     provider: AIProvider.Local,
-    model: AIProviderModel.ClaudeSonnet_4_6,
+    model: AIProviderModel.ClaudeSonnet_5,
     planningModel: AIProviderModel.ClaudeOpus_4_8,
     quickActionModel: AIProviderModel.ClaudeHaiku_4_5,
     

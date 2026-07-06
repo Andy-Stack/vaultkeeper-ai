@@ -66,7 +66,8 @@ export enum AIProvider {
 
 export enum AIProviderModel {
     // Claude models
-    ClaudeSonnet_4_6 = "claude-sonnet-4-6",
+    ClaudeFable_5 = "claude-fable-5",
+    ClaudeSonnet_5 = "claude-sonnet-5",
     ClaudeOpus_4_8 = "claude-opus-4-8",
     ClaudeHaiku_4_5 = "claude-haiku-4-5-20251001",
 
@@ -77,9 +78,10 @@ export enum AIProviderModel {
     GeminiPro_3_1_Preview = "gemini-3.1-pro-preview",
 
     // OpenAI models
-    GPT_5_5 = "gpt-5.5",
-    GPT_5_4_Mini = "gpt-5.4-mini",
-    GPT_5_4_Nano = "gpt-5.4-nano",
+    GPT_5_5_Pro = "gpt-5.5-pro-2026-04-23",
+    GPT_5_5 = "gpt-5.5-2026-04-23",
+    GPT_5_4_Mini = "gpt-5.4-mini-2026-03-17",
+    GPT_5_4_Nano = "gpt-5.4-nano-2026-03-17",
 
     // Mistral models
     MistralMedium = "mistral-medium-3-5",
@@ -124,7 +126,7 @@ export const DEFAULT_QUICK_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel
 }
 
 export const DEFAULT_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
-    [AIProvider.Claude]:  AIProviderModel.ClaudeSonnet_4_6,
+    [AIProvider.Claude]:  AIProviderModel.ClaudeSonnet_5,
     [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_5_Flash,
     [AIProvider.OpenAI]:  AIProviderModel.GPT_5_5,
     [AIProvider.Mistral]: AIProviderModel.MistralMedium,

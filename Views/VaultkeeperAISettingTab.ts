@@ -487,16 +487,18 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		switch (providerFilter) {
 			case AIProvider.Claude:
 				dropdown.addOptions({
-					[AIProviderModel.ClaudeSonnet_4_6]: Copy.ClaudeSonnet_4_6,
+					[AIProviderModel.ClaudeFable_5]: Copy.ClaudeFable_5,
+					[AIProviderModel.ClaudeSonnet_5]: Copy.ClaudeSonnet_5,
 					[AIProviderModel.ClaudeOpus_4_8]: Copy.ClaudeOpus_4_8,
-					[AIProviderModel.ClaudeHaiku_4_5]: Copy.ClaudeHaiku_4_5,
+					[AIProviderModel.ClaudeHaiku_4_5]: Copy.ClaudeHaiku_4_5
 				});
 				break;
 			case AIProvider.OpenAI:
 				dropdown.addOptions({
+					[AIProviderModel.GPT_5_5_Pro]: Copy.GPT_5_5_Pro,
 					[AIProviderModel.GPT_5_5]: Copy.GPT_5_5,
 					[AIProviderModel.GPT_5_4_Mini]: Copy.GPT_5_4_Mini,
-					[AIProviderModel.GPT_5_4_Nano]: Copy.GPT_5_4_Nano,
+					[AIProviderModel.GPT_5_4_Nano]: Copy.GPT_5_4_Nano
 				});
 				break;
 			case AIProvider.Gemini:
@@ -504,13 +506,13 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					[AIProviderModel.GeminiFlash_3_1_Lite]: Copy.GeminiFlash_3_1_Lite,
 					[AIProviderModel.GeminiFlash_3_Flash]: Copy.GeminiFlash_3_Flash,
 					[AIProviderModel.GeminiFlash_3_5_Flash]: Copy.GeminiFlash_3_5_Flash,
-					[AIProviderModel.GeminiPro_3_1_Preview]: Copy.GeminiPro_3_1_Preview,
+					[AIProviderModel.GeminiPro_3_1_Preview]: Copy.GeminiPro_3_1_Preview
 				});
 				break;
 			case AIProvider.Mistral:
 				dropdown.addOptions({
 					[AIProviderModel.MistralMedium]: Copy.MistralMedium,
-					[AIProviderModel.MistralSmall]: Copy.MistralSmall,
+					[AIProviderModel.MistralSmall]: Copy.MistralSmall
 				});
 				break;
 			case AIProvider.Local:

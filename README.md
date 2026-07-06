@@ -70,38 +70,6 @@
 
 ## Usage
 
-### Switching Between Models
-
-The plugin supports multiple AI models:
-
-**Claude (Anthropic)**
-
-- Claude Sonnet 4.6 ⚡ (Recommended)
-- Claude Sonnet 4.5, 4
-- Claude Opus 4.6, 4.5, 4.1, 4
-- Claude Haiku 4.5
-
-**Gemini (Google)**
-
-- Gemini 3.1 Pro Preview, 3 Pro Preview, 3 Flash Preview
-- Gemini 2.5 Flash, Pro
-- Gemini 2.5 Flash Lite
-
-**OpenAI**
-
-- GPT-5.2 (Instant, Thinking, Pro)
-- GPT-5.1, GPT-5 (Mini, Nano)
-
-**Mistral**
-
-- Mistral Large
-- Mistral Medium
-- Mistral Small
-
-**Local**
-
-- Any model served by an OpenAI-compatible local server (LM Studio, Ollama, vLLM, etc.) - enter the model name yourself, no preset list
-
 Switch models anytime in the settings without losing your conversation context.
 
 ### Chat Modes
@@ -347,7 +315,7 @@ See `EXAMPLE_INSTRUCTIONS.md` in your vault for a template.
 **Planning Model**
 
 - Select a separate model for the planning agent (used in Planning Mode)
-- Default: Claude Sonnet 4.6
+- Defaults to your provider's recommended model
 - Allows cost optimization by using a more capable model for planning and a faster/cheaper model for execution
 - The planning model dropdown updates to match your selected provider
 

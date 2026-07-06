@@ -33,6 +33,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 		onPlanningStarted: vi.fn(),
 		onPlanningFinished: vi.fn(),
 		onUserQuestion: vi.fn().mockResolvedValue('User answer'),
+		onPlanApprovalRequest: vi.fn(),
 		onPlanUpdate: vi.fn(),
 		onPlanStepUpdate: vi.fn(),
 		onPlanReset: vi.fn(),

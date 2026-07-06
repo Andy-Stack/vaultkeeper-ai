@@ -15,6 +15,7 @@ import { ConversationNamingService } from "./ConversationNamingService";
 import { DebugService } from "./DebugService";
 import { DiffService } from "./DiffService";
 import { EventService } from "./EventService";
+import { PlanApprovalService } from "./PlanApprovalService";
 import { FileSystemService } from "./FileSystemService";
 import { HTMLService } from "./HTMLService";
 import { InputService } from "./InputService";
@@ -81,6 +82,7 @@ export function RegisterDependencies() {
     RegisterSingleton<HTMLService>(Services.HTMLService, new HTMLService());
     RegisterSingleton<SanitiserService>(Services.SanitiserService, new SanitiserService());
     RegisterSingleton<DiffService>(Services.DiffService, new DiffService());
+    RegisterSingleton<PlanApprovalService>(Services.PlanApprovalService, new PlanApprovalService());
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
     RegisterSingleton<VaultCacheService>(Services.VaultCacheService, new VaultCacheService());
     RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());

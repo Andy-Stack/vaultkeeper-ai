@@ -84,6 +84,16 @@ body:not(.is-tablet) .workspace-drawer.mod-right {
 }
 
 /* ============================== */
+/* Plan Approval View Customization */
+/* ============================== */
+
+.workspace-leaf-content[data-type="vaultkeeper-ai-plan-approval-view"] .view-content {
+  container-type: size;
+  container-name: plan-approval-container;
+  overflow: hidden;
+}
+
+/* ============================== */
 /* Settings Styles */
 /* ============================== */
 

@@ -47,6 +47,7 @@ export class QuickAgent extends BaseAgent {
             onPlanningStarted: () => {},
             onPlanningFinished: () => {},
             onUserQuestion: async () => new Promise<string>(() => {}),
+            onPlanApprovalRequest: async () => new Promise(() => {}),
             onPlanUpdate: () => {},
             onPlanStepUpdate: () => {},
             onPlanReset: () => {},

@@ -20,11 +20,13 @@
 	import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
 	import { AITool, fromString } from "Enums/AITool";
 	import { AIProvider } from "Enums/ApiProvider";
+	import type { PlanApprovalService } from "Services/PlanApprovalService";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);
   const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
   const chatService: ChatService = Resolve<ChatService>(Services.ChatService);
+  const planApprovalService: PlanApprovalService = Resolve<PlanApprovalService>(Services.PlanApprovalService);
   const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
   const conversationService: ConversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
   const streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
@@ -143,6 +145,9 @@
         return new Promise<string>((resolve) => {
           chatInput.enterQuestionMode(resolve);
         });
+      },
+      onPlanApprovalRequest: async (plan) => {
+        return planApprovalService.requestApproval(plan);
       },
       onPlanUpdate: (executionPlan) => {
         executionPlanStore.setPlan(executionPlan);

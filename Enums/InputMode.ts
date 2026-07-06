@@ -1,5 +1,6 @@
 export enum InputMode {
     Normal = "normal",
     Diff = "diff",
-    Question = "question"
+    Question = "question",
+    PlanApproval = "planApproval"
 }

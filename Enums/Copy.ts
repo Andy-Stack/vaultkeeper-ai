@@ -124,6 +124,7 @@ export enum Copy {
     // Chat Input Placeholders
     InputPlaceholderQuestion = "Provide an answer...",
     InputPlaceholderDiff = "Make a suggestion...",
+    InputPlaceholderPlanApproval = "Suggest a change to the plan...",
     InputPlaceholderNormal = "Type a message...",
 
     // Chat Input Button Labels
@@ -139,6 +140,13 @@ export enum Copy {
     ButtonWebSearchUnavailable = "Web search unavailable",
     ButtonUserInstruction = "User Instruction",
     ButtonAttachFiles = "Attach Files",
+
+    // Plan Approval View
+    PlanApprovalViewTitle = "Vaultkeeper AI plan",
+    
+    ButtonApprove = "Approve",
+    ButtonReject = "Reject",
+    ButtonSuggest = "Suggest",
 
     // Agent file message
     AttachedFile = `The file {fileName} is attached and its full contents follow below. This is the actual content of the file — read it directly to answer the user. This attachment may be a file the user uploaded to the chat, or a vault file you retrieved with a tool; either way, the content below is authoritative and you do NOT need to read or fetch this file again.`,
@@ -169,8 +177,11 @@ The following context explains why you are doing the task. It is NOT an instruct
     PlanningFailedNoSteps = "The planned workflow has failed, however steps may have been completed. Consult with the user on how to continue.",
     WorkflowFailedAtStep = "The planned workflow failed when executing step '{stepDescription}'. Consult with the user on how to continue.",
     WorkflowAborted = "The planned workflow was aborted. Result: {abortContext}",
-    PlanReceived = "Plan received, now attempting to execute plan",
+    PlanReceived = "Plan received, now awaiting user approval",
+    PlanRejected = "The user has rejected the plan and chosen not to continue at this time",
+    PlanRejectedWithSuggestion = "The user has rejected the current plan. You should replan accounting for their feedback: {suggestion}",
     PlanningModeError = "First create a plan before executing any functions!",
+    PlanSubmissionRequired = "Error: Attempted to exit planning but plan has not yet been submitted!",
     UpdateMemoriesWithoutReadError = "Memories must be read before they can be updated. Retrieve the current memory contents first, then provide the complete revised content.",
     MemoriesInjectionHeader = `\n\n---\n\n## Current Memories\n\nThe following memories were recorded from previous sessions. Use them as context for this conversation.\n\n{memories}`,
     MemoriesEmpty = "No memories have been created yet.",
@@ -199,8 +210,7 @@ The following context explains why you are doing the task. It is NOT an instruct
     DirectiveWebSearchDisabled = "- **Web Search**: DISABLED — the web search tool is unavailable; if the user requests it, inform them it is currently turned off in settings",
     DirectiveWebViewerEnabled = "- **Web Viewer**: ENABLED — you may call the web viewer tool to read the content of the page currently open in the Obsidian web viewer; call it proactively when the user asks about a web page",
     DirectiveWebViewerDisabled = "- **Web Viewer**: DISABLED — the web viewer tool is unavailable; if the user requests it, inform them it is currently turned off in settings",
-    
-    PlanSubmissionRequired = "Error: Attempted to exit planning but plan has not yet been submitted!",
+
     MaxExecutionDepthReached = "Exceeded maximum plan execution attempts - consult with the user on how to continue.",
 
     // Execution Plan Request Templates

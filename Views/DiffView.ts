@@ -7,6 +7,7 @@ import type { DiffService } from "Services/DiffService";
 import { Services } from "Services/Services";
 import { VIEW_TYPE_MAIN, type MainView } from "./MainView";
 import { tick } from "svelte";
+import { Copy } from "Enums/Copy";
 
 export const VIEW_TYPE_DIFF = 'vaultkeeper-ai-diff-view';
 
@@ -111,21 +112,21 @@ export class DiffView extends ItemView {
 
         const acceptButton = container.createEl('button', {
             cls: 'diff-mobile-button diff-mobile-accept',
-            text: 'Accept'
+            text: Copy.ButtonApprove
         });
-        acceptButton.setAttribute('aria-label', 'Accept changes');
+        acceptButton.setAttribute('aria-label', Copy.ButtonApprove);
 
         const suggestButton = container.createEl('button', {
             cls: 'diff-mobile-button diff-mobile-suggest',
-            text: 'Suggest'
+            text: Copy.ButtonSuggest
         });
-        suggestButton.setAttribute('aria-label', 'Make a suggestion');
+        suggestButton.setAttribute('aria-label', Copy.ButtonSuggest);
 
         const rejectButton = container.createEl('button', {
             cls: 'diff-mobile-button diff-mobile-reject',
-            text: 'Reject'
+            text: Copy.ButtonReject
         });
-        rejectButton.setAttribute('aria-label', 'Reject changes');
+        rejectButton.setAttribute('aria-label', Copy.ButtonReject);
 
         this.registerDomEvent(acceptButton, 'click', async () => {
             this.diffService.onAccept();

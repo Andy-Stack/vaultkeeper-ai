@@ -25,6 +25,7 @@ export class Services {
     static InputService = Symbol("InputService");
     static WebViewerService = Symbol("WebViewerService");
     static DiffService = Symbol("DiffService");
+    static PlanApprovalService = Symbol("PlanApprovalService");
     static MemoriesService = Symbol("MemoriesService");
     static DebugService = Symbol("DebugService");
 

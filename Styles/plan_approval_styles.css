@@ -1,0 +1,92 @@
+/* ============================== */
+/* Structural / layout fixes      */
+/* ============================== */
+
+.plan-approval-wrapper {
+    container-type: size;
+    container-name: plan-approval-wrapper;
+    transform: translateZ(0);
+    height: 100cqh;
+    overflow: auto;
+}
+
+/* ============================== */
+/* Mobile Controls                */
+/* ============================== */
+
+.plan-approval-mobile-controls {
+    display: none; /* Hidden by default (desktop) */
+}
+
+/* Avoid the floating obsidian controls */
+@media (max-width: 600px) {
+    .plan-approval-mobile-controls {
+        margin-bottom: 85px;
+    }
+}
+
+.plan-approval-view-mobile .plan-approval-mobile-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--size-4-2);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--size-4-3);
+    z-index: 10;
+}
+
+.plan-approval-mobile-controls .plan-approval-mobile-button {
+    min-height: 44px;
+    font-size: var(--font-ui-medium);
+    font-weight: var(--font-semibold);
+    border-radius: var(--button-radius);
+    cursor: pointer;
+    border: none;
+    color: var(--text-on-accent);
+}
+
+.plan-approval-mobile-controls .plan-approval-mobile-approve {
+    background-color: color-mix(
+        in srgb,
+        var(--color-green) 75%,
+        var(--background-primary) 25%
+    );
+}
+
+.plan-approval-mobile-controls .plan-approval-mobile-approve:active {
+    background-color: var(--color-green);
+}
+
+.plan-approval-mobile-controls .plan-approval-mobile-suggest {
+    background-color: var(--interactive-accent);
+}
+
+.plan-approval-mobile-controls .plan-approval-mobile-suggest:active {
+    background-color: var(--interactive-accent-hover);
+}
+
+.plan-approval-mobile-controls .plan-approval-mobile-reject {
+    background-color: color-mix(
+        in srgb,
+        var(--color-red) 75%,
+        var(--background-primary) 25%
+    );
+}
+
+.plan-approval-mobile-controls .plan-approval-mobile-reject:active {
+    background-color: var(--color-red);
+}
+
+/* Adjust plan height on mobile to account for buttons */
+.plan-approval-view-mobile .plan-approval-wrapper {
+    height: calc(100cqh - 40px);
+}
+
+/* Avoid the floating obsidian controls */
+@media (max-width: 600px) {
+    .plan-approval-view-mobile .plan-approval-wrapper {
+        height: calc(100cqh - 120px);
+    }
+}

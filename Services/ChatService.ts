@@ -17,6 +17,7 @@ import type { WorkSpaceService } from "./WorkSpaceService";
 import type { ExecutionPlan } from "Types/ExecutionPlan";
 import type { MainAgent } from "./AIServices/MainAgent";
 import type { ChatMode } from "Enums/ChatMode";
+import type { PlanApprovalResponse } from "Types/PlanApprovalResponse";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
@@ -26,6 +27,7 @@ export interface IChatServiceCallbacks {
 	onPlanningStarted: () => void;
 	onPlanningFinished: () => void;
 	onUserQuestion: (question: string) => Promise<string>;
+	onPlanApprovalRequest: (plan: ExecutionPlan) => Promise<PlanApprovalResponse>
 	onPlanUpdate: (executionPlan: ExecutionPlan) => void;
 	onPlanStepUpdate: (currentStepIndex: number) => void;
 	onPlanReset: () => void;

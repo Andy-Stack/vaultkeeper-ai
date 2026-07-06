@@ -3,7 +3,7 @@ import type { IAIToolDefinition } from "../IAIToolDefinition";
 
 export const SubmitPlan: IAIToolDefinition = {
     name: AITool.SubmitPlan,
-    description: `Submits an execution plan with ordered, actionable steps.
+    description: `Submits an execution plan with ordered, actionable steps for the user to review.
 
 Call this function:
 - After analyzing the goal and vault context to provide a structured plan
@@ -26,11 +26,11 @@ Do NOT use this function:
             properties: {
               description: {
                 type: "string",
-                description: "Brief summary of what this step accomplishes (e.g., 'Search for ML notes', 'Create index file'). This is user-facing and should be very concise."
+                description: "Brief title of what this step accomplishes (e.g., 'Search for ML notes', 'Create index file'). This is just a heading and should be very concise."
               },
               instruction: {
                 type: "string",
-                description: "Detailed instructions for executing this step. Should be specific enough to guide the execution without ambiguity. Examples: 'Search vault for all notes with tag #machine-learning using search_vault_files', 'Create new file ML-Index.md in /Research folder with heading structure', 'Update frontmatter in daily note 2024-01-15 to add tag #reviewed'"
+                description: "Detailed instructions for executing this step. Should be specific enough to guide the execution without ambiguity. This is user facing and should be formatted using markdown. Examples: 'Search vault for all notes tagged **#machine-learning**', 'Create new file `ML-Index.md` in `/Research` folder with the following heading structure:\\n- Overview\\n- Key Papers\\n- Open Questions', 'Update frontmatter in daily note `2024-01-15` to add tag **#reviewed**'"
               },
               context: {
                 type: "string",

@@ -39,20 +39,6 @@
         scrollToActiveStep();
     }
 
-    $: if (wrapperDiv && expanded !== undefined) {
-        handleExpandTransition();
-    }
-
-    function handleExpandTransition() {
-        isTransitioning = true;
-        const onTransitionEnd = () => {
-            isTransitioning = false;
-            wrapperDiv.removeEventListener('transitionend', onTransitionEnd);
-            scrollToActiveStep();
-        };
-        wrapperDiv.addEventListener('transitionend', onTransitionEnd);
-    }
-
     function setupResizeObserver() {
         if (resizeObserver) {
             resizeObserver.disconnect();
@@ -110,6 +96,17 @@
         requestAnimationFrame(() => {
             updateHeight();
         });
+
+        isTransitioning = true;
+        const finishTransition = () => {
+            wrapperDiv.removeEventListener('transitionend', finishTransition);
+            clearTimeout(fallbackTimeoutId);
+            isTransitioning = false;
+            scrollToActiveStep();
+        };
+        // Fallback in case height doesn't actually change (e.g. <=3 steps), so transitionend never fires
+        const fallbackTimeoutId = setTimeout(finishTransition, 250);
+        wrapperDiv.addEventListener('transitionend', finishTransition, { once: true });
     }
 </script>
 

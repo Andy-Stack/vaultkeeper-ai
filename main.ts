@@ -3,6 +3,7 @@ import { MainView, VIEW_TYPE_MAIN } from "Views/MainView";
 import { RegisterDependencies, RegisterPlugin } from "Services/ServiceRegistration";
 import { VaultkeeperAISettingTab } from "Views/VaultkeeperAISettingTab";
 import { DiffView, VIEW_TYPE_DIFF } from "Views/DiffView";
+import { PlanApprovalView, VIEW_TYPE_PLAN_APPROVAL } from "Views/PlanApprovalView";
 import { Services } from "Services/Services";
 import { DeregisterAllServices, Resolve } from "Services/DependencyService";
 import type { VaultService } from "Services/VaultService";
@@ -10,6 +11,7 @@ import { Path } from "Enums/Path";
 import { Copy } from "Enums/Copy";
 import type { SettingsService } from "Services/SettingsService";
 import type { Diff2HtmlUIConfig } from "diff2html/lib/ui/js/diff2html-ui";
+import type { ExecutionPlan } from "Types/ExecutionPlan";
 
 import "katex/dist/katex.min.css";
 import 'highlight.js/styles/monokai.min.css';
@@ -29,6 +31,10 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		this.registerView(
 			VIEW_TYPE_DIFF,
 			(leaf) => new DiffView(leaf)
+		);
+		this.registerView(
+			VIEW_TYPE_PLAN_APPROVAL,
+			(leaf) => new PlanApprovalView(leaf)
 		);
 
 		this.addCommand({
@@ -79,10 +85,27 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		const leaves = workspace.getLeavesOfType(VIEW_TYPE_DIFF);
 		const leaf = leaves.length > 0 ? leaves[0] : workspace.getLeaf("tab");
 
-		await leaf?.setViewState({ 
+		await leaf?.setViewState({
 			type: VIEW_TYPE_DIFF,
 			active: true,
 			state: { diffString, config }
+		});
+
+		if (leaf != null) {
+			await workspace.revealLeaf(leaf);
+		}
+	}
+
+	public async activatePlanApprovalView(plan: ExecutionPlan) {
+		const { workspace } = this.app;
+
+		const leaves = workspace.getLeavesOfType(VIEW_TYPE_PLAN_APPROVAL);
+		const leaf = leaves.length > 0 ? leaves[0] : workspace.getLeaf("tab");
+
+		await leaf?.setViewState({
+			type: VIEW_TYPE_PLAN_APPROVAL,
+			active: true,
+			state: { plan }
 		});
 
 		if (leaf != null) {

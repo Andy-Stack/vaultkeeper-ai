@@ -18,6 +18,7 @@ import { DebugColor } from "Enums/DebugColor";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
 import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
+import type { ExecutionPlan } from "Types/ExecutionPlan";
 
 export class OrchestrationAgent extends BaseAgent {
 
@@ -39,13 +40,49 @@ export class OrchestrationAgent extends BaseAgent {
         callbacks.onPlanReset();
         callbacks.onPlanningStarted();
         this.debugService?.log("OrchestrationAgent", "Spawning PlanningAgent to generate execution plan");
-        const executionPlan = await planningAgent.runPlanningAgent(planningConversation, callbacks);
-        callbacks.onPlanningFinished();
+
+        let approved = false;
+
+        let executionPlan: ExecutionPlan | undefined;
+
+        while (!approved) {
+            executionPlan = await planningAgent.runPlanningAgent(planningConversation, callbacks);
+
+            if (!executionPlan) {
+                callbacks.onPlanningFinished();
+                this.debugService?.log("OrchestrationAgent", "Planning failed - no execution plan generated");
+                return new AIToolResponsePayload({ message: Copy.PlanningFailedNoSteps });
+            }
+
+            this.debugService?.log("OrchestrationAgent", "Plan awaiting user approval");
+            let response = await callbacks.onPlanApprovalRequest(executionPlan);
+
+            if (response.approved) {
+                this.debugService?.log("OrchestrationAgent", "Execution plan approved");
+                break;
+            }
+
+            if (response.suggestion.trim() === "") {
+                callbacks.onPlanningFinished();
+                this.debugService?.log("OrchestrationAgent", "Execution plan rejected");
+                return new AIToolResponsePayload({ message: Copy.PlanRejected });
+            }
+
+            this.debugService?.log("OrchestrationAgent", "Execution plan rejected with user suggestion, commencing replanning");
+            planningConversation.contents.push(new ConversationContent({
+                role: Role.User,
+                content: replaceCopy(Copy.PlanRejectedWithSuggestion, [response.suggestion]),
+                shouldDisplayContent: false
+            }));
+        }
 
         if (!executionPlan) {
+            callbacks.onPlanningFinished();
             this.debugService?.log("OrchestrationAgent", "Planning failed - no execution plan generated");
             return new AIToolResponsePayload({ message: Copy.PlanningFailedNoSteps });
         }
+        callbacks.onPlanningFinished();
+
         this.debugService?.log("OrchestrationAgent", `Execution plan received with ${executionPlan.executionSteps.length} steps`);
         callbacks.onPlanUpdate(executionPlan);
 
@@ -93,6 +130,7 @@ export class OrchestrationAgent extends BaseAgent {
                         : orchestrationResult.continueContext;
                 }
                 stepIndex++;
+                callbacks.onPlanStepUpdate(stepIndex);
                 continue;
             }
 
@@ -125,6 +163,7 @@ export class OrchestrationAgent extends BaseAgent {
                     content: `Step ${stepIndex + 1} was skipped. Reason: ${orchestrationResult.skipReason}`
                 }));
                 stepIndex++;
+                callbacks.onPlanStepUpdate(stepIndex);
                 continue;
             }
 

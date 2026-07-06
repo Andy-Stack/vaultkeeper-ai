@@ -351,6 +351,11 @@
 	}
 
 	/* Mobile styles */
+	:global(.is-mobile) .help-modal-banner {
+		margin-top: calc(var(--size-4-1) * -1);;
+		margin-left: calc(var(--size-4-2) * -0.6);
+	}
+
 	:global(.is-mobile) .help-modal-body {
 		grid-template-rows: auto var(--size-4-2) 1fr var(--size-4-2) auto;
 		grid-template-columns: 1fr;
@@ -385,5 +390,6 @@
 		grid-row: 3;
 		grid-column: 1;
 		padding: var(--size-4-2);
+		overflow-x: hidden;
 	}
 </style>

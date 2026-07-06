@@ -838,10 +838,6 @@
     max-height: 2rem;
   }
 
-  .input-button-highlight {
-    box-shadow: 0px 0px 2px 1px var(--color-accent);
-  }
-
   #free-edit-button {
     grid-row: 9;
     grid-column: 10;
@@ -849,6 +845,14 @@
     padding: var(--size-4-2);
     align-self: end;
     transition-duration: 0.5s;
+  }
+
+  :global(.is-mobile) #free-edit-button {
+    max-height: 2rem;
+  }
+
+  .input-button-highlight {
+    box-shadow: 0px 0px 2px 1px var(--color-accent);
   }
 
   #submit-button {

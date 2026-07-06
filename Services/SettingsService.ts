@@ -150,8 +150,11 @@ export class SettingsService {
 
     private settingsSnapshot: string;
 
-    public constructor(loadedSettings: Partial<IVaultkeeperAISettings>) {
+    public constructor(loadedSettings: Partial<IVaultkeeperAISettings> | null) {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
+
+        loadedSettings ??= {}; // New users won't have any settings yet
+        
         this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings, {
             apiKeys: Object.assign({}, DEFAULT_SETTINGS.apiKeys, loadedSettings.apiKeys),
             localModels: Object.assign({}, DEFAULT_SETTINGS.localModels, loadedSettings.localModels)

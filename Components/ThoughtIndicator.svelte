@@ -1,6 +1,5 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
-	import Spinner from "./Spinner.svelte";
   export let thought: string | null = null;
   export let thoughtIndicatorElement: HTMLElement | undefined = undefined;
 
@@ -9,9 +8,10 @@
 </script>
 
 {#if isVisible}
-  <div class="ai-thought-container" in:fade={{ duration: 200 }} out:fade={{ duration: 200 }} bind:this={thoughtIndicatorElement}>
-    <div class="ai-thought-bubble">
-      <span><Spinner/> {thought}</span>
+  <div class="ai-thought-container" bind:this={thoughtIndicatorElement} transition:fade={{ duration: 300 }}>
+    <div class="ai-thought-line">
+      <span class="ai-thought-dot"></span>
+      <span class="ai-thought-text">{thought}</span>
     </div>
   </div>
 {/if}
@@ -22,59 +22,40 @@
     margin-bottom: 0.25rem;
   }
 
-  .ai-thought-bubble {
-    --border-width: 1px;
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    border-radius: 10px;
+  .ai-thought-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding-left: 0.125rem;
     max-width: 100%;
   }
 
-  .ai-thought-bubble span {
-    position: relative;
-    z-index: 1;
-    background: var(--background-primary);
-    border-radius: 10px;
-    padding: 0.55rem 0.7rem;
+  .ai-thought-dot {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: var(--text-accent, #a78bfa);
+    animation: breathe 1.6s ease-in-out infinite;
+  }
+
+  .ai-thought-text {
     font-size: var(--font-smallest);
     color: var(--text-muted);
     font-style: italic;
+    line-height: 1.5;
     word-wrap: break-word;
-    width: 100%;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
   }
 
-  .ai-thought-bubble::after {
-    position: absolute;
-    content: "";
-    top: calc(-1 * var(--border-width));
-    left: calc(-1 * var(--border-width));
-    z-index: 0;
-    width: calc(100% + var(--border-width) * 2);
-    height: calc(100% + var(--border-width) * 2);
-    background: linear-gradient(
-      60deg,
-      hsl(224, 85%, 66%),
-      hsl(269, 85%, 66%),
-      hsl(314, 85%, 66%),
-      hsl(359, 85%, 66%),
-      hsl(44, 85%, 66%),
-      hsl(89, 85%, 66%),
-      hsl(134, 85%, 66%),
-      hsl(179, 85%, 66%)
-    );
-    background-size: 300% 300%;
-    background-position: 0 50%;
-    border-radius: 10px;
-    animation: moveGradient 3s alternate infinite;
-  }
-
-  @keyframes moveGradient {
+  @keyframes breathe {
+    0%, 100% {
+      opacity: 0.35;
+      transform: scale(0.85);
+    }
     50% {
-      background-position: 100% 50%;
+      opacity: 1;
+      transform: scale(1);
     }
   }
 </style>

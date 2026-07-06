@@ -133,6 +133,8 @@ export enum Copy {
     ButtonMakeSuggestion = "Make Suggestion",
     ButtonSendMessage = "Send Message",
     ButtonChangeChatMode = "Change the Chat Mode",
+    ButtonFreeEdit = "Allow changes without asking",
+    ButtonFreeEditDisabled = "Read-only mode enabled",
     ButtonTurnOffPlanningMode = "Turn off Planning Mode",
     ButtonTurnOnPlanningMode = "Turn on Planning Mode",
     ButtonTurnOffWebSearch = "Turn off Web Search",

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from "svelte";
-  import { Platform, setIcon, type EventRef } from "obsidian";
+  import { Platform, setIcon, ToggleComponent, type EventRef } from "obsidian";
 	import type { UserInputService } from "Services/UserInputService";
 	import type { ISearchState, SearchStateStore } from "Stores/SearchStateStore";
 	import { Resolve } from "Services/DependencyService";
@@ -55,14 +55,15 @@
   let submitButton: HTMLButtonElement;
   let attachmentButton: HTMLButtonElement;
   let chatModeButton: HTMLButtonElement;
+  let freeEditButton: HTMLButtonElement;
 
   let chatModeSelectionAreaActive: boolean = false;
   let userInstructionAreaActive: boolean = false;
   let userInstructionActive: boolean = true;
-  let stacked: boolean = false;
 
   let userRequest: string = "";
 
+  let freeEdit: boolean = settingsService.settings.freeEdit;
   let chatMode: ChatMode = settingsService.settings.chatMode;
   let inputMode: InputMode = InputMode.Normal;
   let questionResolver: ((answer: string) => void) | null = null;
@@ -73,7 +74,6 @@
 
   let countdownIntervalId: ReturnType<typeof setInterval> | null = null;
   let countdownSecondsRemaining: number = 0;
-  let inputInitialHeight: number = 0;
 
   const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { inputMode = InputMode.Diff; focusInput(); });
   const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { inputMode = InputMode.Normal; focusInput(); });
@@ -89,14 +89,27 @@
         setIcon(chatModeButton, iconForChatMode(chatMode));
       }
     }
+    if (changed.includes("freeEdit")) {
+      if (freeEditButton) {
+        freeEdit = settingsService.settings.freeEdit;
+        setIcon(freeEditButton, iconForFreeEdit(freeEdit));
+      }
+    }
     if (changed.includes("provider")) {
       webSearchUnavailable = settingsService.settings.provider === AIProvider.Local;
+    }
+    if (changed.includes("enableWebSearch")) {
+      webSearchActive = settingsService.settings.enableWebSearch;
+    }
+    if (changed.includes("userInstruction")) {
+      aiPrompt.userInstruction().then(instruction => {
+        userInstructionActive = instruction.trim() !== "";
+      });
     }
   });
 
   onMount(async () => {
     userInstructionActive = (await aiPrompt.userInstruction()).trim() !== "";
-    inputInitialHeight = textareaElement.innerHeight;
   });
 
   onDestroy(() => {
@@ -108,19 +121,6 @@
     settingsService.unsubscribe(settingsSubscription);
     stopCountdown();
   });
-
-  function checkStacked() {
-    // Mobile already uses the 'stacked' layout 
-    if (Platform.isMobile || textareaElement.textContent.trim() === "") {
-      stacked = false;
-      return;
-    }
-
-    if (textareaElement.innerHeight > inputInitialHeight) {
-      stacked = true;
-      return;
-    }
-  }
 
   export function focusInput(force: boolean = false) {
     // Generally don't focus on mobile, it's annoying
@@ -237,6 +237,10 @@
     setIcon(chatModeButton, iconForChatMode(chatMode));
   }
 
+  $: if (freeEditButton) {
+    setIcon(freeEditButton, iconForFreeEdit(freeEdit))
+  }
+
   $: inputPlaceholder = (() => {
     if (inputMode === InputMode.Question) return Copy.InputPlaceholderQuestion;
     if (inputMode === InputMode.Diff) return Copy.InputPlaceholderDiff;
@@ -263,6 +267,10 @@
     }
     return isSubmitting ? Copy.ButtonCancel : Copy.ButtonSendMessage;
   })();
+
+  function iconForFreeEdit(freeEdit: boolean) {
+    return freeEdit ? "file-pen" : "file-lock"
+  }
 
   function handleStop() {
     onStop();
@@ -312,7 +320,6 @@
 
     textareaElement.textContent = "";
     userRequest = "";
-    checkStacked();
 
     if (Platform.isMobile) {
       textareaElement.blur();
@@ -341,7 +348,13 @@
 
   function toggleChatModeSelectionArea() {
     chatModeSelectionAreaActive = !chatModeSelectionAreaActive;
+  }
 
+  function toggleFreeEdit() {
+    const newState = !settingsService.settings.freeEdit;
+    settingsService.updateSettings(settings => {
+      settings.freeEdit = newState;
+    });
   }
 
   async function handleKeydown(e: KeyboardEvent) {
@@ -463,8 +476,6 @@
       if (userRequest.trim() === "") {
         textareaElement.textContent = "";
       }
-
-      checkStacked();
     }
   }
 
@@ -567,7 +578,7 @@
   }
 </script>
 
-<div id="input-container" class:stacked>
+<div id="input-container">
   <div id="input-display-container" style:padding-top={attachments.length > 0 ? "var(--size-4-2)" : 0}>
     <InputDisplay bind:this={inputDisplay}/>
   </div>
@@ -652,6 +663,15 @@
   </button>
 
   <button
+    id="free-edit-button"
+    class:input-button-highlight={freeEdit}
+    bind:this={freeEditButton}
+    on:click={toggleFreeEdit}
+    disabled={!editsAllowed}
+    aria-label={editsAllowed ? Copy.ButtonFreeEdit : Copy.ButtonFreeEditDisabled }>
+  </button>
+
+  <button
     id="submit-button"
     bind:this={submitButton}
     on:click={() => {
@@ -675,8 +695,8 @@
     grid-row: 3;
     grid-column: 1;
     display: grid;
-    grid-template-rows: auto auto auto auto auto var(--size-4-3) 1fr var(--size-4-3);
-    grid-template-columns: var(--size-4-3) auto var(--size-4-2) auto var(--size-4-2) 1fr var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
+    grid-template-rows: auto auto auto auto auto var(--size-4-3) 1fr var(--size-4-3) auto var(--size-4-3);
+    grid-template-columns: var(--size-4-3) auto var(--size-4-2) auto 1fr auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
     border-radius: var(--radius-l);
     background-color: var(--background-primary);
   }
@@ -711,35 +731,9 @@
     grid-column: 2 / 13;
   }
 
-  #user-instruction-button {
-    grid-row: 7;
-    grid-column: 2;
-    border-radius: var(--radius-xl);
-    padding: var(--size-4-2);
-    align-self: end;
-    transition-duration: 0.5s;
-  }
-
-  :global(.is-mobile) #user-instruction-button {
-    max-height: 2rem;
-  }
-
-  #web-search-button {
-    grid-row: 7;
-    grid-column: 4;
-    border-radius: var(--radius-xl);
-    padding: var(--size-4-2);
-    align-self: end;
-    transition-duration: 0.5s;
-  }
-
-  :global(.is-mobile) #web-search-button {
-    max-height: 2rem;
-  }
-
   #input-field {
     grid-row: 7;
-    grid-column: 6;
+    grid-column: 2 / 13;
     height: 100%;
     max-height: 30vh;
     border-radius: var(--radius-m);
@@ -792,9 +786,35 @@
     outline: none;
   }
 
+  #user-instruction-button {
+    grid-row: 9;
+    grid-column: 2;
+    border-radius: var(--radius-xl);
+    padding: var(--size-4-2);
+    align-self: end;
+    transition-duration: 0.5s;
+  }
+
+  :global(.is-mobile) #user-instruction-button {
+    max-height: 2rem;
+  }
+
+  #web-search-button {
+    grid-row: 9;
+    grid-column: 4;
+    border-radius: var(--radius-xl);
+    padding: var(--size-4-2);
+    align-self: end;
+    transition-duration: 0.5s;
+  }
+
+  :global(.is-mobile) #web-search-button {
+    max-height: 2rem;
+  }
+
   #chat-attachment-button {
-    grid-row: 7;
-    grid-column: 8;
+    grid-row: 9;
+    grid-column: 6;
     border-radius: var(--radius-xl);
     padding: var(--size-4-2);
     align-self: end;
@@ -806,8 +826,8 @@
   }
 
   #chat-mode-button {
-    grid-row: 7;
-    grid-column: 10;
+    grid-row: 9;
+    grid-column: 8;
     border-radius: var(--radius-xl);
     padding: var(--size-4-2);
     align-self: end;
@@ -822,8 +842,17 @@
     box-shadow: 0px 0px 2px 1px var(--color-accent);
   }
 
+  #free-edit-button {
+    grid-row: 9;
+    grid-column: 10;
+    border-radius: var(--radius-xl);
+    padding: var(--size-4-2);
+    align-self: end;
+    transition-duration: 0.5s;
+  }
+
   #submit-button {
-    grid-row: 7;
+    grid-row: 9;
     grid-column: 12;
     border-radius: var(--radius-xl);
     padding-left: var(--size-4-2);
@@ -840,79 +869,5 @@
   #submit-button:not(:disabled):hover {
     cursor: pointer;
     background-color: var(--interactive-accent-hover);
-  }
-
-  /* Stacked layout: input above, buttons below (desktop only, when content wraps) */
-  #input-container.stacked {
-    grid-template-rows: auto auto auto auto auto var(--size-4-3) 1fr var(--size-4-2) auto var(--size-4-3);
-  }
-
-  #input-container.stacked #input-field {
-    grid-column: 2 / 13;
-  }
-
-  #input-container.stacked #user-instruction-button {
-    grid-row: 9;
-  }
-
-  #input-container.stacked #web-search-button {
-    grid-row: 9;
-  }
-
-  #input-container.stacked #chat-attachment-button {
-    grid-row: 9;
-  }
-
-  #input-container.stacked #chat-mode-button {
-    grid-row: 9;
-  }
-
-  #input-container.stacked #submit-button {
-    grid-row: 9;
-  }
-
-  /* Narrow/mobile layout: input above, buttons below */
-  :global(.is-mobile) #input-container {
-    grid-template-rows: auto auto auto auto auto var(--size-4-3) 1fr var(--size-4-2) auto var(--size-4-3);
-    grid-template-columns: var(--size-4-3) auto var(--size-4-2) auto 1fr auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
-  }
-
-  :global(.is-mobile) #input-display-container,
-  :global(.is-mobile) #input-attachments-container,
-  :global(.is-mobile) #diff-controls-container,
-  :global(.is-mobile) #input-search-results-container,
-  :global(.is-mobile) #user-instruction-container,
-  :global(.is-mobile) #chat-mode-selector-container {
-    grid-column: 2 / 11;
-  }
-
-  :global(.is-mobile) #input-field {
-    grid-row: 7;
-    grid-column: 2 / 11;
-  }
-
-  :global(.is-mobile) #user-instruction-button {
-    grid-row: 9;
-    grid-column: 2;
-  }
-
-  :global(.is-mobile) #web-search-button {
-    grid-row: 9;
-    grid-column: 4;
-  }
-
-  :global(.is-mobile) #chat-attachment-button {
-    grid-row: 9;
-    grid-column: 6;
-  }
-
-  :global(.is-mobile) #chat-mode-button {
-    grid-row: 9;
-    grid-column: 8;
-  }
-
-  :global(.is-mobile) #submit-button {
-    grid-row: 9;
-    grid-column: 10;
   }
 </style>

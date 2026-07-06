@@ -607,8 +607,8 @@ export class VaultService {
     private async proposeChange<T>(oldFileName: string, newFileName: string, oldContent: string, newContent: string,
         requiresConfirmation: boolean = true, performChange: () => Promise<T>): Promise<T | Error> {
             try {
-                const result = requiresConfirmation ?
-                    await this.diffService.requestDiff(oldFileName, newFileName, oldContent, newContent) : { accepted: true };
+                const result = this.settingsService.settings.freeEdit || !requiresConfirmation ? { accepted: true } :
+                    await this.diffService.requestDiff(oldFileName, newFileName, oldContent, newContent);
 
                 if (result.accepted) {
                     return await performChange();

@@ -18,7 +18,8 @@
   - 🔍 **Read-Only Mode**: AI can search, read, and list your notes safely
   - ✏️ **Edit Mode**: AI can create, edit, delete, and move notes and folders (when you need it)
   - 📋 **Planning Mode**: A three-agent workflow where a planning agent analyzes your vault and creates a step-by-step strategy before execution
-- **Interactive Diff Viewer** - Review and approve AI-proposed changes before they're applied with side-by-side diff view
+- **Interactive Diff Viewer** - Review and approve AI-proposed changes before they're applied with side-by-side diff view, or let the AI make changes without asking"
+- **Plan Approval Workflow** - In Planning Mode, review the AI's proposed plan and approve it, reject it, or suggest changes before execution begins
 - **Smart Reference System** - Mention tags (`#`), files (`@`), and folders (`/`) with autocomplete
 - **Custom System Instructions** - Create and switch between personalized AI behaviors
 - **Conversation Management** - Persistent chat history with automatic conversation naming
@@ -139,6 +140,10 @@ When the AI proposes changes to your files in Agent Mode, an interactive diff vi
 
 The diff viewer ensures you're always in control of what changes are made to your vault, providing transparency and safety when working with AI-generated edits.
 
+**Skipping Approval**
+
+You can toggle the agents ability to make changes without asking when in edit and planning mode. While enabled, proposed changes are applied immediately without the diff viewer prompt. Turn it off anytime to go back to reviewing every change.
+
 ### Planning Mode
 
 Planning Mode introduces a three-agent workflow that separates task planning, orchestration, and execution. When enabled, specialized agents collaborate to analyze your vault, create a detailed strategy, and execute changes with intelligent oversight between each step.
@@ -150,8 +155,9 @@ Planning Mode introduces a three-agent workflow that separates task planning, or
 3. **Planning Phase**: The planning agent analyzes your vault, exploring existing notes, organizational patterns, and relevant content
 4. **Clarifying Questions**: The planning agent may ask you questions to better understand your requirements
 5. **Plan Display**: A step-by-step plan appears above the chat showing what will be done
-6. **Execution Phase**: For each step, an execution agent performs the task while an orchestration agent monitors progress and decides whether to continue, adapt, or replan
-7. **Completion**: All steps are marked complete when finished
+6. **Plan Approval**: Review the plan and **Approve** it, **Reject** it, or suggest a change before execution begins (see [Plan Approval](#plan-approval) below)
+7. **Execution Phase**: For each step, an execution agent performs the task while an orchestration agent monitors progress and decides whether to continue, adapt, or replan
+8. **Completion**: All steps are marked complete when finished
 
 **The Three Agents**
 
@@ -165,6 +171,14 @@ Planning Mode introduces a three-agent workflow that separates task planning, or
 - Status indicators show progress: pending, active (with spinner), or completed (green checkmark)
 - The view auto-scrolls to keep the active step visible
 - Expand/collapse to see the full plan or a compact view
+
+**Plan Approval**
+
+Before execution begins, the proposed plan opens in a dedicated view for your review:
+
+- **Approve** - Accept the plan as-is and move to the execution phase
+- **Reject** - Cancel the plan outright
+- **Suggest a change** - Type feedback describing what you'd like changed, and the planning agent replans with your feedback in mind rather than starting over from scratch
 
 **When to Use Planning Mode**
 
@@ -480,7 +494,6 @@ This plugin is built on the shoulders of many excellent projects:
 
 **CSS**
 - [Loader](https://uiverse.io/Li-Deheng/bright-firefox-37) - Animated streaming indicator adapted from original by Li-Deheng
-- [Gradient Border](https://codepen.io/alphardex/pen/vYEYGzp) - Animated border adapted from original by alphardex
 - [Gradient Spinner](https://codepen.io/AlexWarnes/pen/jXYYKL) - Animated spinner adapted from original by AlexWarnes
 
 ---

@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     firstTimeStart: true,
 
     chatMode: ChatMode.ReadOnly,
+    freeEdit: false,
     userInstruction: "",
 
     provider: AIProvider.Local,
@@ -88,6 +89,7 @@ export interface IVaultkeeperAISettings {
     firstTimeStart: boolean;
 
     chatMode: ChatMode;
+    freeEdit: boolean;
     userInstruction: string;
 
     provider: AIProvider;

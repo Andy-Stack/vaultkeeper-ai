@@ -213,7 +213,9 @@
 
     <ThoughtIndicator thought={currentThought} bind:thoughtIndicatorElement={thoughtIndicatorElement}/>
     {#if isSubmitting}
-      <StreamingIndicator bind:streamingIndicatorElement={streamingIndicatorElement}/>
+      <div transition:fade={{ duration: 300 }}>
+        <StreamingIndicator bind:streamingIndicatorElement={streamingIndicatorElement}/>
+      </div>
     {/if}
 
     <div bind:this={chatAreaPaddingElement} style:user-select=none></div>

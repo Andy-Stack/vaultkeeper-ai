@@ -20,6 +20,10 @@ type ConversationContentInit = {
 };
 
 export class ConversationContent {
+    // Runtime-only counter for Svelte {#each} keying
+    private static nextId: number = 0;
+
+    public readonly id: number;
     public role: Role;
     public timestamp: Date;
     public content: string | undefined;
@@ -51,6 +55,7 @@ export class ConversationContent {
      * @param init.errorType - Indicates that this contains an error of the given type
      */
     constructor(init: ConversationContentInit) {
+        this.id = ConversationContent.nextId++;
         this.role = init.role;
         this.timestamp = init.timestamp ?? new Date();
         this.content = init.content;

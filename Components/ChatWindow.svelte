@@ -177,6 +177,8 @@
     isSubmitting = false;
     currentThought = null;
 
+    chatArea?.resetChatArea();
+
     chatService.onNameChanged?.("");
     conversationStore.clearResetFlag();
   }

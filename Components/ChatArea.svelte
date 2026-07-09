@@ -151,6 +151,18 @@
 
   function trackingAction(element: HTMLElement, { index, role }: { index: number, role: Role }) {
     messageElements.push({ index: index, element: element, role: role });
+    return {
+      update({ index, role }: { index: number, role: Role }) {
+        const entry = messageElements.find((message) => message.element === element);
+        if (entry) {
+          entry.index = index;
+          entry.role = role;
+        }
+      },
+      destroy() {
+        messageElements = messageElements.filter((message) => message.element !== element);
+      }
+    };
   }
 
   $: if (scrollToBottomButton) {
@@ -169,7 +181,7 @@
     <div class="top-fade"></div>
   {/if}
   <div class="chat-area" bind:this={chatContainer} on:scroll={updateScrolledState}>
-    {#each messages as message, index}
+    {#each messages as message, index (message.id)}
       {@const content = message.getDisplayContent()}
       {#if message.shouldDisplayContent && content.trim() !== ""}
         {#if message.role === Role.User}

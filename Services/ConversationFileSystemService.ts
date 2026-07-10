@@ -8,7 +8,9 @@ import { Attachment } from "Conversations/Attachment";
 import { Exception } from "Helpers/Exception";
 import type { IAIFileService } from "AIClasses/IAIFileService";
 import { Reference } from "Conversations/Reference";
-import { arrayBufferToBase64 } from "obsidian";
+import { Artifact } from "Conversations/Artifact";
+import type { IBinaryFile } from "Conversations/IBinaryFile";
+import { arrayBufferToBase64, Notice } from "obsidian";
 import { StringTools } from "Helpers/StringTools";
 
 export class ConversationFileSystemService {
@@ -32,9 +34,9 @@ export class ConversationFileSystemService {
         return `${Path.Conversations}/${conversation.title}.json`;
     }
 
-    public async saveConversation(conversation: Conversation): Promise<string | Error> {
+    public async saveConversation(conversation: Conversation): Promise<void> {
         if (this.isDeleted) {
-            return ""; // Return empty string to indicate silent skip (not an error)
+            return;
         }
 
         if (!this.currentConversationPath) {
@@ -43,21 +45,19 @@ export class ConversationFileSystemService {
             // can happen if the conversation is deleted during an active request
             const fileExists = await this.fileSystemService.exists(this.currentConversationPath, true);
             if (!fileExists) {
-                return this.currentConversationPath;
+                return;
             }
         }
 
         conversation.updated = new Date();
 
-        // Save attachment files and update filePaths
+        // Save binary files (attachments and artifacts) and update their storage paths
         for (const content of conversation.contents) {
             for (const attachment of content.attachments) {
-                if (!attachment.filePath && attachment.base64) {
-                    const filePath = await this.saveAttachmentFile(attachment);
-                    if (!(filePath instanceof Error)) {
-                        attachment.filePath = filePath.replace(`${Path.Conversations}/`, '');
-                    }
-                }
+                await this.saveBinaryFile(attachment, Path.Attachments);
+            }
+            for (const artifact of content.artifacts) {
+                await this.saveBinaryFile(artifact, Path.Artifacts);
             }
         }
 
@@ -73,6 +73,13 @@ export class ConversationFileSystemService {
                     displayContent: content.displayContent,
                     toolCall: content.toolCall,
                     functionResponse: content.functionResponse,
+                    artifacts: content.artifacts.map(artifact => ({
+                        filePath: artifact.filePath,
+                        mimeType: artifact.mimeType,
+                        originalContent: artifact.originalContent,
+                        updatedContent: artifact.updatedContent,
+                        artifactPath: artifact.artifactPath
+                    })),
                     attachments: content.attachments.map(att => ({
                         fileName: att.fileName,
                         mimeType: att.mimeType,
@@ -90,10 +97,8 @@ export class ConversationFileSystemService {
         const result = await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData, true, false);
 
         if (result instanceof Error) {
-            return result;
+            new Notice(`Failed to save conversation data for '${conversation.title}'`);
         }
-
-        return this.currentConversationPath;
     }
 
     public resetCurrentConversation() {
@@ -137,6 +142,7 @@ export class ConversationFileSystemService {
         // Queue garbage collection after AI file deletion
         this.deletionQueue = this.deletionQueue.then(async () => {
             await this.garbageCollectAttachments();
+            await this.garbageCollectArtifacts();
         });
     }
 
@@ -205,6 +211,57 @@ export class ConversationFileSystemService {
         }
     }
 
+    public async garbageCollectArtifacts(): Promise<void | Error> {
+        try {
+            // 1. Get all artifact files
+            const artifactFiles = await this.fileSystemService.listFilesInDirectory(
+                Path.Artifacts,
+                false,
+                true
+            );
+
+            if (artifactFiles.length === 0) {
+                return;
+            }
+
+            // 2. Build reference count map
+            const referenceCount = new Map<string, number>();
+
+            const conversations = await this.getAllConversations();
+            for (const conversation of conversations) {
+                for (const content of conversation.contents) {
+                    for (const artifact of content.artifacts) {
+                        if (artifact.artifactPath) {
+                            const count = referenceCount.get(artifact.artifactPath) || 0;
+                            referenceCount.set(artifact.artifactPath, count + 1);
+                        }
+                    }
+                }
+            }
+
+            // 3. Delete unreferenced files
+            for (const file of artifactFiles) {
+                const relativePath = file.path.replace(`${Path.Conversations}/`, '');
+                const refCount = referenceCount.get(relativePath) || 0;
+
+                if (refCount === 0) {
+                    const deleteResult = await this.fileSystemService.deleteFile(
+                        file.path,
+                        true,
+                        false
+                    );
+
+                    if (deleteResult instanceof Error) {
+                        Exception.log(deleteResult);
+                    }
+                }
+            }
+        } catch (error) {
+            Exception.log(error);
+            return Exception.new(error);
+        }
+    }
+
     public async updateConversationTitle(oldPath: string, newTitle: string): Promise<void | Error> {
         const newPath = `${Path.Conversations}/${newTitle}.json`;
 
@@ -219,30 +276,31 @@ export class ConversationFileSystemService {
         }
     }
 
-    private async saveAttachmentFile(attachment: Attachment): Promise<string | Error> {
-        const hash = await StringTools.computeSHA256Hash(attachment.base64);
+    private async saveBinaryFile(file: IBinaryFile, storageFolder: Path): Promise<void> {
+        if (file.getStoragePath() || !file.base64) {
+            return;
+        }
+
+        const hash = await StringTools.computeSHA256Hash(file.base64);
         const fileName = `${hash}.bin`;
-        const filePath = `${Path.Attachments}/${fileName}`;
+        const filePath = `${storageFolder}/${fileName}`;
 
         const exists = await this.fileSystemService.exists(filePath, true);
-        if (exists) {
-            return filePath;
+        if (!exists) {
+            const arrayBuffer = StringTools.toBuffer(file.base64);
+            const result = await this.fileSystemService.writeBinaryFile(filePath, arrayBuffer, true);
+
+            if (result instanceof Error) {
+                Exception.log(result);
+                return;
+            }
         }
 
-        const arrayBuffer = StringTools.toBuffer(attachment.base64);
-
-        const result = await this.fileSystemService.writeBinaryFile(filePath, arrayBuffer, true);
-
-        if (result instanceof Error) {
-            Exception.log(result);
-            return filePath;
-        }
-
-        return filePath;
+        file.setStoragePath(filePath.replace(`${Path.Conversations}/`, ''));
     }
 
-    private async loadAttachmentFile(filePath: string): Promise<string> {
-        const fullPath = `${Path.Conversations}/${filePath}`;
+    private async loadBinaryFile(storagePath: string): Promise<string> {
+        const fullPath = `${Path.Conversations}/${storagePath}`;
         const arrayBuffer = await this.fileSystemService.readBinaryFile(fullPath, true);
 
         if (arrayBuffer instanceof Error) {
@@ -271,6 +329,7 @@ export class ConversationFileSystemService {
             const contentPromises = result.contents.map(async content => {
                 const attachments = await this.deserializeAttachments(content.attachments);
                 const references = this.deserializeReferences(content.references);
+                const artifacts = await this.deserializeArtifacts(content.artifacts);
 
                 return new ConversationContent({
                     role: content.role,
@@ -279,6 +338,7 @@ export class ConversationFileSystemService {
                     displayContent: content.displayContent,
                     toolCall: content.toolCall,
                     functionResponse: content.functionResponse,
+                    artifacts: artifacts,
                     attachments: attachments,
                     references: references,
                     shouldDisplayContent: content.shouldDisplayContent,
@@ -306,7 +366,7 @@ export class ConversationFileSystemService {
                 continue;
             }
 
-            const base64 = await this.loadAttachmentFile(attachmentData.filePath);
+            const base64 = await this.loadBinaryFile(attachmentData.filePath);
 
             if (!base64) {
                 Exception.warn(`Skipping attachment with missing file: ${attachmentData.fileName} (${attachmentData.filePath})`);
@@ -325,6 +385,35 @@ export class ConversationFileSystemService {
         }
 
         return attachments;
+    }
+
+    private async deserializeArtifacts(artifactsData: unknown): Promise<Artifact[]> {
+        if (!Array.isArray(artifactsData)) {
+            return [];
+        }
+
+        const artifacts: Artifact[] = [];
+
+        for (const artifactData of artifactsData) {
+            if (!Artifact.isArtifactData(artifactData)) {
+                continue;
+            }
+
+            const base64 = artifactData.artifactPath
+                ? await this.loadBinaryFile(artifactData.artifactPath)
+                : undefined;
+
+            artifacts.push(new Artifact(
+                artifactData.filePath,
+                artifactData.mimeType,
+                artifactData.originalContent,
+                artifactData.updatedContent,
+                base64,
+                artifactData.artifactPath
+            ));
+        }
+
+        return artifacts;
     }
 
     private deserializeReferences(referencesData: unknown): Reference[] {

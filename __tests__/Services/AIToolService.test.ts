@@ -35,6 +35,8 @@ describe('AIToolService - Integration Tests', () => {
 			searchVaultFiles: vi.fn(),
 			listFilesInDirectory: vi.fn(),
 			readFilePath: vi.fn(),
+			readFile: vi.fn(),
+			readBinaryFile: vi.fn(),
 			writeToFilePath: vi.fn(),
 			patchFileAtPath: vi.fn(),
 			deleteFile: vi.fn(),

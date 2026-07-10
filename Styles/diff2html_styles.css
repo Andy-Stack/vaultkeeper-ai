@@ -134,40 +134,48 @@
     font-weight: var(--font-semibold);
     border-radius: var(--button-radius);
     cursor: pointer;
-    border: none;
-    color: var(--text-on-accent);
+    border-width: var(--size-2-1);
+    border-style: solid;
+    background-color: var(--background-primary);
 }
 
 .diff-mobile-controls .diff-mobile-accept {
-    background-color: color-mix(
-        in srgb,
-        var(--color-green) 75%,
-        var(--background-primary) 25%
-    );
+    color: var(--color-green);
+    border-color: var(--color-green);
 }
 
 .diff-mobile-controls .diff-mobile-accept:active {
-    background-color: var(--color-green);
-}
-
-.diff-mobile-controls .diff-mobile-suggest {
-    background-color: var(--interactive-accent);
-}
-
-.diff-mobile-controls .diff-mobile-suggest:active {
-    background-color: var(--interactive-accent-hover);
-}
-
-.diff-mobile-controls .diff-mobile-reject {
     background-color: color-mix(
         in srgb,
-        var(--color-red) 75%,
-        var(--background-primary) 25%
+        var(--color-green) 25%,
+        white 10%
     );
 }
 
+.diff-mobile-controls .diff-mobile-discuss {
+    color: var(--interactive-accent);
+    border-color: var(--interactive-accent);
+}
+
+.diff-mobile-controls .diff-mobile-discuss:active {
+    background-color: color-mix(
+        in srgb,
+        var(--interactive-accent) 25%,
+        white 10%
+    );
+}
+
+.diff-mobile-controls .diff-mobile-reject {
+    color: var(--color-red);
+    border-color: var(--color-red);
+}
+
 .diff-mobile-controls .diff-mobile-reject:active {
-    background-color: var(--color-red);
+    background-color: color-mix(
+        in srgb,
+        var(--color-red) 25%,
+        white 10%
+    );
 }
 
 /* Adjust diff height on mobile to account for buttons */

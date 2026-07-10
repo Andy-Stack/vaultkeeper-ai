@@ -3,6 +3,7 @@ import { ApiErrorType } from "Types/ApiError";
 import type { Attachment } from "./Attachment";
 import type { Reference } from "./Reference";
 import { Copy } from "Enums/Copy";
+import type { Artifact } from "./Artifact";
 
 type ConversationContentInit = {
     role: Role;
@@ -11,6 +12,7 @@ type ConversationContentInit = {
     displayContent?: string;
     toolCall?: string;
     functionResponse?: string;
+    artifacts?: Artifact[];
     attachments?: Attachment[];
     references?: Reference[];
     shouldDisplayContent?: boolean;
@@ -30,6 +32,7 @@ export class ConversationContent {
     public displayContent: string | undefined;
     public toolCall: string | undefined;
     public functionResponse: string | undefined;
+    public artifacts: Artifact[];
     public attachments: Attachment[];
     public references: Reference[];
     public shouldDisplayContent: boolean;
@@ -47,6 +50,7 @@ export class ConversationContent {
      * @param init.displayContent - Display content is used when content needs to be formatted differently when displayed versus as a prompt
      * @param init.toolCall - JSON string of the function call data (only set for function/tool calls)
      * @param init.functionResponse - JSON string of the function call response data (only set for function/tool responses)
+     * @param init.artifacts - Array of artefacts that track edits to files made by the agent during the turn
      * @param init.attachments - Array of file attachments associated with this message (defaults to empty array)
      * @param init.references - Array of file references, used to display attachment's to the user associated with attachments
      * @param init.shouldDisplayContent - Whether this content should be displayed in the UI (defaults to true, false for system-generated messages)
@@ -62,6 +66,7 @@ export class ConversationContent {
         this.displayContent = init.displayContent;
         this.toolCall = init.toolCall;
         this.functionResponse = init.functionResponse;
+        this.artifacts = init.artifacts ?? [];
         this.attachments = init.attachments ?? [];
         this.references = init.references ?? [];
         this.shouldDisplayContent = init.shouldDisplayContent ?? true;
@@ -84,6 +89,7 @@ export class ConversationContent {
         displayContent?: string;
         toolCall?: string;
         functionResponse?: string;
+        artifacts?: unknown[];
         attachments?: unknown[];
         references?: unknown[];
         shouldDisplayContent?: boolean;
@@ -103,6 +109,7 @@ export class ConversationContent {
             (!("displayContent" in data) || typeof data.displayContent === "string") &&
             (!("toolCall" in data) || typeof data.toolCall === "string") &&
             (!("functionResponse" in data) || typeof data.functionResponse === "string") &&
+            (!("artifacts" in data) || Array.isArray(data.artifacts)) &&
             (!("attachments" in data) || Array.isArray(data.attachments)) &&
             (!("references" in data) || Array.isArray(data.references)) &&
             (!("shouldDisplayContent" in data) || typeof data.shouldDisplayContent === "boolean") &&

@@ -150,7 +150,7 @@ export enum Copy {
     
     ButtonApprove = "Approve",
     ButtonReject = "Reject",
-    ButtonSuggest = "Suggest",
+    ButtonDiscuss = "Discuss",
 
     // Agent file message
     AttachedFile = `The file {fileName} is attached and its full contents follow below. This is the actual content of the file — read it directly to answer the user. This attachment may be a file the user uploaded to the chat, or a vault file you retrieved with a tool; either way, the content below is authoritative and you do NOT need to read or fetch this file again.`,

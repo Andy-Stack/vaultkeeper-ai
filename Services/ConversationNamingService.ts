@@ -55,12 +55,8 @@ export class ConversationNamingService {
                 }
     
                 conversation.title = validatedName;
-                const saveResult = await this.conversationService.saveConversation(conversation);
+                await this.conversationService.saveConversation(conversation);
     
-                if (saveResult instanceof Error) {
-                    Exception.throw(saveResult);
-                }
-                
                 onNameChanged?.(conversation.title);
             } catch (error) {
                 if (!AbortService.isAbortError(error)) {

@@ -3,8 +3,9 @@ import { isAudioFile, isImageFile, isKnownFileType, isTextFile, isVideoFile } fr
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { isImageMimeType, isTextMimeType, MimeType, toMimeType } from "Enums/MimeType";
 import { StringTools } from "Helpers/StringTools";
+import type { IBinaryFile } from "Conversations/IBinaryFile";
 
-export class Attachment {
+export class Attachment implements IBinaryFile {
 
     public fileName: string;
     public mimeType: string;
@@ -41,6 +42,14 @@ export class Attachment {
         return this.base64;
     }
     
+    public getStoragePath(): string | undefined {
+        return this.filePath;
+    }
+
+    public setStoragePath(path: string): void {
+        this.filePath = path;
+    }
+
     public getFileID(provider: AIProvider): string | undefined {
         return this.fileID[provider];
     }

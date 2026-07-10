@@ -129,11 +129,11 @@ export class PlanApprovalView extends ItemView {
         });
         approveButton.setAttribute('aria-label', Copy.ButtonApprove);
 
-        const suggestButton = container.createEl('button', {
-            cls: 'plan-approval-mobile-button plan-approval-mobile-suggest',
-            text: Copy.ButtonSuggest
+        const discussButton = container.createEl('button', {
+            cls: 'plan-approval-mobile-button plan-approval-mobile-discuss',
+            text: Copy.ButtonDiscuss
         });
-        suggestButton.setAttribute('aria-label', Copy.ButtonSuggest);
+        discussButton.setAttribute('aria-label', Copy.ButtonDiscuss);
 
         const rejectButton = container.createEl('button', {
             cls: 'plan-approval-mobile-button plan-approval-mobile-reject',
@@ -146,7 +146,7 @@ export class PlanApprovalView extends ItemView {
             await this.refocusMainView();
         });
 
-        this.registerDomEvent(suggestButton, 'click', async () => {
+        this.registerDomEvent(discussButton, 'click', async () => {
             await this.refocusMainView(true);
         });
 

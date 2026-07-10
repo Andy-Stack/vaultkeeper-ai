@@ -48,7 +48,7 @@ export class FileSystemService {
         if (file instanceof TFile) {
             const arrayBuffer = await this.vaultService.readBinaryData(file, allowAccessToPluginRoot);
             if (!arrayBuffer) {
-                return Exception.new(`Failed to read binary dta for: ${filePath}`);
+                return Exception.new(`Failed to read binary data for: ${filePath}`);
             }
             return arrayBuffer;
         }

@@ -479,6 +479,7 @@ describe('Conversation', () => {
 					AITool.ReadVaultFiles,
 					new AIToolResponsePayload(
 						{ results: [{ path: 'image.png', error: 'File does not exist: image.png' }] },
+						[],
 						[validAttachment]
 					),
 					'tool-123'
@@ -527,6 +528,7 @@ describe('Conversation', () => {
 					AITool.ReadVaultFiles,
 					new AIToolResponsePayload(
 						{ message: 'Files retrieved successfully. The contents of the files are included below.', count: 1 },
+						[],
 						[attachment]
 					),
 					'tool-123'
@@ -550,6 +552,7 @@ describe('Conversation', () => {
 					AITool.ReadVaultFiles,
 					new AIToolResponsePayload(
 						{ message: 'Files retrieved successfully. The contents of the files are included below.', count: 1 },
+						[],
 						[docAttachment]
 					),
 					'tool-123'
@@ -577,6 +580,7 @@ describe('Conversation', () => {
 					AITool.ReadVaultFiles,
 					new AIToolResponsePayload(
 						{ results: [{ type: 'md', path: 'notes.md', contents: '# Notes' }], message: 'The contents of the files are included below.' },
+						[],
 						[xlsxAttachment, imgAttachment]
 					),
 					'tool-123'

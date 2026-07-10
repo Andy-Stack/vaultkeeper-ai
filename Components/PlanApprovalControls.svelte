@@ -58,36 +58,52 @@
 
   #plan-approve {
       grid-column: 1;
-      background-color: color-mix(
-          in srgb,
-          var(--color-green) 75%,
-          var(--background-primary) 25%
-      );
+      color: var(--color-green);
+      border: solid;
+      border-color: var(--color-green);
+      border-width: var(--size-2-1);
+      background-color: var(--background-primary);
   }
 
   #plan-approve:hover {
-      background-color: var(--color-green);
+      background-color: color-mix(
+        in srgb,
+        var(--color-green) 25%,
+        white 10%
+      );
   }
 
   #plan-approve:focus {
-      background-color: var(--color-green);
+      background-color: color-mix(
+        in srgb,
+        var(--color-green) 25%,
+        white 10%
+      );
   }
 
   #plan-reject {
       grid-column: 3;
-      background-color: color-mix(
-          in srgb,
-          var(--color-red) 75%,
-          var(--background-primary) 25%
-      );
+      color: var(--color-red);
+      border: solid;
+      border-color: var(--color-red);
+      border-width: var(--size-2-1);
+      background-color: var(--background-primary);
   }
 
   #plan-reject:hover {
-      background-color: var(--color-red);
+      background-color: color-mix(
+        in srgb,
+        var(--color-red) 25%,
+        white 10%
+      );
   }
 
   #plan-reject:focus {
-      background-color: var(--color-red);
+      background-color: color-mix(
+        in srgb,
+        var(--color-red) 25%,
+        white 10%
+      );
   }
 
   .plan-approval-button {

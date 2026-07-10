@@ -21,6 +21,9 @@
 	import { AITool, fromString } from "Enums/AITool";
 	import { AIProvider } from "Enums/ApiProvider";
 	import type { PlanApprovalService } from "Services/PlanApprovalService";
+	import type { Artifact } from "Conversations/Artifact";
+	import { ConversationContent } from "Conversations/ConversationContent";
+	import { Role } from "Enums/Role";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);
@@ -31,6 +34,8 @@
   const conversationService: ConversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
   const streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
   const abortService: AbortService = Resolve<AbortService>(Services.AbortService);
+
+  let collectedArtifacts: Artifact[] = [];
 
   let chatContainer: HTMLDivElement;
   let chatArea: ChatArea;
@@ -98,6 +103,7 @@
     if (handleNoApiKey()) {
       return;
     }
+    collectedArtifacts = [];
 
     const currentRequest = userRequest;
 
@@ -132,6 +138,14 @@
             break;
         }
       },
+      onArtifactProduced: (artifact: Artifact) => {
+        const collectedArtifact = collectedArtifacts.find(a => a.filePath === artifact.filePath);
+        if (!collectedArtifact) {
+          collectedArtifacts.push(artifact);
+          return;
+        }
+        collectedArtifact.updatedContent = artifact.updatedContent;
+      },
       onPlanningStarted: () => {
         busyPlanning = true;
       },
@@ -159,6 +173,8 @@
         executionPlanStore.clearPlan();
       },
       onComplete: async () => {
+        saveCollectedArtifects(conversation);
+        conversationService.saveConversation(conversation);
         isSubmitting = false;
         busyPlanning = false;
         currentThought = null;
@@ -168,6 +184,17 @@
         chatArea.updateChatAreaLayout();
       },
     });
+  }
+
+  function saveCollectedArtifects(conversation: Conversation): void {
+    let lastMessage = conversation.contents.last();
+
+    if (lastMessage?.role !== Role.Assistant || !lastMessage.shouldDisplayContent) {
+      lastMessage = new ConversationContent({ role: Role.Assistant });
+      conversation.contents.push(lastMessage);
+    }
+
+    lastMessage.artifacts = collectedArtifacts;
   }
 
   $: if ($conversationStore.shouldReset) {

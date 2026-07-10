@@ -6,7 +6,7 @@ import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import { AIToolCall } from "AIClasses/AIToolCall";
 import type { ISearchMatch } from "../../Types/SearchTypes";
 import { AbortService } from "../AbortService";
-import { normalizePath, TAbstractFile, TFile } from "obsidian";
+import { arrayBufferToBase64, normalizePath, TAbstractFile, TFile } from "obsidian";
 import { Exception } from "Helpers/Exception";
 import { Copy } from "Enums/Copy";
 import { pathExtname, replaceCopy } from "Helpers/Helpers";
@@ -16,7 +16,7 @@ import type { WebViewerService } from "Services/WebViewerService";
 import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
 import { Attachment } from "Conversations/Attachment";
 import { isDocumentMimeType, MimeType } from "Enums/MimeType";
-import { isTextFile, toFileType } from "Enums/FileType";
+import { isBinaryFile, isTextFile, toFileType } from "Enums/FileType";
 import { FileTypeToMimeType } from "Enums/FileTypeMimeTypeMapping";
 import { StringTools } from "Helpers/StringTools";
 import { AIToolDefinitions } from "AIClasses/ToolDefinitions/AIToolDefinitions";
@@ -36,6 +36,8 @@ import {
     DeleteVaultFolderArgsSchema,
     MoveVaultFolderArgsSchema
 } from "AIClasses/Schemas/AIToolSchemas";
+import { Artifact } from "Conversations/Artifact";
+import { extname } from "path-browserify";
 
 export class AIToolService {
 
@@ -337,23 +339,19 @@ export class AIToolService {
                 count: binaryResults.length
             };
 
-        return new AIToolResponsePayload(response, attachments);
+        return new AIToolResponsePayload(response, [], attachments);
     }
 
     private async writeVaultFile(filePath: string, content: string): Promise<AIToolResponsePayload> {
-        const result = await this.fileSystemService.writeToFilePath(normalizePath(filePath), content);
-        if (result instanceof Error) {
-            return new AIToolResponsePayload({ success: false, error: result.message });
-        }
-        return new AIToolResponsePayload({ success: true });
+        return await this.asTrackedAction(filePath, async () => {
+            return await this.fileSystemService.writeToFilePath(normalizePath(filePath), content);
+        });
     }
 
     private async patchVaultFile(filePath: string, oldContent: string[], newContent: string[]): Promise<AIToolResponsePayload> {
-        const result = await this.fileSystemService.patchFileAtPath(normalizePath(filePath), oldContent, newContent);
-        if (result instanceof Error) {
-            return new AIToolResponsePayload({ success: false, error: result.message });
-        }
-        return new AIToolResponsePayload({ success: true });
+        return await this.asTrackedAction(filePath, async () => {
+            return await this.fileSystemService.patchFileAtPath(normalizePath(filePath), oldContent, newContent);
+        });
     }
 
     private async deleteVaultFiles(filePaths: string[], confirmation: boolean): Promise<AIToolResponsePayload> {
@@ -361,15 +359,19 @@ export class AIToolService {
             return new AIToolResponsePayload({ error: "Confirmation was false, no action taken" });
         }
 
-        const results = await Promise.all(filePaths.map(async filePath => {
-            const result = await this.fileSystemService.deleteFile(filePath);
-            if (result instanceof Error) {
-                return { path: filePath, success: false, error: result.message };
-            }
-            return { path: filePath, success: true };
-        }));
+        const results: object[] = [];
+        const artifacts = await this.collectDeletionCandidatesArtifacts(filePaths);
 
-        return new AIToolResponsePayload({ results });
+        for (const filePath of filePaths) {
+            const deleteResult = await this.fileSystemService.deleteFile(filePath);
+            if (deleteResult instanceof Error) {
+                results.push({ path: filePath, success: false, error: deleteResult.message });
+                continue;
+            }
+            results.push({ path: filePath, success: true });
+        }
+
+        return new AIToolResponsePayload({ results }, artifacts);
     }
 
     private async moveVaultFiles(sourcePaths: string[], destinationPaths: string[]): Promise<AIToolResponsePayload> {
@@ -401,10 +403,38 @@ export class AIToolService {
         if (!confirmation) {
             return new AIToolResponsePayload({ error: "Confirmation was false, no action taken" });
         }
+
+        const contents = await this.fileSystemService.listDirectoryContents(path, true);
+        const filePaths = contents.filter(content => content instanceof TFile).map(file => file.path);
+
+        const artifacts = await this.collectDeletionCandidatesArtifacts(filePaths);
         const result = await this.fileSystemService.deleteFolder(path);
+
         return result instanceof Error
-            ? new AIToolResponsePayload({ path: path, success: false, error: result.message })
-            : new AIToolResponsePayload({ path: path, success: true });
+            ? new AIToolResponsePayload({ path: path, success: false, error: result.message }, artifacts)
+            : new AIToolResponsePayload({ path: path, success: true }, artifacts);
+    }
+
+    private async collectDeletionCandidatesArtifacts(filePaths: string[]): Promise<Artifact[]> {
+        const artifacts: Artifact[] = [];
+
+        for (const filePath of filePaths) {
+            const fileType = toFileType(extname(filePath));
+            // Anything that isn't a note we will just store as a binary artifact
+            if (isBinaryFile(fileType) || isDocumentMimeType(FileTypeToMimeType[fileType])) {
+                const result = await this.fileSystemService.readBinaryFile(filePath);
+                if (result instanceof ArrayBuffer) {
+                    artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], "", "", arrayBufferToBase64(result)));
+                }
+            } else {
+                const result = await this.fileSystemService.readFilePath(filePath);
+                if (typeof result === "string") {
+                    artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], result, ""));
+                }
+            }
+        }
+
+        return artifacts;
     }
 
     private async moveVaultFolder(sourcePath: string, destinationPath: string): Promise<AIToolResponsePayload> {
@@ -437,7 +467,7 @@ export class AIToolService {
 
         return format === "text"
             ? new AIToolResponsePayload({ content: result })
-            : new AIToolResponsePayload({ success: true }, [new Attachment("screenshot.png", MimeType.IMAGE_PNG, result)]);
+            : new AIToolResponsePayload({ success: true }, [], [new Attachment("screenshot.png", MimeType.IMAGE_PNG, result)]);
     }
 
     private async readMemories(): Promise<AIToolResponsePayload> {
@@ -459,5 +489,25 @@ export class AIToolService {
         this.lastToolReadMemories = false;
 
         return new AIToolResponsePayload({ result: await this.memoriesService.updateMemories(content) });
+    }
+
+    private async asTrackedAction(filePath: string, action: () => Promise<TFile|Error|void>): Promise<AIToolResponsePayload> {
+        let preActionResult = await this.fileSystemService.readFilePath(filePath);
+        if (preActionResult instanceof Error) {
+            preActionResult = ""; // The file does not exist yet
+        }
+        const actionResult = await action();
+        if (actionResult instanceof Error) {
+            return new AIToolResponsePayload({ success: false, error: actionResult.message });
+        }
+        let postActionResult = actionResult ? await this.fileSystemService.readFile(actionResult) : "";
+        if (postActionResult instanceof Error) {
+            postActionResult = ""; // The file has been deleted
+        }
+
+        const fileType = toFileType(extname(filePath));
+
+        return new AIToolResponsePayload({ success: true },
+            [new Artifact(filePath, FileTypeToMimeType[fileType], preActionResult, postActionResult)]);
     }
 }

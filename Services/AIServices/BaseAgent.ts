@@ -208,12 +208,18 @@ export abstract class BaseAgent {
         return { toolCall: capturedToolCall, shouldContinue: capturedShouldContinue };
     }
 
-    protected async performAITool(toolCall: AIToolCall): Promise<AIToolResponse> {
+    protected async performAITool(toolCall: AIToolCall, callbacks: IChatServiceCallbacks): Promise<AIToolResponse> {
         const providerResult = await this.ai?.resolveToolCall?.(toolCall) ?? null;
         if (providerResult !== null) {
             return providerResult;
         }
-        return this.aiToolService.performAITool(toolCall);
+        const result = await this.aiToolService.performAITool(toolCall);
+
+        for (const artifact of result.payload.artifacts) {
+            callbacks.onArtifactProduced(artifact);
+        }
+
+        return result;
     }
 
     private async withToolCallingDisabled<T>(callback: () => Promise<T>): Promise<T> {

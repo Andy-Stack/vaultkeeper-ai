@@ -151,8 +151,9 @@ export enum FileType {
 }
 
 export function toFileType(fileType: string): FileType {
-    if (isKnownFileType(fileType)) {
-        return fileType;
+    const normalized = fileType.startsWith('.') ? fileType.slice(1) : fileType;
+    if (isKnownFileType(normalized)) {
+        return normalized;
     }
     return FileType.UNKNOWN;
 }

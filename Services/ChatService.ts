@@ -18,12 +18,14 @@ import type { ExecutionPlan } from "Types/ExecutionPlan";
 import type { MainAgent } from "./AIServices/MainAgent";
 import type { ChatMode } from "Enums/ChatMode";
 import type { PlanApprovalResponse } from "Types/PlanApprovalResponse";
+import type { Artifact } from "Conversations/Artifact";
 
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
 	onStreamingUpdate: () => void;
 	onThoughtUpdate: (thought: string | null) => void;
 	onToolCallStarted: (toolName: string) => void;
+	onArtifactProduced: (artifact: Artifact) => void;
 	onPlanningStarted: () => void;
 	onPlanningFinished: () => void;
 	onUserQuestion: (question: string) => Promise<string>;
@@ -125,13 +127,12 @@ export class ChatService {
 			}
 		} finally {
 			this.eventService.trigger(Event.DiffClosed);
-			await this.saveConversation(conversation);
+			callbacks.onThoughtUpdate(null);
+			callbacks.onComplete();
 			if (this.semaphoreHeld) {
 				this.semaphoreHeld = false;
 				this.semaphore.release();	
 			}
-			callbacks.onThoughtUpdate(null);
-			callbacks.onComplete();
 		}
 	}
 
@@ -146,9 +147,6 @@ export class ChatService {
 	}
 
 	private async saveConversation(conversation: Conversation) {
-		const result = await this.conversationService.saveConversation(conversation);
-		if (result instanceof Error) {
-			new Notice(`Failed to save conversation data for '${conversation.title}'`);
-		}
+		await this.conversationService.saveConversation(conversation);
 	}
 }

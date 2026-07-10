@@ -30,6 +30,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 		onStreamingUpdate: vi.fn(),
 		onThoughtUpdate: vi.fn(),
 		onToolCallStarted: vi.fn(),
+		onArtifactProduced: vi.fn(),
 		onPlanningStarted: vi.fn(),
 		onPlanningFinished: vi.fn(),
 		onUserQuestion: vi.fn().mockResolvedValue('User answer'),

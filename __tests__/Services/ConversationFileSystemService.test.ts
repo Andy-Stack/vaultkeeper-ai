@@ -105,9 +105,9 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 		it('should save conversation with correct structure', async () => {
 			const conversation = createTestConversation('Test Save');
 
-			const path = await service.saveConversation(conversation);
+			await service.saveConversation(conversation);
 
-			expect(path).toBe('Vaultkeeper AI/Conversations/Test Save.json');
+			expect(service.getCurrentConversationPath()).toBe('Vaultkeeper AI/Conversations/Test Save.json');
 			expect(mockFileSystemService.writeObjectToFile).toHaveBeenCalledWith(
 				'Vaultkeeper AI/Conversations/Test Save.json',
 				expect.objectContaining({
@@ -341,10 +341,9 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			await service.deleteCurrentConversation();
 
 			// Try to save the same conversation again (simulates what happens in finally block)
-			const result = await service.saveConversation(conversation);
+			await service.saveConversation(conversation);
 
-			// Should return empty string (silent skip), not save the file
-			expect(result).toBe('');
+			// Should silently skip, not save the file again
 			expect(mockFileSystemService.writeObjectToFile).toHaveBeenCalledTimes(1); // Only the initial save
 		});
 	});

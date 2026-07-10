@@ -116,13 +116,15 @@ export class VaultService {
 
     public async create(filePath: string, content: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         filePath = this.sanitiserService.sanitize(filePath);
+        const fileExtension = pathExtname(filePath);
+
         if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
             Exception.log(`Plugin attempted to create a file that is in the exclusion list: ${filePath}`);
             return Exception.new(`Failed to create file, permission denied: ${filePath}`);
         }
 
-        if (isFileType(pathExtname(filePath), FileType.PDF)) {
-            return Exception.new("Creating PDF files is not supported");
+        if (isBinaryFile(pathExtname(fileExtension)) || isDocumentFile(pathExtname(fileExtension))) {
+            return Exception.new(`Creating ${pathExtname(filePath)} files is not supported`);
         }
 
         const fileName = path.basename(filePath);
@@ -134,13 +136,15 @@ export class VaultService {
 
     public async modify(file: TFile, content: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
         const filePath = this.sanitiserService.sanitize(file.path);
+        const fileExtension = pathExtname(filePath);
+
         if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
             Exception.log(`Plugin attempted to modify a file that is in the exclusion list: ${filePath}`);
             return Exception.new(`File does not exist: ${filePath}`);
         }
 
-        if (isFileType(file.extension.toLocaleLowerCase(), FileType.PDF)) {
-            return Exception.new("Modifying PDF files is not supported");
+        if (isBinaryFile(pathExtname(filePath)) || isDocumentFile(pathExtname(fileExtension))) {
+            return Exception.new(`Modifying ${pathExtname(filePath)} files is not supported`);
         }
 
         const currentContent = await this.read(file, allowAccessToPluginRoot);
@@ -157,13 +161,15 @@ export class VaultService {
 
     public async updateFrontmatter(file: TFile, mutate: (frontmatter: Record<string, unknown>) => void, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
         const filePath = this.sanitiserService.sanitize(file.path);
+        const fileExtension = pathExtname(filePath);
+
         if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
             Exception.log(`Plugin attempted to update frontmatter of a file that is in the exclusion list: ${filePath}`);
             return Exception.new(`File does not exist: ${filePath}`);
         }
 
-        if (isFileType(file.extension.toLocaleLowerCase(), FileType.PDF)) {
-            return Exception.new("Modifying PDF files is not supported");
+        if (isBinaryFile(pathExtname(filePath)) || isDocumentFile(pathExtname(fileExtension))) {
+            return Exception.new(`Modifying ${pathExtname(filePath)} files is not supported`);
         }
 
         try {
@@ -183,8 +189,8 @@ export class VaultService {
             return Exception.new(`File does not exist: ${filePath}`);
         }
 
-        if (isFileType(pathExtname(filePath), FileType.PDF)) {
-            return Exception.new("Patching PDF files is not supported");
+        if (isBinaryFile(pathExtname(filePath))) {
+            return Exception.new(`Patching ${pathExtname(filePath)} files is not supported`);
         }
 
         if (oldContent.length !== newContent.length) {
@@ -234,10 +240,6 @@ export class VaultService {
 
             if (currentContent instanceof Error) {
                 return currentContent;
-            }
-
-            if (isFileType(pathExtname(filePath), FileType.PDF)) {
-                await this.fileManager.trashFile(file);
             }
 
             return this.proposeChange(file.name, file.name, currentContent, "", requiresConfirmation, async () => {

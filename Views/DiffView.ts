@@ -116,11 +116,11 @@ export class DiffView extends ItemView {
         });
         acceptButton.setAttribute('aria-label', Copy.ButtonApprove);
 
-        const suggestButton = container.createEl('button', {
-            cls: 'diff-mobile-button diff-mobile-suggest',
-            text: Copy.ButtonSuggest
+        const discussButton = container.createEl('button', {
+            cls: 'diff-mobile-button diff-mobile-discuss',
+            text: Copy.ButtonDiscuss
         });
-        suggestButton.setAttribute('aria-label', Copy.ButtonSuggest);
+        discussButton.setAttribute('aria-label', Copy.ButtonDiscuss);
 
         const rejectButton = container.createEl('button', {
             cls: 'diff-mobile-button diff-mobile-reject',
@@ -133,7 +133,7 @@ export class DiffView extends ItemView {
             await this.refocusMainView();
         });
 
-        this.registerDomEvent(suggestButton, 'click', async () => {
+        this.registerDomEvent(discussButton, 'click', async () => {
             await this.refocusMainView(true);
         });
 

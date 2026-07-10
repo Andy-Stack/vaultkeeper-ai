@@ -44,6 +44,7 @@ export class QuickAgent extends BaseAgent {
             onStreamingUpdate: () => {},
             onThoughtUpdate: () => {},
             onToolCallStarted: () => {},
+            onArtifactProduced: () => {},
             onPlanningStarted: () => {},
             onPlanningFinished: () => {},
             onUserQuestion: async () => new Promise<string>(() => {}),

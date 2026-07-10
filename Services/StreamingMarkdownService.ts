@@ -16,6 +16,8 @@ export class StreamingMarkdownService {
     private readonly states = new WeakMap<HTMLElement, RenderState>();
 
     public async render(markdown: string, container: HTMLElement, isFinal: boolean = false): Promise<void> {
+        markdown = this.neutraliseFrontmatter(markdown);
+
         if (isFinal) {
             const existing = this.states.get(container);
             if (existing) {
@@ -50,6 +52,14 @@ export class StreamingMarkdownService {
         if (liveTail.trim()) {
             await MarkdownRenderer.render(this.plugin.app, liveTail, state.liveContainer, "", state.component);
         }
+    }
+
+    // Obsidian's renderer treats a leading "---" line as the start of YAML
+    // frontmatter and hides everything up to the closing "---". Swap it for
+    // "***" — an identical <hr> that can't open frontmatter. Same length, so
+    // frozenUpTo offsets from earlier incremental renders stay valid.
+    private neutraliseFrontmatter(markdown: string): string {
+        return markdown.replace(/^---(?=[ \t]*(?:\r?\n|$))/, "***");
     }
 
     private getOrCreateState(container: HTMLElement): RenderState {

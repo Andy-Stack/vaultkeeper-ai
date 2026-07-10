@@ -225,7 +225,7 @@
         conversationService.setCurrentConversationPath(filePath);
         chatService.onNameChanged?.(loadedConversation.title);
         conversationStore.clearLoadFlag();
-        chatArea.updateChatAreaLayout("instant", true);
+        chatArea.updateChatAreaLayout("instant");
       }
     });
   }

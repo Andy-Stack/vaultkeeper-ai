@@ -136,6 +136,43 @@ describe('StreamingMarkdownService', () => {
         expect(renderSpy.mock.calls.length).toBeGreaterThan(callsWithOpenFence);
     });
 
+    // --- Leading frontmatter neutralisation ---
+
+    it('rewrites a leading --- line so it cannot open frontmatter', async () => {
+        const { MarkdownRenderer } = await import('obsidian');
+        const renderSpy = vi.mocked(MarkdownRenderer.render);
+
+        const container = document.createElement('div');
+        await service.render('---\n\n**Title**\n\n---\n\nBody text', container, true);
+
+        const rendered = renderSpy.mock.calls[renderSpy.mock.calls.length - 1][1];
+        expect(rendered).toBe('***\n\n**Title**\n\n---\n\nBody text');
+    });
+
+    it('applies the same rewrite on incremental renders so offsets stay aligned', async () => {
+        const container = document.createElement('div');
+
+        await service.render('---\n\n**Title**\n\nLive', container);
+        await service.render('---\n\n**Title**\n\n---\n\nLive tail grows', container);
+
+        expect(container.textContent).toContain('**Title**');
+        expect(container.textContent).toContain('Live tail grows');
+        // The opener was rewritten before any slicing, so the frozen
+        // content starts with the neutralised rule
+        expect(container.textContent?.startsWith('***')).toBe(true);
+    });
+
+    it('leaves non-frontmatter leading lines untouched', async () => {
+        const { MarkdownRenderer } = await import('obsidian');
+        const renderSpy = vi.mocked(MarkdownRenderer.render);
+
+        const container = document.createElement('div');
+        await service.render('----\n\n--- not frontmatter', container, true);
+
+        const rendered = renderSpy.mock.calls[renderSpy.mock.calls.length - 1][1];
+        expect(rendered).toBe('----\n\n--- not frontmatter');
+    });
+
     it('isFinal=true resets state and does a clean full render', async () => {
         const container = document.createElement('div');
 

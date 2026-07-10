@@ -8,7 +8,7 @@
 	import { Role } from "Enums/Role";
   import type { ConversationContent } from "Conversations/ConversationContent";
 	import { tick } from "svelte";
-	import { getOuterHeight, setElementIcon } from "Helpers/ElementHelper";
+	import { setElementIcon } from "Helpers/ElementHelper";
 	import { setIcon } from "obsidian";
 	import { fade } from "svelte/transition";
 	import GraphAnimation from "./GraphAnimation.svelte";
@@ -19,85 +19,32 @@
   export let chatContainer: HTMLDivElement;
 
   export function resetChatArea() {
-    messageElements = [];
-    if (chatAreaPaddingElement) {
-      chatAreaPaddingElement.style.padding = "0px";
-    }
     chatContainer.scroll({ top: 0, behavior: "instant" });
     tick().then(updateScrolledState);
   }
 
-  export async function updateChatAreaLayout(behavior: ScrollBehavior | undefined = undefined, shouldSettle: boolean = false) {
+  export async function updateChatAreaLayout(behavior: ScrollBehavior | undefined = undefined) {
     await tick();
 
-    if (!chatAreaPaddingElement) {
-      return;
-    }
-
-    if (messageElements.length <= 0) {
-      chatAreaPaddingElement.style.paddingBottom = "0px";
-      return;
-    }
-
     requestAnimationFrame(() => {
-      applyLayout(behavior, shouldSettle);
-      updateScrolledState();
+      if (behavior) {
+        scrollToLatestTurn(behavior);
+      }
+      tick().then(updateScrolledState);
     });
   }
 
-  function applyLayout(behavior: ScrollBehavior | undefined, shouldSettle: boolean) {
-    if (!chatAreaPaddingElement || messageElements.length <= 0) {
+  function scrollToLatestTurn(behavior: ScrollBehavior) {
+    const latestTurn = chatContainer.querySelector<HTMLElement>(".message-group.latest");
+    if (!latestTurn) {
       return;
     }
-
-    const styles = getComputedStyle(chatContainer);
-    const gap = parseFloat(styles.gap) || 0;
-    const paddingTop = parseFloat(styles.paddingTop) || 0;
-    const paddingBottom = parseFloat(styles.paddingBottom) || 0;
-
-    const sortedMessages = messageElements.sort((a, b) => a.index - b.index);
-    
-    let result = calculateMessageHeight(sortedMessages);
-    let contentHeight = result.height + (gap * (result.count - 1));
-
-    if (!shouldSettle) {
-      if (thoughtIndicatorElement) {
-        contentHeight += getOuterHeight(thoughtIndicatorElement) + gap;
-      }
-      if (streamingIndicatorElement) {
-        contentHeight += getOuterHeight(streamingIndicatorElement) + gap;
-      }
-    }
-
-    const availableHeight = chatContainer.offsetHeight - paddingTop - paddingBottom;
-    let padding = shouldSettle
-      ? Math.max(0, availableHeight - contentHeight)
-      : Math.max(25, availableHeight - contentHeight);
-
-    chatAreaPaddingElement.style.paddingBottom = `${padding}px`;
-
-    if (behavior) {
-      chatContainer.scroll({ top: chatContainer.scrollHeight, behavior });
-    }
+    const paddingTop = parseFloat(getComputedStyle(chatContainer).paddingTop) || 0;
+    chatContainer.scroll({ top: latestTurn.offsetTop - paddingTop, behavior });
   }
 
-  function calculateMessageHeight(sortedMessages: { element: HTMLElement, index: number, role: Role }[]): { count: number, height: number } {
-    const lastMessage = sortedMessages[sortedMessages.length - 1];
-    if (lastMessage.role === Role.User) {
-      return { count: 1, height: getOuterHeight(lastMessage.element) };
-    }
-
-    let count = 0;
-    let height = 0;
-
-    for (const message of sortedMessages.reverse()) {
-      if (message.role === Role.User) {
-        break;
-      }
-      height += getOuterHeight(message.element);
-      count++;
-    }
-    return { count: count, height: height };
+  function scrollToBottom(behavior: ScrollBehavior) {
+    chatContainer.scroll({ top: chatContainer.scrollHeight, behavior });
   }
 
   function updateScrolledState() {
@@ -111,13 +58,26 @@
   let scrolledToBottom: boolean = true;
 
   let scrollToBottomButton: HTMLButtonElement;
-  let chatAreaPaddingElement: HTMLElement | undefined;
-  let thoughtIndicatorElement: HTMLElement | undefined;
-  let streamingIndicatorElement: HTMLElement | undefined;
 
   let streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
 
-  let messageElements: { element: HTMLElement, index: number, role: Role }[] = [];
+  type Turn = { id: number, messages: ConversationContent[] };
+
+  $: turns = groupTurns(messages);
+
+  // A turn starts at each visible user message; hidden contents (tool
+  // responses, planning notices, attachment stubs) stay attached to the
+  // turn they belong to instead of starting phantom turns
+  function groupTurns(messages: ConversationContent[]): Turn[] {
+    const turns: Turn[] = [];
+    for (const message of messages) {
+      if ((message.role === Role.User && message.shouldDisplayContent) || turns.length === 0) {
+        turns.push({ id: message.id, messages: [] });
+      }
+      turns[turns.length - 1].messages.push(message);
+    }
+    return turns;
+  }
 
   function getGreetingByTime(): string {
     const hour = new Date().getHours();
@@ -149,30 +109,8 @@
     };
   }
 
-  function trackingAction(element: HTMLElement, { index, role }: { index: number, role: Role }) {
-    messageElements.push({ index: index, element: element, role: role });
-    return {
-      update({ index, role }: { index: number, role: Role }) {
-        const entry = messageElements.find((message) => message.element === element);
-        if (entry) {
-          entry.index = index;
-          entry.role = role;
-        }
-      },
-      destroy() {
-        messageElements = messageElements.filter((message) => message.element !== element);
-      }
-    };
-  }
-
   $: if (scrollToBottomButton) {
     setIcon(scrollToBottomButton, "arrow-down");
-  }
-
-  $: {
-    if (messages.length === 0 && chatAreaPaddingElement) {
-      chatAreaPaddingElement.style.padding = "0px";
-    }
   }
 </script>
 
@@ -181,56 +119,61 @@
     <div class="top-fade"></div>
   {/if}
   <div class="chat-area" bind:this={chatContainer} on:scroll={updateScrolledState}>
-    {#each messages as message, index (message.id)}
-      {@const content = message.getDisplayContent()}
-      {#if message.shouldDisplayContent && content.trim() !== ""}
-        {#if message.role === Role.User}
-          <div class="message-container {Role.User}" use:trackingAction={{ index, role: Role.User }}>
-            <div class="message-bubble {Role.User}">
-              <div class="message-text-user-container" contenteditable="false">
-                <div class="message-text-user">
-                  {@html content}
-                </div>
-              </div>
-              {#if message.references.length > 0}
-                <hr class="message-attachment-break"/>
-                <div class="message-attachments-container">
-                  {#each message.references as reference}
-                    <div class="message-attachmanet" aria-label="{reference.fileName}">
-                      <div
-                        class="message-attachment-icon"
-                        use:setElementIcon={reference.getIconName()}
-                      ></div>
-                      <div class="message-attachment-info">
-                        <div class="message-attachment-name">{reference.fileName}</div>
-                        <div class="message-attachment-size">{reference.size}MB</div>
-                      </div>
+    {#each turns as turn, turnIndex (turn.id)}
+      {@const isLatestTurn = turnIndex === turns.length - 1}
+      <div class="message-group" class:latest={isLatestTurn}>
+        {#each turn.messages as message (message.id)}
+          {@const content = message.getDisplayContent()}
+          {#if message.shouldDisplayContent && content.trim() !== ""}
+            {#if message.role === Role.User}
+              <div class="message-container {Role.User}">
+                <div class="message-bubble {Role.User}">
+                  <div class="message-text-user-container" contenteditable="false">
+                    <div class="message-text-user">
+                      {@html content}
                     </div>
-                  {/each}
+                  </div>
+                  {#if message.references.length > 0}
+                    <hr class="message-attachment-break"/>
+                    <div class="message-attachments-container">
+                      {#each message.references as reference}
+                        <div class="message-attachmanet" aria-label="{reference.fileName}">
+                          <div
+                            class="message-attachment-icon"
+                            use:setElementIcon={reference.getIconName()}
+                          ></div>
+                          <div class="message-attachment-info">
+                            <div class="message-attachment-name">{reference.fileName}</div>
+                            <div class="message-attachment-size">{reference.size}MB</div>
+                          </div>
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
                 </div>
-              {/if}
-            </div>
-          </div>
-        {:else}
-          <div class="message-container {Role.Assistant}" use:trackingAction={{ index, role: Role.Assistant }}>
-            <div class="message-bubble {Role.Assistant}">
-              <div class="markdown-content">
-                <div use:messageRenderAction={message} class="streaming-content"></div>
               </div>
+            {:else}
+              <div class="message-container {Role.Assistant}">
+                <div class="message-bubble {Role.Assistant}">
+                  <div class="markdown-content">
+                    <div use:messageRenderAction={message} class="streaming-content"></div>
+                  </div>
+                </div>
+              </div>
+            {/if}
+          {/if}
+        {/each}
+
+        {#if isLatestTurn}
+          <ThoughtIndicator thought={currentThought}/>
+          {#if isSubmitting}
+            <div transition:fade={{ duration: 300 }}>
+              <StreamingIndicator/>
             </div>
-          </div>
+          {/if}
         {/if}
-      {/if}
-    {/each}
-
-    <ThoughtIndicator thought={currentThought} bind:thoughtIndicatorElement={thoughtIndicatorElement}/>
-    {#if isSubmitting}
-      <div transition:fade={{ duration: 300 }}>
-        <StreamingIndicator bind:streamingIndicatorElement={streamingIndicatorElement}/>
       </div>
-    {/if}
-
-    <div bind:this={chatAreaPaddingElement} style:user-select=none></div>
+    {/each}
 
     {#if messages.length === 0}
       <div class="conversation-empty-container">
@@ -255,7 +198,7 @@
       <button
         id="scroll-to-bottom-button"
         bind:this={scrollToBottomButton}
-        on:click={() => updateChatAreaLayout("smooth")}
+        on:click={() => scrollToBottom("smooth")}
         aria-label="Scroll to bottom">
       </button>
     </div>
@@ -317,6 +260,17 @@
 
   .chat-area::-webkit-scrollbar {
     display: none;
+  }
+
+  .message-group {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: var(--size-4-2);
+  }
+
+  .message-group.latest {
+    min-height: 100%;
   }
 
   .message-container {

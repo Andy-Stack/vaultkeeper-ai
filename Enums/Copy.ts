@@ -16,10 +16,9 @@ export enum Copy {
     GeminiFlash_3_5_Flash = "Gemini 3.5 Flash",
     GeminiPro_3_1_Preview = "Gemini 3.1 Pro Preview",
 
-    GPT_5_5_Pro = "GPT-5.5 Pro",
-    GPT_5_5 = "GPT-5.5",
-    GPT_5_4_Mini = "GPT-5.4 Mini",
-    GPT_5_4_Nano = "GPT-5.4 Nano",
+    GPT_5_6_Sol = "GPT-5.6 Sol",
+    GPT_5_6_Terra = "GPT-5.6 Terra",
+    GPT_5_6_Luna = "GPT-5.6 Luna",
 
     MistralMedium = "Mistral Medium 3.5",
     MistralSmall = "Mistral Small 4",

@@ -68,7 +68,7 @@ describe('SettingsService', () => {
         it('should handle partially loaded settings and fill missing properties with defaults', () => {
             const loadedSettings: Partial<IVaultkeeperAISettings> = {
                 provider: AIProvider.OpenAI,
-                model: AIProviderModel.GPT_5_5,
+                model: AIProviderModel.GPT_5_6_Terra,
                 apiKeys: {
                     claude: '',
                     openai: 'partial-key',
@@ -79,7 +79,7 @@ describe('SettingsService', () => {
             settingsService = new SettingsService(loadedSettings as IVaultkeeperAISettings);
 
             expect(settingsService.settings.firstTimeStart).toBe(true); // Default
-            expect(settingsService.settings.model).toBe(AIProviderModel.GPT_5_5); // Loaded
+            expect(settingsService.settings.model).toBe(AIProviderModel.GPT_5_6_Terra); // Loaded
             expect(settingsService.settings.apiKeys.openai).toBe('partial-key'); // Loaded
             expect(settingsService.settings.exclusions).toEqual([]); // Default
             expect(settingsService.settings.userInstruction).toBe(''); // Default
@@ -236,7 +236,7 @@ describe('SettingsService', () => {
         it('should return OpenAI key when current model is GPT', () => {
             const loadedSettings = makeTestSettings({
                 provider: AIProvider.OpenAI,
-                model: AIProviderModel.GPT_5_4_Mini,
+                model: AIProviderModel.GPT_5_6_Luna,
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
@@ -285,7 +285,7 @@ describe('SettingsService', () => {
             // Test with various GPT models
             settingsService = new SettingsService({
                 provider: AIProvider.OpenAI,
-                model: AIProviderModel.GPT_5_5,
+                model: AIProviderModel.GPT_5_6_Terra,
                 apiKeys: { claude: '', openai: 'gpt5-key', gemini: '', mistral: '', local: '' }
             });
             expect(settingsService.getApiKeyForCurrentProvider()).toBe('gpt5-key');
@@ -478,10 +478,9 @@ describe('SettingsService', () => {
 
         it('should correctly identify OpenAI models', () => {
             const openaiModels = [
-                AIProviderModel.GPT_5_4_Nano,
-                AIProviderModel.GPT_5_4_Mini,
-                AIProviderModel.GPT_5_5,
-                AIProviderModel.GPT_5_4_Mini
+                AIProviderModel.GPT_5_6_Sol,
+                AIProviderModel.GPT_5_6_Terra,
+                AIProviderModel.GPT_5_6_Luna
             ];
 
             openaiModels.forEach(model => {

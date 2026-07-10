@@ -495,10 +495,9 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				break;
 			case AIProvider.OpenAI:
 				dropdown.addOptions({
-					[AIProviderModel.GPT_5_5_Pro]: Copy.GPT_5_5_Pro,
-					[AIProviderModel.GPT_5_5]: Copy.GPT_5_5,
-					[AIProviderModel.GPT_5_4_Mini]: Copy.GPT_5_4_Mini,
-					[AIProviderModel.GPT_5_4_Nano]: Copy.GPT_5_4_Nano
+					[AIProviderModel.GPT_5_6_Sol]: Copy.GPT_5_6_Sol,
+					[AIProviderModel.GPT_5_6_Terra]: Copy.GPT_5_6_Terra,
+					[AIProviderModel.GPT_5_6_Luna]: Copy.GPT_5_6_Luna
 				});
 				break;
 			case AIProvider.Gemini:

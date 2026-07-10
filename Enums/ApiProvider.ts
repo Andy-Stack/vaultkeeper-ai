@@ -78,10 +78,9 @@ export enum AIProviderModel {
     GeminiPro_3_1_Preview = "gemini-3.1-pro-preview",
 
     // OpenAI models
-    GPT_5_5_Pro = "gpt-5.5-pro-2026-04-23",
-    GPT_5_5 = "gpt-5.5-2026-04-23",
-    GPT_5_4_Mini = "gpt-5.4-mini-2026-03-17",
-    GPT_5_4_Nano = "gpt-5.4-nano-2026-03-17",
+    GPT_5_6_Sol = "gpt-5.6-sol",
+    GPT_5_6_Terra = "gpt-5.6-terra",
+    GPT_5_6_Luna = "gpt-5.6-luna",
 
     // Mistral models
     MistralMedium = "mistral-medium-3-5",
@@ -90,7 +89,7 @@ export enum AIProviderModel {
     // Conversation naming models (aliases to existing models)
     ClaudeNamer = ClaudeHaiku_4_5,
     GeminiNamer = GeminiFlash_3_1_Lite,
-    OpenAINamer = GPT_5_4_Nano,
+    OpenAINamer = GPT_5_6_Luna,
     MistralNamer = MistralSmall,
 
     // Local models are freely typed so no default is given
@@ -120,7 +119,7 @@ export enum MistralAgentEndpoint {
 export const DEFAULT_QUICK_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
     [AIProvider.Claude]:  AIProviderModel.ClaudeHaiku_4_5,
     [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_1_Lite,
-    [AIProvider.OpenAI]:  AIProviderModel.GPT_5_4_Nano,
+    [AIProvider.OpenAI]:  AIProviderModel.GPT_5_6_Luna,
     [AIProvider.Mistral]: AIProviderModel.MistralSmall,
     [AIProvider.Local]: AIProviderModel.None
 }
@@ -128,7 +127,7 @@ export const DEFAULT_QUICK_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel
 export const DEFAULT_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
     [AIProvider.Claude]:  AIProviderModel.ClaudeSonnet_5,
     [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_5_Flash,
-    [AIProvider.OpenAI]:  AIProviderModel.GPT_5_5,
+    [AIProvider.OpenAI]:  AIProviderModel.GPT_5_6_Terra,
     [AIProvider.Mistral]: AIProviderModel.MistralMedium,
     [AIProvider.Local]: AIProviderModel.None
 }
@@ -136,7 +135,7 @@ export const DEFAULT_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
 export const DEFAULT_PLANNING_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
     [AIProvider.Claude]:  AIProviderModel.ClaudeOpus_4_8,
     [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_5_Flash,
-    [AIProvider.OpenAI]:  AIProviderModel.GPT_5_5,
+    [AIProvider.OpenAI]:  AIProviderModel.GPT_5_6_Sol,
     [AIProvider.Mistral]: AIProviderModel.MistralMedium,
     [AIProvider.Local]: AIProviderModel.None
 }

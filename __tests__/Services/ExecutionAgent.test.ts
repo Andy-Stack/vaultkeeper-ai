@@ -7,6 +7,7 @@ import { AIToolCall } from '../../AIClasses/AIToolCall';
 import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
 import { AIToolResponsePayload } from '../../AIClasses/ToolDefinitions/AIToolResponsePayload';
 import type { ExecutionStep } from '../../Types/ExecutionStep';
+import { Artifact } from '../../Conversations/Artifact';
 
 /**
  * UNIT TESTS - ExecutionAgent
@@ -396,6 +397,111 @@ describe('ExecutionAgent - Unit Tests', () => {
 
 			expect(mockAIToolService.performAITool).toHaveBeenCalled();
 			expect(result?.success).toBe(true);
+		});
+
+		it('should invoke onArtifactProduced for each artifact returned by a tool call', async () => {
+			const callbacks = createMockCallbacks();
+			const step: ExecutionStep = {
+				description: 'Write file',
+				instruction: 'Create new file with content'
+			};
+
+			const artifact = new Artifact('new-note.md', 'text/markdown', '', '# New Note\n\nContent here');
+			mockAIToolService.performAITool.mockResolvedValueOnce(
+				new AIToolResponse(
+					AITool.WriteVaultFile,
+					new AIToolResponsePayload({ success: true }, [artifact]),
+					'tool-1'
+				)
+			).mockResolvedValueOnce(
+				new AIToolResponse(AITool.CompleteTask, new AIToolResponsePayload({ success: true }), 'tool-2')
+			);
+
+			let toolCallCount = 0;
+
+			mockAI.streamRequest.mockImplementation(async function* () {
+				toolCallCount++;
+				if (toolCallCount === 1) {
+					yield {
+						content: 'Writing',
+						toolCall: new AIToolCall(
+							AITool.WriteVaultFile,
+							{
+								file_path: 'new-note.md',
+								content: '# New Note\n\nContent here',
+								user_message: 'Creating file'
+							},
+							'tool-1'
+						),
+						isComplete: true
+					};
+				} else {
+					yield {
+						content: 'Done',
+						toolCall: new AIToolCall(
+							AITool.CompleteTask,
+							{
+								success: true,
+								description: 'File created successfully'
+							},
+							'tool-2'
+						),
+						isComplete: true
+					};
+				}
+			});
+
+			service.resolveAIProvider();
+			await service.runExecutionAgent(step, callbacks);
+
+			expect(callbacks.onArtifactProduced).toHaveBeenCalledTimes(1);
+			expect(callbacks.onArtifactProduced).toHaveBeenCalledWith(artifact);
+		});
+
+		it('should not invoke onArtifactProduced when a tool call returns no artifacts', async () => {
+			const callbacks = createMockCallbacks();
+			const step: ExecutionStep = {
+				description: 'Search for files',
+				instruction: 'Search for files with tag #important'
+			};
+
+			let toolCallCount = 0;
+
+			mockAI.streamRequest.mockImplementation(async function* () {
+				toolCallCount++;
+				if (toolCallCount === 1) {
+					yield {
+						content: 'Searching',
+						toolCall: new AIToolCall(
+							AITool.SearchVaultFiles,
+							{
+								search_terms: ['#important'],
+								user_message: 'Searching for tagged files'
+							},
+							'tool-1'
+						),
+						isComplete: true
+					};
+				} else {
+					yield {
+						content: 'Done',
+						toolCall: new AIToolCall(
+							AITool.CompleteTask,
+							{
+								success: true,
+								description: 'Found 3 files with #important tag'
+							},
+							'tool-2'
+						),
+						isComplete: true
+					};
+				}
+			});
+
+			service.resolveAIProvider();
+			await service.runExecutionAgent(step, callbacks);
+
+			expect(callbacks.onArtifactProduced).not.toHaveBeenCalled();
 		});
 
 		it('should call multiple functions in sequence', async () => {

@@ -7,6 +7,7 @@ import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { TFile } from 'obsidian';
 import { Exception } from '../../Helpers/Exception';
+import { Artifact } from '../../Conversations/Artifact';
 
 /**
  * INTEGRATION TESTS - ConversationFileSystemService
@@ -33,7 +34,9 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			deleteFile: vi.fn(),
 			moveFile: vi.fn(),
 			listFilesInDirectory: vi.fn(),
-			exists: vi.fn().mockResolvedValue(true)
+			exists: vi.fn().mockResolvedValue(true),
+			writeBinaryFile: vi.fn().mockResolvedValue(new TFile()),
+			readBinaryFile: vi.fn()
 		};
 
 		// Register the mock
@@ -524,6 +527,291 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 				arguments: {}
 			});
 			expect(conversations[0].contents[1].functionResponse).toBeDefined();
+		});
+	});
+
+	describe('Artifacts', () => {
+		it('should save an artifact with base64 content as a binary file and store its path', async () => {
+			const conversation = createTestConversation('With Artifact');
+			const artifact = new Artifact('notes/test.md', 'text/markdown', 'old', 'new', 'YWJjZGVm');
+
+			conversation.contents.push(
+				new ConversationContent({ role: Role.Assistant, content: 'Edited', artifacts: [artifact] })
+			);
+
+			mockFileSystemService.exists.mockResolvedValue(false);
+
+			await service.saveConversation(conversation);
+
+			expect(mockFileSystemService.writeBinaryFile).toHaveBeenCalledTimes(1);
+			const [writtenPath] = mockFileSystemService.writeBinaryFile.mock.calls[0];
+			expect(writtenPath).toContain('Vaultkeeper AI/Conversations/Artifacts/');
+			expect(artifact.artifactPath).toBeDefined();
+			expect(artifact.artifactPath).not.toContain('Vaultkeeper AI/Conversations/');
+
+			const savedData = mockFileSystemService.writeObjectToFile.mock.calls[0][1];
+			const savedArtifact = savedData.contents[2].artifacts[0];
+			expect(savedArtifact).toMatchObject({
+				filePath: 'notes/test.md',
+				mimeType: 'text/markdown',
+				originalContent: 'old',
+				updatedContent: 'new',
+				artifactPath: artifact.artifactPath
+			});
+		});
+
+		it('should not write a binary file for artifacts without base64 content (text-only edits)', async () => {
+			const conversation = createTestConversation('Text Only Artifact');
+			const artifact = new Artifact('notes/test.md', 'text/markdown', 'old', 'new');
+
+			conversation.contents.push(
+				new ConversationContent({ role: Role.Assistant, content: 'Edited', artifacts: [artifact] })
+			);
+
+			await service.saveConversation(conversation);
+
+			expect(mockFileSystemService.writeBinaryFile).not.toHaveBeenCalled();
+			expect(artifact.artifactPath).toBeUndefined();
+		});
+
+		it('should not re-write a binary file for an artifact that already has a storage path', async () => {
+			const conversation = createTestConversation('Existing Artifact');
+			const artifact = new Artifact('notes/test.md', 'text/markdown', 'old', 'new', 'YWJjZGVm', 'Artifacts/existing-hash.bin');
+
+			conversation.contents.push(
+				new ConversationContent({ role: Role.Assistant, content: 'Edited', artifacts: [artifact] })
+			);
+
+			await service.saveConversation(conversation);
+
+			expect(mockFileSystemService.writeBinaryFile).not.toHaveBeenCalled();
+			expect(artifact.artifactPath).toBe('Artifacts/existing-hash.bin');
+		});
+
+		it('should deserialize artifacts and load their binary content on getAllConversations', async () => {
+			const mockFiles = [createMockFile('Vaultkeeper AI/Conversations/with-artifact.json')];
+			mockFileSystemService.listFilesInDirectory.mockResolvedValue(mockFiles);
+			mockFileSystemService.readObjectFromFile.mockResolvedValue({
+				title: 'With Artifact',
+				created: '2024-01-01T10:00:00.000Z',
+				updated: '2024-01-01T10:30:00.000Z',
+				contents: [
+					{
+						role: Role.Assistant,
+						content: 'Edited a file',
+						timestamp: '2024-01-01T10:00:00.000Z',
+						artifacts: [
+							{
+								filePath: 'notes/test.md',
+								mimeType: 'text/markdown',
+								originalContent: 'old',
+								updatedContent: 'new',
+								artifactPath: 'Artifacts/hash123.bin'
+							}
+						]
+					}
+				]
+			});
+			mockFileSystemService.readBinaryFile.mockResolvedValue(new TextEncoder().encode('abcdef').buffer);
+
+			const conversations = await service.getAllConversations();
+
+			expect(mockFileSystemService.readBinaryFile).toHaveBeenCalledWith(
+				'Vaultkeeper AI/Conversations/Artifacts/hash123.bin',
+				true
+			);
+			const artifact = conversations[0].contents[0].artifacts[0];
+			expect(artifact).toBeInstanceOf(Artifact);
+			expect(artifact.filePath).toBe('notes/test.md');
+			expect(artifact.originalContent).toBe('old');
+			expect(artifact.updatedContent).toBe('new');
+			expect(artifact.base64).toBeDefined();
+		});
+
+		it('should deserialize text-only artifacts without attempting to load binary content', async () => {
+			const mockFiles = [createMockFile('Vaultkeeper AI/Conversations/text-artifact.json')];
+			mockFileSystemService.listFilesInDirectory.mockResolvedValue(mockFiles);
+			mockFileSystemService.readObjectFromFile.mockResolvedValue({
+				title: 'Text Artifact',
+				created: '2024-01-01T10:00:00.000Z',
+				updated: '2024-01-01T10:30:00.000Z',
+				contents: [
+					{
+						role: Role.Assistant,
+						content: 'Edited a file',
+						timestamp: '2024-01-01T10:00:00.000Z',
+						artifacts: [
+							{
+								filePath: 'notes/test.md',
+								mimeType: 'text/markdown',
+								originalContent: 'old',
+								updatedContent: 'new'
+							}
+						]
+					}
+				]
+			});
+
+			const conversations = await service.getAllConversations();
+
+			expect(mockFileSystemService.readBinaryFile).not.toHaveBeenCalled();
+			expect(conversations[0].contents[0].artifacts[0].base64).toBeUndefined();
+		});
+
+		it('should skip invalid artifact data during deserialization', async () => {
+			const mockFiles = [createMockFile('Vaultkeeper AI/Conversations/invalid-artifact.json')];
+			mockFileSystemService.listFilesInDirectory.mockResolvedValue(mockFiles);
+			mockFileSystemService.readObjectFromFile.mockResolvedValue({
+				title: 'Invalid Artifact',
+				created: '2024-01-01T10:00:00.000Z',
+				updated: '2024-01-01T10:30:00.000Z',
+				contents: [
+					{
+						role: Role.Assistant,
+						content: 'Edited a file',
+						timestamp: '2024-01-01T10:00:00.000Z',
+						artifacts: [
+							{ filePath: 'notes/test.md' } // missing required fields
+						]
+					}
+				]
+			});
+
+			const conversations = await service.getAllConversations();
+
+			expect(conversations[0].contents[0].artifacts).toEqual([]);
+		});
+
+		describe('garbageCollectArtifacts', () => {
+			it('should delete artifact files with no remaining references', async () => {
+				mockFileSystemService.listFilesInDirectory.mockImplementation((path: string) => {
+					if (path === 'Vaultkeeper AI/Conversations/Artifacts') {
+						return Promise.resolve([
+							createMockFile('Vaultkeeper AI/Conversations/Artifacts/referenced.bin'),
+							createMockFile('Vaultkeeper AI/Conversations/Artifacts/orphaned.bin')
+						]);
+					}
+					return Promise.resolve([createMockFile('Vaultkeeper AI/Conversations/conv1.json')]);
+				});
+
+				mockFileSystemService.readObjectFromFile.mockResolvedValue({
+					title: 'Conv',
+					created: '2024-01-01T10:00:00.000Z',
+					updated: '2024-01-01T10:00:00.000Z',
+					contents: [
+						{
+							role: Role.Assistant,
+							content: 'Edit',
+							timestamp: '2024-01-01T10:00:00.000Z',
+							artifacts: [
+								{
+									filePath: 'notes/test.md',
+									mimeType: 'text/markdown',
+									originalContent: 'old',
+									updatedContent: 'new',
+									artifactPath: 'Artifacts/referenced.bin'
+								}
+							]
+						}
+					]
+				});
+				mockFileSystemService.readBinaryFile.mockResolvedValue(new ArrayBuffer(0));
+				mockFileSystemService.deleteFile.mockResolvedValue(undefined);
+
+				await service.garbageCollectArtifacts();
+
+				expect(mockFileSystemService.deleteFile).toHaveBeenCalledTimes(1);
+				expect(mockFileSystemService.deleteFile).toHaveBeenCalledWith(
+					'Vaultkeeper AI/Conversations/Artifacts/orphaned.bin',
+					true,
+					false
+				);
+			});
+
+			it('should do nothing when there are no artifact files', async () => {
+				mockFileSystemService.listFilesInDirectory.mockResolvedValue([]);
+
+				const result = await service.garbageCollectArtifacts();
+
+				expect(result).toBeUndefined();
+				expect(mockFileSystemService.deleteFile).not.toHaveBeenCalled();
+			});
+
+			it('should not delete any artifact files still referenced by a conversation', async () => {
+				mockFileSystemService.listFilesInDirectory.mockImplementation((path: string) => {
+					if (path === 'Vaultkeeper AI/Conversations/Artifacts') {
+						return Promise.resolve([createMockFile('Vaultkeeper AI/Conversations/Artifacts/kept.bin')]);
+					}
+					return Promise.resolve([createMockFile('Vaultkeeper AI/Conversations/conv1.json')]);
+				});
+
+				mockFileSystemService.readObjectFromFile.mockResolvedValue({
+					title: 'Conv',
+					created: '2024-01-01T10:00:00.000Z',
+					updated: '2024-01-01T10:00:00.000Z',
+					contents: [
+						{
+							role: Role.Assistant,
+							content: 'Edit',
+							timestamp: '2024-01-01T10:00:00.000Z',
+							artifacts: [
+								{
+									filePath: 'notes/test.md',
+									mimeType: 'text/markdown',
+									originalContent: 'old',
+									updatedContent: 'new',
+									artifactPath: 'Artifacts/kept.bin'
+								}
+							]
+						}
+					]
+				});
+				mockFileSystemService.readBinaryFile.mockResolvedValue(new ArrayBuffer(0));
+
+				await service.garbageCollectArtifacts();
+
+				expect(mockFileSystemService.deleteFile).not.toHaveBeenCalled();
+			});
+
+			it('should log and return an Error when listing artifact files fails', async () => {
+				mockFileSystemService.listFilesInDirectory.mockRejectedValue(new Error('Disk error'));
+
+				const result = await service.garbageCollectArtifacts();
+
+				expect(result).toBeInstanceOf(Error);
+				expect(Exception.log).toHaveBeenCalled();
+			});
+		});
+
+		it('should run garbage collection for both attachments and artifacts on conversation deletion', async () => {
+			const conversation = createTestConversation('To Delete With Artifact');
+			await service.saveConversation(conversation);
+
+			mockFileSystemService.readObjectFromFile.mockResolvedValue({
+				title: 'To Delete With Artifact',
+				created: '2024-01-01T10:00:00.000Z',
+				updated: '2024-01-01T10:30:00.000Z',
+				contents: []
+			});
+			mockFileSystemService.deleteFile.mockResolvedValue(undefined);
+			mockFileSystemService.listFilesInDirectory.mockResolvedValue([]);
+
+			await service.deleteCurrentConversation();
+
+			// Drain the internal deletion queue (garbage collection is queued in the background)
+			await new Promise(resolve => setTimeout(resolve, 0));
+			await new Promise(resolve => setTimeout(resolve, 0));
+
+			expect(mockFileSystemService.listFilesInDirectory).toHaveBeenCalledWith(
+				'Vaultkeeper AI/Conversations/Attachments',
+				false,
+				true
+			);
+			expect(mockFileSystemService.listFilesInDirectory).toHaveBeenCalledWith(
+				'Vaultkeeper AI/Conversations/Artifacts',
+				false,
+				true
+			);
 		});
 	});
 

@@ -7,6 +7,7 @@ import { TFile } from 'obsidian';
 import { Exception } from '../../Helpers/Exception';
 import { AbortService } from '../../Services/AbortService';
 import { ChatMode } from '../../Enums/ChatMode';
+import { Artifact } from '../../Conversations/Artifact';
 
 /**
  * INTEGRATION TESTS - AIToolService
@@ -321,6 +322,64 @@ describe('AIToolService - Integration Tests', () => {
 			expect((result.payload.response as any).error).toBeDefined();
 		});
 
+		it('should produce an artifact tracking the before/after content on success', async () => {
+			mockFileSystemService.readFilePath.mockResolvedValue('Old content');
+			mockFileSystemService.writeToFilePath.mockResolvedValue(createMockFile('notes/new-note.md', 'new-note'));
+			mockFileSystemService.readFile.mockResolvedValue('# New Note\n\nContent here');
+
+			const result = await service.performAITool({
+				name: AITool.WriteVaultFile,
+				arguments: {
+					file_path: 'notes/new-note.md',
+					content: '# New Note\n\nContent here',
+					user_message: 'test search'
+				},
+				toolId: 'tool_11b'
+			} as any);
+
+			expect(result.payload.artifacts).toHaveLength(1);
+			const artifact = result.payload.artifacts[0];
+			expect(artifact).toBeInstanceOf(Artifact);
+			expect(artifact.filePath).toBe('notes/new-note.md');
+			expect(artifact.originalContent).toBe('Old content');
+			expect(artifact.updatedContent).toBe('# New Note\n\nContent here');
+		});
+
+		it('should track empty originalContent when the file did not previously exist', async () => {
+			mockFileSystemService.readFilePath.mockResolvedValue(new Error('File does not exist'));
+			mockFileSystemService.writeToFilePath.mockResolvedValue(createMockFile('brand-new.md', 'brand-new'));
+			mockFileSystemService.readFile.mockResolvedValue('Brand new content');
+
+			const result = await service.performAITool({
+				name: AITool.WriteVaultFile,
+				arguments: {
+					file_path: 'brand-new.md',
+					content: 'Brand new content',
+					user_message: 'test search'
+				},
+				toolId: 'tool_11c'
+			} as any);
+
+			expect(result.payload.artifacts[0].originalContent).toBe('');
+			expect(result.payload.artifacts[0].updatedContent).toBe('Brand new content');
+		});
+
+		it('should not produce an artifact when the write fails', async () => {
+			mockFileSystemService.writeToFilePath.mockResolvedValue(new Error('Permission denied'));
+
+			const result = await service.performAITool({
+				name: AITool.WriteVaultFile,
+				arguments: {
+					file_path: 'protected.md',
+					content: 'Content',
+					user_message: 'test search'
+				},
+				toolId: 'tool_11d'
+			} as any);
+
+			expect(result.payload.artifacts).toEqual([]);
+		});
+
 		it('should normalize file path', async () => {
 			mockFileSystemService.writeToFilePath.mockResolvedValue(undefined);
 
@@ -379,6 +438,48 @@ describe('AIToolService - Integration Tests', () => {
 
 			expect(mockFileSystemService.patchFileAtPath).toHaveBeenCalledWith('notes/test.md', oldContent, newContent);
 			expect(result.payload.response).toEqual({ success: true });
+		});
+
+		it('should produce an artifact tracking the before/after content on success', async () => {
+			mockFileSystemService.readFilePath.mockResolvedValue('# Title\nold content');
+			mockFileSystemService.patchFileAtPath.mockResolvedValue(createMockFile('notes/test.md', 'test'));
+			mockFileSystemService.readFile.mockResolvedValue('# Title\nnew content');
+
+			const result = await service.performAITool({
+				name: AITool.PatchVaultFile,
+				arguments: {
+					file_path: 'notes/test.md',
+					oldContent: ['old content'],
+					newContent: ['new content'],
+					user_message: 'Updating test note'
+				},
+				toolId: 'tool_patch_1b'
+			} as any);
+
+			expect(result.payload.artifacts).toHaveLength(1);
+			const artifact = result.payload.artifacts[0];
+			expect(artifact).toBeInstanceOf(Artifact);
+			expect(artifact.filePath).toBe('notes/test.md');
+			expect(artifact.originalContent).toBe('# Title\nold content');
+			expect(artifact.updatedContent).toBe('# Title\nnew content');
+		});
+
+		it('should not produce an artifact when the patch fails', async () => {
+			mockFileSystemService.readFilePath.mockResolvedValue('# Title\nold content');
+			mockFileSystemService.patchFileAtPath.mockResolvedValue(new Error('Content to replace was not found in the file'));
+
+			const result = await service.performAITool({
+				name: AITool.PatchVaultFile,
+				arguments: {
+					file_path: 'notes/test.md',
+					oldContent: ['missing content'],
+					newContent: ['new content'],
+					user_message: 'Updating test note'
+				},
+				toolId: 'tool_patch_1c'
+			} as any);
+
+			expect(result.payload.artifacts).toEqual([]);
 		});
 
 		it('should handle patch failure', async () => {
@@ -670,6 +771,133 @@ describe('AIToolService - Integration Tests', () => {
 			} as any);
 
 			expect((result.payload.response as any).results).toEqual([]);
+		});
+
+		it('should produce artifacts capturing content of deleted text files', async () => {
+			mockFileSystemService.readFilePath.mockResolvedValue('Content before deletion');
+			mockFileSystemService.deleteFile.mockResolvedValue(undefined);
+
+			const result = await service.performAITool({
+				name: AITool.DeleteVaultFiles,
+				arguments: {
+					file_paths: ['notes/gone.md'],
+					confirm_deletion: true,
+					user_message: 'test search'
+				},
+				toolId: 'tool_19b'
+			} as any);
+
+			expect(result.payload.artifacts).toHaveLength(1);
+			const artifact = result.payload.artifacts[0];
+			expect(artifact).toBeInstanceOf(Artifact);
+			expect(artifact.filePath).toBe('notes/gone.md');
+			expect(artifact.originalContent).toBe('Content before deletion');
+			expect(artifact.updatedContent).toBe('');
+		});
+
+		it('should produce base64 artifacts capturing content of deleted binary files', async () => {
+			const buffer = new TextEncoder().encode('binary-bytes').buffer;
+			mockFileSystemService.readBinaryFile.mockResolvedValue(buffer);
+			mockFileSystemService.deleteFile.mockResolvedValue(undefined);
+
+			const result = await service.performAITool({
+				name: AITool.DeleteVaultFiles,
+				arguments: {
+					file_paths: ['images/gone.png'],
+					confirm_deletion: true,
+					user_message: 'test search'
+				},
+				toolId: 'tool_19c'
+			} as any);
+
+			expect(result.payload.artifacts).toHaveLength(1);
+			const artifact = result.payload.artifacts[0];
+			expect(artifact.filePath).toBe('images/gone.png');
+			expect(artifact.base64).toBeDefined();
+			expect(mockFileSystemService.readFilePath).not.toHaveBeenCalled();
+		});
+
+		it('should not collect artifacts when confirmation is false', async () => {
+			const result = await service.performAITool({
+				name: AITool.DeleteVaultFiles,
+				arguments: {
+					file_paths: ['notes/gone.md'],
+					confirm_deletion: false,
+					user_message: 'test search'
+				},
+				toolId: 'tool_19d'
+			} as any);
+
+			expect(result.payload.artifacts).toEqual([]);
+			expect(mockFileSystemService.readFilePath).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('performAITool - DeleteVaultFolder', () => {
+		it('should delete folder successfully and produce artifacts for its contents', async () => {
+			mockFileSystemService.listDirectoryContents = vi.fn().mockResolvedValue([
+				createMockFile('folder/a.md', 'a'),
+				createMockFile('folder/b.md', 'b')
+			]);
+			mockFileSystemService.readFilePath
+				.mockResolvedValueOnce('Content A')
+				.mockResolvedValueOnce('Content B');
+			mockFileSystemService.deleteFolder = vi.fn().mockResolvedValue(undefined);
+
+			const result = await service.performAITool({
+				name: AITool.DeleteVaultFolder,
+				arguments: {
+					path: 'folder',
+					confirm_deletion: true,
+					user_message: 'test search'
+				},
+				toolId: 'tool_folder_1'
+			} as any);
+
+			expect(mockFileSystemService.deleteFolder).toHaveBeenCalledWith('folder');
+			expect(result.payload.response).toEqual({ path: 'folder', success: true });
+			expect(result.payload.artifacts).toHaveLength(2);
+			expect(result.payload.artifacts.map((a: Artifact) => a.filePath)).toEqual(['folder/a.md', 'folder/b.md']);
+			expect(result.payload.artifacts[0].originalContent).toBe('Content A');
+		});
+
+		it('should reject deletion when confirmation is false', async () => {
+			mockFileSystemService.listDirectoryContents = vi.fn();
+			mockFileSystemService.deleteFolder = vi.fn();
+
+			const result = await service.performAITool({
+				name: AITool.DeleteVaultFolder,
+				arguments: {
+					path: 'folder',
+					confirm_deletion: false,
+					user_message: 'test search'
+				},
+				toolId: 'tool_folder_2'
+			} as any);
+
+			expect(result.payload.response).toEqual({ error: 'Confirmation was false, no action taken' });
+			expect(mockFileSystemService.deleteFolder).not.toHaveBeenCalled();
+		});
+
+		it('should still return collected artifacts when the delete fails', async () => {
+			mockFileSystemService.listDirectoryContents = vi.fn().mockResolvedValue([
+				createMockFile('folder/a.md', 'a')
+			]);
+			mockFileSystemService.readFilePath.mockResolvedValue('Content A');
+			mockFileSystemService.deleteFolder = vi.fn().mockResolvedValue(new Error('Permission denied'));
+
+			const result = await service.performAITool({
+				name: AITool.DeleteVaultFolder,
+				arguments: {
+					path: 'folder',
+					confirm_deletion: true,
+					user_message: 'test search'
+				},
+				toolId: 'tool_folder_3'
+			} as any);
+
+			expect((result.payload.response as any).success).toBe(false);
+			expect(result.payload.artifacts).toHaveLength(1);
 		});
 	});
 

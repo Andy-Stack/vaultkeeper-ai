@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Artifact } from '../../Conversations/Artifact';
+import { ArtifactAction } from '../../Enums/ArtifactAction';
 
 /**
  * UNIT TESTS - Artifact
@@ -11,10 +12,11 @@ import { Artifact } from '../../Conversations/Artifact';
 describe('Artifact', () => {
 	describe('constructor', () => {
 		it('should create an artifact with required fields', () => {
-			const artifact = new Artifact('notes/test.md', 'text/markdown', 'old content', 'new content');
+			const artifact = new Artifact('notes/test.md', 'text/markdown', ArtifactAction.Modify, 'old content', 'new content');
 
 			expect(artifact.filePath).toBe('notes/test.md');
 			expect(artifact.mimeType).toBe('text/markdown');
+			expect(artifact.action).toBe(ArtifactAction.Modify);
 			expect(artifact.originalContent).toBe('old content');
 			expect(artifact.updatedContent).toBe('new content');
 			expect(artifact.base64).toBeUndefined();
@@ -25,6 +27,7 @@ describe('Artifact', () => {
 			const artifact = new Artifact(
 				'image.png',
 				'image/png',
+				ArtifactAction.Modify,
 				'',
 				'',
 				'base64data==',
@@ -36,14 +39,14 @@ describe('Artifact', () => {
 		});
 
 		it('should allow empty originalContent for newly created files', () => {
-			const artifact = new Artifact('new-file.md', 'text/markdown', '', 'Some new content');
+			const artifact = new Artifact('new-file.md', 'text/markdown', ArtifactAction.Create, '', 'Some new content');
 
 			expect(artifact.originalContent).toBe('');
 			expect(artifact.updatedContent).toBe('Some new content');
 		});
 
 		it('should allow empty updatedContent for deleted files', () => {
-			const artifact = new Artifact('deleted-file.md', 'text/markdown', 'Content before deletion', '');
+			const artifact = new Artifact('deleted-file.md', 'text/markdown', ArtifactAction.Delete, 'Content before deletion', '');
 
 			expect(artifact.originalContent).toBe('Content before deletion');
 			expect(artifact.updatedContent).toBe('');
@@ -52,19 +55,19 @@ describe('Artifact', () => {
 
 	describe('getStoragePath / setStoragePath', () => {
 		it('should return undefined when no storage path has been set', () => {
-			const artifact = new Artifact('test.md', 'text/markdown', 'a', 'b');
+			const artifact = new Artifact('test.md', 'text/markdown', ArtifactAction.Modify, 'a', 'b');
 
 			expect(artifact.getStoragePath()).toBeUndefined();
 		});
 
 		it('should return the artifactPath passed to the constructor', () => {
-			const artifact = new Artifact('test.md', 'text/markdown', 'a', 'b', 'base64', 'Artifacts/existing.bin');
+			const artifact = new Artifact('test.md', 'text/markdown', ArtifactAction.Modify, 'a', 'b', 'base64', 'Artifacts/existing.bin');
 
 			expect(artifact.getStoragePath()).toBe('Artifacts/existing.bin');
 		});
 
 		it('should update the storage path when set', () => {
-			const artifact = new Artifact('test.md', 'text/markdown', 'a', 'b');
+			const artifact = new Artifact('test.md', 'text/markdown', ArtifactAction.Modify, 'a', 'b');
 
 			artifact.setStoragePath('Artifacts/newly-saved.bin');
 
@@ -73,7 +76,7 @@ describe('Artifact', () => {
 		});
 
 		it('should overwrite an existing storage path', () => {
-			const artifact = new Artifact('test.md', 'text/markdown', 'a', 'b', undefined, 'Artifacts/old.bin');
+			const artifact = new Artifact('test.md', 'text/markdown', ArtifactAction.Modify, 'a', 'b', undefined, 'Artifacts/old.bin');
 
 			artifact.setStoragePath('Artifacts/new.bin');
 
@@ -86,6 +89,7 @@ describe('Artifact', () => {
 			const data = {
 				filePath: 'test.md',
 				mimeType: 'text/markdown',
+				action: ArtifactAction.Modify,
 				originalContent: 'old',
 				updatedContent: 'new'
 			};
@@ -97,6 +101,7 @@ describe('Artifact', () => {
 			const data = {
 				filePath: 'test.md',
 				mimeType: 'text/markdown',
+				action: ArtifactAction.Modify,
 				originalContent: 'old',
 				updatedContent: 'new',
 				base64: 'YWJj',
@@ -129,6 +134,30 @@ describe('Artifact', () => {
 		it('should return false when mimeType is missing', () => {
 			const data = {
 				filePath: 'test.md',
+				action: ArtifactAction.Modify,
+				originalContent: 'old',
+				updatedContent: 'new'
+			};
+
+			expect(Artifact.isArtifactData(data)).toBe(false);
+		});
+
+		it('should return false when action is missing', () => {
+			const data = {
+				filePath: 'test.md',
+				mimeType: 'text/markdown',
+				originalContent: 'old',
+				updatedContent: 'new'
+			};
+
+			expect(Artifact.isArtifactData(data)).toBe(false);
+		});
+
+		it('should return false when action is not a valid ArtifactAction', () => {
+			const data = {
+				filePath: 'test.md',
+				mimeType: 'text/markdown',
+				action: 'not-a-valid-action',
 				originalContent: 'old',
 				updatedContent: 'new'
 			};
@@ -140,6 +169,7 @@ describe('Artifact', () => {
 			const data = {
 				filePath: 'test.md',
 				mimeType: 'text/markdown',
+				action: ArtifactAction.Modify,
 				updatedContent: 'new'
 			};
 
@@ -150,6 +180,7 @@ describe('Artifact', () => {
 			const data = {
 				filePath: 'test.md',
 				mimeType: 'text/markdown',
+				action: ArtifactAction.Modify,
 				originalContent: 'old'
 			};
 
@@ -160,6 +191,7 @@ describe('Artifact', () => {
 			const data = {
 				filePath: 123,
 				mimeType: 'text/markdown',
+				action: ArtifactAction.Modify,
 				originalContent: 'old',
 				updatedContent: 'new'
 			};
@@ -171,6 +203,7 @@ describe('Artifact', () => {
 			const data = {
 				filePath: 'test.md',
 				mimeType: 'text/markdown',
+				action: ArtifactAction.Modify,
 				originalContent: 'old',
 				updatedContent: 'new',
 				base64: 12345
@@ -183,6 +216,7 @@ describe('Artifact', () => {
 			const data = {
 				filePath: 'test.md',
 				mimeType: 'text/markdown',
+				action: ArtifactAction.Modify,
 				originalContent: 'old',
 				updatedContent: 'new',
 				artifactPath: true
@@ -195,6 +229,7 @@ describe('Artifact', () => {
 			const data = {
 				filePath: 'new-file.md',
 				mimeType: 'text/markdown',
+				action: ArtifactAction.Create,
 				originalContent: '',
 				updatedContent: ''
 			};

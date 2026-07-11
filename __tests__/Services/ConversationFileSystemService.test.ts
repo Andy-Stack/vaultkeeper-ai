@@ -8,6 +8,7 @@ import { Role } from '../../Enums/Role';
 import { TFile } from 'obsidian';
 import { Exception } from '../../Helpers/Exception';
 import { Artifact } from '../../Conversations/Artifact';
+import { ArtifactAction } from '../../Enums/ArtifactAction';
 
 /**
  * INTEGRATION TESTS - ConversationFileSystemService
@@ -533,7 +534,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 	describe('Artifacts', () => {
 		it('should save an artifact with base64 content as a binary file and store its path', async () => {
 			const conversation = createTestConversation('With Artifact');
-			const artifact = new Artifact('notes/test.md', 'text/markdown', 'old', 'new', 'YWJjZGVm');
+			const artifact = new Artifact('notes/test.md', 'text/markdown', ArtifactAction.Modify, 'old', 'new', 'YWJjZGVm');
 
 			conversation.contents.push(
 				new ConversationContent({ role: Role.Assistant, content: 'Edited', artifacts: [artifact] })
@@ -554,6 +555,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(savedArtifact).toMatchObject({
 				filePath: 'notes/test.md',
 				mimeType: 'text/markdown',
+				action: ArtifactAction.Modify,
 				originalContent: 'old',
 				updatedContent: 'new',
 				artifactPath: artifact.artifactPath
@@ -562,7 +564,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 		it('should not write a binary file for artifacts without base64 content (text-only edits)', async () => {
 			const conversation = createTestConversation('Text Only Artifact');
-			const artifact = new Artifact('notes/test.md', 'text/markdown', 'old', 'new');
+			const artifact = new Artifact('notes/test.md', 'text/markdown', ArtifactAction.Modify, 'old', 'new');
 
 			conversation.contents.push(
 				new ConversationContent({ role: Role.Assistant, content: 'Edited', artifacts: [artifact] })
@@ -576,7 +578,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 		it('should not re-write a binary file for an artifact that already has a storage path', async () => {
 			const conversation = createTestConversation('Existing Artifact');
-			const artifact = new Artifact('notes/test.md', 'text/markdown', 'old', 'new', 'YWJjZGVm', 'Artifacts/existing-hash.bin');
+			const artifact = new Artifact('notes/test.md', 'text/markdown', ArtifactAction.Modify, 'old', 'new', 'YWJjZGVm', 'Artifacts/existing-hash.bin');
 
 			conversation.contents.push(
 				new ConversationContent({ role: Role.Assistant, content: 'Edited', artifacts: [artifact] })
@@ -604,6 +606,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 							{
 								filePath: 'notes/test.md',
 								mimeType: 'text/markdown',
+								action: ArtifactAction.Modify,
 								originalContent: 'old',
 								updatedContent: 'new',
 								artifactPath: 'Artifacts/hash123.bin'
@@ -644,6 +647,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 							{
 								filePath: 'notes/test.md',
 								mimeType: 'text/markdown',
+								action: ArtifactAction.Modify,
 								originalContent: 'old',
 								updatedContent: 'new'
 							}
@@ -707,6 +711,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 								{
 									filePath: 'notes/test.md',
 									mimeType: 'text/markdown',
+									action: ArtifactAction.Modify,
 									originalContent: 'old',
 									updatedContent: 'new',
 									artifactPath: 'Artifacts/referenced.bin'
@@ -758,6 +763,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 								{
 									filePath: 'notes/test.md',
 									mimeType: 'text/markdown',
+									action: ArtifactAction.Modify,
 									originalContent: 'old',
 									updatedContent: 'new',
 									artifactPath: 'Artifacts/kept.bin'

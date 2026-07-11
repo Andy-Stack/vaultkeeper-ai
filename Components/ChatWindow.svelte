@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { ARTIFACT_ACTION_RANK, ArtifactAction } from "Enums/ArtifactAction";
+
   import { Resolve } from "Services/DependencyService";
   import { Services } from "Services/Services";
   import ChatArea from "./ChatArea.svelte";
@@ -21,9 +23,10 @@
 	import { AITool, fromString } from "Enums/AITool";
 	import { AIProvider } from "Enums/ApiProvider";
 	import type { PlanApprovalService } from "Services/PlanApprovalService";
-	import type { Artifact } from "Conversations/Artifact";
+	import { Artifact } from "Conversations/Artifact";
 	import { ConversationContent } from "Conversations/ConversationContent";
 	import { Role } from "Enums/Role";
+	import { basename } from "path-browserify";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);
@@ -174,6 +177,7 @@
       },
       onComplete: async () => {
         saveCollectedArtifects(conversation);
+        conversation = conversation;
         conversationService.saveConversation(conversation);
         isSubmitting = false;
         busyPlanning = false;
@@ -194,7 +198,7 @@
       conversation.contents.push(lastMessage);
     }
 
-    lastMessage.artifacts = collectedArtifacts;
+    lastMessage.artifacts = Artifact.sort(collectedArtifacts);
   }
 
   $: if ($conversationStore.shouldReset) {

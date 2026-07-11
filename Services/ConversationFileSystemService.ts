@@ -76,6 +76,7 @@ export class ConversationFileSystemService {
                     artifacts: content.artifacts.map(artifact => ({
                         filePath: artifact.filePath,
                         mimeType: artifact.mimeType,
+                        action: artifact.action,
                         originalContent: artifact.originalContent,
                         updatedContent: artifact.updatedContent,
                         artifactPath: artifact.artifactPath
@@ -406,6 +407,7 @@ export class ConversationFileSystemService {
             artifacts.push(new Artifact(
                 artifactData.filePath,
                 artifactData.mimeType,
+                artifactData.action,
                 artifactData.originalContent,
                 artifactData.updatedContent,
                 base64,

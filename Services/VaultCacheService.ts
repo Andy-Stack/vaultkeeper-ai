@@ -42,12 +42,15 @@ export class VaultCacheService {
     this.metaDataCache = this.plugin.app.metadataCache;
     this.registerFileEvents();
 
-    this.plugin.app.metadataCache.on("resolved", async () => {
+    const tryInitialise = async () => {
       if (!this.initialised) {
-        await this.setupCaches();
         this.initialised = true;
+        await this.setupCaches();
       }
-    });
+    };
+
+    this.plugin.app.metadataCache.on("resolved", tryInitialise);
+    void tryInitialise();
   }
 
   public matchTag(input: string): Fuzzysort.KeyResults<{ prepared: Fuzzysort.Prepared, tag: string }> {

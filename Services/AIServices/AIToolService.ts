@@ -38,6 +38,7 @@ import {
 } from "AIClasses/Schemas/AIToolSchemas";
 import { Artifact } from "Conversations/Artifact";
 import { extname } from "path-browserify";
+import { ArtifactAction } from "Enums/ArtifactAction";
 
 export class AIToolService {
 
@@ -415,28 +416,6 @@ export class AIToolService {
             : new AIToolResponsePayload({ path: path, success: true }, artifacts);
     }
 
-    private async collectDeletionCandidatesArtifacts(filePaths: string[]): Promise<Artifact[]> {
-        const artifacts: Artifact[] = [];
-
-        for (const filePath of filePaths) {
-            const fileType = toFileType(extname(filePath));
-            // Anything that isn't a note we will just store as a binary artifact
-            if (isBinaryFile(fileType) || isDocumentMimeType(FileTypeToMimeType[fileType])) {
-                const result = await this.fileSystemService.readBinaryFile(filePath);
-                if (result instanceof ArrayBuffer) {
-                    artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], "", "", arrayBufferToBase64(result)));
-                }
-            } else {
-                const result = await this.fileSystemService.readFilePath(filePath);
-                if (typeof result === "string") {
-                    artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], result, ""));
-                }
-            }
-        }
-
-        return artifacts;
-    }
-
     private async moveVaultFolder(sourcePath: string, destinationPath: string): Promise<AIToolResponsePayload> {
         const result = await this.fileSystemService.moveFile(sourcePath, destinationPath);
         if (result instanceof Error) {
@@ -491,10 +470,37 @@ export class AIToolService {
         return new AIToolResponsePayload({ result: await this.memoriesService.updateMemories(content) });
     }
 
+    /** Helpers **/
+
+    private async collectDeletionCandidatesArtifacts(filePaths: string[]): Promise<Artifact[]> {
+        const artifacts: Artifact[] = [];
+
+        for (const filePath of filePaths) {
+            const fileType = toFileType(extname(filePath));
+            // Anything that isn't a note we will just store as a binary artifact
+            if (isBinaryFile(fileType) || isDocumentMimeType(FileTypeToMimeType[fileType])) {
+                const result = await this.fileSystemService.readBinaryFile(filePath);
+                if (result instanceof ArrayBuffer) {
+                    artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], ArtifactAction.Delete, "", "", arrayBufferToBase64(result)));
+                }
+            } else {
+                const result = await this.fileSystemService.readFilePath(filePath);
+                if (typeof result === "string") {
+                    artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], ArtifactAction.Delete, result, ""));
+                }
+            }
+        }
+
+        return artifacts;
+    }
+
     private async asTrackedAction(filePath: string, action: () => Promise<TFile|Error|void>): Promise<AIToolResponsePayload> {
+        let artifactAction: ArtifactAction | undefined;
+
         let preActionResult = await this.fileSystemService.readFilePath(filePath);
         if (preActionResult instanceof Error) {
             preActionResult = ""; // The file does not exist yet
+            artifactAction = ArtifactAction.Create;
         }
         const actionResult = await action();
         if (actionResult instanceof Error) {
@@ -503,11 +509,16 @@ export class AIToolService {
         let postActionResult = actionResult ? await this.fileSystemService.readFile(actionResult) : "";
         if (postActionResult instanceof Error) {
             postActionResult = ""; // The file has been deleted
+            artifactAction = ArtifactAction.Delete;
+        }
+
+        if (artifactAction === undefined) {
+            artifactAction = ArtifactAction.Modify;
         }
 
         const fileType = toFileType(extname(filePath));
 
         return new AIToolResponsePayload({ success: true },
-            [new Artifact(filePath, FileTypeToMimeType[fileType], preActionResult, postActionResult)]);
+            [new Artifact(filePath, FileTypeToMimeType[fileType], artifactAction, preActionResult, postActionResult)]);
     }
 }

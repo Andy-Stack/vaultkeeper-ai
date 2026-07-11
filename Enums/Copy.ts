@@ -469,6 +469,11 @@ Each AI provider has their own data policies:
     // Conversation Modal Copy
     NoConversationsFound = "No conversations match your search.",
 
+    // Artifact Copy
+    ArtifactActionCreated = "CREATED",
+    ArtifactActionModified = "MODIFIED",
+    ArtifactActionDeleted = "DELETED",
+
     // Help Modal Additional Copy
     HelpModalCloseAriaLabel = "Close Help Modal",
     PluginVersionPrefix = "Plugin version: ",

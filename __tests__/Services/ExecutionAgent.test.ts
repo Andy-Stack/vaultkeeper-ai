@@ -8,6 +8,7 @@ import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
 import { AIToolResponsePayload } from '../../AIClasses/ToolDefinitions/AIToolResponsePayload';
 import type { ExecutionStep } from '../../Types/ExecutionStep';
 import { Artifact } from '../../Conversations/Artifact';
+import { ArtifactAction } from 'Enums/ArtifactAction';
 
 /**
  * UNIT TESTS - ExecutionAgent
@@ -406,7 +407,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 				instruction: 'Create new file with content'
 			};
 
-			const artifact = new Artifact('new-note.md', 'text/markdown', '', '# New Note\n\nContent here');
+			const artifact = new Artifact('new-note.md', 'text/markdown', ArtifactAction.Create, '', '# New Note\n\nContent here');
 			mockAIToolService.performAITool.mockResolvedValueOnce(
 				new AIToolResponse(
 					AITool.WriteVaultFile,

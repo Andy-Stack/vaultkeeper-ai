@@ -29,6 +29,24 @@
     }
     return tally;
   }
+
+  let isScrolledToBottom = true;
+
+  function updateScrollFade(element: HTMLElement) {
+    const { scrollTop, scrollHeight, clientHeight } = element;
+    isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 1;
+  }
+
+  function artifactsListScrollAction(element: HTMLElement) {
+    updateScrollFade(element);
+    const handleScroll = () => updateScrollFade(element);
+    element.addEventListener("scroll", handleScroll);
+    return {
+      destroy() {
+        element.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }
 </script>
 
 <div class="message-container assistant">
@@ -50,18 +68,24 @@
             {/if}
           {/each}
         </div>
-        <div class="artifacts-list-container">
-          {#each message.artifacts as artifact}
-            <div class="artifact-card" aria-label="{artifact.filePath}">
-              <span class="artifact-ellipse artifact-{artifact.action}"></span>
+        <div class="artifacts-list-wrapper">
+          <div class="artifacts-list-container" use:artifactsListScrollAction>
+            {#each message.artifacts as artifact}
               <div
-                class="artifact-icon"
-                use:setElementIcon={artifact.getIconName()}
-              ></div>
-              <span class="artifact-name">{basename(artifact.filePath)}</span>
-              <span class="artifact-action artifact-action-{artifact.action}">{artifactActionToCopy(artifact.action)}</span>
-            </div>
-          {/each}
+                class="artifact-card"
+                aria-label="{artifact.filePath}"
+              >
+                <span class="artifact-ellipse artifact-ellipse-{artifact.action}"></span>
+                <div
+                  class="artifact-icon"
+                  use:setElementIcon={artifact.getIconName()}
+                ></div>
+                <span class="artifact-name">{basename(artifact.filePath)}</span>
+                <span class="artifact-action artifact-action-{artifact.action}">{artifactActionToCopy(artifact.action)}</span>
+              </div>
+            {/each}
+          </div>
+          <div class="artifacts-list-fade" class:hidden={isScrolledToBottom}></div>
         </div>
       </div>
     {/if}
@@ -169,9 +193,14 @@
     margin-left: var(--size-4-1);
   }
 
-  .artifacts-list-container {
+  .artifacts-list-wrapper {
     grid-row: 2;
     grid-column: 1 / 3;
+    position: relative;
+    width: 100%;
+  }
+
+  .artifacts-list-container {
     display: flex;
     flex-direction: column;
     overflow: scroll;
@@ -182,6 +211,22 @@
 
   .artifacts-list-container::-webkit-scrollbar {
     display: none;
+  }
+
+  .artifacts-list-fade {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--size-4-8);
+    background-image: linear-gradient(to bottom, transparent, var(--background-secondary));
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s ease-out;
+  }
+
+  .artifacts-list-fade.hidden {
+    opacity: 0;
   }
 
   .artifact-card {
@@ -195,6 +240,7 @@
     background-color: var(--background-secondary-alt);
     border-radius: var(--size-4-2);
     padding: 0 var(--size-4-1) 0 var(--size-4-2);
+    cursor: pointer;
   }
 
   .artifact-ellipse {
@@ -207,16 +253,25 @@
     align-self: center;
   }
 
+  .artifact-card:hover .artifact-ellipse {
+    width: 12px;
+    height: 12px;
+    box-shadow: 0px 0px 4px 1px currentColor;
+  }
+
   .artifact-ellipse-create {
     background: var(--color-green);
+    color: var(--color-green);
   }
 
   .artifact-ellipse-modify {
     background: var(--color-blue);
+    color: var(--color-blue);
   }
 
   .artifact-ellipse-delete {
     background: var(--color-red);
+    color: var(--color-red);
   }
 
   .artifact-icon {

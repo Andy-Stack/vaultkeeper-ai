@@ -19,6 +19,8 @@
     let stepElements: (HTMLDivElement | null)[] = [];
     let isTransitioning = false;
     let resizeObserver: ResizeObserver | null = null;
+    let isScrolledToTop = true;
+    let isScrolledToBottom = true;
 
     $: steps = $executionPlanState.plan?.executionSteps;
     $: activeStepIndex = $executionPlanState.currentStepIndex;
@@ -65,6 +67,8 @@
 
         const stepsToShow = Math.min(3, steps.length);
         collapsedHeight = (stepsToShow * stepHeight) + (Math.max(0, stepsToShow - 1) * separatorHeight);
+
+        updateScrollFade();
     }
 
     onDestroy(() => {
@@ -72,6 +76,15 @@
             resizeObserver.disconnect();
         }
     });
+
+    function updateScrollFade() {
+        if (!wrapperDiv) {
+            return;
+        }
+        const { scrollTop, scrollHeight, clientHeight } = wrapperDiv;
+        isScrolledToTop = scrollTop < 1;
+        isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 1;
+    }
 
     async function scrollToActiveStep() {
         if (!wrapperDiv || !$executionPlanState.plan || activeStepIndex === -1) {
@@ -124,7 +137,7 @@
          aria-label={expanded ? "Collapse planned steps" : "Expand planned steps"}
          role="button"
          tabindex=0>
-        <div id="chat-plan-steps-wrapper" style:height="{expanded ? expandedHeight : collapsedHeight}px" bind:this={wrapperDiv}>
+        <div id="chat-plan-steps-wrapper" style:height="{expanded ? expandedHeight : collapsedHeight}px" bind:this={wrapperDiv} on:scroll={updateScrollFade}>
             <div id="chat-plan-steps" bind:this={contentDiv}>
                 {#each steps as step, index }
                     <div class="chat-plan-step" bind:this={stepElements[index]}>
@@ -153,8 +166,8 @@
             </div>
         </div>
         {#if steps.length > 2}
-            <div class="chat-plan-fade top-fade" transition:fade></div>
-            <div class="chat-plan-fade bottom-fade" transition:fade></div>
+            <div class="chat-plan-fade top-fade" class:hidden={isScrolledToTop}></div>
+            <div class="chat-plan-fade bottom-fade" class:hidden={isScrolledToBottom}></div>
         {/if}
         <div id="chat-plan-chevron"
             class="transparent-button"
@@ -251,6 +264,12 @@
         border-radius: var(--radius-m);
         pointer-events: none;
         z-index: 1;
+        opacity: 1;
+        transition: opacity 0.2s ease-out;
+    }
+
+    .chat-plan-fade.hidden {
+        opacity: 0;
     }
 
     .top-fade {

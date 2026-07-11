@@ -119,16 +119,16 @@
 	}
 
   .message-attachment-name {
-      display: inline-block;
-      white-space: nowrap;
-      width: 100%;
-      padding: 0;
-      font-size: var(--font-smaller);
+    display: inline-block;
+    white-space: nowrap;
+    width: 100%;
+    padding: 0;
+    font-size: var(--font-smaller);
   }
 
   .message-attachment-size {
-      padding: 0;
-      font-size: var(--font-smallest);
-      color: var(--text-muted);
+    padding: 0;
+    font-size: var(--font-smallest);
+    color: var(--text-muted);
   }
 </style>

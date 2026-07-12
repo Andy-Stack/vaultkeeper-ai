@@ -9,7 +9,7 @@
 	<img width="1280" height="640" alt="vaultkeeper-social-1280x640" src="https://github.com/user-attachments/assets/47a5ba6c-e59a-4f95-895a-8abc988369dd" />
 </p>
 
-> **New!** Local model support - Point Vaultkeeper AI at a self-hosted server (LM Studio, Ollama, vLLM, etc.) and chat with your own models, no API key or cloud provider required. See [Local Models](#local-models) below.
+> **New!** Restore file changes - Every note the AI creates, edits, or deletes (including binary files like PDFs and images) can be reviewed and restored to its previous or original version straight from the diff viewer.
 
 ## Features
 
@@ -19,6 +19,7 @@
   - ✏️ **Edit Mode**: AI can create, edit, delete, and move notes and folders (when you need it)
   - 📋 **Planning Mode**: A three-agent workflow where a planning agent analyzes your vault and creates a step-by-step strategy before execution
 - **Interactive Diff Viewer** - Review and approve AI-proposed changes before they're applied with side-by-side diff view, or let the AI make changes without asking"
+- **Restore File Changes** - Revert any note the AI created, edited, or deleted (including binary files) back to its original or previous version
 - **Plan Approval Workflow** - In Planning Mode, review the AI's proposed plan and approve it, reject it, or suggest changes before execution begins
 - **Smart Reference System** - Mention tags (`#`), files (`@`), and folders (`/`) with autocomplete
 - **Custom System Instructions** - Create and switch between personalized AI behaviors

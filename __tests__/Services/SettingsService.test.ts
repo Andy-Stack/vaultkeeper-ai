@@ -3,7 +3,13 @@ import { SettingsService, type IVaultkeeperAISettings } from '../../Services/Set
 import { makeTestSettings } from '../Helpers/makeTestSettings';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
-import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
+import {
+    AIProvider,
+    AIProviderModel,
+    DEFAULT_MODEL_BY_PROVIDER,
+    DEFAULT_PLANNING_MODEL_BY_PROVIDER,
+    DEFAULT_QUICK_MODEL_BY_PROVIDER
+} from '../../Enums/ApiProvider';
 
 describe('SettingsService', () => {
     let settingsService: SettingsService;
@@ -519,6 +525,93 @@ describe('SettingsService', () => {
             });
 
             expect(settingsService.getApiKeyForCurrentProvider()).toBe('test-local');
+        });
+    });
+
+    describe('ensureValidModels (migration of stale/renamed model strings)', () => {
+        it('should fall back to the provider default when the loaded model string is no longer a valid enum member', () => {
+            // Simulates a plugin data file persisted by an older version that referenced a
+            // model id which has since been renamed/removed (e.g. the GPT-5.5 -> GPT-5.6 rename).
+            settingsService = new SettingsService({
+                provider: AIProvider.OpenAI,
+                model: 'gpt-5.5-2026-04-23' as AIProviderModel,
+                planningModel: 'gpt-5.5-pro-2026-04-23' as AIProviderModel,
+                quickActionModel: 'gpt-5.4-nano-2026-03-17' as AIProviderModel,
+                apiKeys: { claude: '', openai: 'test-openai', gemini: '', mistral: '', local: '' }
+            } as Partial<IVaultkeeperAISettings>);
+
+            expect(settingsService.settings.model).toBe(DEFAULT_MODEL_BY_PROVIDER[AIProvider.OpenAI]);
+            expect(settingsService.settings.planningModel).toBe(DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.OpenAI]);
+            expect(settingsService.settings.quickActionModel).toBe(DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.OpenAI]);
+        });
+
+        it('should fall back to the provider default when the loaded model no longer matches the provider', () => {
+            // e.g. provider stayed OpenAI but the persisted model string now belongs to another provider's namespace
+            settingsService = new SettingsService({
+                provider: AIProvider.OpenAI,
+                model: AIProviderModel.ClaudeSonnet_5,
+                apiKeys: { claude: '', openai: 'test-openai', gemini: '', mistral: '', local: '' }
+            } as Partial<IVaultkeeperAISettings>);
+
+            expect(settingsService.settings.model).toBe(DEFAULT_MODEL_BY_PROVIDER[AIProvider.OpenAI]);
+        });
+
+        it('should reset an invalid persisted provider to the default provider', () => {
+            settingsService = new SettingsService({
+                provider: 'not-a-real-provider' as AIProvider
+            } as Partial<IVaultkeeperAISettings>);
+
+            expect(settingsService.settings.provider).toBe(AIProvider.Local);
+        });
+
+        it('should fall back to the provider default when a cached model for a non-active provider is stale', () => {
+            settingsService = new SettingsService({
+                provider: AIProvider.Claude,
+                cachedModelSettings: {
+                    [AIProvider.Claude]: {
+                        model: AIProviderModel.ClaudeSonnet_5,
+                        planningModel: AIProviderModel.ClaudeOpus_4_8,
+                        quickActionModel: AIProviderModel.ClaudeHaiku_4_5
+                    },
+                    [AIProvider.OpenAI]: {
+                        model: 'gpt-5.5-2026-04-23' as AIProviderModel,
+                        planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.OpenAI],
+                        quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.OpenAI]
+                    },
+                    [AIProvider.Gemini]: {
+                        model: DEFAULT_MODEL_BY_PROVIDER[AIProvider.Gemini],
+                        planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.Gemini],
+                        quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.Gemini]
+                    },
+                    [AIProvider.Mistral]: {
+                        model: DEFAULT_MODEL_BY_PROVIDER[AIProvider.Mistral],
+                        planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.Mistral],
+                        quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.Mistral]
+                    },
+                    [AIProvider.Local]: {
+                        model: DEFAULT_MODEL_BY_PROVIDER[AIProvider.Local],
+                        planningModel: DEFAULT_PLANNING_MODEL_BY_PROVIDER[AIProvider.Local],
+                        quickActionModel: DEFAULT_QUICK_MODEL_BY_PROVIDER[AIProvider.Local]
+                    }
+                }
+            } as Partial<IVaultkeeperAISettings>);
+
+            // The stale cache entry only gets repaired once OpenAI becomes the active provider
+            // (ensureValidModels only touches cachedModelSettings[settings.provider]).
+            expect(settingsService.settings.cachedModelSettings[AIProvider.Claude].model).toBe(AIProviderModel.ClaudeSonnet_5);
+        });
+
+        it('should not touch a model string that is still a valid enum member for the provider', () => {
+            settingsService = new SettingsService({
+                provider: AIProvider.Claude,
+                model: AIProviderModel.ClaudeOpus_4_8,
+                planningModel: AIProviderModel.ClaudeOpus_4_8,
+                quickActionModel: AIProviderModel.ClaudeHaiku_4_5
+            } as Partial<IVaultkeeperAISettings>);
+
+            expect(settingsService.settings.model).toBe(AIProviderModel.ClaudeOpus_4_8);
+            expect(settingsService.settings.planningModel).toBe(AIProviderModel.ClaudeOpus_4_8);
+            expect(settingsService.settings.quickActionModel).toBe(AIProviderModel.ClaudeHaiku_4_5);
         });
     });
 

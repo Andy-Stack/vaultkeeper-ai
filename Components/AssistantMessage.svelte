@@ -7,11 +7,14 @@
   import { fade } from "svelte/transition";
   import { ArtifactAction, artifactActionToCopy } from "Enums/ArtifactAction";
   import { basename } from "path-browserify";
+	import type { Artifact } from "Conversations/Artifact";
+	import type { DiffService } from "Services/DiffService";
 
   export let message: ConversationContent;
   export let isSubmitting: boolean = false;
 
   let streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
+  let diffService: DiffService = Resolve<DiffService>(Services.DiffService);
 
   function messageRenderAction(element: HTMLElement, message: ConversationContent) {
     streamingMarkdownService.render(message.getDisplayContent(), element);
@@ -47,6 +50,10 @@
       }
     };
   }
+
+  function handleArtifactCardClick(artifact: Artifact) {
+    diffService.showArtifactDiff(artifact);
+  }
 </script>
 
 <div class="message-container assistant">
@@ -74,11 +81,15 @@
               <div
                 class="artifact-card"
                 aria-label="{artifact.filePath}"
+                on:click={() => handleArtifactCardClick(artifact)}
+                on:keydown={(e) => e.key === 'Enter' && handleArtifactCardClick(artifact)}
+                role="button"
+                tabindex="0"
               >
                 <span class="artifact-ellipse artifact-ellipse-{artifact.action}"></span>
                 <div
-                  class="artifact-icon"
-                  use:setElementIcon={artifact.getIconName()}
+                 class="artifact-icon"
+                 use:setElementIcon={artifact.getIconName()}
                 ></div>
                 <span class="artifact-name">{basename(artifact.filePath)}</span>
                 <span class="artifact-action artifact-action-{artifact.action}">{artifactActionToCopy(artifact.action)}</span>
@@ -253,7 +264,8 @@
     align-self: center;
   }
 
-  .artifact-card:hover .artifact-ellipse {
+  .artifact-card:hover .artifact-ellipse,
+  .artifact-card:focus-visible .artifact-ellipse {
     width: 12px;
     height: 12px;
     box-shadow: 0px 0px 4px 1px currentColor;
@@ -302,7 +314,7 @@
     justify-content: center;
     font-size: var(--font-smallest);
     font-weight: var(--font-semibold);
-    border-radius: var(--size-4-2);
+    border-radius: var(--size-4-1);
     padding: var(--size-2-1) var(--size-4-2);
   }
 

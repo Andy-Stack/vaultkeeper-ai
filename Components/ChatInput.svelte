@@ -862,7 +862,7 @@
     padding-left: var(--size-4-2);
     padding-right: var(--size-4-2);
     align-self: end;
-    transition-duration: 0.5s;
+    transition: background-color 0.2s ease-out;
     background-color: var(--interactive-accent);
   }
 

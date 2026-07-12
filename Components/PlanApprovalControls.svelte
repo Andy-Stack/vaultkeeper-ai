@@ -46,68 +46,45 @@
 
 <style>
   #plan-approval-controls-wrapper {
-      transition: height 0.2s ease-out;
-      overflow: hidden;
+    transition: height 0.2s ease-out;
+    overflow: hidden;
   }
 
   #plan-approval-controls {
-      display: grid;
-      grid-template-columns: 1fr var(--size-4-2) 1fr;
-      grid-template-rows: auto;
+    display: grid;
+    grid-template-columns: 1fr var(--size-4-2) 1fr;
+    grid-template-rows: auto;
   }
 
   #plan-approve {
-      grid-column: 1;
-      color: var(--color-green);
-      border: solid;
-      border-color: var(--color-green);
-      border-width: var(--size-2-1);
-      background-color: var(--background-primary);
+    grid-column: 1;
+    color: white;
+    background-color: #38533a;
   }
 
   #plan-approve:hover {
-      background-color: color-mix(
-        in srgb,
-        var(--color-green) 25%,
-        white 10%
-      );
+    background-color: #537555;
   }
 
   #plan-approve:focus {
-      background-color: color-mix(
-        in srgb,
-        var(--color-green) 25%,
-        white 10%
-      );
+    background-color: #537555;
   }
 
   #plan-reject {
-      grid-column: 3;
-      color: var(--color-red);
-      border: solid;
-      border-color: var(--color-red);
-      border-width: var(--size-2-1);
-      background-color: var(--background-primary);
+    grid-column: 3;
+    color: white;
+    background-color: #593030;
   }
 
   #plan-reject:hover {
-      background-color: color-mix(
-        in srgb,
-        var(--color-red) 25%,
-        white 10%
-      );
+    background-color: #774545;
   }
 
   #plan-reject:focus {
-      background-color: color-mix(
-        in srgb,
-        var(--color-red) 25%,
-        white 10%
-      );
+    background-color: #774545;
   }
 
   .plan-approval-button {
-      border-radius: var(--button-radius);
-      transition-duration: 0.5s;
+    transition: background-color 0.2s ease-out;
   }
 </style>

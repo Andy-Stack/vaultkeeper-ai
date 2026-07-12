@@ -40,51 +40,35 @@
 .plan-approval-mobile-controls .plan-approval-mobile-button {
     min-height: 44px;
     font-size: var(--font-ui-medium);
-    font-weight: var(--font-semibold);
     border-radius: var(--button-radius);
     cursor: pointer;
-    border-width: var(--size-2-1);
-    border-style: solid;
-    background-color: var(--background-primary);
+    transition: background-color 0.2s ease-out;
 }
 
 .plan-approval-mobile-controls .plan-approval-mobile-approve {
-    color: var(--color-green);
-    border-color: var(--color-green);
+    color: white;
+    background-color: #38533a;
 }
 
+.plan-approval-mobile-controls .plan-approval-mobile-approve:hover,
+.plan-approval-mobile-controls .plan-approval-mobile-approve:focus,
 .plan-approval-mobile-controls .plan-approval-mobile-approve:active {
-    background-color: color-mix(
-        in srgb,
-        var(--color-green) 25%,
-        white 10%
-    );
+    background-color: #537555;
 }
 
 .plan-approval-mobile-controls .plan-approval-mobile-discuss {
-    color: var(--interactive-accent);
-    border-color: var(--interactive-accent);
-}
-
-.plan-approval-mobile-controls .plan-approval-mobile-discuss:active {
-    background-color: color-mix(
-        in srgb,
-        var(--interactive-accent) 25%,
-        white 10%
-    );
+    color: white;
 }
 
 .plan-approval-mobile-controls .plan-approval-mobile-reject {
-    color: var(--color-red);
-    border-color: var(--color-red);
+    color: white;
+    background-color: #593030;
 }
 
+.plan-approval-mobile-controls .plan-approval-mobile-reject:hover,
+.plan-approval-mobile-controls .plan-approval-mobile-reject:focus,
 .plan-approval-mobile-controls .plan-approval-mobile-reject:active {
-    background-color: color-mix(
-        in srgb,
-        var(--color-red) 25%,
-        white 10%
-    );
+    background-color: #774545;
 }
 
 /* Adjust plan height on mobile to account for buttons */

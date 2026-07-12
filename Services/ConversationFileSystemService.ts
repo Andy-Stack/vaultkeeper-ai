@@ -297,7 +297,7 @@ export class ConversationFileSystemService {
             }
         }
 
-        file.setStoragePath(filePath.replace(`${Path.Conversations}/`, ''));
+        file.setStoragePath(filePath.replace(`${Path.Conversations}/`, ""));
     }
 
     private async loadBinaryFile(storagePath: string): Promise<string> {

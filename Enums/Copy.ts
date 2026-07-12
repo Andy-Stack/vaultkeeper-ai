@@ -143,13 +143,14 @@ export enum Copy {
     ButtonWebSearchUnavailable = "Web search unavailable",
     ButtonUserInstruction = "User Instruction",
     ButtonAttachFiles = "Attach Files",
-
-    // Plan Approval View
-    PlanApprovalViewTitle = "Vaultkeeper AI plan",
     
     ButtonApprove = "Approve",
     ButtonReject = "Reject",
     ButtonDiscuss = "Discuss",
+
+    ButtonRestore = "Restore this version",
+    ButtonRestorePrevious = "Restore previous version",
+    ButtonConfirm = "Confirm?",
 
     // Agent file message
     AttachedFile = `The file {fileName} is attached and its full contents follow below. This is the actual content of the file — read it directly to answer the user. This attachment may be a file the user uploaded to the chat, or a vault file you retrieved with a tool; either way, the content below is authoritative and you do NOT need to read or fetch this file again.`,

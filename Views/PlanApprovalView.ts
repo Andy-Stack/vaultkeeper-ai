@@ -56,7 +56,7 @@ export class PlanApprovalView extends ItemView {
     }
 
     public getDisplayText(): string {
-        return Copy.PlanApprovalViewTitle;
+        return "Vaultkeeper AI plan";
     }
 
     public async setState(state: PlanApprovalViewState, result: ViewStateResult): Promise<void> {

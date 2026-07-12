@@ -131,51 +131,35 @@
 .diff-mobile-controls .diff-mobile-button {
     min-height: 44px;
     font-size: var(--font-ui-medium);
-    font-weight: var(--font-semibold);
     border-radius: var(--button-radius);
     cursor: pointer;
-    border-width: var(--size-2-1);
-    border-style: solid;
-    background-color: var(--background-primary);
+    transition: background-color 0.2s ease-out;
 }
 
 .diff-mobile-controls .diff-mobile-accept {
-    color: var(--color-green);
-    border-color: var(--color-green);
+    color: white;
+    background-color: #38533a;
 }
 
+.diff-mobile-controls .diff-mobile-accept:hover,
+.diff-mobile-controls .diff-mobile-accept:focus,
 .diff-mobile-controls .diff-mobile-accept:active {
-    background-color: color-mix(
-        in srgb,
-        var(--color-green) 25%,
-        white 10%
-    );
+    background-color: #537555;
 }
 
 .diff-mobile-controls .diff-mobile-discuss {
-    color: var(--interactive-accent);
-    border-color: var(--interactive-accent);
-}
-
-.diff-mobile-controls .diff-mobile-discuss:active {
-    background-color: color-mix(
-        in srgb,
-        var(--interactive-accent) 25%,
-        white 10%
-    );
+    color: white;
 }
 
 .diff-mobile-controls .diff-mobile-reject {
-    color: var(--color-red);
-    border-color: var(--color-red);
+    color: white;
+    background-color: #593030;
 }
 
+.diff-mobile-controls .diff-mobile-reject:hover,
+.diff-mobile-controls .diff-mobile-reject:focus,
 .diff-mobile-controls .diff-mobile-reject:active {
-    background-color: color-mix(
-        in srgb,
-        var(--color-red) 25%,
-        white 10%
-    );
+    background-color: #774545;
 }
 
 /* Adjust diff height on mobile to account for buttons */
@@ -186,6 +170,76 @@
 /* Avoid the floating obsidian controls */
 @media (max-width: 600px) {
     .diff-view-mobile .d2h-file-diff {
+        max-height: calc(100cqh - 37px - 120px);
+    }
+}
+
+/* ============================== */
+/* Artifact View Controls         */
+/* (shown on desktop AND mobile)  */
+/* ============================== */
+
+.artifact-view-controls {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--size-4-2);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--size-4-3);
+    z-index: 10;
+    background-color: var(--background-primary);
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.artifact-view-controls .artifact-view-button {
+    flex: 0 1 auto;
+}
+
+/* Avoid the floating obsidian controls on mobile */
+@media (max-width: 600px) {
+    .artifact-view-controls {
+        margin-bottom: 85px;
+    }
+
+    .artifact-view-controls .artifact-view-button {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+}
+
+.artifact-view-controls .artifact-view-button {
+    min-height: 44px;
+    font-size: var(--font-ui-medium);
+    border-radius: var(--button-radius);
+    cursor: pointer;
+    transition: background-color 0.2s ease-out;
+}
+
+.artifact-view-controls .artifact-view-button-confirming {
+    min-width: var(--artifact-view-button-width);
+    color: white;
+    background-color: #38533a;
+}
+
+.artifact-view-controls .artifact-view-button-confirming:hover,
+.artifact-view-controls .artifact-view-button-confirming:focus-visible,
+.artifact-view-controls .artifact-view-button-confirming:active {
+    background-color: #537555;
+}
+
+.artifact-view-controls .artifact-view-close {
+    color: var(--interactive-accent);
+    border-color: var(--interactive-accent);
+}
+
+.workspace-leaf-content[data-type="vaultkeeper-ai-artifact-view"] .d2h-file-diff {
+    max-height: calc(100cqh - 37px - 40px);
+}
+
+@media (max-width: 600px) {
+    .workspace-leaf-content[data-type="vaultkeeper-ai-artifact-view"] .d2h-file-diff {
         max-height: calc(100cqh - 37px - 120px);
     }
 }

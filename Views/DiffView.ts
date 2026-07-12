@@ -49,7 +49,7 @@ export class DiffView extends ItemView {
     }
     
     public getDisplayText(): string {
-        return "Vaultkeeper AI diff";
+        return "Vaultkeeper AI diff viewer";
     }
 
     public async setState(state: DiffViewState, result: ViewStateResult): Promise<void> {

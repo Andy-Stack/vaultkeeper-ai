@@ -17,6 +17,8 @@ import "katex/dist/katex.min.css";
 import 'highlight.js/styles/monokai.min.css';
 import 'diff2html/bundles/css/diff2html.min.css';
 import type { AssetsService } from "Services/AssetsService";
+import type { Artifact } from "Conversations/Artifact";
+import { ArtifactView, VIEW_TYPE_ARTIFACT } from "Views/ArtifactView";
 
 export default class VaultkeeperAIPlugin extends Plugin {
 	
@@ -31,6 +33,10 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		this.registerView(
 			VIEW_TYPE_DIFF,
 			(leaf) => new DiffView(leaf)
+		);
+		this.registerView(
+			VIEW_TYPE_ARTIFACT,
+			(leaf) => new ArtifactView(leaf)
 		);
 		this.registerView(
 			VIEW_TYPE_PLAN_APPROVAL,
@@ -53,6 +59,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		this.addSettingTab(new VaultkeeperAISettingTab());
 
 		this.app.workspace.onLayoutReady(async () => {
+			this.closeStaleViews();
 			await this.setup();
 		});
 	}
@@ -111,6 +118,30 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		if (leaf != null) {
 			await workspace.revealLeaf(leaf);
 		}
+	}
+
+	public async activateArtifactView(artifact: Artifact, diffString: string, config: Diff2HtmlUIConfig) {
+		const { workspace } = this.app;
+
+		const leaves = workspace.getLeavesOfType(VIEW_TYPE_ARTIFACT);
+		const leaf = leaves.length > 0 ? leaves[0] : workspace.getLeaf("tab");
+
+		await leaf?.setViewState({
+			type: VIEW_TYPE_ARTIFACT,
+			active: true,
+			state: { artifact, diffString, config }
+		});
+
+		if (leaf != null) {
+			await workspace.revealLeaf(leaf);
+		}
+	}
+
+	private closeStaleViews() {
+		const { workspace } = this.app;
+
+		workspace.getLeavesOfType(VIEW_TYPE_DIFF).forEach(leaf => leaf.detach());
+		workspace.getLeavesOfType(VIEW_TYPE_PLAN_APPROVAL).forEach(leaf => leaf.detach());
 	}
 
 	// create example user instruction (on first launch only)

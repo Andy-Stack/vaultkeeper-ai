@@ -8,6 +8,7 @@ import type { Diff2HtmlUIConfig } from 'diff2html/lib/ui/js/diff2html-ui-base';
 import { ColorSchemeType, OutputFormatType } from 'diff2html/lib/types';
 import { Component } from 'obsidian';
 import { AbortService } from './AbortService';
+import type { Artifact } from 'Conversations/Artifact';
 
 interface DiffResult {
     accepted: boolean;
@@ -33,6 +34,26 @@ export class DiffService extends Component {
         this.registerEvent(this.eventService.on(Event.DiffClosed, () => {
             this.cancelPendingDiff();
         }));
+    }
+
+    public showArtifactDiff(artifact: Artifact): void {
+        const diffString = this.createDiffString(artifact.filePath,
+            artifact.filePath, artifact.originalContent, artifact.updatedContent);
+
+        const outputFormat: OutputFormatType = "line-by-line";
+
+        const config: Diff2HtmlUIConfig = {
+            drawFileList: false,
+            matching: "words",
+            outputFormat: outputFormat,
+            highlight: false,
+            fileListToggle: false,
+            fileContentToggle: false,
+            synchronisedScroll: true,
+            colorScheme: ColorSchemeType.AUTO
+        };
+
+        void this.plugin.activateArtifactView(artifact, diffString, config);
     }
 
     public async requestDiff(oldFileName: string, newFileName: string, oldContent: string, newContent: string): Promise<DiffResult> {

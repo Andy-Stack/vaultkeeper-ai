@@ -481,7 +481,7 @@ export class AIToolService {
             if (isBinaryFile(fileType) || isDocumentMimeType(FileTypeToMimeType[fileType])) {
                 const result = await this.fileSystemService.readBinaryFile(filePath);
                 if (result instanceof ArrayBuffer) {
-                    artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], ArtifactAction.Delete, "", "", arrayBufferToBase64(result)));
+                    artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], ArtifactAction.Delete, filePath, "", arrayBufferToBase64(result)));
                 }
             } else {
                 const result = await this.fileSystemService.readFilePath(filePath);

@@ -262,6 +262,7 @@
     height: 10px;
     border-radius: 50%;
     align-self: center;
+    transition: box-shadow 0.2s ease-out;
   }
 
   .artifact-card:hover .artifact-ellipse,
@@ -269,6 +270,7 @@
     width: 12px;
     height: 12px;
     box-shadow: 0px 0px 4px 1px currentColor;
+    transition: box-shadow 0.2s ease-out;
   }
 
   .artifact-ellipse-create {

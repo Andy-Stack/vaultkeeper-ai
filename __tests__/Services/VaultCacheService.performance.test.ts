@@ -75,14 +75,18 @@ const mockFileManager = {
 
 const mockMetadataCache = {
 	getCache: vi.fn(),
-	on: vi.fn()
+	on: vi.fn(),
+	offref: vi.fn()
 } as unknown as MetadataCache;
 
 const mockPlugin = {
 	app: {
 		vault: mockVault,
 		fileManager: mockFileManager,
-		metadataCache: mockMetadataCache
+		metadataCache: mockMetadataCache,
+		workspace: {
+			onLayoutReady: (callback: () => void) => callback()
+		}
 	},
 	saveData: vi.fn().mockResolvedValue(undefined),
 	registerEvent: vi.fn()

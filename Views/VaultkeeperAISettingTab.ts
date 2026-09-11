@@ -7,7 +7,7 @@ import { DropdownComponent, PluginSettingTab, Setting, ToggleComponent, setIcon,
 import { Resolve } from "Services/DependencyService";
 import type { SettingsService } from "Services/SettingsService";
 import { Services } from "Services/Services";
-import { closePluginSettings } from "Helpers/Helpers";
+import { closePluginSettings } from "Helpers/ObsidianInternals";
 import type { MemoriesService } from "Services/MemoriesService";
 import { RegisterAiProvider } from "Services/ServiceRegistration";
 

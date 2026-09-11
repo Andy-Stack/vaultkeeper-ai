@@ -6,7 +6,7 @@
   import { ConversationFileSystemService } from "../Services/ConversationFileSystemService";
   import { conversationStore } from "../Stores/ConversationStore";
 	import type { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
-	import { openPluginSettings } from "Helpers/Helpers";
+  import { openPluginSettings } from "Helpers/ObsidianInternals";
 	import type { ChatService } from "Services/ChatService";
 	import { fade } from "svelte/transition";
 	import type { HelpModal } from "Modals/HelpModal";

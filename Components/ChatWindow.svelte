@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { ARTIFACT_ACTION_RANK, ArtifactAction } from "Enums/ArtifactAction";
-
   import { Resolve } from "Services/DependencyService";
   import { Services } from "Services/Services";
   import ChatArea from "./ChatArea.svelte";
@@ -9,7 +7,7 @@
   import { conversationStore } from "../Stores/ConversationStore";
   import { Conversation } from "Conversations/Conversation";
 	import type VaultkeeperAIPlugin from "main";
-	import { openPluginSettings } from "Helpers/Helpers";
+  import { openPluginSettings } from "Helpers/ObsidianInternals";
 	import type { WorkSpaceService } from "Services/WorkSpaceService";
   import type { ChatService } from "Services/ChatService";
   import type { ConversationFileSystemService } from "Services/ConversationFileSystemService";
@@ -26,7 +24,6 @@
 	import { Artifact } from "Conversations/Artifact";
 	import { ConversationContent } from "Conversations/ConversationContent";
 	import { Role } from "Enums/Role";
-	import { basename } from "path-browserify";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);

@@ -8,6 +8,8 @@ import { FileTagMapping } from "Helpers/FileTagMapping";
 import * as fuzzysort from "fuzzysort";
 import { Path } from "Enums/Path";
 import { WikiLinks } from "Helpers/WikiLinks";
+import { onMetaDataCacheReady } from "Helpers/ObsidianInternals";
+import { IndexSet } from "Types/IndexSet";
 
 // Note that 'files' actually refers to both directories and files (Obsidian naming)
 
@@ -30,39 +32,31 @@ export class VaultCacheService {
   private folders: Map<string, TFolder> = new Map();
   private mapping: FileTagMapping = new FileTagMapping();
 
-  private preparedTags: { prepared: fuzzysort.Prepared, tag: string }[] = [];
-  private preparedFiles: { prepared: fuzzysort.Prepared, file: TFile }[] = [];
-  private preparedFolders: { prepared: fuzzysort.Prepared, folder: TFolder }[] = [];
-
-  private initialised = false;
+  private preparedTags: IndexSet<string, { prepared: fuzzysort.Prepared, tag: string }> = new IndexSet();
+  private preparedFiles: IndexSet<string, { prepared: fuzzysort.Prepared, file: TFile }> = new IndexSet();
+  private preparedFolders: IndexSet<string, { prepared: fuzzysort.Prepared, folder: TFolder }> = new IndexSet();
 
   public constructor() {
     this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
     this.vaultService = Resolve<VaultService>(Services.VaultService);
     this.metaDataCache = this.plugin.app.metadataCache;
-    this.registerFileEvents();
 
-    const tryInitialise = async () => {
-      if (!this.initialised) {
-        this.initialised = true;
-        await this.setupCaches();
-      }
-    };
-
-    this.plugin.app.metadataCache.on("resolved", tryInitialise);
-    void tryInitialise();
+    this.plugin.app.workspace.onLayoutReady(() => {
+      onMetaDataCacheReady(this.plugin, () => this.setupCaches());
+      this.registerFileEvents();
+    });
   }
 
   public matchTag(input: string): fuzzysort.KeyResults<{ prepared: fuzzysort.Prepared, tag: string }> {
-    return fuzzysort.go(input.toLowerCase(), this.preparedTags, this.fuzzysortOptions);
+    return fuzzysort.go(input.toLowerCase(), this.preparedTags.allElements, this.fuzzysortOptions);
   }
 
   public matchFile(input: string): fuzzysort.KeyResults<{ prepared: fuzzysort.Prepared, file: TFile }> {
-    return fuzzysort.go(input.toLowerCase(), this.preparedFiles, this.fuzzysortOptions);
+    return fuzzysort.go(input.toLowerCase(), this.preparedFiles.allElements, this.fuzzysortOptions);
   }
 
   public matchFolder(input: string): fuzzysort.KeyResults<{ prepared: fuzzysort.Prepared, folder: TFolder }> {
-    return fuzzysort.go(input.toLowerCase(), this.preparedFolders, this.fuzzysortOptions);
+    return fuzzysort.go(input.toLowerCase(), this.preparedFolders.allElements, this.fuzzysortOptions);
   }
 
   private registerFileEvents() {
@@ -80,6 +74,7 @@ export class VaultCacheService {
             if (shouldCacheNewPath) {
               this.wikiLinks.addWikiLink(file);
               this.files.set(file.path, file);
+              this.prepareFile(file);
               this.cacheTags(file);
             }
             break;
@@ -88,7 +83,7 @@ export class VaultCacheService {
             if (shouldCacheNewPath) {
               const newTags = this.getTags(file);
               const removedTags = this.mapping.updateMapping(file.path, newTags);
-              removedTags.forEach(tag => this.tags.delete(tag));
+              removedTags.forEach(tag => this.removeTag(tag));
               this.cacheTags(file, newTags);
             }
             break;
@@ -97,13 +92,15 @@ export class VaultCacheService {
             if (shouldCacheOldPath) {
               this.wikiLinks.removeWikiLink(args.oldPath);
               this.files.delete(args.oldPath);
+              this.preparedFiles.delete(args.oldPath);
               const orphanedTags = this.mapping.deleteFromMapping(args.oldPath);
-              orphanedTags.forEach(tag => this.tags.delete(tag));
+              orphanedTags.forEach(tag => this.removeTag(tag));
             }
             if (shouldCacheNewPath) {
               this.wikiLinks.addWikiLink(file);
               this.mapping.renameKey(args.oldPath, file.path);
               this.files.set(file.path, file);
+              this.prepareFile(file);
               this.cacheTags(file);
             }
             break;
@@ -111,36 +108,38 @@ export class VaultCacheService {
           case FileEvent.Delete:
             this.wikiLinks.removeWikiLink(file);
             this.files.delete(file.path);
-            this.mapping.deleteFromMapping(file.path).forEach(tag => this.tags.delete(tag));
+            this.preparedFiles.delete(file.path);
+            this.mapping.deleteFromMapping(file.path).forEach(tag => this.removeTag(tag));
             break;
         }
-        this.fuzzySortPrepareTags();
-        this.fuzzySortPrepareFiles();
       } else if (file instanceof TFolder) {
         switch (event) {
           case FileEvent.Create:
             if (shouldCacheNewPath) {
               this.folders.set(file.path, file);
+              this.prepareFolder(file);
             }
             break;
 
           case FileEvent.Rename:
             if (shouldCacheOldPath) {
               this.folders.delete(args.oldPath);
+              this.preparedFolders.delete(args.oldPath);
             }
             if (shouldCacheNewPath) {
               this.folders.set(file.path, file);
+              this.prepareFolder(file);
             }
             break;
 
           case FileEvent.Delete:
             this.folders.delete(file.path);
+            this.preparedFolders.delete(file.path);
             break;
 
           case FileEvent.Modify:
             break; // ignore modifications for folders
         }
-        this.fuzzySortPrepareFolders();
       }
     });
   }
@@ -162,8 +161,21 @@ export class VaultCacheService {
 
   private cacheTags(file: TFile, fileTags?: string[]) {
     const tags = fileTags ?? this.getTags(file);
-    tags.forEach(tag => this.tags.add(tag));
+    tags.forEach(tag => this.addTag(tag));
     this.mapping.set(file.path, tags);
+  }
+
+  private addTag(tag: string) {
+    if (this.tags.has(tag)) {
+      return;
+    }
+    this.tags.add(tag);
+    this.prepareTag(tag);
+  }
+
+  private removeTag(tag: string) {
+    this.tags.delete(tag);
+    this.preparedTags.delete(tag);
   }
 
   private getTags(file: TFile): string[] {
@@ -172,24 +184,36 @@ export class VaultCacheService {
   }
 
   private fuzzySortPrepareTags() {
-    this.preparedTags = [];
+    this.preparedTags.clear();
     this.tags.forEach(tag => {
-      this.preparedTags.push({ prepared: fuzzysort.prepare(tag), tag: tag });
+      this.prepareTag(tag);
     });
   }
 
   private fuzzySortPrepareFiles() {
-    this.preparedFiles = [];
+    this.preparedFiles.clear();
     this.files.forEach(file => {
-      this.preparedFiles.push({ prepared: fuzzysort.prepare(file.basename), file: file });
+      this.prepareFile(file);
     });
   }
 
   private fuzzySortPrepareFolders() {
-    this.preparedFolders = [];
+    this.preparedFolders.clear();
     this.folders.forEach(folder => {
-      this.preparedFolders.push({ prepared: fuzzysort.prepare(folder.path), folder: folder });
+      this.prepareFolder(folder);
     });
+  }
+
+  private prepareTag(tag: string) {
+    this.preparedTags.set(tag, { prepared: fuzzysort.prepare(tag), tag: tag });
+  }
+
+  private prepareFile(file: TFile) {
+    this.preparedFiles.set(file.path, { prepared: fuzzysort.prepare(file.basename), file: file });
+  }
+
+  private prepareFolder(folder: TFolder) {
+    this.preparedFolders.set(folder.path, { prepared: fuzzysort.prepare(folder.path), folder: folder });
   }
 
   private shouldBeCached(path: string) {

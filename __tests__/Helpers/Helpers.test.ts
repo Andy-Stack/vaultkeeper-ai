@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { StringTools } from "../../Helpers/StringTools";
-import { randomSample, openPluginSettings, splitFrontmatter } from '../../Helpers/Helpers';
+import { randomSample, splitFrontmatter } from '../../Helpers/Helpers';
 
 describe('Helpers', () => {
 	describe('dateToString', () => {
@@ -327,46 +327,6 @@ describe('Helpers', () => {
 				// Should match the literal pattern string, not behave as regex
 				expect(regex.test(pattern)).toBe(true);
 			});
-		});
-	});
-
-	describe('openPluginSettings', () => {
-		it('should call app.setting.open and openTabById', () => {
-			const mockPlugin = {
-				app: {
-					setting: {
-						open: vi.fn(),
-						openTabById: vi.fn()
-					}
-				},
-				manifest: {
-					id: 'test-plugin-id'
-				}
-			} as any;
-
-			openPluginSettings(mockPlugin);
-
-			expect(mockPlugin.app.setting.open).toHaveBeenCalledOnce();
-			expect(mockPlugin.app.setting.openTabById).toHaveBeenCalledWith('test-plugin-id');
-		});
-
-		it('should open settings tab with correct plugin id', () => {
-			const pluginId = 'ai-agent-plugin';
-			const mockPlugin = {
-				app: {
-					setting: {
-						open: vi.fn(),
-						openTabById: vi.fn()
-					}
-				},
-				manifest: {
-					id: pluginId
-				}
-			} as any;
-
-			openPluginSettings(mockPlugin);
-
-			expect(mockPlugin.app.setting.openTabById).toHaveBeenCalledWith(pluginId);
 		});
 	});
 

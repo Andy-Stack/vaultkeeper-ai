@@ -73,7 +73,8 @@ vi.mock('fuzzysort', () => {
 // Create mock instances
 const mockMetadataCache = {
 	getCache: vi.fn(),
-	on: vi.fn()
+	on: vi.fn(),
+	offref: vi.fn()
 };
 
 const mockVault = {
@@ -82,10 +83,15 @@ const mockVault = {
 	on: vi.fn()
 };
 
+const mockWorkspace = {
+	onLayoutReady: (callback: () => void) => callback()
+};
+
 const mockPlugin = {
 	app: {
 		vault: mockVault,
-		metadataCache: mockMetadataCache
+		metadataCache: mockMetadataCache,
+		workspace: mockWorkspace
 	},
 	settings: {
 		exclusions: []
@@ -190,13 +196,15 @@ describe('VaultCacheService - Integration Tests', () => {
 					if (event === 'resolved') {
 						resolvedHandler = handler;
 					}
-				})
+				}),
+				offref: vi.fn()
 			};
 
 			const mockPluginWithMetadata = {
 				app: {
 					vault: mockVault,
-					metadataCache: mockMetadataCacheWithHandler
+					metadataCache: mockMetadataCacheWithHandler,
+					workspace: mockWorkspace
 				},
 				settings: {
 					exclusions: []
@@ -661,7 +669,8 @@ describe('VaultCacheService - Integration Tests', () => {
 			const mockPluginWithExclusions = {
 				app: {
 					vault: mockVault,
-					metadataCache: mockMetadataCache
+					metadataCache: mockMetadataCache,
+					workspace: mockWorkspace
 				},
 				settings: {
 					exclusions: ['private/**']

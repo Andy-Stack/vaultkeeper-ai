@@ -37,6 +37,13 @@ export class VaultService {
     private readonly diffService: DiffService;
     private readonly eventService: EventService;
 
+    private settingsSubscription: object;
+
+    private exclusions: string[] = [];
+    private rootExclusions: string[] = [];
+    private userExclusionRegExps: RegExp[] = [];
+    private rootExclusionRegExps: RegExp[] = [];
+
     public constructor() {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
 
@@ -47,6 +54,18 @@ export class VaultService {
         this.sanitiserService = Resolve<SanitiserService>(Services.SanitiserService);
         this.diffService = Resolve<DiffService>(Services.DiffService);
         this.eventService = Resolve<EventService>(Services.EventService);
+
+        this.settingsSubscription = this.settingsService.subscribeToSettingsChanged(changed => {
+            if (changed.includes("exclusions")) {
+                this.buildExclusions();
+            }
+        });
+
+        this.buildExclusions();
+    }
+
+    public dispose() {
+        this.settingsService.unsubscribe(this.settingsSubscription);
     }
 
     public registerFileEvents(handleFileEvent: (event: FileEvent, file: TAbstractFile, args: IFileEventArgs) => void) {
@@ -463,32 +482,15 @@ export class VaultService {
     }
 
     public isExclusion(filePath: string, allowAccessToPluginRoot: boolean = false): boolean {
-        const exclusions = allowAccessToPluginRoot
-            ? this.settingsService.settings.exclusions
-            : [this.AGENT_ROOT_DIR, this.AGENT_ROOT_CONTENTS, ...this.settingsService.settings.exclusions];
+        const exclusions = allowAccessToPluginRoot ? this.exclusions : this.rootExclusions;
+        const exclusionRegExps = allowAccessToPluginRoot ? this.userExclusionRegExps : this.rootExclusionRegExps;
 
-        return exclusions.some(pattern => {
-            if (filePath === pattern) {
-                return true;
-            }
+        if (exclusions.some(exclusion => filePath === exclusion)) {
+            return true;
+        }
 
-            // First, temporarily replace wildcards to protect them from escaping
-            let regexPattern = pattern
-                .replace(/\*\*/g, "::DOUBLESTAR::")    // Temporarily replace **
-                .replace(/\*/g, "::SINGLESTAR::")      // Temporarily replace *
-                .replace(/[.+?^${}()|[\]\\]/g, "\\$&") // Escape special regex chars
-                .replace(/::SINGLESTAR::/g, "[^/]*")   // * matches anything except /
-                .replace(/::DOUBLESTAR::/g, ".*");     // ** matches anything including /
-
-            // If pattern ends with /, match the directory and all its contents
-            if (pattern.endsWith("/")) {
-                regexPattern = regexPattern + ".*";
-            }
-
-            // Add anchors for full path matching
-            const regex = new RegExp("^" + regexPattern + "(/.*)?$");
-
-            return regex.test(filePath);
+        return exclusionRegExps.some(exclusion => {
+            return exclusion.test(filePath);
         });
     }
 
@@ -604,6 +606,36 @@ export class VaultService {
         });
 
         return merged;
+    }
+
+    private buildExclusions() {
+        this.exclusions = this.settingsService.settings.exclusions;
+        this.rootExclusions = this.exclusions.concat(this.AGENT_ROOT_DIR, this.AGENT_ROOT_CONTENTS);
+
+        this.userExclusionRegExps = this.exclusions.map(exclusion => this.prepareExclusionRegex(exclusion));
+        this.rootExclusionRegExps = [
+            ...this.userExclusionRegExps,
+            this.prepareExclusionRegex(this.AGENT_ROOT_DIR),
+            this.prepareExclusionRegex(this.AGENT_ROOT_CONTENTS)
+        ];
+    }
+
+    private prepareExclusionRegex(exclusion: string) {
+        // First, temporarily replace wildcards to protect them from escaping
+        let regexPattern = exclusion
+            .replace(/\*\*/g, "::DOUBLESTAR::")    // Temporarily replace **
+            .replace(/\*/g, "::SINGLESTAR::")      // Temporarily replace *
+            .replace(/[.+?^${}()|[\]\\]/g, "\\$&") // Escape special regex chars
+            .replace(/::SINGLESTAR::/g, "[^/]*")   // * matches anything except /
+            .replace(/::DOUBLESTAR::/g, ".*");     // ** matches anything including /
+
+        // If pattern ends with /, match the directory and all its contents
+        if (exclusion.endsWith("/")) {
+            regexPattern = regexPattern + ".*";
+        }
+
+        // Add anchors for full path matching
+        return new RegExp("^" + regexPattern + "(/.*)?$");
     }
 
     private async proposeChange<T>(oldFileName: string, newFileName: string, oldContent: string, newContent: string,

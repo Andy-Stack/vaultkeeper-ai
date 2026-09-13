@@ -56,7 +56,7 @@ const mockSettings: IVaultkeeperAISettings = makeTestSettings({
 		gemini: 'test-gemini-key', mistral: 'test-mistral-key', local: 'test-local-key'
 	},
 	searchResultsLimit: 15,
-	snippetSizeLimit: 300,
+	snippetSizeLimit: 100,
 	chatMode: ChatMode.Edit
 });
 
@@ -124,7 +124,7 @@ describe('VaultService - PDF Tests', () => {
 		// Reset settings to defaults
 		mockSettings.exclusions = [];
 		mockSettings.searchResultsLimit = 15;
-		mockSettings.snippetSizeLimit = 300;
+		mockSettings.snippetSizeLimit = 100;
 
 		// Set default mock for adapter.exists
 		mockVault.adapter.exists.mockResolvedValue(false);

@@ -192,7 +192,7 @@ export class AIToolService {
                             toolCall.toolId
                         );
                     }
-                    return new AIToolResponse(toolCall.name, await this.listVaultFiles(parseResult.data.path, parseResult.data.recursive), toolCall.toolId);
+                    return new AIToolResponse(toolCall.name, await this.listVaultFiles(parseResult.data.path, parseResult.data.recursive, parseResult.data.index), toolCall.toolId);
                 }
 
                 case AITool.GetWebViewerContent: {
@@ -204,7 +204,7 @@ export class AIToolService {
                             toolCall.toolId
                         );
                     }
-                    return new AIToolResponse(toolCall.name, await this.getWebViewerContent(parseResult.data.format, parseResult.data.url_hint), toolCall.toolId);
+                    return new AIToolResponse(toolCall.name, await this.getWebViewerContent(parseResult.data.format, parseResult.data.url_hint, parseResult.data.index ?? 0), toolCall.toolId);
                 }
 
                 case AITool.ReadMemories: {
@@ -277,7 +277,7 @@ export class AIToolService {
             nextFileNamesIndex: number | undefined, nextFileContentsIndex: number | undefined }[] = [];
 
         for (const term of searchTerms) {
-            const result = await this.fileSystemService.searchVaultFiles(term.search_term, term.fileNamesIndex, term.fileContentsIndex);
+            const result = await this.fileSystemService.searchVaultFiles(term.search_term, term.fileNamesIndex, term.fileContentsIndex, true);
             if (result instanceof Error) {
                 return new AIToolResponsePayload({ error: result });
             }
@@ -412,7 +412,7 @@ export class AIToolService {
         }
 
         const contents = await this.fileSystemService.listDirectoryContents(path, true);
-        const filePaths = contents.filter(content => content instanceof TFile).map(file => file.path);
+        const filePaths = contents.results.filter(content => content instanceof TFile).map(file => file.path);
 
         const artifacts = await this.collectDeletionCandidatesArtifacts(filePaths);
         const result = await this.fileSystemService.deleteFolder(path);
@@ -430,19 +430,33 @@ export class AIToolService {
         return new AIToolResponsePayload({ path: destinationPath, success: true });
     }
 
-    private async listVaultFiles(path: string, recursive: boolean): Promise<AIToolResponsePayload> {
-        const files: TAbstractFile[] = await this.fileSystemService.listDirectoryContents(path, recursive);
-        return new AIToolResponsePayload(files.map(file => ({
-            type: file instanceof TFile ? "file" : "directory",
-            path: file.path
-        })));
+    private async listVaultFiles(path: string, recursive: boolean, index: number | undefined): Promise<AIToolResponsePayload> {
+        const contents: { results: TAbstractFile[], nextIndex: number | undefined } = await this.fileSystemService.listDirectoryContents(path, recursive, index, true);
+        return new AIToolResponsePayload({
+            contents: contents.results.map(file => ({
+                type: file instanceof TFile ? "file" : "directory",
+                path: file.path
+            })),
+            nextIndex: contents.nextIndex
+        });
     }
 
-    private async getWebViewerContent(format: "text" | "screenshot", urlHint?: string): Promise<AIToolResponsePayload> {
-        const result = format === "text" 
-            ? await this.webViewerService.getWebViewContent(urlHint)
-            : await this.webViewerService.takeScreenshot(urlHint, true);
-        
+    private async getWebViewerContent(format: "text" | "screenshot", urlHint?: string, index: number = 0): Promise<AIToolResponsePayload> {
+        if (format === "screenshot") {
+            const screenshot = await this.webViewerService.takeScreenshot(urlHint, true);
+
+            if (urlHint && !screenshot) {
+                return new AIToolResponsePayload({ error: replaceCopy(Copy.WebViewerNoMatchingUrl, [urlHint]) });
+            }
+            if (!screenshot) {
+                return new AIToolResponsePayload({ error: Copy.WebViewerNoOpenView });
+            }
+
+            return new AIToolResponsePayload({ success: true }, [], [new Attachment("screenshot.png", MimeType.IMAGE_PNG, screenshot)]);
+        }
+
+        const result = await this.webViewerService.getWebViewContent(urlHint, index);
+
         if (urlHint && !result) {
             return new AIToolResponsePayload({ error: replaceCopy(Copy.WebViewerNoMatchingUrl, [urlHint]) });
         }
@@ -450,9 +464,7 @@ export class AIToolService {
             return new AIToolResponsePayload({ error: Copy.WebViewerNoOpenView });
         }
 
-        return format === "text"
-            ? new AIToolResponsePayload({ content: result })
-            : new AIToolResponsePayload({ success: true }, [], [new Attachment("screenshot.png", MimeType.IMAGE_PNG, result)]);
+        return new AIToolResponsePayload({ content: result.content, nextIndex: result.nextIndex });
     }
 
     private async readMemories(): Promise<AIToolResponsePayload> {

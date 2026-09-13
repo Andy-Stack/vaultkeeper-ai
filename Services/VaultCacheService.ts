@@ -145,7 +145,7 @@ export class VaultCacheService {
   }
 
   private async setupCaches() {
-    (await this.vaultService.listDirectoryContents(Path.Root)).forEach(file => {
+    (await this.vaultService.listDirectoryContents(Path.Root)).results.forEach(file => {
       if (file instanceof TFile) {
         this.wikiLinks.addWikiLink(file);
         this.files.set(file.path, file);

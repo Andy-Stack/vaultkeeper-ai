@@ -875,10 +875,13 @@ describe('AIToolService - Integration Tests', () => {
 
 	describe('performAITool - DeleteVaultFolder', () => {
 		it('should delete folder successfully and produce artifacts for its contents', async () => {
-			mockFileSystemService.listDirectoryContents = vi.fn().mockResolvedValue([
-				createMockFile('folder/a.md', 'a'),
-				createMockFile('folder/b.md', 'b')
-			]);
+			mockFileSystemService.listDirectoryContents = vi.fn().mockResolvedValue({
+				results: [
+					createMockFile('folder/a.md', 'a'),
+					createMockFile('folder/b.md', 'b')
+				],
+				nextIndex: undefined
+			});
 			mockFileSystemService.readFilePath
 				.mockResolvedValueOnce('Content A')
 				.mockResolvedValueOnce('Content B');
@@ -920,9 +923,10 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should still return collected artifacts when the delete fails', async () => {
-			mockFileSystemService.listDirectoryContents = vi.fn().mockResolvedValue([
-				createMockFile('folder/a.md', 'a')
-			]);
+			mockFileSystemService.listDirectoryContents = vi.fn().mockResolvedValue({
+				results: [createMockFile('folder/a.md', 'a')],
+				nextIndex: undefined
+			});
 			mockFileSystemService.readFilePath.mockResolvedValue('Content A');
 			mockFileSystemService.deleteFolder = vi.fn().mockResolvedValue(new Error('Permission denied'));
 

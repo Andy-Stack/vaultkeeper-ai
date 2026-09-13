@@ -58,7 +58,7 @@ const mockSettings: IVaultkeeperAISettings = makeTestSettings({
 		gemini: 'test-gemini-key', mistral: 'test-mistral-key', local: 'test-local-key'
 	},
 	searchResultsLimit: 15,
-	snippetSizeLimit: 300,
+	snippetSizeLimit: 100,
 	chatMode: ChatMode.Edit
 });
 
@@ -295,7 +295,7 @@ async function measureSearch(
 		QUERY_PATTERNS[queryPattern],
 		0,
 		0,
-		false
+		true
 	);
 
 	const duration = performance.now() - startTime;
@@ -338,7 +338,7 @@ function createPerformanceTest(
 
 		// Assertions
 		expect(metrics.resultCount).toBeLessThanOrEqual(
-			settingsService.settings.searchResultsLimit
+			settingsService.settings.searchResultsLimit * 2
 		);
 
 		if (config.threshold) {

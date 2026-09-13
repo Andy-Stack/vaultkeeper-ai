@@ -12,6 +12,7 @@ import {
     isValidProviderModel,
     modelMatchesProvider
 } from "Enums/ApiProvider";
+import { SEARCH_SETTINGS_RANGE } from "Enums/SearchSettings";
 
 export const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     firstTimeStart: true,
@@ -162,6 +163,7 @@ export class SettingsService {
             localModels: Object.assign({}, DEFAULT_SETTINGS.localModels, loadedSettings.localModels)
         });
         this.settingsSnapshot = JSON.stringify(this.settings);
+        void this.ensureValidSearchSettings()
         void this.ensureValidModels();
     }
 
@@ -247,6 +249,26 @@ export class SettingsService {
             }
             if (!isValidProviderModel(cached.quickActionModel) || !modelMatchesProvider(cached.quickActionModel, settings.provider)) {
                 settings.cachedModelSettings[settings.provider].quickActionModel = DEFAULT_QUICK_MODEL_BY_PROVIDER[settings.provider];
+            }
+        });
+    }
+
+    private async ensureValidSearchSettings() {
+        const { searchTimeLimit, searchResultsLimit, snippetSizeLimit } = SEARCH_SETTINGS_RANGE;
+        
+        let resetTimeLimit = this.settings.searchTimeLimit < searchTimeLimit.min || this.settings.searchTimeLimit > searchTimeLimit.max;
+        let resetresultLimit = this.settings.searchResultsLimit < searchResultsLimit.min || this.settings.searchResultsLimit > searchResultsLimit.max;
+        let resetSnippetLimit = this.settings.snippetSizeLimit < snippetSizeLimit.min || this.settings.snippetSizeLimit > snippetSizeLimit.max;
+
+        await this.updateSettings(settings => {
+            if (resetTimeLimit) {
+                settings.searchTimeLimit = DEFAULT_SETTINGS.searchTimeLimit;
+            }
+            if (resetresultLimit) {
+                settings.searchResultsLimit = DEFAULT_SETTINGS.searchResultsLimit;
+            }
+            if (resetSnippetLimit) {
+                settings.snippetSizeLimit = DEFAULT_SETTINGS.snippetSizeLimit;
             }
         });
     }

@@ -1,15 +1,17 @@
 import { AIProvider, AIProviderModel, DEFAULT_PLANNING_MODEL_BY_PROVIDER, DEFAULT_QUICK_MODEL_BY_PROVIDER, fromModel, isvalidProvider, isValidProviderModel } from "Enums/ApiProvider";
 import { Copy } from "Enums/Copy";
+import { SEARCH_SETTINGS_RANGE } from "Enums/SearchSettings";
 import { Selector } from "Enums/Selector";
 import type VaultkeeperAIPlugin from "main";
 import { HelpModal } from "Modals/HelpModal";
 import { DropdownComponent, PluginSettingTab, Setting, ToggleComponent, setIcon, setTooltip } from "obsidian";
 import { Resolve } from "Services/DependencyService";
-import type { SettingsService } from "Services/SettingsService";
+import { DEFAULT_SETTINGS, type SettingsService } from "Services/SettingsService";
 import { Services } from "Services/Services";
 import { closePluginSettings } from "Helpers/ObsidianInternals";
 import type { MemoriesService } from "Services/MemoriesService";
 import { RegisterAiProvider } from "Services/ServiceRegistration";
+import { replaceCopy } from "Helpers/Helpers";
 
 export class VaultkeeperAISettingTab extends PluginSettingTab {
 	private readonly plugin: VaultkeeperAIPlugin;
@@ -106,11 +108,11 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 
 		/* Search Time Limit Setting */
 		new Setting(containerEl)
-			.setName(Copy.SettingSearchTimeLimit)
+			.setName(replaceCopy(Copy.SettingSearchTimeLimit, [DEFAULT_SETTINGS.searchTimeLimit.toString()]))
 			.setDesc(Copy.SettingSearchTimeLimitDesc)
 			.addSlider(slider => {
 				slider
-					.setLimits(1000, 10000, 100)
+					.setLimits(SEARCH_SETTINGS_RANGE.searchTimeLimit.min, SEARCH_SETTINGS_RANGE.searchTimeLimit.max, SEARCH_SETTINGS_RANGE.searchTimeLimit.step)
 					.setValue(this.settingsService.settings.searchTimeLimit)
 					.onChange(async value => {
 						await this.settingsService.updateSettings(settings => {
@@ -121,11 +123,11 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 
 		/* Search Results Limit Setting */
 		new Setting(containerEl)
-			.setName(Copy.SettingSearchResultsLimit)
+			.setName(replaceCopy(Copy.SettingSearchResultsLimit, [DEFAULT_SETTINGS.searchResultsLimit.toString()]))
 			.setDesc(Copy.SettingSearchResultsLimitDesc)
 			.addSlider(slider => {
 				slider
-					.setLimits(5, 100, 5)
+					.setLimits(SEARCH_SETTINGS_RANGE.searchResultsLimit.min, SEARCH_SETTINGS_RANGE.searchResultsLimit.max, SEARCH_SETTINGS_RANGE.searchResultsLimit.step)
 					.setValue(this.settingsService.settings.searchResultsLimit)
 					.onChange(async value => {
 						await this.settingsService.updateSettings(settings => {
@@ -136,11 +138,11 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 
 		/* Snippet Size Limit Setting */
 		new Setting(containerEl)
-			.setName(Copy.SettingSnippetSizeLimit)
+			.setName(replaceCopy(Copy.SettingSnippetSizeLimit, [DEFAULT_SETTINGS.snippetSizeLimit.toString()]))
 			.setDesc(Copy.SettingSnippetSizeLimitDesc)
 			.addSlider(slider => {
 				slider
-					.setLimits(5, 100, 5)
+					.setLimits(SEARCH_SETTINGS_RANGE.snippetSizeLimit.min, SEARCH_SETTINGS_RANGE.snippetSizeLimit.max, SEARCH_SETTINGS_RANGE.snippetSizeLimit.step)
 					.setValue(this.settingsService.settings.snippetSizeLimit)
 					.onChange(async value => {
 						await this.settingsService.updateSettings(settings => {

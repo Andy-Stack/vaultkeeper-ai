@@ -55,7 +55,7 @@ const mockSettings: IVaultkeeperAISettings = makeTestSettings({
 		gemini: 'test-gemini-key', mistral: 'test-mistral-key', local: 'test-local-key'
 	},
 	searchResultsLimit: 15,
-	snippetSizeLimit: 300,
+	snippetSizeLimit: 100,
 	chatMode: ChatMode.Edit
 });
 
@@ -108,7 +108,7 @@ describe('VaultService - Integration Tests', () => {
 		// Reset settings to defaults (mutating before SettingsService construction is fine)
 		mockSettings.exclusions = [];
 		mockSettings.searchResultsLimit = 15;
-		mockSettings.snippetSizeLimit = 300;
+		mockSettings.snippetSizeLimit = 100;
 
 		// Set default mock for adapter.exists (can be overridden in individual tests)
 		mockVault.adapter.exists.mockResolvedValue(false);
@@ -1074,7 +1074,7 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.getAbstractFileByPath.mockReturnValue(folder);
 			mockVault.cachedRead.mockResolvedValue('This contains the search term');
 
-			const results = await vaultService.searchVaultFiles('search');
+			const results = await vaultService.searchVaultFiles('search', 0, 0, true);
 			if (results instanceof Error) throw results;
 
 			// Should have at most searchResultsLimit matching files
@@ -1096,7 +1096,7 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.getAbstractFileByPath.mockReturnValue(folder);
 			mockVault.cachedRead.mockResolvedValue('This contains the search term');
 
-			const results = await vaultService.searchVaultFiles('search');
+			const results = await vaultService.searchVaultFiles('search', 0, 0, true);
 			if (results instanceof Error) throw results;
 
 			// Should have at most 5 matching files
@@ -1298,7 +1298,7 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.cachedRead.mockResolvedValue('searchable content');
 
 			// Search with allowAccessToPluginRoot = true
-			const results = await vaultService.searchVaultFiles('searchable', 0, 0, true);
+			const results = await vaultService.searchVaultFiles('searchable', 0, 0, false, true);
 			if (results instanceof Error) throw results;
 
 			// Should include files from Vaultkeeper AI directory
@@ -1345,7 +1345,7 @@ describe('VaultService - Integration Tests', () => {
 			const listFilesSpy = vi.spyOn(vaultService, 'listFilesInDirectory');
 
 			// Call with allowAccessToPluginRoot = true
-			await vaultService.searchVaultFiles('test', 0, 0, true);
+			await vaultService.searchVaultFiles('test', 0, 0, false, true);
 
 			// Verify listFilesInDirectory was called with the correct parameter
 			expect(listFilesSpy).toHaveBeenCalledWith(Path.Root, true, true);
@@ -1353,7 +1353,7 @@ describe('VaultService - Integration Tests', () => {
 			listFilesSpy.mockClear();
 
 			// Call with allowAccessToPluginRoot = false
-			await vaultService.searchVaultFiles('test', 0, 0, false);
+			await vaultService.searchVaultFiles('test', 0, 0, false, false);
 
 			// Verify listFilesInDirectory was called with the correct parameter
 			expect(listFilesSpy).toHaveBeenCalledWith(Path.Root, true, false);
@@ -1500,10 +1500,10 @@ describe('VaultService - Integration Tests', () => {
 				return null;
 			});
 
-			const result = await vaultService.listDirectoryContents(Path.Root);
+			const { results } = await vaultService.listDirectoryContents(Path.Root);
 
-			expect(result).toHaveLength(4);
-			expect(result).toEqual(expect.arrayContaining([file1, file2, folder1, folder2]));
+			expect(results).toHaveLength(4);
+			expect(results).toEqual(expect.arrayContaining([file1, file2, folder1, folder2]));
 		});
 
 		it('should filter out excluded files and folders', async () => {
@@ -1525,15 +1525,15 @@ describe('VaultService - Integration Tests', () => {
 
 			await settingsService.updateSettings(s => { s.exclusions = ['private/**']; });
 
-			const result = await vaultService.listDirectoryContents(Path.Root, true, false);
+			const { results } = await vaultService.listDirectoryContents(Path.Root, true, 0, false);
 
 			// Should include: public/note.md and public folder
 			// Should exclude: Vaultkeeper AI folder (default exclusion), private/** content
-			expect(result.some((item: any) => item.path === 'public/note.md')).toBe(true);
-			expect(result.some((item: any) => item.path === 'public')).toBe(true);
-			expect(result.some((item: any) => item.path === 'Vaultkeeper AI/conversation.md')).toBe(false);
-			expect(result.some((item: any) => item.path === 'private/secret.md')).toBe(false);
-			expect(result.some((item: any) => item.path === 'private')).toBe(true); // Folder itself not excluded by 'private/**'
+			expect(results.some((item: any) => item.path === 'public/note.md')).toBe(true);
+			expect(results.some((item: any) => item.path === 'public')).toBe(true);
+			expect(results.some((item: any) => item.path === 'Vaultkeeper AI/conversation.md')).toBe(false);
+			expect(results.some((item: any) => item.path === 'private/secret.md')).toBe(false);
+			expect(results.some((item: any) => item.path === 'private')).toBe(true); // Folder itself not excluded by 'private/**'
 		});
 
 		it('should exclude the Vaultkeeper AI directory itself from folder listings', async () => {
@@ -1551,13 +1551,13 @@ describe('VaultService - Integration Tests', () => {
 				return null;
 			});
 
-			const result = await vaultService.listDirectoryContents(Path.Root, true, false);
+			const { results } = await vaultService.listDirectoryContents(Path.Root, true, 0, false);
 
 			// Vaultkeeper AI directory itself should be excluded
-			expect(result.some((item: any) => item.path === 'Vaultkeeper AI')).toBe(false);
+			expect(results.some((item: any) => item.path === 'Vaultkeeper AI')).toBe(false);
 			// Other folders should be included
-			expect(result.some((item: any) => item.path === 'public')).toBe(true);
-			expect(result.some((item: any) => item.path === 'notes')).toBe(true);
+			expect(results.some((item: any) => item.path === 'public')).toBe(true);
+			expect(results.some((item: any) => item.path === 'notes')).toBe(true);
 		});
 
 		it('should include Vaultkeeper AI directory when allowAccessToPluginRoot is true', async () => {
@@ -1572,19 +1572,19 @@ describe('VaultService - Integration Tests', () => {
 				return null;
 			});
 
-			const result = await vaultService.listDirectoryContents(Path.Root, true, true);
+			const { results } = await vaultService.listDirectoryContents(Path.Root, true, 0, false, true);
 
-			expect(result).toHaveLength(3);
-			expect(result.some((item: any) => item.path === 'Vaultkeeper AI/conversation.md')).toBe(true);
+			expect(results).toHaveLength(3);
+			expect(results.some((item: any) => item.path === 'Vaultkeeper AI/conversation.md')).toBe(true);
 		});
 
 		it('should return empty array when vault is empty', async () => {
 			const emptyRoot = createMockFolder('/', []);
 			mockVault.getAbstractFileByPath.mockReturnValue(emptyRoot);
 
-			const result = await vaultService.listDirectoryContents(Path.Root);
+			const { results } = await vaultService.listDirectoryContents(Path.Root);
 
-			expect(result).toEqual([]);
+			expect(results).toEqual([]);
 		});
 	});
 });

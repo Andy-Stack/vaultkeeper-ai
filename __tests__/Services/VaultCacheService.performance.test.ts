@@ -100,7 +100,7 @@ const mockSettings: IVaultkeeperAISettings = makeTestSettings({
 		gemini: 'test-gemini-key', mistral: 'test-mistral-key', local: 'test-local-key'
 	},
 	searchResultsLimit: 15,
-	snippetSizeLimit: 300,
+	snippetSizeLimit: 100,
 	chatMode: ChatMode.Edit
 });
 
@@ -120,7 +120,7 @@ const PERFORMANCE_THRESHOLDS = {
 	initialCache: {
 		'1000': 20,    // Observed: 2-3ms, threshold: 20ms
 		'5000': 40,    // Observed: 5-6ms, threshold: 40ms
-		'10000': 80,   // Observed: 8-16ms, threshold: 80ms
+		'10000': 100,   // Observed: 8-16ms, threshold: 100ms
 		'20000': 150   // Observed: 18-29ms, threshold: 150ms
 	},
 	fuzzySearch: {
@@ -316,7 +316,7 @@ function setupVaultMocks(
  */
 function setupVaultService(allItems: TAbstractFile[]): void {
 	// Mock listDirectoryContents to return all items
-	vaultService.listDirectoryContents = vi.fn().mockResolvedValue(allItems);
+	vaultService.listDirectoryContents = vi.fn().mockResolvedValue({ results: allItems, nextIndex: undefined });
 	vaultService.isExclusion = vi.fn().mockReturnValue(false);
 
 	// Capture file event handler

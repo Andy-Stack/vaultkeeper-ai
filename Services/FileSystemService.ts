@@ -142,8 +142,8 @@ export class FileSystemService {
         return await this.vaultService.listFoldersInDirectory(dirPath, recursive, allowAccessToPluginRoot);
     }
 
-    public async listDirectoryContents(dirPath: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TAbstractFile[]> {
-        return await this.vaultService.listDirectoryContents(dirPath, recursive, allowAccessToPluginRoot);
+    public async listDirectoryContents(dirPath: string, recursive: boolean = true, index: number = 0, limitResults: boolean = false, allowAccessToPluginRoot: boolean = false): Promise<{ results: TAbstractFile[], nextIndex: number | undefined }> {
+        return await this.vaultService.listDirectoryContents(dirPath, recursive, index, limitResults, allowAccessToPluginRoot);
     }
 
     public async readObjectFromFile(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<Record<string, unknown> | Error> {
@@ -169,7 +169,7 @@ export class FileSystemService {
         return result;
     }
 
-    public async searchVaultFiles(searchTerm: string, fileNamesIndex: number = 0, fileContentsIndex: number = 0, allowAccessToPluginRoot: boolean = false): Promise<ISearchResult | Error> {
-        return await this.vaultService.searchVaultFiles(searchTerm, fileNamesIndex, fileContentsIndex, allowAccessToPluginRoot);
+    public async searchVaultFiles(searchTerm: string, fileNamesIndex: number = 0, fileContentsIndex: number = 0, limitResults: boolean, allowAccessToPluginRoot: boolean = false): Promise<ISearchResult | Error> {
+        return await this.vaultService.searchVaultFiles(searchTerm, fileNamesIndex, fileContentsIndex, limitResults, allowAccessToPluginRoot);
     }
 }

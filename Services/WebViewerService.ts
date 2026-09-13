@@ -5,13 +5,15 @@ import type { WebviewElement } from "Types/WebviewElement";
 
 export class WebViewerService {
 
+    private readonly CONTENT_CHUNK_SIZE = 20000;
+
     private readonly plugin: VaultkeeperAIPlugin;
 
     public constructor() {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
     }
 
-    public async getWebViewContent(urlHint?: string): Promise<string | null> {
+    public async getWebViewContent(urlHint?: string, index: number = 0): Promise<{ content: string, nextIndex: number | undefined } | null> {
         const webviewElement = this.getWebviewElement(urlHint);
 
         if (!webviewElement) {
@@ -21,10 +23,15 @@ export class WebViewerService {
         if (await this.waitForLoad(webviewElement)) {
             const pageContent = await webviewElement.executeJavaScript(
                 'document.body.innerText'
-            );
-            return pageContent as string ?? "Failed to retrieve page content";
+            ) as string ?? "Failed to retrieve page content";
+
+            const nextIndex = index + this.CONTENT_CHUNK_SIZE;
+            return {
+                content: pageContent.slice(index, nextIndex),
+                nextIndex: nextIndex < pageContent.length ? nextIndex : undefined
+            };
         }
-        return "";
+        return { content: "", nextIndex: undefined };
     }
 
     public async takeScreenshot(urlHint?: string, stripDataUrl: boolean = false): Promise<string | null> {

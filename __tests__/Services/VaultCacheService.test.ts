@@ -145,7 +145,7 @@ describe('VaultCacheService - Integration Tests', () => {
 			registerFileEvents: vi.fn((handler: any) => {
 				fileEventHandler = handler;
 			}),
-			listDirectoryContents: vi.fn(async () => []),
+			listDirectoryContents: vi.fn(async () => ({ results: [], nextIndex: undefined })),
 			getAbstractFileByPath: vi.fn((path: string) => {
 				// By default, allow all folders (return a mock folder)
 				// This maintains existing test behavior
@@ -184,7 +184,7 @@ describe('VaultCacheService - Integration Tests', () => {
 				tags: [{ tag: '#tag1' }, { tag: '#tag2' }]
 			});
 
-			const mockListVaultContents = vi.fn(() => [...files, ...folders]);
+			const mockListVaultContents = vi.fn(() => ({ results: [...files, ...folders], nextIndex: undefined }));
 			const mockRegisterEvents = vi.fn((handler: any) => {
 				fileEventHandler = handler;
 			});
@@ -639,7 +639,7 @@ describe('VaultCacheService - Integration Tests', () => {
 				registerFileEvents: vi.fn((handler: any) => {
 					fileEventHandler = handler;
 				}),
-				listDirectoryContents: vi.fn(async () => []),
+				listDirectoryContents: vi.fn(async () => ({ results: [], nextIndex: undefined })),
 				getAbstractFileByPath: vi.fn((path: string) => {
 					// Return null for excluded paths (simulating VaultService exclusion logic)
 					if (path.startsWith('Vaultkeeper AI')) {
@@ -683,7 +683,7 @@ describe('VaultCacheService - Integration Tests', () => {
 				registerFileEvents: vi.fn((handler: any) => {
 					fileEventHandler = handler;
 				}),
-				listDirectoryContents: vi.fn(async () => []),
+				listDirectoryContents: vi.fn(async () => ({ results: [], nextIndex: undefined })),
 				getAbstractFileByPath: vi.fn((path: string) => {
 					// Return null for excluded paths
 					if (path.startsWith('private/')) {
@@ -714,7 +714,7 @@ describe('VaultCacheService - Integration Tests', () => {
 				registerFileEvents: vi.fn((handler: any) => {
 					fileEventHandler = handler;
 				}),
-				listDirectoryContents: vi.fn(async () => []),
+				listDirectoryContents: vi.fn(async () => ({ results: [], nextIndex: undefined })),
 				getAbstractFileByPath: vi.fn((path: string, allowAccessToPluginRoot: boolean) => {
 					// First call (public-folder) should succeed
 					if (path === 'public-folder') {
@@ -762,7 +762,7 @@ describe('VaultCacheService - Integration Tests', () => {
 				registerFileEvents: vi.fn((handler: any) => {
 					fileEventHandler = handler;
 				}),
-				listDirectoryContents: vi.fn(async () => []),
+				listDirectoryContents: vi.fn(async () => ({ results: [], nextIndex: undefined })),
 				getAbstractFileByPath: vi.fn((path: string) => {
 					if (path.startsWith('Vaultkeeper AI')) {
 						return null;

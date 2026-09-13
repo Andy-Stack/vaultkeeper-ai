@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { SettingsService, type IVaultkeeperAISettings } from '../../Services/SettingsService';
+import { SettingsService, DEFAULT_SETTINGS, type IVaultkeeperAISettings } from '../../Services/SettingsService';
 import { makeTestSettings } from '../Helpers/makeTestSettings';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
@@ -57,7 +57,7 @@ describe('SettingsService', () => {
                     gemini: 'gemini-key-789', mistral: '', local: ''
                 },
                 searchResultsLimit: 25,
-                snippetSizeLimit: 200
+                snippetSizeLimit: 50
             };
 
             settingsService = new SettingsService(loadedSettings as IVaultkeeperAISettings);
@@ -68,7 +68,7 @@ describe('SettingsService', () => {
             expect(settingsService.settings.apiKeys.openai).toBe('openai-key-456');
             expect(settingsService.settings.apiKeys.gemini).toBe('gemini-key-789');
             expect(settingsService.settings.searchResultsLimit).toBe(25);
-            expect(settingsService.settings.snippetSizeLimit).toBe(200);
+            expect(settingsService.settings.snippetSizeLimit).toBe(50);
         });
 
         it('should handle partially loaded settings and fill missing properties with defaults', () => {
@@ -664,23 +664,23 @@ describe('SettingsService', () => {
 
         it('should allow custom snippetSizeLimit values', () => {
             settingsService = new SettingsService({
-                snippetSizeLimit: 300
+                snippetSizeLimit: 75
             });
-            expect(settingsService.settings.snippetSizeLimit).toBe(300);
+            expect(settingsService.settings.snippetSizeLimit).toBe(75);
         });
 
-        it('should allow zero values for searchResultsLimit', () => {
+        it('should reset out-of-range searchResultsLimit values to the default', () => {
             settingsService = new SettingsService({
                 searchResultsLimit: 0
             });
-            expect(settingsService.settings.searchResultsLimit).toBe(0);
+            expect(settingsService.settings.searchResultsLimit).toBe(DEFAULT_SETTINGS.searchResultsLimit);
         });
 
-        it('should allow zero values for snippetSizeLimit', () => {
+        it('should reset out-of-range snippetSizeLimit values to the default', () => {
             settingsService = new SettingsService({
                 snippetSizeLimit: 0
             });
-            expect(settingsService.settings.snippetSizeLimit).toBe(0);
+            expect(settingsService.settings.snippetSizeLimit).toBe(DEFAULT_SETTINGS.snippetSizeLimit);
         });
 
         it('should allow modification of searchResultsLimit via updateSettings', async () => {
@@ -698,7 +698,7 @@ describe('SettingsService', () => {
         it('should persist searchResultsLimit and snippetSizeLimit when saving settings', async () => {
             settingsService = new SettingsService({
                 searchResultsLimit: 20,
-                snippetSizeLimit: 250
+                snippetSizeLimit: 50
             });
 
             await settingsService.updateSettings(() => {});
@@ -706,7 +706,7 @@ describe('SettingsService', () => {
             expect(mockPlugin.saveData).toHaveBeenCalledWith(
                 expect.objectContaining({
                     searchResultsLimit: 20,
-                    snippetSizeLimit: 250
+                    snippetSizeLimit: 50
                 })
             );
         });

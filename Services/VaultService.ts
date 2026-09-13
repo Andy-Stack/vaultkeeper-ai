@@ -336,13 +336,23 @@ export class VaultService {
         }
     }
 
-    public async listDirectoryContents(path: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TAbstractFile[]> {
+    public async listDirectoryContents(path: string, recursive: boolean = true, index: number = 0, limitResults: boolean = false, allowAccessToPluginRoot: boolean = false): Promise<{ results: TAbstractFile[], nextIndex: number | undefined }> {
         path = this.sanitiserService.sanitize(path);
 
         const files = await this.listFilesInDirectory(path, recursive, allowAccessToPluginRoot);
         const folders = await this.listFoldersInDirectory(path, recursive, allowAccessToPluginRoot);
 
-        return [...files, ...folders] as TAbstractFile[];
+        const contents = [...files, ...folders] as TAbstractFile[];
+
+        if (limitResults) {
+            const nextIndex = index + this.settingsService.settings.searchResultsLimit;
+            return { 
+                results: contents.slice(index, nextIndex),
+                nextIndex: nextIndex > contents.length - 1 ? undefined : nextIndex
+            };
+        }
+
+        return { results: contents, nextIndex: undefined };
     }
 
     public async listFilesInDirectory(path: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFile[]> {
@@ -399,7 +409,7 @@ export class VaultService {
         return folders;
     }
 
-    public async searchVaultFiles(searchTerm: string, fileNamesIndex: number = 0, fileContentsIndex: number = 0, allowAccessToPluginRoot: boolean = false): Promise<ISearchResult | Error> {
+    public async searchVaultFiles(searchTerm: string, fileNamesIndex: number = 0, fileContentsIndex: number = 0, limitResults: boolean = false, allowAccessToPluginRoot: boolean = false): Promise<ISearchResult | Error> {
         // Always ensure 'g' flag is present for extractSnippets to work correctly
         // (regex.exec in a loop requires 'g' flag to advance, otherwise infinite loop)
         const regex = RegexTools.asRegex(searchTerm, ["i", "g"]);
@@ -412,7 +422,7 @@ export class VaultService {
         let fileContentsMatches: { file: TFile, snippets: ISearchSnippet[] }[] = [];
 
         const literals = RegexTools.extractRegexLiterals(regex);
-        const resultsLimit = this.settingsService.settings.searchResultsLimit;
+        const resultsLimit = limitResults ? this.settingsService.settings.searchResultsLimit : Infinity;
 
         const files: TFile[] = await this.listFilesInDirectory(Path.Root, true, allowAccessToPluginRoot);
         files.sort(VaultService.recentFileSorter());

@@ -490,7 +490,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.listDirectoryContents('test-dir');
 
 			expect(result).toEqual(mockContents);
-			expect(mockVaultService.listDirectoryContents).toHaveBeenCalledWith('test-dir', true, false);
+			expect(mockVaultService.listDirectoryContents).toHaveBeenCalledWith('test-dir', true, 0, false, false);
 		});
 
 		it('should list contents non-recursively when specified', async () => {
@@ -501,7 +501,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.listDirectoryContents('test-dir', false);
 
 			expect(result).toEqual(mockContents);
-			expect(mockVaultService.listDirectoryContents).toHaveBeenCalledWith('test-dir', false, false);
+			expect(mockVaultService.listDirectoryContents).toHaveBeenCalledWith('test-dir', false, 0, false, false);
 		});
 
 		it('should return empty array when directory does not exist', async () => {
@@ -520,9 +520,9 @@ describe('FileSystemService', () => {
 
 			mockVaultService.listDirectoryContents = vi.fn().mockResolvedValue(mockContents);
 
-			await fileSystemService.listDirectoryContents('plugin', true, true);
+			await fileSystemService.listDirectoryContents('plugin', true, 0, false, true);
 
-			expect(mockVaultService.listDirectoryContents).toHaveBeenCalledWith('plugin', true, true);
+			expect(mockVaultService.listDirectoryContents).toHaveBeenCalledWith('plugin', true, 0, false, true);
 		});
 	});
 
@@ -729,16 +729,16 @@ describe('FileSystemService', () => {
 
 			mockVaultService.searchVaultFiles = vi.fn().mockResolvedValue(mockMatches);
 
-			const result = await fileSystemService.searchVaultFiles(searchTerm);
+			const result = await fileSystemService.searchVaultFiles(searchTerm, 0, 0, false);
 
 			expect(result).toEqual(mockMatches);
-			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith(searchTerm, 0, 0, false);
+			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith(searchTerm, 0, 0, false, false);
 		});
 
 		it('should return empty array when no matches found', async () => {
 			mockVaultService.searchVaultFiles = vi.fn().mockResolvedValue([]);
 
-			const result = await fileSystemService.searchVaultFiles('nonexistent term');
+			const result = await fileSystemService.searchVaultFiles('nonexistent term', 0, 0, false);
 
 			expect(result).toEqual([]);
 		});
@@ -750,16 +750,16 @@ describe('FileSystemService', () => {
 
 			await fileSystemService.searchVaultFiles(searchTerm, 0, 0, true);
 
-			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith(searchTerm, 0, 0, true);
+			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith(searchTerm, 0, 0, true, false);
 		});
 
 		it('should handle empty search term', async () => {
 			mockVaultService.searchVaultFiles = vi.fn().mockResolvedValue([]);
 
-			const result = await fileSystemService.searchVaultFiles('');
+			const result = await fileSystemService.searchVaultFiles('', 0, 0, false);
 
 			expect(result).toEqual([]);
-			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith('', 0, 0, false);
+			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith('', 0, 0, false, false);
 		});
 	});
 });

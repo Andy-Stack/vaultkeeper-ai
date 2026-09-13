@@ -6,11 +6,14 @@ export const ListVaultFiles: IAIToolDefinition = {
     description: `Lists files and directories in the vault's directory structure.
 Returns a structured view of the vault's organization including file names, paths, and directory hierarchy.
 
+Results are capped and tracked using a single cursor. If the listing was capped, the response includes a nextIndex - pass it back as "index" on a follow-up call to continue listing from where it left off (the earlier results are not lost, but later entries would be if you don't resume). A missing/undefined nextIndex means the listing reached the end of the directory and there is nothing more to find.
+
 Call this function:
 - When you need to list files in a specific directory or the entire vault
 - When getting an overview of vault organization and structure
 - When browsing available files and folders
 - When understanding how notes are organized
+- When resuming a prior listing that returned a nextIndex, to continue seeing more entries
 
 Do NOT use this function:
 - When you need to search for specific content within files (use SearchVaultFiles instead)
@@ -25,6 +28,10 @@ Do NOT use this function:
         recursive: {
           type: "boolean",
           description: "When true, recursively lists all files and subdirectories in a tree structure. When false, only lists immediate children of the specified directory.",
+        },
+        index: {
+          type: "integer",
+          description: "Where to resume this listing. Omit or use 0 to start from the beginning. If the previous call's response included a nextIndex, pass that value back to continue listing from where it left off - otherwise results already seen may be repeated and later entries may be missed. A missing/undefined nextIndex in the response means the listing reached the end and there is nothing more to find."
         },
         user_message: {
           type: "string",

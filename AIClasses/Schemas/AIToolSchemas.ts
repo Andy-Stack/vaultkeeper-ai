@@ -62,12 +62,14 @@ export const MoveVaultFolderArgsSchema = z.object({
 export const ListVaultFilesArgsSchema = z.object({
 	path: z.string(),
 	recursive: z.boolean(),
+	index: z.number().optional(),
 	user_message: z.string()
 });
 
 export const GetWebViewerContentArgsSchema = z.object({
 	url_hint: z.string().optional(),
 	format: z.enum(["text", "screenshot"]),
+	index: z.number().optional(),
 	user_message: z.string()
 });
 

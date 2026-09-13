@@ -185,9 +185,10 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(mockPages);
 
 			const results = await vaultService.searchVaultFiles('search');
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBeGreaterThan(0);
-			const match = results.find(r => r.file.path === 'document.pdf');
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
+			const match = results.fileContentMatches.find(r => r.file.path === 'document.pdf');
 			expect(match).toBeDefined();
 			expect(match!.snippets.length).toBe(2); // Two matches across two pages
 
@@ -212,8 +213,9 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(mockPages);
 
 			const results = await vaultService.searchVaultFiles('keyword');
+			if (results instanceof Error) throw results;
 
-			const match = results.find(r => r.file.path === 'report.pdf');
+			const match = results.fileContentMatches.find(r => r.file.path === 'report.pdf');
 			expect(match).toBeDefined();
 
 			// Should have 3 snippets: page 1 (1 match), page 2 (merged into 1 snippet), page 4 (1 match)
@@ -246,8 +248,9 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(mockPages);
 
 			const results = await vaultService.searchVaultFiles('match');
+			if (results instanceof Error) throw results;
 
-			const match = results.find(r => r.file.path === 'single-page.pdf');
+			const match = results.fileContentMatches.find(r => r.file.path === 'single-page.pdf');
 			expect(match).toBeDefined();
 			expect(match!.snippets[0].pageNumber).toBe(1);
 		});
@@ -271,8 +274,9 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(mockPages);
 
 			const results = await vaultService.searchVaultFiles('target');
+			if (results instanceof Error) throw results;
 
-			const match = results.find(r => r.file.path === 'large-document.pdf');
+			const match = results.fileContentMatches.find(r => r.file.path === 'large-document.pdf');
 			expect(match).toBeDefined();
 			expect(match!.snippets.length).toBe(10); // 10 matches (pages 10, 20, 30, ..., 100)
 
@@ -295,8 +299,9 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(mockPages);
 
 			const results = await vaultService.searchVaultFiles('test');
+			if (results instanceof Error) throw results;
 
-			const match = results.find(r => r.file.path === 'overlapping.pdf');
+			const match = results.fileContentMatches.find(r => r.file.path === 'overlapping.pdf');
 			expect(match).toBeDefined();
 
 			// Should merge into one snippet since they're close together
@@ -318,8 +323,9 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(mockPages);
 
 			const results = await vaultService.searchVaultFiles('match');
+			if (results instanceof Error) throw results;
 
-			const match = results.find(r => r.file.path === 'cross-page.pdf');
+			const match = results.fileContentMatches.find(r => r.file.path === 'cross-page.pdf');
 			expect(match).toBeDefined();
 
 			// Should NOT merge - different pages
@@ -344,8 +350,9 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(errorPages);
 
 			const results = await vaultService.searchVaultFiles('password');
+			if (results instanceof Error) throw results;
 
-			const match = results.find(r => r.file.path === 'protected.pdf');
+			const match = results.fileContentMatches.find(r => r.file.path === 'protected.pdf');
 			expect(match).toBeDefined();
 			expect(match!.snippets[0].text).toContain('password protected');
 			expect(match!.snippets[0].pageNumber).toBe(1);
@@ -364,8 +371,9 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(errorPages);
 
 			const results = await vaultService.searchVaultFiles('PDF');
+			if (results instanceof Error) throw results;
 
-			const match = results.find(r => r.file.path === 'corrupted.pdf');
+			const match = results.fileContentMatches.find(r => r.file.path === 'corrupted.pdf');
 			expect(match).toBeDefined();
 			expect(match!.snippets[0].text).toContain('Failed to read PDF');
 		});
@@ -388,11 +396,12 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(mockPages);
 
 			const results = await vaultService.searchVaultFiles('search');
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBe(2);
+			expect(results.fileContentMatches.length).toBe(2);
 
-			const pdfMatch = results.find(r => r.file.path === 'document.pdf');
-			const mdMatch = results.find(r => r.file.path === 'note.md');
+			const pdfMatch = results.fileContentMatches.find(r => r.file.path === 'document.pdf');
+			const mdMatch = results.fileContentMatches.find(r => r.file.path === 'note.md');
 
 			expect(pdfMatch).toBeDefined();
 			expect(mdMatch).toBeDefined();
@@ -425,9 +434,10 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(mockPages);
 
 			const results = await vaultService.searchVaultFiles('match');
+			if (results instanceof Error) throw results;
 
 			// All results should have valid page numbers
-			results.forEach(result => {
+			results.fileContentMatches.forEach(result => {
 				result.snippets.forEach(snippet => {
 					expect(snippet.pageNumber).toBeGreaterThan(0);
 					expect([1, 5, 10]).toContain(snippet.pageNumber);
@@ -451,8 +461,9 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(mockPages);
 
 			const results = await vaultService.searchVaultFiles('MATCH');
+			if (results instanceof Error) throw results;
 
-			const match = results.find(r => r.file.path === 'context.pdf');
+			const match = results.fileContentMatches.find(r => r.file.path === 'context.pdf');
 			expect(match).toBeDefined();
 			expect(match!.snippets[0].text.length).toBeGreaterThan('MATCH'.length);
 			expect(match!.snippets[0].text).toContain('MATCH');
@@ -475,8 +486,9 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(mockPages);
 
 			const results = await vaultService.searchVaultFiles('TARGET');
+			if (results instanceof Error) throw results;
 
-			const match = results.find(r => r.file.path === 'limited.pdf');
+			const match = results.fileContentMatches.find(r => r.file.path === 'limited.pdf');
 			expect(match).toBeDefined();
 			expect(match!.snippets[0].text.length).toBeLessThanOrEqual(
 				settingsService.settings.snippetSizeLimit + 10
@@ -499,9 +511,9 @@ describe('VaultService - PDF Tests', () => {
 			readPDFSpy.mockResolvedValue(mockPages);
 
 			const results = await vaultService.searchVaultFiles('important');
+			if (results instanceof Error) throw results;
 
-			const match = results.find(r => r.file.path === 'important-report.pdf');
-			expect(match).toBeDefined();
+			expect(results.fileNameMatches).toContain('important-report.pdf');
 			// Should match filename even though content has no matches
 		});
 	});

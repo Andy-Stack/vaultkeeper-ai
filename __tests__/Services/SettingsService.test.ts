@@ -41,8 +41,8 @@ describe('SettingsService', () => {
             });
             expect(settingsService.settings.exclusions).toEqual([]);
             expect(settingsService.settings.userInstruction).toBe('');
-            expect(settingsService.settings.searchResultsLimit).toBe(30);
-            expect(settingsService.settings.snippetSizeLimit).toBe(100);
+            expect(settingsService.settings.searchResultsLimit).toBe(40);
+            expect(settingsService.settings.snippetSizeLimit).toBe(10);
         });
 
         it('should merge loaded settings with defaults', () => {
@@ -89,8 +89,8 @@ describe('SettingsService', () => {
             expect(settingsService.settings.apiKeys.openai).toBe('partial-key'); // Loaded
             expect(settingsService.settings.exclusions).toEqual([]); // Default
             expect(settingsService.settings.userInstruction).toBe(''); // Default
-            expect(settingsService.settings.searchResultsLimit).toBe(30); // Default
-            expect(settingsService.settings.snippetSizeLimit).toBe(100); // Default
+            expect(settingsService.settings.searchResultsLimit).toBe(40); // Default
+            expect(settingsService.settings.snippetSizeLimit).toBe(10); // Default
         });
 
         it('should default localUrl and localModels when not provided', () => {
@@ -647,12 +647,12 @@ describe('SettingsService', () => {
     describe('Search and Snippet Limit Settings', () => {
         it('should use default searchResultsLimit when not specified', () => {
             settingsService = new SettingsService({});
-            expect(settingsService.settings.searchResultsLimit).toBe(30);
+            expect(settingsService.settings.searchResultsLimit).toBe(40);
         });
 
         it('should use default snippetSizeLimit when not specified', () => {
             settingsService = new SettingsService({});
-            expect(settingsService.settings.snippetSizeLimit).toBe(100);
+            expect(settingsService.settings.snippetSizeLimit).toBe(10);
         });
 
         it('should allow custom searchResultsLimit values', () => {

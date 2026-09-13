@@ -87,110 +87,150 @@ describe('AIToolService - Integration Tests', () => {
 
 	describe('performAITool - SearchVaultFiles', () => {
 		it('should return search results with snippets', async () => {
-			const mockMatches = [
-				{
-					file: createMockFile('notes/test.md', 'test'),
-					snippets: [
-						{ text: 'This is a test note', matchIndex: 10 },
-						{ text: 'Another test match', matchIndex: 5 }
-					]
-				},
-				{
-					file: createMockFile('docs/guide.md', 'guide'),
-					snippets: [
-						{ text: 'Guide for testing', matchIndex: 0 }
-					]
-				}
-			];
+			const mockResult = {
+				fileNameMatches: [],
+				fileContentMatches: [
+					{
+						file: createMockFile('notes/test.md', 'test'),
+						snippets: [
+							{ text: 'This is a test note', matchIndex: 10 },
+							{ text: 'Another test match', matchIndex: 5 }
+						]
+					},
+					{
+						file: createMockFile('docs/guide.md', 'guide'),
+						snippets: [
+							{ text: 'Guide for testing', matchIndex: 0 }
+						]
+					}
+				],
+				nextFileNamesIndex: undefined,
+				nextFileContentsIndex: undefined
+			};
 
-			mockFileSystemService.searchVaultFiles.mockResolvedValue(mockMatches);
+			mockFileSystemService.searchVaultFiles.mockResolvedValue(mockResult);
 
 			const result = await service.performAITool({
 				name: AITool.SearchVaultFiles,
-				arguments: { search_terms: ['test'], user_message: 'test search' },
+				arguments: { search_terms: [{ search_term: 'test' }], user_message: 'test search' },
 				toolId: 'tool_1'
 			} as any);
 
 			expect(result.name).toBe(AITool.SearchVaultFiles);
 			expect(result.toolId).toBe('tool_1');
-			expect(result.payload.response).toEqual([{searchTerm: 'test', results: [
-				{
-					path: 'notes/test.md',
-					snippets: [
-						{ text: 'This is a test note', matchPosition: 10 },
-						{ text: 'Another test match', matchPosition: 5 }
-					]
-				},
-				{
-					path: 'docs/guide.md',
-					snippets: [
-						{ text: 'Guide for testing', matchPosition: 0 }
-					]
-				}
-			]}]);
+			expect(result.payload.response).toEqual([{
+				searchTerm: 'test',
+				fileNameMatches: [],
+				fileContentMatches: [
+					{
+						path: 'notes/test.md',
+						snippets: [
+							{ text: 'This is a test note', matchPosition: 10 },
+							{ text: 'Another test match', matchPosition: 5 }
+						]
+					},
+					{
+						path: 'docs/guide.md',
+						snippets: [
+							{ text: 'Guide for testing', matchPosition: 0 }
+						]
+					}
+				],
+				nextFileNamesIndex: undefined,
+				nextFileContentsIndex: undefined
+			}]);
 		});
 
 		it('should return empty array when search term is empty', async () => {
-			// Mock returns empty array for empty search term
-			mockFileSystemService.searchVaultFiles.mockResolvedValue([]);
+			// Mock returns empty results for empty search term
+			mockFileSystemService.searchVaultFiles.mockResolvedValue({
+				fileNameMatches: [],
+				fileContentMatches: [],
+				nextFileNamesIndex: undefined,
+				nextFileContentsIndex: undefined
+			});
 
 			const result = await service.performAITool({
 				name: AITool.SearchVaultFiles,
-				arguments: { search_terms: [''], user_message: 'test search' },
+				arguments: { search_terms: [{ search_term: '' }], user_message: 'test search' },
 				toolId: 'tool_2'
 			} as any);
 
 			// Empty search terms return empty results
-			expect(result.payload.response).toEqual([{searchTerm: '', results: []}]);
+			expect(result.payload.response).toEqual([{
+				searchTerm: '', fileNameMatches: [], fileContentMatches: [],
+				nextFileNamesIndex: undefined, nextFileContentsIndex: undefined
+			}]);
 		});
 
 		it('should return empty array when search term is whitespace', async () => {
-			// Mock returns empty array for whitespace search term
-			mockFileSystemService.searchVaultFiles.mockResolvedValue([]);
+			// Mock returns empty results for whitespace search term
+			mockFileSystemService.searchVaultFiles.mockResolvedValue({
+				fileNameMatches: [],
+				fileContentMatches: [],
+				nextFileNamesIndex: undefined,
+				nextFileContentsIndex: undefined
+			});
 
 			const result = await service.performAITool({
 				name: AITool.SearchVaultFiles,
-				arguments: { search_terms: ['   '], user_message: 'test search' },
+				arguments: { search_terms: [{ search_term: '   ' }], user_message: 'test search' },
 				toolId: 'tool_3'
 			} as any);
 
 			// Whitespace search terms return empty results (after trim)
-			expect(result.payload.response).toEqual([{searchTerm: '   ', results: []}]);
+			expect(result.payload.response).toEqual([{
+				searchTerm: '   ', fileNameMatches: [], fileContentMatches: [],
+				nextFileNamesIndex: undefined, nextFileContentsIndex: undefined
+			}]);
 		});
 
 		it('should return empty array when no matches found', async () => {
-			mockFileSystemService.searchVaultFiles.mockResolvedValue([]);
+			mockFileSystemService.searchVaultFiles.mockResolvedValue({
+				fileNameMatches: [],
+				fileContentMatches: [],
+				nextFileNamesIndex: undefined,
+				nextFileContentsIndex: undefined
+			});
 
 			const result = await service.performAITool({
 				name: AITool.SearchVaultFiles,
-				arguments: { search_terms: ['nonexistent'], user_message: 'test search' },
+				arguments: { search_terms: [{ search_term: 'nonexistent' }], user_message: 'test search' },
 				toolId: 'tool_4'
 			} as any);
 
 			// No matches returns empty results
-			expect(result.payload.response).toEqual([{searchTerm: 'nonexistent', results: []}]);
+			expect(result.payload.response).toEqual([{
+				searchTerm: 'nonexistent', fileNameMatches: [], fileContentMatches: [],
+				nextFileNamesIndex: undefined, nextFileContentsIndex: undefined
+			}]);
 		});
 
 		it('should handle single match', async () => {
-			const mockMatches = [
-				{
-					file: createMockFile('single.md', 'single'),
-					snippets: [{ text: 'Single result', matchIndex: 0 }]
-				}
-			];
+			const mockResult = {
+				fileNameMatches: [],
+				fileContentMatches: [
+					{
+						file: createMockFile('single.md', 'single'),
+						snippets: [{ text: 'Single result', matchIndex: 0 }]
+					}
+				],
+				nextFileNamesIndex: undefined,
+				nextFileContentsIndex: undefined
+			};
 
-			mockFileSystemService.searchVaultFiles.mockResolvedValue(mockMatches);
+			mockFileSystemService.searchVaultFiles.mockResolvedValue(mockResult);
 
 			const result = await service.performAITool({
 				name: AITool.SearchVaultFiles,
-				arguments: { search_terms: ['single'], user_message: 'test search' },
+				arguments: { search_terms: [{ search_term: 'single' }], user_message: 'test search' },
 				toolId: 'tool_5'
 			} as any);
 
 			expect(result.payload.response).toHaveLength(1);
 			expect((result.payload.response as any)[0].searchTerm).toBe('single');
-			expect((result.payload.response as any)[0].results).toHaveLength(1);
-			expect((result.payload.response as any)[0].results[0].path).toBe('single.md');
+			expect((result.payload.response as any)[0].fileContentMatches).toHaveLength(1);
+			expect((result.payload.response as any)[0].fileContentMatches[0].path).toBe('single.md');
 		});
 	});
 
@@ -1051,21 +1091,26 @@ describe('AIToolService - Integration Tests', () => {
 	describe('Integration - Complete Workflows', () => {
 		it('should handle search -> read workflow', async () => {
 			// First search
-			const mockMatches = [
-				{
-					file: createMockFile('found.md', 'found'),
-					snippets: [{ text: 'Found content', matchIndex: 0 }]
-				}
-			];
-			mockFileSystemService.searchVaultFiles.mockResolvedValue(mockMatches);
+			const mockResult = {
+				fileNameMatches: [],
+				fileContentMatches: [
+					{
+						file: createMockFile('found.md', 'found'),
+						snippets: [{ text: 'Found content', matchIndex: 0 }]
+					}
+				],
+				nextFileNamesIndex: undefined,
+				nextFileContentsIndex: undefined
+			};
+			mockFileSystemService.searchVaultFiles.mockResolvedValue(mockResult);
 
 			const searchResult = await service.performAITool({
 				name: AITool.SearchVaultFiles,
-				arguments: { search_terms: ['test'], user_message: 'test search' },
+				arguments: { search_terms: [{ search_term: 'test' }], user_message: 'test search' },
 				toolId: 'search_1'
 			} as any);
 
-			const foundPath = (searchResult.payload.response as any)[0].results[0].path;
+			const foundPath = (searchResult.payload.response as any)[0].fileContentMatches[0].path;
 
 			// Then read
 			mockFileSystemService.readFilePath.mockResolvedValue('File content here');

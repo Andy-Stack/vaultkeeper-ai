@@ -732,7 +732,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.searchVaultFiles(searchTerm);
 
 			expect(result).toEqual(mockMatches);
-			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith(searchTerm, false);
+			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith(searchTerm, 0, 0, false);
 		});
 
 		it('should return empty array when no matches found', async () => {
@@ -748,9 +748,9 @@ describe('FileSystemService', () => {
 
 			mockVaultService.searchVaultFiles = vi.fn().mockResolvedValue([]);
 
-			await fileSystemService.searchVaultFiles(searchTerm, true);
+			await fileSystemService.searchVaultFiles(searchTerm, 0, 0, true);
 
-			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith(searchTerm, true);
+			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith(searchTerm, 0, 0, true);
 		});
 
 		it('should handle empty search term', async () => {
@@ -759,7 +759,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.searchVaultFiles('');
 
 			expect(result).toEqual([]);
-			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith('', false);
+			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith('', 0, 0, false);
 		});
 	});
 });

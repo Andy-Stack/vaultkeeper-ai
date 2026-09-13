@@ -992,9 +992,10 @@ describe('VaultService - Integration Tests', () => {
 			});
 
 			const results = await vaultService.searchVaultFiles('test');
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBeGreaterThan(0);
-			const match = results.find(r => r.file.path === 'note1.md');
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
+			const match = results.fileContentMatches.find(r => r.file.path === 'note1.md');
 			expect(match).toBeDefined();
 			expect(match!.snippets.length).toBeGreaterThan(0);
 			expect(match!.snippets[0].pageNumber).toBe(1);
@@ -1008,10 +1009,10 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.cachedRead.mockResolvedValue('No matches in content');
 
 			const results = await vaultService.searchVaultFiles('test');
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBeGreaterThan(0);
-			const match = results.find(r => r.file.path === 'test-file.md');
-			expect(match).toBeDefined();
+			expect(results.fileNameMatches.length).toBeGreaterThan(0);
+			expect(results.fileNameMatches).toContain('test-file.md');
 		});
 
 		it('should handle invalid regex gracefully by escaping', async () => {
@@ -1036,9 +1037,10 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.cachedRead.mockResolvedValue(content);
 
 			const results = await vaultService.searchVaultFiles('MATCH');
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBeGreaterThan(0);
-			const match = results[0];
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
+			const match = results.fileContentMatches[0];
 			expect(match.snippets[0].text.length).toBeGreaterThan('MATCH'.length);
 			expect(match.snippets[0].text).toContain('MATCH');
 			expect(match.snippets[0].pageNumber).toBe(1);
@@ -1054,13 +1056,14 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.cachedRead.mockResolvedValue(content);
 
 			const results = await vaultService.searchVaultFiles('test');
+			if (results instanceof Error) throw results;
 
 			// Should merge into one snippet since they overlap
-			expect(results.length).toBeGreaterThan(0);
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
 			// The exact behavior depends on implementation details
 		});
 
-		it('should randomly sample when more than searchResultsLimit matches', async () => {
+		it('should cap file content matches at searchResultsLimit', async () => {
 			// Create 25 files, each with a match
 			const files: TFile[] = [];
 			for (let i = 0; i < 25; i++) {
@@ -1072,10 +1075,12 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.cachedRead.mockResolvedValue('This contains the search term');
 
 			const results = await vaultService.searchVaultFiles('search');
+			if (results instanceof Error) throw results;
 
-			// Should have at most searchResultsLimit snippet matches (plus potentially filename matches)
-			const totalSnippets = results.reduce((sum, r) => sum + r.snippets.length, 0);
-			expect(totalSnippets).toBeLessThanOrEqual(settingsService.settings.searchResultsLimit);
+			// Should have at most searchResultsLimit matching files
+			expect(results.fileContentMatches.length).toBeLessThanOrEqual(settingsService.settings.searchResultsLimit);
+			// More files remain, so a resumable cursor should be returned
+			expect(results.nextFileContentsIndex).toBeDefined();
 		});
 
 		it('should respect custom searchResultsLimit setting', async () => {
@@ -1092,10 +1097,10 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.cachedRead.mockResolvedValue('This contains the search term');
 
 			const results = await vaultService.searchVaultFiles('search');
+			if (results instanceof Error) throw results;
 
-			// Should have at most 5 snippet matches
-			const totalSnippets = results.reduce((sum, r) => sum + r.snippets.length, 0);
-			expect(totalSnippets).toBeLessThanOrEqual(5);
+			// Should have at most 5 matching files
+			expect(results.fileContentMatches.length).toBeLessThanOrEqual(5);
 		});
 
 		it('should respect custom snippetSizeLimit setting for snippet extraction', async () => {
@@ -1109,9 +1114,10 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.cachedRead.mockResolvedValue(content);
 
 			const results = await vaultService.searchVaultFiles('MATCH');
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBeGreaterThan(0);
-			const match = results[0];
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
+			const match = results.fileContentMatches[0];
 			// Snippet should be approximately snippetSizeLimit characters (10 before + 5 for MATCH + 10 after)
 			// Allow some margin for the match itself
 			expect(match.snippets[0].text.length).toBeLessThanOrEqual(settingsService.settings.snippetSizeLimit + 10);
@@ -1126,8 +1132,9 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.cachedRead.mockResolvedValue('Test TEST tEsT');
 
 			const results = await vaultService.searchVaultFiles('test');
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBeGreaterThan(0);
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
 			// Should find all three variants
 		});
 
@@ -1141,9 +1148,10 @@ describe('VaultService - Integration Tests', () => {
 			// Build the regex pattern string to avoid vitest transformer issues
 			const pattern = '/' + 'maui' + '/' + 'i';
 			const results = await vaultService.searchVaultFiles(pattern);
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBeGreaterThan(0);
-			const match = results.find(r => r.file.path === 'note.md');
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
+			const match = results.fileContentMatches.find(r => r.file.path === 'note.md');
 			expect(match).toBeDefined();
 			expect(match!.snippets.length).toBeGreaterThan(0);
 			expect(match!.snippets[0].text).toContain('MAUI');
@@ -1160,9 +1168,10 @@ describe('VaultService - Integration Tests', () => {
 			// Should match only whole word "docker", not "dockers" or "dockerfiles"
 			const pattern = '/' + '\\b' + 'docker' + '\\b' + '/' + 'i';
 			const results = await vaultService.searchVaultFiles(pattern);
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBeGreaterThan(0);
-			const match = results.find(r => r.file.path === 'note.md');
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
+			const match = results.fileContentMatches.find(r => r.file.path === 'note.md');
 			expect(match).toBeDefined();
 		});
 
@@ -1176,9 +1185,10 @@ describe('VaultService - Integration Tests', () => {
 			// Should match both "gray" and "grey"
 			const pattern = '/' + 'gr(a|e)y' + '/' + 'i';
 			const results = await vaultService.searchVaultFiles(pattern);
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBeGreaterThan(0);
-			const match = results.find(r => r.file.path === 'note.md');
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
+			const match = results.fileContentMatches.find(r => r.file.path === 'note.md');
 			expect(match).toBeDefined();
 		});
 
@@ -1192,9 +1202,10 @@ describe('VaultService - Integration Tests', () => {
 			// Should match kubernetes, k8s, or kube
 			const pattern = '/' + '(kubernetes|k8s|kube)' + '/' + 'i';
 			const results = await vaultService.searchVaultFiles(pattern);
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBeGreaterThan(0);
-			const match = results.find(r => r.file.path === 'note.md');
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
+			const match = results.fileContentMatches.find(r => r.file.path === 'note.md');
 			expect(match).toBeDefined();
 		});
 
@@ -1208,9 +1219,10 @@ describe('VaultService - Integration Tests', () => {
 			// Should match "project alpha", "proj_alpha", "proj alpha", etc.
 			const pattern = '/' + 'proj.*alpha' + '/' + 'i';
 			const results = await vaultService.searchVaultFiles(pattern);
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBeGreaterThan(0);
-			const match = results.find(r => r.file.path === 'note.md');
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
+			const match = results.fileContentMatches.find(r => r.file.path === 'note.md');
 			expect(match).toBeDefined();
 		});
 
@@ -1224,9 +1236,10 @@ describe('VaultService - Integration Tests', () => {
 			// Should match version numbers like v1.2, v10.5, etc.
 			const pattern = '/' + 'v\\d+\\.\\d+' + '/';
 			const results = await vaultService.searchVaultFiles(pattern);
+			if (results instanceof Error) throw results;
 
-			expect(results.length).toBeGreaterThan(0);
-			const match = results.find(r => r.file.path === 'note.md');
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
+			const match = results.fileContentMatches.find(r => r.file.path === 'note.md');
 			expect(match).toBeDefined();
 		});
 
@@ -1254,6 +1267,7 @@ describe('VaultService - Integration Tests', () => {
 
 			// Execute search
 			const results = await vaultService.searchVaultFiles('test');
+			if (results instanceof Error) throw results;
 
 			// Should not log exclusion errors during normal search operation
 			expect(consoleErrorSpy).not.toHaveBeenCalledWith(
@@ -1261,7 +1275,7 @@ describe('VaultService - Integration Tests', () => {
 			);
 
 			// Should still return results from non-excluded files
-			expect(results.length).toBeGreaterThan(0);
+			expect(results.fileContentMatches.length).toBeGreaterThan(0);
 
 			consoleErrorSpy.mockRestore();
 		});
@@ -1284,10 +1298,11 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.cachedRead.mockResolvedValue('searchable content');
 
 			// Search with allowAccessToPluginRoot = true
-			const results = await vaultService.searchVaultFiles('searchable', true);
+			const results = await vaultService.searchVaultFiles('searchable', 0, 0, true);
+			if (results instanceof Error) throw results;
 
 			// Should include files from Vaultkeeper AI directory
-			const paths = results.map(r => r.file.path);
+			const paths = results.fileContentMatches.map(r => r.file.path);
 			expect(paths).toContain('Vaultkeeper AI/notes.md');
 			expect(paths).toContain('normal.md');
 		});
@@ -1310,10 +1325,11 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.cachedRead.mockResolvedValue('searchable content');
 
 			// Search with allowAccessToPluginRoot = false (default)
-			const results = await vaultService.searchVaultFiles('searchable', false);
+			const results = await vaultService.searchVaultFiles('searchable', 0, 0, false);
+			if (results instanceof Error) throw results;
 
 			// Should NOT include files from Vaultkeeper AI directory
-			const paths = results.map(r => r.file.path);
+			const paths = results.fileContentMatches.map(r => r.file.path);
 			expect(paths).not.toContain('Vaultkeeper AI/notes.md');
 			expect(paths).toContain('normal.md');
 		});
@@ -1329,7 +1345,7 @@ describe('VaultService - Integration Tests', () => {
 			const listFilesSpy = vi.spyOn(vaultService, 'listFilesInDirectory');
 
 			// Call with allowAccessToPluginRoot = true
-			await vaultService.searchVaultFiles('test', true);
+			await vaultService.searchVaultFiles('test', 0, 0, true);
 
 			// Verify listFilesInDirectory was called with the correct parameter
 			expect(listFilesSpy).toHaveBeenCalledWith(Path.Root, true, true);
@@ -1337,7 +1353,7 @@ describe('VaultService - Integration Tests', () => {
 			listFilesSpy.mockClear();
 
 			// Call with allowAccessToPluginRoot = false
-			await vaultService.searchVaultFiles('test', false);
+			await vaultService.searchVaultFiles('test', 0, 0, false);
 
 			// Verify listFilesInDirectory was called with the correct parameter
 			expect(listFilesSpy).toHaveBeenCalledWith(Path.Root, true, false);

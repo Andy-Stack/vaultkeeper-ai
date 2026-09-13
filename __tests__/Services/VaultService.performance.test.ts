@@ -293,6 +293,8 @@ async function measureSearch(
 
 	const results = await vaultService.searchVaultFiles(
 		QUERY_PATTERNS[queryPattern],
+		0,
+		0,
 		false
 	);
 
@@ -300,9 +302,13 @@ async function measureSearch(
 	const memAfter = process.memoryUsage().heapUsed;
 	const memoryUsed = memAfter - memBefore;
 
+	if (results instanceof Error) {
+		throw results;
+	}
+
 	return {
 		duration,
-		resultCount: results.length,
+		resultCount: results.fileNameMatches.length + results.fileContentMatches.length,
 		memoryUsed
 	};
 }

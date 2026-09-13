@@ -42,7 +42,12 @@ export abstract class RegexTools {
           return Exception.new(error);
       }
 
-      const safety = isSafe(regex, { timeout: 500 });
+      // isSafe models scanning from any offset in the input (since search is unanchored),
+      // which creates false-positive ambiguity with the pattern's own unbounded quantifiers
+      // (e.g. "foo.*bar" is flagged unsafe unanchored but safe anchored). Anchor for the
+      // safety check only; the regex returned for actual matching stays unanchored.
+      const anchoredForSafetyCheck = new RegExp(`^(?:${source})`, flags);
+      const safety = isSafe(anchoredForSafetyCheck, { timeout: 500 });
       if (!safety.safe) {
           return Exception.new(`Pattern is vulnerable to catastrophic backtracking (ReDoS): ${source}`);
       }

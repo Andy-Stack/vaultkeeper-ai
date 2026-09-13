@@ -6,19 +6,20 @@ export enum Copy {
     NoUserInstruction = "No custom instructions",
 
     // Model Display Names
-    ClaudeFable_5 = "Claude Fable 5",
+    ClaudeFable_5_1 = "Claude Fable 5.1",
     ClaudeSonnet_5 = "Claude Sonnet 5",
-    ClaudeOpus_4_8 = "Claude Opus 4.8",
+    ClaudeOpus_5 = "Claude Opus 5",
     ClaudeHaiku_4_5 = "Claude Haiku 4.5",
 
     GeminiFlash_3_1_Lite = "Gemini 3.1 Flash-Lite",
-    GeminiFlash_3_Flash = "Gemini 3 Flash",
-    GeminiFlash_3_5_Flash = "Gemini 3.5 Flash",
+    GeminiFlash_3_5_Lite = "Gemini 3.5 Flash-Lite",
+    GeminiFlash_3_8_Flash = "Gemini 3.8 Flash",
     GeminiPro_3_1_Preview = "Gemini 3.1 Pro Preview",
 
     GPT_5_6_Sol = "GPT-5.6 Sol",
     GPT_5_6_Terra = "GPT-5.6 Terra",
     GPT_5_6_Luna = "GPT-5.6 Luna",
+    GPT_6_Astra = "GPT-6 Astra",
 
     MistralMedium = "Mistral Medium 3.5",
     MistralSmall = "Mistral Small 4",

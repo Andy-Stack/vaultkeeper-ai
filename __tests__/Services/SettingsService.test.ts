@@ -49,7 +49,7 @@ describe('SettingsService', () => {
             const loadedSettings: Partial<IVaultkeeperAISettings> = {
                 firstTimeStart: false,
                 provider: AIProvider.Gemini,
-                model: AIProviderModel.GeminiFlash_3_5_Flash,
+                model: AIProviderModel.GeminiFlash_3_8_Flash,
                 planningModel: AIProviderModel.GeminiPro_3_1_Preview,
                 apiKeys: {
                     claude: 'claude-key-123',
@@ -63,7 +63,7 @@ describe('SettingsService', () => {
             settingsService = new SettingsService(loadedSettings as IVaultkeeperAISettings);
 
             expect(settingsService.settings.firstTimeStart).toBe(false);
-            expect(settingsService.settings.model).toBe(AIProviderModel.GeminiFlash_3_5_Flash);
+            expect(settingsService.settings.model).toBe(AIProviderModel.GeminiFlash_3_8_Flash);
             expect(settingsService.settings.apiKeys.claude).toBe('claude-key-123');
             expect(settingsService.settings.apiKeys.openai).toBe('openai-key-456');
             expect(settingsService.settings.apiKeys.gemini).toBe('gemini-key-789');
@@ -258,7 +258,7 @@ describe('SettingsService', () => {
         it('should return Gemini key when current model is Gemini', () => {
             const loadedSettings = makeTestSettings({
                 provider: AIProvider.Gemini,
-                model: AIProviderModel.GeminiFlash_3_5_Flash,
+                model: AIProviderModel.GeminiFlash_3_8_Flash,
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
@@ -275,7 +275,7 @@ describe('SettingsService', () => {
             // Test with various Claude models
             settingsService = new SettingsService({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeOpus_4_8,
+                model: AIProviderModel.ClaudeOpus_5,
                 apiKeys: { claude: 'opus-key', openai: '', gemini: '', mistral: '', local: '' }
             });
             expect(settingsService.getApiKeyForCurrentProvider()).toBe('opus-key');
@@ -449,7 +449,7 @@ describe('SettingsService', () => {
             const claudeModels = [
                 AIProviderModel.ClaudeSonnet_5,
                 AIProviderModel.ClaudeSonnet_5,
-                AIProviderModel.ClaudeOpus_4_8,
+                AIProviderModel.ClaudeOpus_5,
                 AIProviderModel.ClaudeHaiku_4_5
             ];
 
@@ -467,7 +467,7 @@ describe('SettingsService', () => {
         it('should correctly identify Gemini models', () => {
             const geminiModels = [
                 AIProviderModel.GeminiFlash_3_1_Lite,
-                AIProviderModel.GeminiFlash_3_5_Flash,
+                AIProviderModel.GeminiFlash_3_8_Flash,
                 AIProviderModel.GeminiPro_3_1_Preview
             ];
 
@@ -570,7 +570,7 @@ describe('SettingsService', () => {
                 cachedModelSettings: {
                     [AIProvider.Claude]: {
                         model: AIProviderModel.ClaudeSonnet_5,
-                        planningModel: AIProviderModel.ClaudeOpus_4_8,
+                        planningModel: AIProviderModel.ClaudeOpus_5,
                         quickActionModel: AIProviderModel.ClaudeHaiku_4_5
                     },
                     [AIProvider.OpenAI]: {
@@ -604,13 +604,13 @@ describe('SettingsService', () => {
         it('should not touch a model string that is still a valid enum member for the provider', () => {
             settingsService = new SettingsService({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeOpus_4_8,
-                planningModel: AIProviderModel.ClaudeOpus_4_8,
+                model: AIProviderModel.ClaudeOpus_5,
+                planningModel: AIProviderModel.ClaudeOpus_5,
                 quickActionModel: AIProviderModel.ClaudeHaiku_4_5
             } as Partial<IVaultkeeperAISettings>);
 
-            expect(settingsService.settings.model).toBe(AIProviderModel.ClaudeOpus_4_8);
-            expect(settingsService.settings.planningModel).toBe(AIProviderModel.ClaudeOpus_4_8);
+            expect(settingsService.settings.model).toBe(AIProviderModel.ClaudeOpus_5);
+            expect(settingsService.settings.planningModel).toBe(AIProviderModel.ClaudeOpus_5);
             expect(settingsService.settings.quickActionModel).toBe(AIProviderModel.ClaudeHaiku_4_5);
         });
     });

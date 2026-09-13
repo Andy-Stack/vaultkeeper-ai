@@ -66,21 +66,22 @@ export enum AIProvider {
 
 export enum AIProviderModel {
     // Claude models
-    ClaudeFable_5 = "claude-fable-5",
+    ClaudeFable_5_1 = "claude-fable-5-1",
     ClaudeSonnet_5 = "claude-sonnet-5",
-    ClaudeOpus_4_8 = "claude-opus-4-8",
+    ClaudeOpus_5 = "claude-opus-5",
     ClaudeHaiku_4_5 = "claude-haiku-4-5-20251001",
 
     // Gemini models
     GeminiFlash_3_1_Lite = "gemini-3.1-flash-lite",
-    GeminiFlash_3_Flash = "gemini-3-flash-preview",
-    GeminiFlash_3_5_Flash = "gemini-3.5-flash",
+    GeminiFlash_3_5_Lite = "gemini-3.5-flash-lite",
+    GeminiFlash_3_8_Flash = "gemini-3.8-flash",
     GeminiPro_3_1_Preview = "gemini-3.1-pro-preview",
 
     // OpenAI models
     GPT_5_6_Sol = "gpt-5.6-sol",
     GPT_5_6_Terra = "gpt-5.6-terra",
     GPT_5_6_Luna = "gpt-5.6-luna",
+    GPT_6_Astra = "gpt-6-astra",
 
     // Mistral models
     MistralMedium = "mistral-medium-3-5",
@@ -88,7 +89,7 @@ export enum AIProviderModel {
 
     // Conversation naming models (aliases to existing models)
     ClaudeNamer = ClaudeHaiku_4_5,
-    GeminiNamer = GeminiFlash_3_1_Lite,
+    GeminiNamer = GeminiFlash_3_5_Lite,
     OpenAINamer = GPT_5_6_Luna,
     MistralNamer = MistralSmall,
 
@@ -126,15 +127,15 @@ export const DEFAULT_QUICK_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel
 
 export const DEFAULT_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
     [AIProvider.Claude]:  AIProviderModel.ClaudeSonnet_5,
-    [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_5_Flash,
+    [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_8_Flash,
     [AIProvider.OpenAI]:  AIProviderModel.GPT_5_6_Terra,
     [AIProvider.Mistral]: AIProviderModel.MistralMedium,
     [AIProvider.Local]: AIProviderModel.None
 }
 
 export const DEFAULT_PLANNING_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
-    [AIProvider.Claude]:  AIProviderModel.ClaudeOpus_4_8,
-    [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_5_Flash,
+    [AIProvider.Claude]:  AIProviderModel.ClaudeOpus_5,
+    [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_8_Flash,
     [AIProvider.OpenAI]:  AIProviderModel.GPT_5_6_Sol,
     [AIProvider.Mistral]: AIProviderModel.MistralMedium,
     [AIProvider.Local]: AIProviderModel.None

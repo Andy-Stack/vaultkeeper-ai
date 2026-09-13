@@ -3,9 +3,8 @@ import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type VaultkeeperAIPlugin from "main";
 import { Path } from "Enums/Path";
-import { pathExtname, randomSample, shuffleArray } from "Helpers/Helpers";
-import { StringTools } from "Helpers/StringTools";
-import type { IPageText, ISearchMatch, ISearchSnippet } from "../Types/SearchTypes";
+import { pathExtname } from "Helpers/Helpers";
+import type { IPageText, ISearchResult, ISearchSnippet } from "../Types/SearchTypes";
 import type { SanitiserService } from "./SanitiserService";
 import { FileEvent } from "Enums/FileEvent";
 import type { SettingsService } from "./SettingsService";
@@ -18,6 +17,7 @@ import { AbortService } from "./AbortService";
 import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import { FileType, isBinaryFile, isDocumentFile, isFileType } from "Enums/FileType";
 import { readDocument, readPDF } from "Helpers/DocumentHelper";
+import { RegexTools } from "Helpers/RegexTools";
 
 interface IFileEventArgs {
     oldPath: string;
@@ -223,7 +223,7 @@ export class VaultService {
         }
 
         for (const content of oldContent) {
-            if (!currentContent.includes(content) && !StringTools.toWhitespaceFlexibleRegex(content).test(currentContent)) {
+            if (!currentContent.includes(content) && !RegexTools.toWhitespaceFlexibleRegex(content).test(currentContent)) {
                 return Exception.new(`Content to replace was not found in the file, the old content must match exactly. No changes have been made. Unmatched content: "${content}"`);
             }
         }
@@ -233,7 +233,7 @@ export class VaultService {
             if (updatedContent.includes(oldContent[i])) {
                 updatedContent = updatedContent.replace(oldContent[i], newContent[i]);
             } else {
-                updatedContent = updatedContent.replace(StringTools.toWhitespaceFlexibleRegex(oldContent[i]), newContent[i]);
+                updatedContent = updatedContent.replace(RegexTools.toWhitespaceFlexibleRegex(oldContent[i]), newContent[i]);
             }
         }
 
@@ -399,41 +399,68 @@ export class VaultService {
         return folders;
     }
 
-    public async searchVaultFiles(searchTerm: string, allowAccessToPluginRoot: boolean = false): Promise<ISearchMatch[]> {
-        if (searchTerm.trim() === "") {
-            return [];
-        }
-
+    public async searchVaultFiles(searchTerm: string, fileNamesIndex: number = 0, fileContentsIndex: number = 0, allowAccessToPluginRoot: boolean = false): Promise<ISearchResult | Error> {
         // Always ensure 'g' flag is present for extractSnippets to work correctly
         // (regex.exec in a loop requires 'g' flag to advance, otherwise infinite loop)
-        const regex = StringTools.asRegex(searchTerm, ["i", "g"]);
+        const regex = RegexTools.asRegex(searchTerm, ["i", "g"]);
 
-        if (regex === null) {
-            return [];
+        if (regex instanceof Error) {
+            return regex;
         }
 
+        let fileNameMatches: string[] = [];
+        let fileContentsMatches: { file: TFile, snippets: ISearchSnippet[] }[] = [];
+
+        const literals = RegexTools.extractRegexLiterals(regex);
+        const resultsLimit = this.settingsService.settings.searchResultsLimit;
+
         const files: TFile[] = await this.listFilesInDirectory(Path.Root, true, allowAccessToPluginRoot);
+        files.sort(VaultService.recentFileSorter());
 
-        // Randomize file order to ensure varied results across multiple searches
-        const shuffledFiles = shuffleArray(files);
+        const fileNamesExhausted = fileNamesIndex < 0 || fileNamesIndex > files.length - 1;
+        const fileContentsExhausted = fileContentsIndex < 0 || fileContentsIndex > files.length - 1;
 
-        // Process files in parallel batches with early termination
-        const BATCH_SIZE = 100;
-        const MAX_MATCHES = this.settingsService.settings.searchResultsLimit * 3;
-        const allMatches: ISearchMatch[] = [];
+        let fileNameIndex = fileNamesIndex;
+        let fileNameLimitIndex: number | undefined;
 
-        for (let i = 0; i < shuffledFiles.length; i += BATCH_SIZE) {
-            // Early termination: stop if we have enough matches
-            if (allMatches.length >= MAX_MATCHES) {
+        while (!fileNamesExhausted && fileNameIndex < files.length) {
+            if (fileNameLimitIndex !== undefined) {
+                break;
+            }
+            const file = files[fileNameIndex];
+
+            const hasFilenameMatch = file.basename.match(regex) !== null || file.name.match(regex) !== null;
+            if (hasFilenameMatch) {
+                fileNameMatches.push(file.path);
+                if (fileNameMatches.length >= resultsLimit) {
+                    fileNameLimitIndex = fileNameIndex;
+                }
+            }
+
+            fileNameIndex++;
+        }
+
+        const start = performance.now();
+
+        let contentLimitIndex: number | undefined;
+
+        let fileContentIndex = fileContentsIndex;
+        while (!fileContentsExhausted && fileContentIndex < files.length) {
+            if (contentLimitIndex !== undefined) {
                 break;
             }
 
-            const batch = shuffledFiles.slice(i, i + BATCH_SIZE);
-            const batchPromises = batch.map(async (file) => {
-                try {
+            const file = files[fileContentIndex];
+
+            if (performance.now() - start > this.settingsService.settings.searchTimeLimit) {
+                break;
+            }
+
+            try {
+                if (contentLimitIndex === undefined) {
                     let content;
                     const fileExtension = file.extension.toLocaleLowerCase();
-                    
+
                     if (isFileType(fileExtension, FileType.PDF)) {
                         const arrayBuffer = await this.vault.readBinary(file);
                         content = await readPDF(arrayBuffer);
@@ -444,41 +471,38 @@ export class VaultService {
                         content = [{ text: await this.vault.cachedRead(file), pageNumber: 1 }] as IPageText[];
                     }
 
-                    const snippets = this.extractSnippets(content, regex);
+                    let snippets: ISearchSnippet[] = [];
+                    literals.forEach(literal => {
+                        snippets.push(...this.extractLiteralSnippets(content, literal));
+                    });
 
-                    // Check filename match
-                    const hasFilenameMatch = file.basename.match(regex) !== null || file.name.match(regex) !== null;
-
-                    // Return match if content has snippets OR filename matches
-                    if (snippets.length > 0 || hasFilenameMatch) {
-                        return { file, snippets };
+                    if (snippets.length === 0) {
+                        snippets = this.extractSnippets(content, regex);
                     }
 
-                    return null;
-                } catch (error) {
-                    Exception.log(error);
-                    return null;
+                    if (snippets.length > 0) {
+                        fileContentsMatches.push({ file, snippets });
+                        if (fileContentsMatches.length >= resultsLimit) {
+                            contentLimitIndex = fileContentIndex;
+                        }
+                    }
                 }
-            });
-
-            const batchResults = await Promise.all(batchPromises);
-
-            for (const result of batchResults) {
-                if (result !== null) {
-                    allMatches.push(result);
-                }
+            } catch (error) {
+                Exception.log(error);
+            } finally {
+                fileContentIndex++;
             }
         }
 
-        // Sample files if we have more than the limit
-        let selectedMatches: ISearchMatch[];
-        if (allMatches.length > this.settingsService.settings.searchResultsLimit) {
-            selectedMatches = randomSample(allMatches, this.settingsService.settings.searchResultsLimit);
-        } else {
-            selectedMatches = allMatches;
-        }
+        const nextFileNameIndex = fileNameIndex < files.length ? fileNameIndex : undefined;
+        const nextContentIndex = fileContentIndex < files.length ? fileContentIndex : undefined;
 
-        return selectedMatches;
+        return {
+            fileNameMatches: fileNameMatches,
+            fileContentMatches: fileContentsMatches,
+            nextFileNamesIndex: nextFileNameIndex,
+            nextFileContentsIndex: nextContentIndex
+        };
     }
 
     public isExclusion(filePath: string, allowAccessToPluginRoot: boolean = false): boolean {
@@ -526,6 +550,27 @@ export class VaultService {
             return Exception.new(`Failed to create folder, permission denied: ${path}`);
         }
         return await this.vault.createFolder(path);
+    }
+
+    private extractLiteralSnippets(pages: IPageText[], literal: string): ISearchSnippet[] {
+        const allSnippets: ISearchSnippet[] = [];
+
+        for (const page of pages) {
+            const matchPositions: { matchIndex: number; matchLength: number }[] = [];
+
+            let matchIndex = page.text.indexOf(literal);
+            while (matchIndex !== -1) {
+                matchPositions.push({ matchIndex, matchLength: literal.length });
+                matchIndex = page.text.indexOf(literal, matchIndex + literal.length);
+            }
+
+            if (matchPositions.length > 0) {
+                const pageSnippets = this.mergeOverlappingSnippets(matchPositions, page.text, page.pageNumber);
+                allSnippets.push(...pageSnippets);
+            }
+        }
+
+        return allSnippets;
     }
 
     private extractSnippets(pages: IPageText[], regex: RegExp): ISearchSnippet[] {
@@ -663,4 +708,15 @@ export class VaultService {
                 return Exception.new(error);
             }
     }
+
+    private static recentFileSorter() {
+        return (a: TFile, b: TFile) => {
+            const result = b.stat.mtime - a.stat.mtime;
+            if (result !== 0) {
+                return result;
+            }
+            return a.path < b.path ? -1 : a.path > b.path ? 1 : 0;
+        };
+    }
+
 }

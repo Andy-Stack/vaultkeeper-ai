@@ -104,13 +104,28 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 			.setHeading()
 			.setName(Copy.SettingContext);
 
+		/* Search Time Limit Setting */
+		new Setting(containerEl)
+			.setName(Copy.SettingSearchTimeLimit)
+			.setDesc(Copy.SettingSearchTimeLimitDesc)
+			.addSlider(slider => {
+				slider
+					.setLimits(1000, 10000, 100)
+					.setValue(this.settingsService.settings.searchTimeLimit)
+					.onChange(async value => {
+						await this.settingsService.updateSettings(settings => {
+							settings.searchTimeLimit = value;
+						});
+					});
+			});
+
 		/* Search Results Limit Setting */
 		new Setting(containerEl)
 			.setName(Copy.SettingSearchResultsLimit)
 			.setDesc(Copy.SettingSearchResultsLimitDesc)
 			.addSlider(slider => {
 				slider
-					.setLimits(5, 40, 1)
+					.setLimits(5, 100, 5)
 					.setValue(this.settingsService.settings.searchResultsLimit)
 					.onChange(async value => {
 						await this.settingsService.updateSettings(settings => {
@@ -125,7 +140,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 			.setDesc(Copy.SettingSnippetSizeLimitDesc)
 			.addSlider(slider => {
 				slider
-					.setLimits(50, 1000, 10)
+					.setLimits(5, 100, 5)
 					.setValue(this.settingsService.settings.snippetSizeLimit)
 					.onChange(async value => {
 						await this.settingsService.updateSettings(settings => {

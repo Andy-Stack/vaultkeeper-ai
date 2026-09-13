@@ -2,7 +2,7 @@ import { TAbstractFile, TFile, TFolder } from "obsidian";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type { VaultService } from "./VaultService";
-import type { ISearchMatch } from "../Types/SearchTypes";
+import type { ISearchResult } from "../Types/SearchTypes";
 import { Exception } from "Helpers/Exception";
 
 export class FileSystemService {
@@ -169,7 +169,7 @@ export class FileSystemService {
         return result;
     }
 
-    public async searchVaultFiles(searchTerm: string, allowAccessToPluginRoot: boolean = false): Promise<ISearchMatch[]> {
-        return await this.vaultService.searchVaultFiles(searchTerm, allowAccessToPluginRoot);
+    public async searchVaultFiles(searchTerm: string, fileNamesIndex: number = 0, fileContentsIndex: number = 0, allowAccessToPluginRoot: boolean = false): Promise<ISearchResult | Error> {
+        return await this.vaultService.searchVaultFiles(searchTerm, fileNamesIndex, fileContentsIndex, allowAccessToPluginRoot);
     }
 }

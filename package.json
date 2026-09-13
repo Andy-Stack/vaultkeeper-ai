@@ -47,6 +47,7 @@
 	},
 	"dependencies": {
 		"@anthropic-ai/sdk": "^0.124.0",
+		"@eslint-community/regexpp": "^4.12.2",
 		"@google/genai": "^2.21.0",
 		"@shikijs/rehype": "^4.4.3",
 		"core-js": "^3.50.0",
@@ -60,6 +61,7 @@
 		"lowlight": "^3.3.0",
 		"openai": "^7.13.0",
 		"path-browserify": "^1.0.1",
+		"redos-detector": "^6.1.4",
 		"regex-parser": "^2.3.1",
 		"uuid": "^14.0.2",
 		"zod": "^4.6.0"

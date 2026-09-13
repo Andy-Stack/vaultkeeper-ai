@@ -4,7 +4,11 @@ import { z } from "zod";
 // These provide runtime validation of data received from AI providers
 
 export const SearchVaultFilesArgsSchema = z.object({
-	search_terms: z.array(z.string()),
+	search_terms: z.array(z.object({ 
+		search_term: z.string(), 
+		fileNamesIndex: z.number().optional(),
+		fileContentsIndex: z.number().optional()
+	})),
 	user_message: z.string()
 });
 

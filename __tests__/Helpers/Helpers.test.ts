@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { StringTools } from "../../Helpers/StringTools";
-import { randomSample, splitFrontmatter } from '../../Helpers/Helpers';
+import { RegexTools } from "../../Helpers/RegexTools";
+import { splitFrontmatter } from '../../Helpers/Helpers';
 
 describe('Helpers', () => {
 	describe('dateToString', () => {
@@ -149,139 +150,54 @@ describe('Helpers', () => {
 		});
 	});
 
-	describe('randomSample', () => {
-		it('should return n elements when array has more than n elements', () => {
-			const array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-			const result = randomSample(array, 5);
-
-			expect(result).toHaveLength(5);
-		});
-
-		it('should return all elements when n is greater than array length', () => {
-			const array = [1, 2, 3];
-			const result = randomSample(array, 10);
-
-			expect(result).toHaveLength(3);
-			expect(result.sort()).toEqual([1, 2, 3]);
-		});
-
-		it('should return all elements when n equals array length', () => {
-			const array = [1, 2, 3, 4, 5];
-			const result = randomSample(array, 5);
-
-			expect(result).toHaveLength(5);
-		});
-
-		it('should return unique elements (no duplicates)', () => {
-			const array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-			const result = randomSample(array, 5);
-
-			const uniqueResult = [...new Set(result)];
-			expect(uniqueResult).toHaveLength(result.length);
-		});
-
-		it('should only return elements from the original array', () => {
-			const array = ['a', 'b', 'c', 'd', 'e'];
-			const result = randomSample(array, 3);
-
-			result.forEach(item => {
-				expect(array).toContain(item);
-			});
-		});
-
-		it('should return empty array when n is 0', () => {
-			const array = [1, 2, 3, 4, 5];
-			const result = randomSample(array, 0);
-
-			expect(result).toHaveLength(0);
-		});
-
-		it('should return empty array when input array is empty', () => {
-			const array: number[] = [];
-			const result = randomSample(array, 5);
-
-			expect(result).toHaveLength(0);
-		});
-
-		it('should work with different data types', () => {
-			const stringArray = ['a', 'b', 'c', 'd', 'e'];
-			const objectArray = [{ id: 1 }, { id: 2 }, { id: 3 }];
-
-			expect(randomSample(stringArray, 2)).toHaveLength(2);
-			expect(randomSample(objectArray, 2)).toHaveLength(2);
-		});
-
-		it('should produce different samples on multiple calls (probabilistic)', () => {
-			const array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-			const samples = new Set<string>();
-
-			// Run multiple times and check we get different results
-			for (let i = 0; i < 10; i++) {
-				const result = randomSample(array, 5);
-				samples.add(JSON.stringify(result.sort()));
-			}
-
-			// It's extremely unlikely to get the same sample 10 times
-			// (Though theoretically possible, so this is a probabilistic test)
-			expect(samples.size).toBeGreaterThan(1);
-		});
-
-		it('should handle negative n gracefully', () => {
-			const array = [1, 2, 3, 4, 5];
-			const result = randomSample(array, -5);
-
-			expect(result).toHaveLength(0);
-		});
-	});
-
 	describe('escapeRegex', () => {
 		it('should escape dot', () => {
-			expect(StringTools.escapeRegex('.')).toBe('\\.');
+			expect(RegexTools.escapeRegex('.')).toBe('\\.');
 		});
 
 		it('should escape asterisk', () => {
-			expect(StringTools.escapeRegex('*')).toBe('\\*');
+			expect(RegexTools.escapeRegex('*')).toBe('\\*');
 		});
 
 		it('should escape plus', () => {
-			expect(StringTools.escapeRegex('+')).toBe('\\+');
+			expect(RegexTools.escapeRegex('+')).toBe('\\+');
 		});
 
 		it('should escape question mark', () => {
-			expect(StringTools.escapeRegex('?')).toBe('\\?');
+			expect(RegexTools.escapeRegex('?')).toBe('\\?');
 		});
 
 		it('should escape caret', () => {
-			expect(StringTools.escapeRegex('^')).toBe('\\^');
+			expect(RegexTools.escapeRegex('^')).toBe('\\^');
 		});
 
 		it('should escape dollar sign', () => {
-			expect(StringTools.escapeRegex('$')).toBe('\\$');
+			expect(RegexTools.escapeRegex('$')).toBe('\\$');
 		});
 
 		it('should escape curly braces', () => {
-			expect(StringTools.escapeRegex('{}')).toBe('\\{\\}');
+			expect(RegexTools.escapeRegex('{}')).toBe('\\{\\}');
 		});
 
 		it('should escape parentheses', () => {
-			expect(StringTools.escapeRegex('()')).toBe('\\(\\)');
+			expect(RegexTools.escapeRegex('()')).toBe('\\(\\)');
 		});
 
 		it('should escape pipe', () => {
-			expect(StringTools.escapeRegex('|')).toBe('\\|');
+			expect(RegexTools.escapeRegex('|')).toBe('\\|');
 		});
 
 		it('should escape square brackets', () => {
-			expect(StringTools.escapeRegex('[]')).toBe('\\[\\]');
+			expect(RegexTools.escapeRegex('[]')).toBe('\\[\\]');
 		});
 
 		it('should escape backslash', () => {
-			expect(StringTools.escapeRegex('\\')).toBe('\\\\');
+			expect(RegexTools.escapeRegex('\\')).toBe('\\\\');
 		});
 
 		it('should escape all special regex characters at once', () => {
 			const input = '.*+?^${}()|[]\\';
-			const escaped = StringTools.escapeRegex(input);
+			const escaped = RegexTools.escapeRegex(input);
 
 			// Should be able to use in RegExp without error
 			expect(() => new RegExp(escaped)).not.toThrow();
@@ -292,12 +208,12 @@ describe('Helpers', () => {
 		});
 
 		it('should not escape normal characters', () => {
-			expect(StringTools.escapeRegex('abc123')).toBe('abc123');
+			expect(RegexTools.escapeRegex('abc123')).toBe('abc123');
 		});
 
 		it('should handle mixed text with special characters', () => {
 			const input = 'file.*.txt';
-			const escaped = StringTools.escapeRegex(input);
+			const escaped = RegexTools.escapeRegex(input);
 
 			expect(escaped).toBe('file\\.\\*\\.txt');
 
@@ -307,12 +223,12 @@ describe('Helpers', () => {
 		});
 
 		it('should handle empty string', () => {
-			expect(StringTools.escapeRegex('')).toBe('');
+			expect(RegexTools.escapeRegex('')).toBe('');
 		});
 
 		it('should handle string with only special characters', () => {
 			const input = '???***';
-			const escaped = StringTools.escapeRegex(input);
+			const escaped = RegexTools.escapeRegex(input);
 
 			expect(escaped).toBe('\\?\\?\\?\\*\\*\\*');
 		});
@@ -321,12 +237,140 @@ describe('Helpers', () => {
 			const patterns = ['.*', 'a+', 'b?', '^start', 'end$', '(group)'];
 
 			patterns.forEach(pattern => {
-				const escaped = StringTools.escapeRegex(pattern);
+				const escaped = RegexTools.escapeRegex(pattern);
 				const regex = new RegExp(escaped);
 
 				// Should match the literal pattern string, not behave as regex
 				expect(regex.test(pattern)).toBe(true);
 			});
+		});
+	});
+
+	describe('toWhitespaceFlexibleRegex', () => {
+		it('matches a single space in the input where the source had a single space', () => {
+			const regex = RegexTools.toWhitespaceFlexibleRegex('foo bar');
+			expect(regex.test('foo bar')).toBe(true);
+		});
+
+		it('matches when whitespace differs in kind or amount', () => {
+			const regex = RegexTools.toWhitespaceFlexibleRegex('foo bar');
+			expect(regex.test('foo    bar')).toBe(true);
+			expect(regex.test('foo\tbar')).toBe(true);
+			expect(regex.test('foo\nbar')).toBe(true);
+		});
+
+		it('matches multiple runs of whitespace independently', () => {
+			const regex = RegexTools.toWhitespaceFlexibleRegex('a b c');
+			expect(regex.test('a  b   c')).toBe(true);
+		});
+
+		it('does not match when non-whitespace characters differ', () => {
+			const regex = RegexTools.toWhitespaceFlexibleRegex('foo bar');
+			expect(regex.test('foo baz')).toBe(false);
+		});
+
+		it('still escapes special regex characters outside of whitespace', () => {
+			const regex = RegexTools.toWhitespaceFlexibleRegex('a.b (c)');
+			expect(regex.test('a.b (c)')).toBe(true);
+			expect(regex.test('aXb (c)')).toBe(false);
+		});
+
+		it('requires whitespace to be present where the source had whitespace', () => {
+			const regex = RegexTools.toWhitespaceFlexibleRegex('foo bar');
+			expect(regex.test('foobar')).toBe(false);
+		});
+
+		it('handles input with no whitespace', () => {
+			const regex = RegexTools.toWhitespaceFlexibleRegex('foobar');
+			expect(regex.test('foobar')).toBe(true);
+			expect(regex.test('foo bar')).toBe(false);
+		});
+
+		it('handles empty string input', () => {
+			const regex = RegexTools.toWhitespaceFlexibleRegex('');
+			expect(regex.test('')).toBe(true);
+		});
+	});
+
+	describe('asRegex', () => {
+		it('compiles a valid regex pattern', () => {
+			const result = RegexTools.asRegex('foo.*bar', []);
+			expect(result).not.toBeInstanceOf(Error);
+			expect((result as RegExp).test('fooXXXbar')).toBe(true);
+		});
+
+		it('applies required flags that are missing', () => {
+			const result = RegexTools.asRegex('foo', ['i']);
+			expect(result).not.toBeInstanceOf(Error);
+			expect((result as RegExp).flags).toContain('i');
+			expect((result as RegExp).test('FOO')).toBe(true);
+		});
+
+		it('does not duplicate a flag that is already present', () => {
+			const result = RegexTools.asRegex('/foo/i', ['i']);
+			expect(result).not.toBeInstanceOf(Error);
+			expect((result as RegExp).flags.match(/i/g)?.length).toBe(1);
+		});
+
+		it('falls back to treating invalid regex syntax as literal text', () => {
+			const result = RegexTools.asRegex('(unclosed', []);
+			expect(result).not.toBeInstanceOf(Error);
+			expect((result as RegExp).test('(unclosed')).toBe(true);
+		});
+
+		it('returns an Error for a pattern that matches the empty string', () => {
+			const result = RegexTools.asRegex('.*', []);
+			expect(result).toBeInstanceOf(Error);
+		});
+	});
+
+	describe('extractRegexLiterals', () => {
+		it('extracts a plain literal string with no special characters', () => {
+			expect(RegexTools.extractRegexLiterals('foobar')).toEqual(['foobar']);
+		});
+
+		it('accepts a RegExp instance as well as a pattern string', () => {
+			expect(RegexTools.extractRegexLiterals(/foobar/)).toEqual(['foobar']);
+		});
+
+		it('splits the run at an optional atom, dropping the optional character', () => {
+			expect(RegexTools.extractRegexLiterals('foob?ar')).toEqual(['foo', 'ar']);
+		});
+
+		it('splits the run around a character class', () => {
+			expect(RegexTools.extractRegexLiterals('foo[abc]bar')).toEqual(['foo', 'bar']);
+		});
+
+		it('splits the run around a capturing group and recurses into it', () => {
+			expect(RegexTools.extractRegexLiterals('foo(bar)baz')).toEqual(['foo', 'bar', 'baz']);
+		});
+
+		it('splits alternatives inside a group into separate literals', () => {
+			expect(RegexTools.extractRegexLiterals('foo(bar|baz)qux')).toEqual(['foo', 'bar', 'baz', 'qux']);
+		});
+
+		it('expands a fixed-count quantifier on a single character into repeated characters', () => {
+			expect(RegexTools.extractRegexLiterals('a{3}b')).toEqual(['aaab']);
+		});
+
+		it('splits the run when a quantifier has a variable count', () => {
+			expect(RegexTools.extractRegexLiterals('a{2,4}b')).toEqual(['aa', 'b']);
+		});
+
+		it('recurses into a positive lookahead', () => {
+			expect(RegexTools.extractRegexLiterals('foo(?=bar)')).toEqual(['foo', 'bar']);
+		});
+
+		it('does not recurse into a negative lookahead', () => {
+			expect(RegexTools.extractRegexLiterals('foo(?!bar)baz')).toEqual(['foo', 'baz']);
+		});
+
+		it('splits the run around a backreference', () => {
+			expect(RegexTools.extractRegexLiterals('(foo)\\1bar')).toEqual(['foo', 'bar']);
+		});
+
+		it('returns an empty array for a pattern with no literal characters', () => {
+			expect(RegexTools.extractRegexLiterals('[abc]+')).toEqual([]);
 		});
 	});
 

@@ -2,9 +2,6 @@ import { Exception } from "./Exception";
 
 export abstract class StringTools {
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment -- regex-parser is a CommonJS module without ESM support
-    private static RegexParser: (input: string) => RegExp = require("regex-parser");
-
     public static isValidJson(str: string): boolean {
         try {
             JSON.parse(str);
@@ -33,10 +30,6 @@ export abstract class StringTools {
         }
     }
 
-    public static escapeRegex(string: string): string {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }
-
     // Derives a filename from the first non-empty line stripped of punctuation (hyphens kept), truncated at a word boundary.
     public static deriveFileName(text: string, maxLength: number = 40, fallback: string = "Pasted text"): string {
         const firstLine = text.split(/\r?\n/).find(line => line.trim().length > 0) ?? "";
@@ -59,37 +52,6 @@ export abstract class StringTools {
         const lastSpace = truncated.lastIndexOf(" ");
 
         return (lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated).trim();
-    }
-
-    // Builds a regex from a string that matches flexibly on whitespace but strictly on all other characters.
-    public static toWhitespaceFlexibleRegex(input: string): RegExp {
-        const pattern = this.escapeRegex(input).replace(/(\\\s|\s)+/g, "\\s+");
-        return new RegExp(pattern);
-    }
-
-    public static asRegex(input: string, requiredFlags: string[]): RegExp | null {
-        let regex: RegExp;
-
-        try {
-            regex = this.RegexParser(input);
-            let flags = regex.flags;
-
-            for (const requiredFlag of requiredFlags) {
-                if (!flags.includes(requiredFlag)) {
-                    flags = flags + requiredFlag;
-                }
-            }
-
-            regex = new RegExp(regex.source, flags);
-        } catch {
-            try { // If parsing fails, escape the input and use required flags
-                regex = new RegExp(StringTools.escapeRegex(input), requiredFlags.join(""));
-            } catch {
-                return null;
-            }
-        }
-
-        return regex;
     }
 
     public static toBase64(text: string): string {

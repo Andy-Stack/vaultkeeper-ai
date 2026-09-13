@@ -4,7 +4,6 @@ import type { FileSystemService } from "../FileSystemService";
 import { AITool, fromString } from "Enums/AITool";
 import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import { AIToolCall } from "AIClasses/AIToolCall";
-import type { ISearchMatch } from "../../Types/SearchTypes";
 import { AbortService } from "../AbortService";
 import { arrayBufferToBase64, normalizePath, TAbstractFile, TFile } from "obsidian";
 import { Exception } from "Helpers/Exception";
@@ -273,21 +272,28 @@ export class AIToolService {
         });
     }
 
-    private async searchVaultFiles(searchTerms: string[]): Promise<AIToolResponsePayload> {
-        const results: { searchTerm: string, results: object[] }[] = [];
+    private async searchVaultFiles(searchTerms: { search_term: string, fileNamesIndex?: number, fileContentsIndex?: number }[]): Promise<AIToolResponsePayload> {
+        const results: { searchTerm: string, fileNameMatches: string[], fileContentMatches: object[],
+            nextFileNamesIndex: number | undefined, nextFileContentsIndex: number | undefined }[] = [];
 
-        for (const searchTerm of searchTerms) {
-            const matches: ISearchMatch[] = await this.fileSystemService.searchVaultFiles(searchTerm);
+        for (const term of searchTerms) {
+            const result = await this.fileSystemService.searchVaultFiles(term.search_term, term.fileNamesIndex, term.fileContentsIndex);
+            if (result instanceof Error) {
+                return new AIToolResponsePayload({ error: result });
+            }
             results.push({
-                searchTerm: searchTerm,
-                results: matches.map(match => ({
+                searchTerm: term.search_term,
+                fileNameMatches: result.fileNameMatches,
+                fileContentMatches: result.fileContentMatches.map(match => ({
                     path: match.file.path,
                     snippets: match.snippets.map((snippet) => ({
                         text: snippet.text,
                         pageNumber: snippet.pageNumber,
                         matchPosition: snippet.matchIndex
                     }))
-                }))
+                })),
+                nextFileNamesIndex: result.nextFileNamesIndex,
+                nextFileContentsIndex: result.nextFileContentsIndex
             });
         }
 

@@ -25,3 +25,10 @@ export interface ISearchMatch {
     file: TFile;
     snippets: ISearchSnippet[];
 }
+
+export interface ISearchResult {
+    fileNameMatches: string[];
+    fileContentMatches: ISearchMatch[];
+    nextFileNamesIndex: number | undefined;
+    nextFileContentsIndex: number | undefined;
+}

@@ -5,11 +5,12 @@ import { Services } from "Services/Services";
 import AboutModalSvelte from './AboutModalSvelte.svelte';
 import { mount, unmount } from 'svelte';
 import { Selector } from 'Enums/Selector';
+import type { AboutModalTopic } from 'Enums/AboutModalTopic';
 
 export class AboutModal extends Modal {
 
     private component: ReturnType<typeof mount> | null = null;
-    private initialTopic?: number;
+    private initialTopic?: AboutModalTopic;
 
     public constructor() {
         const plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
@@ -32,7 +33,7 @@ export class AboutModal extends Modal {
         });
     }
 
-    public open(initialTopic?: number) {
+    public open(initialTopic?: AboutModalTopic) {
         this.initialTopic = initialTopic;
         super.open();
     }

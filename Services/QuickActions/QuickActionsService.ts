@@ -7,6 +7,7 @@ import { WorkSpaceService } from "Services/WorkSpaceService";
 import type { QuickActionsDefinitionsService } from "./QuickActionsDefinitionsService";
 import type { AboutModal } from "Modals/AboutModal";
 import { AssetsService } from "Services/AssetsService";
+import { AboutModalTopic } from "Enums/AboutModalTopic";
 
 export class QuickActionsService {
 
@@ -97,7 +98,7 @@ export class QuickActionsService {
                     .setIcon("circle-question-mark")
                     .onClick(() => {
                         const modal = Resolve<AboutModal>(Services.AboutModal);
-                        modal.open(6);
+                        modal.open(AboutModalTopic.QuickActions);
                     })
             );
         });
@@ -179,7 +180,7 @@ export class QuickActionsService {
                         .setIcon("circle-question-mark")
                         .onClick(() => {
                             const modal = Resolve<AboutModal>(Services.AboutModal);
-                            modal.open(6);
+                            modal.open(AboutModalTopic.QuickActions);
                         })
                 );
                 menu.showAtMouseEvent(evt);

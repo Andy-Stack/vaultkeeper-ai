@@ -17,6 +17,9 @@ import { SEARCH_SETTINGS_RANGE } from "Enums/SearchSettings";
 export const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     firstTimeStart: true,
 
+    pluginVersion: undefined,
+    notifyVersionChange: false,
+
     chatMode: ChatMode.ReadOnly,
     freeEdit: false,
     userInstruction: "",
@@ -90,6 +93,9 @@ export const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
 
 export interface IVaultkeeperAISettings {
     firstTimeStart: boolean;
+
+    pluginVersion: string | undefined;
+    notifyVersionChange: boolean;
 
     chatMode: ChatMode;
     freeEdit: boolean;
@@ -167,6 +173,13 @@ export class SettingsService {
         this.settingsSnapshot = JSON.stringify(this.settings);
         void this.ensureValidSearchSettings()
         void this.ensureValidModels();
+        
+        if (!this.settings.pluginVersion || this.settings.pluginVersion !== this.plugin.manifest.version) {
+            void this.updateSettings(settings => {
+                settings.pluginVersion = this.plugin.manifest.version;
+                settings.notifyVersionChange = true;
+            });
+        }
     }
 
     public subscribeToSettingsChanged(callback: SettingsChangedCallback): object {

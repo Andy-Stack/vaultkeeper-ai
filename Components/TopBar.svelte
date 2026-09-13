@@ -9,14 +9,28 @@
   import { openPluginSettings } from "Helpers/ObsidianInternals";
 	import type { ChatService } from "Services/ChatService";
 	import { fade } from "svelte/transition";
+	import { onDestroy } from "svelte";
 	import type { AboutModal } from "Modals/AboutModal";
+	import type { SettingsService } from "Services/SettingsService";
+	import { AboutModalTopic } from "Enums/AboutModalTopic";
 
   export let leaf: WorkspaceLeaf;
   export let onNewConversation: (() => void) | undefined = undefined;
 
   const plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
+  const settingsService = Resolve<SettingsService>(Services.SettingsService);
   const conversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
   const chatService: ChatService = Resolve<ChatService>(Services.ChatService);
+
+  let showAboutMenuDot: boolean = settingsService.settings.notifyVersionChange;
+
+  const settingsSubscription: object = settingsService.subscribeToSettingsChanged(changed => {
+    if (changed.includes("notifyVersionChange")) {
+      showAboutMenuDot = settingsService.settings.notifyVersionChange;
+    }
+  });
+
+  onDestroy(() => settingsService.unsubscribe(settingsSubscription));
 
   let conversationTitle: string = ""
 
@@ -58,6 +72,15 @@
 
   function openAboutModal() {
     const modal = Resolve<AboutModal>(Services.AboutModal);
+
+    if (settingsService.settings.notifyVersionChange) {
+      void settingsService.updateSettings(settings => {
+        settings.notifyVersionChange = false;
+      });
+      modal.open(AboutModalTopic.WhatsNew);
+      return;
+    }
+
     modal.open();
   }
 
@@ -85,9 +108,11 @@
   $: if (settingsButton) {
     setIcon(settingsButton, "settings");
   }
-  $: if (aboutMenuButton && aboutMenuDot) {
+  $: if (aboutMenuButton) {
     setIcon(aboutMenuButton, "info");
-    aboutMenuButton.appendChild(aboutMenuDot);
+    if (aboutMenuDot) {
+      aboutMenuButton.appendChild(aboutMenuDot);
+    }
   }
   $: if (closeButton) {
     setIcon(closeButton, "circle-x");
@@ -132,7 +157,9 @@
       on:click={openAboutModal}
       aria-label="About"
     ></button>
-    <span bind:this={aboutMenuDot} class="about-menu-dot" aria-hidden="true"></span>
+    {#if showAboutMenuDot}
+      <span bind:this={aboutMenuDot} class="about-menu-dot" aria-hidden="true"></span>
+    {/if}
     {#if conversationTitle !== ""}
       <div id="conversation-divider-2" class="top-bar-divider" out:fade></div>
       <div id="conversation-title" class="typing-in" out:fade>{conversationTitle}</div>

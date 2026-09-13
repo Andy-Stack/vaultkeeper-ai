@@ -255,15 +255,27 @@ This plugin was originally created for a friend who found it useful, so I have d
 
 If you find any issues or have a feature request, please feel free to raise them on GitHub:`,
 
+    AboutModalWhatsNewTitle = "What's New",
+    AboutModalWhatsNewContent = `#### 🚀 What's New
+
+- **Paste to attach**: Pasting a large block of text now automatically saves it as a file attachment.
+- **New AI models**: Added the latest releases from Claude, Gemini, and OpenAI.
+- **Better large vault support**: Search, file reads and startup time have been optimised to cope with bigger vaults.
+- **Bug fixes & stability**: Various UI, performance and stability fixes.
+
+For further details, see the [release notes](https://github.com/Andy-Stack/vaultkeeper-ai/releases).
+
+Have an issue or a feature request? [Let me know on GitHub](https://github.com/Andy-Stack/vaultkeeper-ai/issues).`,
+
     AboutModalGettingStartedTitle = "Getting started",
-    AboutModalGettingStartedContent = `#### Getting started
+    AboutModalGettingStartedContent = `#### 🏁 Getting started
 
 1. **Add an API key**: Go to Settings and add at least one API key (Claude, Gemini, OpenAI, or Mistral) — or select **Local** to connect a self-hosted server instead, no API key required
 2. **Select a model**: Choose your preferred AI model from the dropdown
 3. **Open the chat**: Click the plugin icon in the sidebar to start chatting`,
 
     AboutModalChatModesTitle = "Chat modes",
-    AboutModalChatModesContent = `#### Chat modes
+    AboutModalChatModesContent = `#### 💬 Chat modes
 
 **Read-only (default)** - The AI can safely explore your vault:
 - Search through your notes (including PDFs and Office/ODF documents)
@@ -282,7 +294,7 @@ If you find any issues or have a feature request, please feel free to raise them
 - An execution agent carries out the given plan`,
 
     AboutModalReferenceTitle = "Using references",
-    AboutModalReferenceContent = `#### Using references
+    AboutModalReferenceContent = `#### 🔗 Using references
 
 Quickly provide context to the AI:
 
@@ -293,7 +305,7 @@ Quickly provide context to the AI:
 The autocomplete dropdown supports keyboard navigation.`,
 
     AboutModalCustomInstructionsTitle = "Custom instructions",
-    AboutModalCustomInstructionsContent = `#### Custom instructions
+    AboutModalCustomInstructionsContent = `#### 📝 Custom instructions
 
 Customize AI behavior for specific workflows:
 
@@ -305,7 +317,7 @@ Customize AI behavior for specific workflows:
 See [[Vaultkeeper AI/User Instructions/EXAMPLE_INSTRUCTIONS|Example Template]] for help getting started.`,
 
     AboutModalQuickActionsTitle = "Quick actions",
-    AboutModalQuickActionsContent = `#### Quick actions
+    AboutModalQuickActionsContent = `#### ⚡ Quick actions
 
 Quick actions are one-click AI edits you run on the note you're currently editing. Open the editor menu (right-click, or the command palette) and pick an action. Some actions work on your current selection if you have text selected, otherwise they apply to the whole note.
 
@@ -331,7 +343,7 @@ Like Apply tags, but free to suggest new tags as well as reuse existing ones. Su
 Infers YAML frontmatter for the note (aliases, tags, title, summary, created) from its content and merges it into any existing frontmatter.`,
 
     AboutModalUploadedFilesTitle = "Uploaded files",
-    AboutModalUploadedFilesContent = `#### Uploaded files
+    AboutModalUploadedFilesContent = `#### 📁 Uploaded files
 
 When you upload files (PDFs, images) to conversations, they are stored by your AI provider. The plugin automatically attempts to delete these files when you delete conversations, but this may occasionally fail due to network issues or API rate limits.
 
@@ -349,7 +361,7 @@ When you upload files (PDFs, images) to conversations, they are stored by your A
 **Local**: Files aren't uploaded anywhere - they're sent inline with your message directly to your local server, so there's nothing to clean up on a dashboard.`,
 
     AboutModalTroubleshootTitle = "Troubleshooting",
-    AboutModalTroubleshootContent = `#### Common issues & solutions
+    AboutModalTroubleshootContent = `#### 🔧 Common issues & solutions
 
 ##### API key issues
 
@@ -415,7 +427,7 @@ This error indicates a temporary issue with the AI provider's servers.
 - Try a model known to support tool/function calling well`,
 
     AboutModalPrivacyTitle = "Privacy",
-    AboutModalPrivacyContent = `#### Privacy & security
+    AboutModalPrivacyContent = `#### 🔒 Privacy & security
 
 ##### Data storage
 

@@ -4,6 +4,7 @@ import { SEARCH_SETTINGS_RANGE } from "Enums/SearchSettings";
 import { Selector } from "Enums/Selector";
 import type VaultkeeperAIPlugin from "main";
 import { AboutModal } from "Modals/AboutModal";
+import { AboutModalTopic } from "Enums/AboutModalTopic";
 import { DropdownComponent, PluginSettingTab, Setting, ToggleComponent, setIcon, setTooltip } from "obsidian";
 import { Resolve } from "Services/DependencyService";
 import { DEFAULT_SETTINGS, type SettingsService } from "Services/SettingsService";
@@ -654,7 +655,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				cls: Selector.FileDisclaimerLink
 			}).addEventListener("click", () => {
 				const modal = Resolve<AboutModal>(Services.AboutModal);
-				modal.open(7); // Opens AboutModal to "Uploaded Files" (topic 7)
+				modal.open(AboutModalTopic.UploadedFiles);
 			});
 
 			this.fileDisclaimerSetting.setDesc(disclaimerFragment);

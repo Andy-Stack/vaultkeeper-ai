@@ -23,6 +23,7 @@
 	import { InputMode } from "Enums/InputMode";
 	import { Copy } from "Enums/Copy";
 	import { AboutModal } from "Modals/AboutModal";
+	import { AboutModalTopic } from "Enums/AboutModalTopic";
 	import type { IPrompt } from "AIPrompts/IPrompt";
   import type { SettingsService } from "Services/SettingsService";
   import { ChatMode, chatModeAllowsEdits, iconForChatMode } from "Enums/ChatMode";
@@ -170,7 +171,7 @@
 
   function openTroubleshootingModal() {
     const modal = Resolve<AboutModal>(Services.AboutModal);
-    modal.open(3); // 3 = Troubleshooting
+    modal.open(AboutModalTopic.Troubleshoot);
   }
 
   function updateCountdownDisplay() {

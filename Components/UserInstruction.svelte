@@ -2,6 +2,7 @@
 	import { Copy } from "Enums/Copy";
 	import { Path } from "Enums/Path";
 	import { AboutModal } from "Modals/AboutModal";
+	import { AboutModalTopic } from "Enums/AboutModalTopic";
 	import { basename } from "path-browserify";
 	import { Resolve } from "Services/DependencyService";
 	import type { FileSystemService } from "Services/FileSystemService";
@@ -64,7 +65,7 @@
     }
 
     async function loadUserInstructions() {
-        const files = await fileSystemService.listFilesInDirectory(Path.UserInstructions, true, true);
+        const files = await fileSystemService.listFilesInDirectory(Path.UserInstructions, { allowAccessToPluginRoot: true });
         userInstructions = files.map(file => file.path).filter(path => path != Path.ExampleUserInstructions);
 
         if (userInstructions.length > 0) {
@@ -130,7 +131,7 @@
 
     function openAboutModal() {
         const modal = Resolve<AboutModal>(Services.AboutModal);
-        modal.open(2);
+        modal.open(AboutModalTopic.CustomInstructions);
     }
 </script>
 

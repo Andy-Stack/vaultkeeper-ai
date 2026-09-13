@@ -9,9 +9,10 @@
 	import { fade } from "svelte/transition";
 	import { onMount } from "svelte";
 	import type { AssetsService } from "Services/AssetsService";
+	import { AboutModalTopic } from "Enums/AboutModalTopic";
 
 	export let onClose: () => void;
-	export let initialTopic: number = 1;
+	export let initialTopic: AboutModalTopic = AboutModalTopic.About;
 
 	const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
 	const assetsService: AssetsService = Resolve<AssetsService>(Services.AssetsService);
@@ -22,50 +23,54 @@
 	let dropdownContainer: HTMLDivElement;
 	let contentContainer: HTMLDivElement;
 
-	const topics: Record<number, { title: string; content: string }> = {
-		1: {
+	const topics: Record<AboutModalTopic, { title: string; content: string }> = {
+		[AboutModalTopic.About]: {
 			title: Copy.AboutModalAboutTitle,
 			content: Copy.AboutModalAboutContent
 		},
-		2: {
+		[AboutModalTopic.WhatsNew]: {
+			title: Copy.AboutModalWhatsNewTitle,
+			content: Copy.AboutModalWhatsNewContent
+		},
+		[AboutModalTopic.GettingStarted]: {
 			title: Copy.AboutModalGettingStartedTitle,
 			content: Copy.AboutModalGettingStartedContent
 		},
-		3: {
+		[AboutModalTopic.ChatModes]: {
 			title: Copy.AboutModalChatModesTitle,
 			content: Copy.AboutModalChatModesContent
 		},
-		4: {
+		[AboutModalTopic.Reference]: {
 			title: Copy.AboutModalReferenceTitle,
 			content: Copy.AboutModalReferenceContent
 		},
-		5: {
+		[AboutModalTopic.CustomInstructions]: {
 			title: Copy.AboutModalCustomInstructionsTitle,
 			content: Copy.AboutModalCustomInstructionsContent
 		},
-		6: {
+		[AboutModalTopic.QuickActions]: {
 			title: Copy.AboutModalQuickActionsTitle,
 			content: Copy.AboutModalQuickActionsContent
 		},
-		7: {
+		[AboutModalTopic.UploadedFiles]: {
 			title: Copy.AboutModalUploadedFilesTitle,
 			content: Copy.AboutModalUploadedFilesContent
 		},
-		8: {
+		[AboutModalTopic.Troubleshoot]: {
 			title: Copy.AboutModalTroubleshootTitle,
 			content: Copy.AboutModalTroubleshootContent
 		},
-		9: {
+		[AboutModalTopic.Privacy]: {
 			title: Copy.AboutModalPrivacyTitle,
 			content: Copy.AboutModalPrivacyContent
 		}
 	};
 
-	let selectedTopic: number = initialTopic;
+	let selectedTopic: AboutModalTopic = initialTopic;
 	let title: string = topics[selectedTopic].title;
 	let contentVisible: boolean = true;
 
-	function selectTopic(topicNumber: number) {
+	function selectTopic(topicNumber: AboutModalTopic) {
 		title = "";
 		contentVisible = false;
 		selectedTopic = topicNumber;
@@ -75,10 +80,10 @@
 		}, 200);
 	}
 
-	function helpContentAction(element: HTMLElement, topic: number) {
+	function helpContentAction(element: HTMLElement, topic: AboutModalTopic) {
 		streamingMarkdownService.render(topics[topic].content, element, true);
 		return {
-			update(newTopic: number) {
+			update(newTopic: AboutModalTopic) {
 				streamingMarkdownService.render(topics[newTopic].content, element, true);
 			}
 		};
@@ -122,7 +127,7 @@
 
 			// Handle changes
 			dropdown.onChange((value) => {
-				selectTopic(Number(value));
+				selectTopic(Number(value) as AboutModalTopic);
 			});
 		}
 
@@ -156,8 +161,8 @@
 				<div
 					class="about-modal-topic-frame"
 					class:hidden={selectedTopic !== Number(key)}
-					on:click={() => selectTopic(Number(key))}
-					on:keydown={(e) => e.key === 'Enter' && selectTopic(Number(key))}
+					on:click={() => selectTopic(Number(key) as AboutModalTopic)}
+					on:keydown={(e) => e.key === 'Enter' && selectTopic(Number(key) as AboutModalTopic)}
 					role="button"
 					tabindex="0">
 					<div class="about-modal-topic-item">
@@ -168,12 +173,12 @@
 		</div>
 		<div class="about-modal-content" bind:this={contentContainer}>
 			{#if contentVisible}
-				{#if selectedTopic === 1}
+				{#if selectedTopic === AboutModalTopic.About}
 					<img class="about-modal-banner" src={assetsService.bannerSource} alt="Plugin Banner">
 				{/if}
 				<div transition:fade={{ duration: 100 }} use:helpContentAction={selectedTopic}></div>
 				<div transition:fade={{ duration: 100 }}>
-					{#if selectedTopic === 1}
+					{#if selectedTopic === AboutModalTopic.About}
 						<a
 							href="{plugin.manifest.authorUrl}/vaultkeeper-ai"
 							style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5em; margin: 0 0 1em 0;">
@@ -198,7 +203,7 @@
 						<p style="margin-top: 1em; font-style: italic;">{Copy.ThankYouMessage}</p>
 					{/if}
 				</div>
-				{#if selectedTopic === 1}
+				{#if selectedTopic === AboutModalTopic.About}
 					<div class="about-modal-version-string" transition:fade={{ duration: 100 }}>
 						<p>{Copy.PluginVersionPrefix}{plugin.manifest.version}</p>
 					</div>
@@ -281,8 +286,8 @@
 		display: grid;
 		grid-template-rows: auto;
 		grid-template-columns: auto var(--size-4-2) 1fr;
-		width: 150%;
 		padding: var(--size-4-2) var(--size-4-1);
+		margin-right: var(--size-4-2);
 		border-radius: var(--radius-m);
 		cursor: pointer;
 		background-color: var(--alt-background-primary);
@@ -299,7 +304,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--size-4-3);
-		max-width: 150px;
+		overflow-y: scroll;
+		overflow-x: hidden;
 	}
 
 	.about-modal-topic-item {
@@ -331,7 +337,6 @@
 	.about-modal-banner {
 		margin-top: var(--size-2-2);
 		margin-left: calc(var(--size-4-2) * -1);
-		width: calc(100% + (var(--size-4-2) * 2) - var(--size-2-2));
 		border-radius: var(--radius-s);
 	}
 

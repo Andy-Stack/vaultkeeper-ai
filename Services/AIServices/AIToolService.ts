@@ -38,6 +38,7 @@ import {
 import { Artifact } from "Conversations/Artifact";
 import { extname } from "path-browserify";
 import { ArtifactAction } from "Enums/ArtifactAction";
+import type { IVaultOptions } from "Services/VaultService";
 
 export class AIToolService {
 
@@ -96,7 +97,7 @@ export class AIToolService {
                             toolCall.toolId
                         );
                     }
-                    return new AIToolResponse(toolCall.name, await this.readVaultFiles(parseResult.data.file_paths), toolCall.toolId);
+                    return new AIToolResponse(toolCall.name, await this.readVaultFiles(parseResult.data.files), toolCall.toolId);
                 }
     
                 case AITool.WriteVaultFile: {
@@ -277,7 +278,8 @@ export class AIToolService {
             nextFileNamesIndex: number | undefined, nextFileContentsIndex: number | undefined }[] = [];
 
         for (const term of searchTerms) {
-            const result = await this.fileSystemService.searchVaultFiles(term.search_term, term.fileNamesIndex, term.fileContentsIndex, true);
+            const options: IVaultOptions = { primaryIndex: term.fileNamesIndex, secondaryIndex: term.fileContentsIndex };
+            const result = await this.fileSystemService.searchVaultFiles(term.search_term, options);
             if (result instanceof Error) {
                 return new AIToolResponsePayload({ error: result });
             }
@@ -300,24 +302,33 @@ export class AIToolService {
         return new AIToolResponsePayload(results);
     }
 
-    private async readVaultFiles(filePaths: string[]): Promise<AIToolResponsePayload> {
+    private async readVaultFiles(files: { file_path: string, index?: number }[]): Promise<AIToolResponsePayload> {
+        const contextSizeLimit = this.settingsService.settings.contextSizeLimit;
+        const chunkSize = files.length > 0 ? Math.floor(contextSizeLimit / files.length) : contextSizeLimit;
+
         const results = await Promise.all(
-            filePaths.map(async (filePath) => {
-                const result = await this.fileSystemService.readFilePath(filePath);
+            files.map(async (file) => {
+                const type = pathExtname(file.file_path);
+                const result = await this.fileSystemService.readFilePath(file.file_path, {
+                    primaryIndex: file.index ?? 0,
+                    chunkSize,
+                    limitResults: isTextFile(type)
+                });
                 if (result instanceof Error) {
-                    return { path: filePath, error: result.message };
+                    return { path: file.file_path, error: result.message };
                 }
                 return {
-                    type: pathExtname(filePath),
-                    path: filePath,
-                    contents: result
+                    type,
+                    path: file.file_path,
+                    contents: result.content,
+                    nextIndex: isTextFile(type) ? result.nextIndex : undefined
                 };
             })
         );
 
         const errorResults = results.filter(result => result.error);
         const successResults = results.filter(result => !result.error && result.type && result.contents !== undefined) as
-            Array<{ type: string; path: string; contents: string }>;
+            Array<{ type: string; path: string; contents: string; nextIndex: number | undefined }>;
 
         const textResults = successResults.filter(result => isTextFile(result.type));
         const binaryResults = successResults.filter(result => !isTextFile(result.type));
@@ -411,7 +422,7 @@ export class AIToolService {
             return new AIToolResponsePayload({ error: "Confirmation was false, no action taken" });
         }
 
-        const contents = await this.fileSystemService.listDirectoryContents(path, true);
+        const contents = await this.fileSystemService.listDirectoryContents(path);
         const filePaths = contents.results.filter(content => content instanceof TFile).map(file => file.path);
 
         const artifacts = await this.collectDeletionCandidatesArtifacts(filePaths);
@@ -431,7 +442,8 @@ export class AIToolService {
     }
 
     private async listVaultFiles(path: string, recursive: boolean, index: number | undefined): Promise<AIToolResponsePayload> {
-        const contents: { results: TAbstractFile[], nextIndex: number | undefined } = await this.fileSystemService.listDirectoryContents(path, recursive, index, true);
+        const options: IVaultOptions = { primaryIndex: index, recursive: recursive };
+        const contents: { results: TAbstractFile[], nextIndex: number | undefined } = await this.fileSystemService.listDirectoryContents(path, options);
         return new AIToolResponsePayload({
             contents: contents.results.map(file => ({
                 type: file instanceof TFile ? "file" : "directory",
@@ -503,8 +515,8 @@ export class AIToolService {
                 }
             } else {
                 const result = await this.fileSystemService.readFilePath(filePath);
-                if (typeof result === "string") {
-                    artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], ArtifactAction.Delete, result, ""));
+                if (!(result instanceof Error)) {
+                    artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], ArtifactAction.Delete, result.content, ""));
                 }
             }
         }
@@ -515,19 +527,25 @@ export class AIToolService {
     private async asTrackedAction(filePath: string, action: () => Promise<TFile|Error|void>): Promise<AIToolResponsePayload> {
         let artifactAction: ArtifactAction | undefined;
 
-        let preActionResult = await this.fileSystemService.readFilePath(filePath);
-        if (preActionResult instanceof Error) {
+        const preActionReadResult = await this.fileSystemService.readFilePath(filePath);
+        let preActionResult: string;
+        if (preActionReadResult instanceof Error) {
             preActionResult = ""; // The file does not exist yet
             artifactAction = ArtifactAction.Create;
+        } else {
+            preActionResult = preActionReadResult.content;
         }
         const actionResult = await action();
         if (actionResult instanceof Error) {
             return new AIToolResponsePayload({ success: false, error: actionResult.message });
         }
-        let postActionResult = actionResult ? await this.fileSystemService.readFile(actionResult) : "";
-        if (postActionResult instanceof Error) {
+        const postActionReadResult = actionResult ? await this.fileSystemService.readFile(actionResult) : undefined;
+        let postActionResult: string;
+        if (!postActionReadResult || postActionReadResult instanceof Error) {
             postActionResult = ""; // The file has been deleted
             artifactAction = ArtifactAction.Delete;
+        } else {
+            postActionResult = postActionReadResult.content;
         }
 
         if (artifactAction === undefined) {

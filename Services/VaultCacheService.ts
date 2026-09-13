@@ -217,6 +217,6 @@ export class VaultCacheService {
   }
 
   private shouldBeCached(path: string) {
-    return !this.vaultService.isExclusion(path, false);
+    return !this.vaultService.isExclusion(path, { allowAccessToPluginRoot: true });
   }
 }

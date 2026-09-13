@@ -35,8 +35,8 @@ describe('AIToolService - Integration Tests', () => {
 		mockFileSystemService = {
 			searchVaultFiles: vi.fn(),
 			listFilesInDirectory: vi.fn(),
-			readFilePath: vi.fn(),
-			readFile: vi.fn(),
+			readFilePath: vi.fn().mockResolvedValue({ content: '', nextIndex: undefined }),
+			readFile: vi.fn().mockResolvedValue({ content: '', nextIndex: undefined }),
 			readBinaryFile: vi.fn(),
 			writeToFilePath: vi.fn(),
 			patchFileAtPath: vi.fn(),
@@ -237,21 +237,21 @@ describe('AIToolService - Integration Tests', () => {
 	describe('performAITool - ReadVaultFiles', () => {
 		it('should read multiple files successfully', async () => {
 			mockFileSystemService.readFilePath
-				.mockResolvedValueOnce('Content of file 1')
-				.mockResolvedValueOnce('Content of file 2')
-				.mockResolvedValueOnce('Content of file 3');
+				.mockResolvedValueOnce({ content: 'Content of file 1', nextIndex: undefined })
+				.mockResolvedValueOnce({ content: 'Content of file 2', nextIndex: undefined })
+				.mockResolvedValueOnce({ content: 'Content of file 3', nextIndex: undefined });
 
 			const result = await service.performAITool({
 				name: AITool.ReadVaultFiles,
-				arguments: { file_paths: ['file1.md', 'file2.md', 'file3.md'], user_message: 'test search' },
+				arguments: { files: [{ file_path: 'file1.md' }, { file_path: 'file2.md' }, { file_path: 'file3.md' }], user_message: 'test search' },
 				toolId: 'tool_6'
 			} as any);
 
 			expect(result.payload.response).toEqual({
 				results: [
-					{ type: 'md', path: 'file1.md', contents: 'Content of file 1' },
-					{ type: 'md', path: 'file2.md', contents: 'Content of file 2' },
-					{ type: 'md', path: 'file3.md', contents: 'Content of file 3' }
+					{ type: 'md', path: 'file1.md', contents: 'Content of file 1', nextIndex: undefined },
+					{ type: 'md', path: 'file2.md', contents: 'Content of file 2', nextIndex: undefined },
+					{ type: 'md', path: 'file3.md', contents: 'Content of file 3', nextIndex: undefined }
 				]
 			});
 		});
@@ -261,19 +261,19 @@ describe('AIToolService - Integration Tests', () => {
 			const error2 = new Error('File not found');
 
 			mockFileSystemService.readFilePath
-				.mockResolvedValueOnce('Existing content')
+				.mockResolvedValueOnce({ content: 'Existing content', nextIndex: undefined })
 				.mockResolvedValueOnce(error1)
 				.mockResolvedValueOnce(error2);
 
 			const result = await service.performAITool({
 				name: AITool.ReadVaultFiles,
-				arguments: { file_paths: ['exists.md', 'missing1.md', 'missing2.md'], user_message: 'test search' },
+				arguments: { files: [{ file_path: 'exists.md' }, { file_path: 'missing1.md' }, { file_path: 'missing2.md' }], user_message: 'test search' },
 				toolId: 'tool_7'
 			} as any);
 
 			expect(result.payload.response).toEqual({
 				results: [
-					{ type: 'md', path: 'exists.md', contents: 'Existing content' },
+					{ type: 'md', path: 'exists.md', contents: 'Existing content', nextIndex: undefined },
 					{ path: 'missing1.md', error: 'File not found' },
 					{ path: 'missing2.md', error: 'File not found' }
 				]
@@ -282,13 +282,13 @@ describe('AIToolService - Integration Tests', () => {
 
 		it('should handle mixed success and failure', async () => {
 			mockFileSystemService.readFilePath
-				.mockResolvedValueOnce('Content A')
+				.mockResolvedValueOnce({ content: 'Content A', nextIndex: undefined })
 				.mockResolvedValueOnce(new Error('File not found'))
-				.mockResolvedValueOnce('Content B');
+				.mockResolvedValueOnce({ content: 'Content B', nextIndex: undefined });
 
 			const result = await service.performAITool({
 				name: AITool.ReadVaultFiles,
-				arguments: { file_paths: ['a.md', 'missing.md', 'b.md'], user_message: 'test search' },
+				arguments: { files: [{ file_path: 'a.md' }, { file_path: 'missing.md' }, { file_path: 'b.md' }], user_message: 'test search' },
 				toolId: 'tool_8'
 			} as any);
 
@@ -301,7 +301,7 @@ describe('AIToolService - Integration Tests', () => {
 		it('should handle empty file list', async () => {
 			const result = await service.performAITool({
 				name: AITool.ReadVaultFiles,
-				arguments: { file_paths: [], user_message: 'test search' },
+				arguments: { files: [], user_message: 'test search' },
 				toolId: 'tool_9'
 			} as any);
 
@@ -310,16 +310,43 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should handle single file read', async () => {
-			mockFileSystemService.readFilePath.mockResolvedValue('Single file content');
+			mockFileSystemService.readFilePath.mockResolvedValue({ content: 'Single file content', nextIndex: undefined });
 
 			const result = await service.performAITool({
 				name: AITool.ReadVaultFiles,
-				arguments: { file_paths: ['single.md'], user_message: 'test search' },
+				arguments: { files: [{ file_path: 'single.md' }], user_message: 'test search' },
 				toolId: 'tool_10'
 			} as any);
 
 			expect((result.payload.response as any).results).toHaveLength(1);
 			expect((result.payload.response as any).results[0].contents).toBe('Single file content');
+		});
+
+		it('should return nextIndex when a text file is truncated and resume from it on a follow-up call', async () => {
+			mockFileSystemService.readFilePath.mockResolvedValueOnce({ content: 'first chunk', nextIndex: 5000 });
+
+			const firstResult = await service.performAITool({
+				name: AITool.ReadVaultFiles,
+				arguments: { files: [{ file_path: 'large.md' }], user_message: 'test search' },
+				toolId: 'tool_11'
+			} as any);
+
+			expect((firstResult.payload.response as any).results[0]).toEqual({
+				type: 'md', path: 'large.md', contents: 'first chunk', nextIndex: 5000
+			});
+
+			mockFileSystemService.readFilePath.mockResolvedValueOnce({ content: 'second chunk', nextIndex: undefined });
+
+			const secondResult = await service.performAITool({
+				name: AITool.ReadVaultFiles,
+				arguments: { files: [{ file_path: 'large.md', index: 5000 }], user_message: 'test search' },
+				toolId: 'tool_12'
+			} as any);
+
+			expect((secondResult.payload.response as any).results[0]).toEqual({
+				type: 'md', path: 'large.md', contents: 'second chunk', nextIndex: undefined
+			});
+			expect(mockFileSystemService.readFilePath).toHaveBeenLastCalledWith('large.md', expect.objectContaining({ primaryIndex: 5000 }));
 		});
 	});
 
@@ -363,9 +390,9 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should produce an artifact tracking the before/after content on success', async () => {
-			mockFileSystemService.readFilePath.mockResolvedValue('Old content');
+			mockFileSystemService.readFilePath.mockResolvedValue({ content: 'Old content', nextIndex: undefined });
 			mockFileSystemService.writeToFilePath.mockResolvedValue(createMockFile('notes/new-note.md', 'new-note'));
-			mockFileSystemService.readFile.mockResolvedValue('# New Note\n\nContent here');
+			mockFileSystemService.readFile.mockResolvedValue({ content: '# New Note\n\nContent here', nextIndex: undefined });
 
 			const result = await service.performAITool({
 				name: AITool.WriteVaultFile,
@@ -388,7 +415,7 @@ describe('AIToolService - Integration Tests', () => {
 		it('should track empty originalContent when the file did not previously exist', async () => {
 			mockFileSystemService.readFilePath.mockResolvedValue(new Error('File does not exist'));
 			mockFileSystemService.writeToFilePath.mockResolvedValue(createMockFile('brand-new.md', 'brand-new'));
-			mockFileSystemService.readFile.mockResolvedValue('Brand new content');
+			mockFileSystemService.readFile.mockResolvedValue({ content: 'Brand new content', nextIndex: undefined });
 
 			const result = await service.performAITool({
 				name: AITool.WriteVaultFile,
@@ -481,9 +508,9 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should produce an artifact tracking the before/after content on success', async () => {
-			mockFileSystemService.readFilePath.mockResolvedValue('# Title\nold content');
+			mockFileSystemService.readFilePath.mockResolvedValue({ content: '# Title\nold content', nextIndex: undefined });
 			mockFileSystemService.patchFileAtPath.mockResolvedValue(createMockFile('notes/test.md', 'test'));
-			mockFileSystemService.readFile.mockResolvedValue('# Title\nnew content');
+			mockFileSystemService.readFile.mockResolvedValue({ content: '# Title\nnew content', nextIndex: undefined });
 
 			const result = await service.performAITool({
 				name: AITool.PatchVaultFile,
@@ -505,7 +532,7 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should not produce an artifact when the patch fails', async () => {
-			mockFileSystemService.readFilePath.mockResolvedValue('# Title\nold content');
+			mockFileSystemService.readFilePath.mockResolvedValue({ content: '# Title\nold content', nextIndex: undefined });
 			mockFileSystemService.patchFileAtPath.mockResolvedValue(new Error('Content to replace was not found in the file'));
 
 			const result = await service.performAITool({
@@ -814,7 +841,7 @@ describe('AIToolService - Integration Tests', () => {
 		});
 
 		it('should produce artifacts capturing content of deleted text files', async () => {
-			mockFileSystemService.readFilePath.mockResolvedValue('Content before deletion');
+			mockFileSystemService.readFilePath.mockResolvedValue({ content: 'Content before deletion', nextIndex: undefined });
 			mockFileSystemService.deleteFile.mockResolvedValue(undefined);
 
 			const result = await service.performAITool({
@@ -883,8 +910,8 @@ describe('AIToolService - Integration Tests', () => {
 				nextIndex: undefined
 			});
 			mockFileSystemService.readFilePath
-				.mockResolvedValueOnce('Content A')
-				.mockResolvedValueOnce('Content B');
+				.mockResolvedValueOnce({ content: 'Content A', nextIndex: undefined })
+				.mockResolvedValueOnce({ content: 'Content B', nextIndex: undefined });
 			mockFileSystemService.deleteFolder = vi.fn().mockResolvedValue(undefined);
 
 			const result = await service.performAITool({
@@ -927,7 +954,7 @@ describe('AIToolService - Integration Tests', () => {
 				results: [createMockFile('folder/a.md', 'a')],
 				nextIndex: undefined
 			});
-			mockFileSystemService.readFilePath.mockResolvedValue('Content A');
+			mockFileSystemService.readFilePath.mockResolvedValue({ content: 'Content A', nextIndex: undefined });
 			mockFileSystemService.deleteFolder = vi.fn().mockResolvedValue(new Error('Permission denied'));
 
 			const result = await service.performAITool({
@@ -1117,11 +1144,11 @@ describe('AIToolService - Integration Tests', () => {
 			const foundPath = (searchResult.payload.response as any)[0].fileContentMatches[0].path;
 
 			// Then read
-			mockFileSystemService.readFilePath.mockResolvedValue('File content here');
+			mockFileSystemService.readFilePath.mockResolvedValue({ content: 'File content here', nextIndex: undefined });
 
 			const readResult = await service.performAITool({
 				name: AITool.ReadVaultFiles,
-				arguments: { file_paths: [foundPath], user_message: 'test search' },
+				arguments: { files: [{ file_path: foundPath }], user_message: 'test search' },
 				toolId: 'read_1'
 			} as any);
 
@@ -1163,11 +1190,11 @@ describe('AIToolService - Integration Tests', () => {
 
 		it('should handle read -> patch workflow', async () => {
 			// First read the file
-			mockFileSystemService.readFilePath.mockResolvedValue('# Original Title\n\nOriginal content');
+			mockFileSystemService.readFilePath.mockResolvedValue({ content: '# Original Title\n\nOriginal content', nextIndex: undefined });
 
 			const readResult = await service.performAITool({
 				name: AITool.ReadVaultFiles,
-				arguments: { file_paths: ['document.md'], user_message: 'Reading file' },
+				arguments: { files: [{ file_path: 'document.md' }], user_message: 'Reading file' },
 				toolId: 'read_2'
 			} as any);
 

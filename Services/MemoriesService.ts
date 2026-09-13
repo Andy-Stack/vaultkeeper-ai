@@ -20,20 +20,20 @@ export class MemoriesService {
     }
 
     public async openMemories() {
-        if (!await this.fileSystemService.exists(Path.Memories, true)) {
+        if (!await this.fileSystemService.exists(Path.Memories, { allowAccessToPluginRoot: true })) {
             await this.updateMemories(""); // Create memories file if one doesn't exist
         }
         await this.workSpaceService.openNoteByPath(Path.Memories);
     }
 
     public async readMemories(): Promise<string> {
-        const result = await this.fileSystemService.readFilePath(Path.Memories, true);
+        const result = await this.fileSystemService.readFilePath(Path.Memories, { allowAccessToPluginRoot: true, requiresConfirmation: false });
 
         if (result instanceof Error) {
             return Copy.MemoriesEmpty;
         }
 
-        return result;
+        return result.content;
     }
 
     public async updateMemories(newMemories: string): Promise<string|Error> {
@@ -42,7 +42,7 @@ export class MemoriesService {
                 [this.maxMemoriesLength.toString(), this.maxMemoriesLineLength.toString()]);
         }
 
-        const result = await this.fileSystemService.writeToFilePath(Path.Memories, newMemories, true, false);
+        const result = await this.fileSystemService.writeToFilePath(Path.Memories, newMemories, { allowAccessToPluginRoot: true, requiresConfirmation: false });
         return result instanceof Error ? result : Copy.MemoriesUpdatedSuccess;
     }
 

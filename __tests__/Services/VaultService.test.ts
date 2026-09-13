@@ -172,7 +172,7 @@ describe('VaultService - Integration Tests', () => {
 			];
 			mockVault.getMarkdownFiles.mockReturnValue(files);
 
-			const result = vaultService.getMarkdownFiles(false);
+			const result = vaultService.getMarkdownFiles({ allowAccessToPluginRoot: false });
 
 			expect(result).toHaveLength(1);
 			expect(result[0].path).toBe('note1.md');
@@ -185,7 +185,7 @@ describe('VaultService - Integration Tests', () => {
 			];
 			mockVault.getMarkdownFiles.mockReturnValue(files);
 
-			const result = vaultService.getMarkdownFiles(true);
+			const result = vaultService.getMarkdownFiles({ allowAccessToPluginRoot: true });
 
 			expect(result).toHaveLength(2);
 		});
@@ -220,7 +220,7 @@ describe('VaultService - Integration Tests', () => {
 		it('should return null when path is excluded', () => {
 			mockVault.getAbstractFileByPath.mockReturnValue(createMockFile('Vaultkeeper AI/test.md'));
 
-			const result = vaultService.getAbstractFileByPath('Vaultkeeper AI/test.md', false);
+			const result = vaultService.getAbstractFileByPath('Vaultkeeper AI/test.md', { allowAccessToPluginRoot: false });
 
 			expect(result).toBeNull();
 		});
@@ -241,7 +241,7 @@ describe('VaultService - Integration Tests', () => {
 			const mockFile = createMockFile('Vaultkeeper AI/conversation.md');
 			mockVault.getAbstractFileByPath.mockReturnValue(mockFile);
 
-			const result = vaultService.getAbstractFileByPath('Vaultkeeper AI/conversation.md', true);
+			const result = vaultService.getAbstractFileByPath('Vaultkeeper AI/conversation.md', { allowAccessToPluginRoot: true });
 
 			expect(result).toBe(mockFile);
 		});
@@ -250,7 +250,7 @@ describe('VaultService - Integration Tests', () => {
 			const mockFolder = createMockFolder('Vaultkeeper AI');
 			mockVault.getAbstractFileByPath.mockReturnValue(mockFolder);
 
-			const result = vaultService.getAbstractFileByPath('Vaultkeeper AI', false);
+			const result = vaultService.getAbstractFileByPath('Vaultkeeper AI', { allowAccessToPluginRoot: false });
 
 			expect(result).toBeNull();
 		});
@@ -259,7 +259,7 @@ describe('VaultService - Integration Tests', () => {
 			const mockFolder = createMockFolder('Vaultkeeper AI');
 			mockVault.getAbstractFileByPath.mockReturnValue(mockFolder);
 
-			const result = vaultService.getAbstractFileByPath('Vaultkeeper AI', true);
+			const result = vaultService.getAbstractFileByPath('Vaultkeeper AI', { allowAccessToPluginRoot: true });
 
 			expect(result).toBe(mockFolder);
 		});
@@ -275,7 +275,7 @@ describe('VaultService - Integration Tests', () => {
 		});
 
 		it('should return false when file is excluded', async () => {
-			const result = await vaultService.exists('Vaultkeeper AI/test.md', false);
+			const result = await vaultService.exists('Vaultkeeper AI/test.md', { allowAccessToPluginRoot: false });
 
 			expect(result).toBe(false);
 		});
@@ -304,14 +304,15 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.read(mockFile);
 
-			expect(result).toBe('file content');
+			if (result instanceof Error) throw result;
+			expect(result.content).toBe('file content');
 			expect(mockVault.read).toHaveBeenCalledWith(mockFile);
 		});
 
 		it('should return empty string when file is excluded', async () => {
 			const mockFile = createMockFile('Vaultkeeper AI/test.md');
 
-			const result = await vaultService.read(mockFile, false);
+			const result = await vaultService.read(mockFile, { allowAccessToPluginRoot: false });
 
 			expect(result).toBeInstanceOf(Error);
 		expect((result as Error).message).toContain('File does not exist: Vaultkeeper AI/test.md');
@@ -322,9 +323,10 @@ describe('VaultService - Integration Tests', () => {
 			const mockFile = createMockFile('Vaultkeeper AI/test.md');
 			mockVault.read.mockResolvedValue('content');
 
-			const result = await vaultService.read(mockFile, true);
+			const result = await vaultService.read(mockFile, { allowAccessToPluginRoot: true });
 
-			expect(result).toBe('content');
+			if (result instanceof Error) throw result;
+			expect(result.content).toBe('content');
 			expect(mockVault.read).toHaveBeenCalledWith(mockFile);
 		});
 	});
@@ -343,7 +345,7 @@ describe('VaultService - Integration Tests', () => {
 		});
 
 		it('should return error when trying to create file in excluded path', async () => {
-			const result = await vaultService.create('Vaultkeeper AI/test.md', 'content', false);
+			const result = await vaultService.create('Vaultkeeper AI/test.md', 'content', { allowAccessToPluginRoot: false });
 
 			expect(result).toBeInstanceOf(Error);
 			expect((result as Error).message).toContain('Failed to create file, permission denied');
@@ -390,7 +392,7 @@ describe('VaultService - Integration Tests', () => {
 		it('should not modify file when file is excluded', async () => {
 			const mockFile = createMockFile('Vaultkeeper AI/test.md');
 
-			await vaultService.modify(mockFile, 'new content', false);
+			await vaultService.modify(mockFile, 'new content', { allowAccessToPluginRoot: false });
 
 			expect(mockVault.process).not.toHaveBeenCalled();
 		});
@@ -434,7 +436,7 @@ describe('VaultService - Integration Tests', () => {
 			const oldContent = ['old'];
 			const newContent = ['new'];
 
-			const result = await vaultService.patch(mockFile, oldContent, newContent, false);
+			const result = await vaultService.patch(mockFile, oldContent, newContent, { allowAccessToPluginRoot: false });
 
 			expect(result).toBeInstanceOf(Error);
 			expect((result as Error).message).toContain('File does not exist');
@@ -466,7 +468,7 @@ describe('VaultService - Integration Tests', () => {
 			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
 			mockVault.process.mockResolvedValue(undefined);
 
-			const result = await vaultService.patch(mockFile, oldContent, newContent, true);
+			const result = await vaultService.patch(mockFile, oldContent, newContent, { allowAccessToPluginRoot: true });
 
 			expect(mockVault.read).toHaveBeenCalledWith(mockFile);
 			expect(result).toBe(mockFile);
@@ -483,7 +485,7 @@ describe('VaultService - Integration Tests', () => {
 			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
 			mockVault.process.mockResolvedValue(undefined);
 
-			await vaultService.patch(mockFile, oldContent, newContent, false, true);
+			await vaultService.patch(mockFile, oldContent, newContent, { allowAccessToPluginRoot: false, requiresConfirmation: true });
 
 			expect(mockDiffService.requestDiff).toHaveBeenCalledWith(
 				mockFile.name,
@@ -585,7 +587,7 @@ describe('VaultService - Integration Tests', () => {
 			// Clear previous calls
 			mockDiffService.requestDiff.mockClear();
 
-			await vaultService.patch(mockFile, oldContent, newContent, false, false);
+			await vaultService.patch(mockFile, oldContent, newContent, { allowAccessToPluginRoot: false, requiresConfirmation: false });
 
 			// When requiresConfirmation is false, requestDiff should not be called
 			// because proposeChange should skip the diff step
@@ -607,7 +609,7 @@ describe('VaultService - Integration Tests', () => {
 		it('should not delete file and return error when excluded', async () => {
 			const mockFile = createMockFile('Vaultkeeper AI/test.md');
 
-			const result = await vaultService.delete(mockFile, false);
+			const result = await vaultService.delete(mockFile, { allowAccessToPluginRoot: false });
 
 			expect(result).toBeInstanceOf(Error);
 			expect((result as Error).message).toContain('File does not exist');
@@ -618,7 +620,7 @@ describe('VaultService - Integration Tests', () => {
 			const mockFile = createMockFile('note.md');
 			mockFileManager.trashFile.mockResolvedValue(undefined);
 
-			await vaultService.delete(mockFile, true);
+			await vaultService.delete(mockFile, { allowAccessToPluginRoot: true });
 
 			expect(mockFileManager.trashFile).toHaveBeenCalledWith(mockFile);
 		});
@@ -657,7 +659,7 @@ describe('VaultService - Integration Tests', () => {
 		});
 
 		it('should return error when source file is excluded', async () => {
-			const result = await vaultService.move('Vaultkeeper AI/test.md', 'dest.md', false);
+			const result = await vaultService.move('Vaultkeeper AI/test.md', 'dest.md', { allowAccessToPluginRoot: false });
 
 			expect(result).toBeInstanceOf(Error);
 			expect((result as Error).message).toContain('Move failed as source does not exist');
@@ -740,7 +742,7 @@ describe('VaultService - Integration Tests', () => {
 		});
 
 		it('should return error when trying to create directory in excluded path', async () => {
-			const result = await vaultService.createDirectories('Vaultkeeper AI/subfolder', false);
+			const result = await vaultService.createDirectories('Vaultkeeper AI/subfolder', { allowAccessToPluginRoot: false });
 
 			expect(result).toBeInstanceOf(Error);
 			expect((result as Error).message).toContain('Failed to create the following directories');
@@ -755,7 +757,7 @@ describe('VaultService - Integration Tests', () => {
 
 			mockVault.getAbstractFileByPath.mockReturnValue(folder);
 
-			const result = await vaultService.listFilesInDirectory('folder', false);
+			const result = await vaultService.listFilesInDirectory('folder', { recursive: false });
 
 			expect(result).toHaveLength(2);
 			expect(result).toContain(file1);
@@ -774,7 +776,7 @@ describe('VaultService - Integration Tests', () => {
 				return null;
 			});
 
-			const result = await vaultService.listFilesInDirectory('folder', true);
+			const result = await vaultService.listFilesInDirectory('folder', { recursive: true });
 
 			expect(result).toHaveLength(2);
 			expect(result).toContain(file1);
@@ -789,7 +791,7 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.getAbstractFileByPath.mockReturnValue(folder);
 			await settingsService.updateSettings(s => { s.exclusions = ['**/private.md']; });
 
-			const result = await vaultService.listFilesInDirectory('folder', false);
+			const result = await vaultService.listFilesInDirectory('folder', { recursive: false });
 
 			expect(result).toHaveLength(1);
 			expect(result[0].path).toBe('folder/public.md');
@@ -823,19 +825,19 @@ describe('VaultService - Integration Tests', () => {
 			const getAbstractFileSpy = vi.spyOn(vaultService, 'getAbstractFileByPath');
 
 			// Call with allowAccessToPluginRoot = false (should block access)
-			await vaultService.listFilesInDirectory('Vaultkeeper AI', true, false);
+			await vaultService.listFilesInDirectory('Vaultkeeper AI', { recursive: true, allowAccessToPluginRoot: false });
 
 			// Verify getAbstractFileByPath was called with the correct parameter
-			expect(getAbstractFileSpy).toHaveBeenCalledWith('Vaultkeeper AI', false);
+			expect(getAbstractFileSpy).toHaveBeenCalledWith('Vaultkeeper AI', expect.objectContaining({ allowAccessToPluginRoot: false }));
 
 			// Reset
 			getAbstractFileSpy.mockClear();
 
 			// Call with allowAccessToPluginRoot = true (should allow access)
-			await vaultService.listFilesInDirectory('Vaultkeeper AI', true, true);
+			await vaultService.listFilesInDirectory('Vaultkeeper AI', { recursive: true, allowAccessToPluginRoot: true });
 
 			// Verify getAbstractFileByPath was called with the correct parameter
-			expect(getAbstractFileSpy).toHaveBeenCalledWith('Vaultkeeper AI', true);
+			expect(getAbstractFileSpy).toHaveBeenCalledWith('Vaultkeeper AI', expect.objectContaining({ allowAccessToPluginRoot: true }));
 		});
 
 		it('should not access excluded directory when allowAccessToPluginRoot is false', async () => {
@@ -846,10 +848,10 @@ describe('VaultService - Integration Tests', () => {
 			const getAbstractFileSpy = vi.spyOn(vaultService, 'getAbstractFileByPath');
 
 			// Try to list files in Vaultkeeper AI directory with allowAccessToPluginRoot = false
-			const result = await vaultService.listFilesInDirectory('Vaultkeeper AI', true, false);
+			const result = await vaultService.listFilesInDirectory('Vaultkeeper AI', { recursive: true, allowAccessToPluginRoot: false });
 
 			// Should call getAbstractFileByPath with false (not hardcoded true)
-			expect(getAbstractFileSpy).toHaveBeenCalledWith('Vaultkeeper AI', false);
+			expect(getAbstractFileSpy).toHaveBeenCalledWith('Vaultkeeper AI', expect.objectContaining({ allowAccessToPluginRoot: false }));
 
 			// Should return empty array since directory is excluded
 			expect(result).toEqual([]);
@@ -864,7 +866,7 @@ describe('VaultService - Integration Tests', () => {
 
 			mockVault.getAbstractFileByPath.mockReturnValue(parentFolder);
 
-			const result = await vaultService.listFoldersInDirectory('parent', false);
+			const result = await vaultService.listFoldersInDirectory('parent', { recursive: false });
 
 			expect(result).toHaveLength(2);
 			expect(result).toContain(folder1);
@@ -884,7 +886,7 @@ describe('VaultService - Integration Tests', () => {
 				return null;
 			});
 
-			const result = await vaultService.listFoldersInDirectory('parent', true);
+			const result = await vaultService.listFoldersInDirectory('parent', { recursive: true });
 
 			expect(result).toHaveLength(3);
 			expect(result).toContain(folder1);
@@ -900,7 +902,7 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.getAbstractFileByPath.mockReturnValue(parentFolder);
 			await settingsService.updateSettings(s => { s.exclusions = ['**/private']; });
 
-			const result = await vaultService.listFoldersInDirectory('parent', false);
+			const result = await vaultService.listFoldersInDirectory('parent', { recursive: false });
 
 			expect(result).toHaveLength(1);
 			expect(result[0].path).toBe('parent/public');
@@ -937,7 +939,7 @@ describe('VaultService - Integration Tests', () => {
 			});
 
 			// With allowAccessToPluginRoot = false (should exclude Vaultkeeper AI)
-			const result1 = await vaultService.listFoldersInDirectory('/', true, false);
+			const result1 = await vaultService.listFoldersInDirectory('/', { recursive: true, allowAccessToPluginRoot: false });
 			expect(result1.some((folder) => folder.path === 'Vaultkeeper AI')).toBe(false);
 			expect(result1.some((folder) => folder.path === 'notes')).toBe(true);
 
@@ -949,7 +951,7 @@ describe('VaultService - Integration Tests', () => {
 				return null;
 			});
 
-			const result2 = await vaultService.listFoldersInDirectory('/', true, true);
+			const result2 = await vaultService.listFoldersInDirectory('/', { recursive: true, allowAccessToPluginRoot: true });
 			expect(result2.some((folder) => folder.path === 'Vaultkeeper AI')).toBe(true);
 			expect(result2.some((folder) => folder.path === 'notes')).toBe(true);
 		});
@@ -969,7 +971,7 @@ describe('VaultService - Integration Tests', () => {
 
 			await settingsService.updateSettings(s => { s.exclusions = ['parent/excluded/**', 'parent/excluded']; });
 
-			const result = await vaultService.listFoldersInDirectory('parent', true);
+			const result = await vaultService.listFoldersInDirectory('parent', { recursive: true });
 
 			// Should not include excluded folder or its subfolders
 			expect(result.some((folder) => folder.path === 'parent/excluded')).toBe(false);
@@ -1074,7 +1076,7 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.getAbstractFileByPath.mockReturnValue(folder);
 			mockVault.cachedRead.mockResolvedValue('This contains the search term');
 
-			const results = await vaultService.searchVaultFiles('search', 0, 0, true);
+			const results = await vaultService.searchVaultFiles('search', { primaryIndex: 0, secondaryIndex: 0, limitResults: true });
 			if (results instanceof Error) throw results;
 
 			// Should have at most searchResultsLimit matching files
@@ -1096,7 +1098,7 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.getAbstractFileByPath.mockReturnValue(folder);
 			mockVault.cachedRead.mockResolvedValue('This contains the search term');
 
-			const results = await vaultService.searchVaultFiles('search', 0, 0, true);
+			const results = await vaultService.searchVaultFiles('search', { primaryIndex: 0, secondaryIndex: 0, limitResults: true });
 			if (results instanceof Error) throw results;
 
 			// Should have at most 5 matching files
@@ -1298,7 +1300,7 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.cachedRead.mockResolvedValue('searchable content');
 
 			// Search with allowAccessToPluginRoot = true
-			const results = await vaultService.searchVaultFiles('searchable', 0, 0, false, true);
+			const results = await vaultService.searchVaultFiles('searchable', { primaryIndex: 0, secondaryIndex: 0, limitResults: false, allowAccessToPluginRoot: true });
 			if (results instanceof Error) throw results;
 
 			// Should include files from Vaultkeeper AI directory
@@ -1325,7 +1327,7 @@ describe('VaultService - Integration Tests', () => {
 			mockVault.cachedRead.mockResolvedValue('searchable content');
 
 			// Search with allowAccessToPluginRoot = false (default)
-			const results = await vaultService.searchVaultFiles('searchable', 0, 0, false);
+			const results = await vaultService.searchVaultFiles('searchable', { primaryIndex: 0, secondaryIndex: 0, limitResults: false });
 			if (results instanceof Error) throw results;
 
 			// Should NOT include files from Vaultkeeper AI directory
@@ -1345,18 +1347,18 @@ describe('VaultService - Integration Tests', () => {
 			const listFilesSpy = vi.spyOn(vaultService, 'listFilesInDirectory');
 
 			// Call with allowAccessToPluginRoot = true
-			await vaultService.searchVaultFiles('test', 0, 0, false, true);
+			await vaultService.searchVaultFiles('test', { primaryIndex: 0, secondaryIndex: 0, limitResults: false, allowAccessToPluginRoot: true });
 
 			// Verify listFilesInDirectory was called with the correct parameter
-			expect(listFilesSpy).toHaveBeenCalledWith(Path.Root, true, true);
+			expect(listFilesSpy).toHaveBeenCalledWith(Path.Root, expect.objectContaining({ recursive: true, allowAccessToPluginRoot: true }));
 
 			listFilesSpy.mockClear();
 
 			// Call with allowAccessToPluginRoot = false
-			await vaultService.searchVaultFiles('test', 0, 0, false, false);
+			await vaultService.searchVaultFiles('test', { primaryIndex: 0, secondaryIndex: 0, limitResults: false, allowAccessToPluginRoot: false });
 
 			// Verify listFilesInDirectory was called with the correct parameter
-			expect(listFilesSpy).toHaveBeenCalledWith(Path.Root, true, false);
+			expect(listFilesSpy).toHaveBeenCalledWith(Path.Root, expect.objectContaining({ recursive: true, allowAccessToPluginRoot: false }));
 
 			listFilesSpy.mockRestore();
 		});
@@ -1400,7 +1402,7 @@ describe('VaultService - Integration Tests', () => {
 		});
 
 		it('should always exclude Vaultkeeper AI root by default', async () => {
-			const result = await vaultService.exists('Vaultkeeper AI/file.md', false);
+			const result = await vaultService.exists('Vaultkeeper AI/file.md', { allowAccessToPluginRoot: false });
 
 			expect(result).toBe(false);
 		});
@@ -1525,7 +1527,7 @@ describe('VaultService - Integration Tests', () => {
 
 			await settingsService.updateSettings(s => { s.exclusions = ['private/**']; });
 
-			const { results } = await vaultService.listDirectoryContents(Path.Root, true, 0, false);
+			const { results } = await vaultService.listDirectoryContents(Path.Root, { recursive: true, primaryIndex: 0, limitResults: false });
 
 			// Should include: public/note.md and public folder
 			// Should exclude: Vaultkeeper AI folder (default exclusion), private/** content
@@ -1551,7 +1553,7 @@ describe('VaultService - Integration Tests', () => {
 				return null;
 			});
 
-			const { results } = await vaultService.listDirectoryContents(Path.Root, true, 0, false);
+			const { results } = await vaultService.listDirectoryContents(Path.Root, { recursive: true, primaryIndex: 0, limitResults: false });
 
 			// Vaultkeeper AI directory itself should be excluded
 			expect(results.some((item: any) => item.path === 'Vaultkeeper AI')).toBe(false);
@@ -1572,7 +1574,7 @@ describe('VaultService - Integration Tests', () => {
 				return null;
 			});
 
-			const { results } = await vaultService.listDirectoryContents(Path.Root, true, 0, false, true);
+			const { results } = await vaultService.listDirectoryContents(Path.Root, { recursive: true, primaryIndex: 0, limitResults: false, allowAccessToPluginRoot: true });
 
 			expect(results).toHaveLength(3);
 			expect(results.some((item: any) => item.path === 'Vaultkeeper AI/conversation.md')).toBe(true);

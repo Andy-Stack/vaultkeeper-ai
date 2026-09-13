@@ -46,18 +46,19 @@ export class QuickActionsDefinitionsService {
             }
 
             const selection = editor.getSelection();
-            const content = await this.fileSystemService.readFile(file);
+            const readResult = await this.fileSystemService.readFile(file);
 
-            if (content instanceof Error || (selection.trim() === "" && content.trim() === "")) {
+            if (readResult instanceof Error || (selection.trim() === "" && readResult.content.trim() === "")) {
                 return; // Either an excluded file or nothing to proofread
             }
+            const content = readResult.content;
 
             const notice = this.showNotice("Proofreading...");
             try {
                 if (selection.length > 0) {
                     const result = await this.performAction(ProofreadPrompt, selection);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [selection], [result], false, false);
+                        await this.fileSystemService.patchFile(file, [selection], [result], { allowAccessToPluginRoot: false, requiresConfirmation: false });
                     }
                 } else {
                     const { body } = splitFrontmatter(content);
@@ -66,7 +67,7 @@ export class QuickActionsDefinitionsService {
                     }
                     const result = await this.performAction(ProofreadPrompt, body);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [body], [result], false, false);
+                        await this.fileSystemService.patchFile(file, [body], [result], { allowAccessToPluginRoot: false, requiresConfirmation: false });
                     }
                 }
             } finally {
@@ -83,18 +84,19 @@ export class QuickActionsDefinitionsService {
             }
 
             const selection = editor.getSelection();
-            const content = await this.fileSystemService.readFile(file);
+            const readResult = await this.fileSystemService.readFile(file);
 
-            if (content instanceof Error || (selection.trim() === "" && content.trim() === "")) {
+            if (readResult instanceof Error || (selection.trim() === "" && readResult.content.trim() === "")) {
                 return; // Either an excluded file or nothing to beautify
             }
+            const content = readResult.content;
 
             const notice = this.showNotice("Beautifying content...");
             try {
                 if (selection.length > 0) {
                     const result = await this.performAction(BeautifyPrompt, selection);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [selection], [result], false, false);
+                        await this.fileSystemService.patchFile(file, [selection], [result], { allowAccessToPluginRoot: false, requiresConfirmation: false });
                     }
                 } else {
                     const { body } = splitFrontmatter(content);
@@ -103,7 +105,7 @@ export class QuickActionsDefinitionsService {
                     }
                     const result = await this.performAction(BeautifyPrompt, body);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [body], [result], false, false);
+                        await this.fileSystemService.patchFile(file, [body], [result], { allowAccessToPluginRoot: false, requiresConfirmation: false });
                     }
                 }
             } finally {
@@ -118,22 +120,24 @@ export class QuickActionsDefinitionsService {
             return;
         }
 
-        const preview = await this.fileSystemService.readFile(file);
-        if (preview instanceof Error || preview.trim() === "") {
+        const previewResult = await this.fileSystemService.readFile(file);
+        if (previewResult instanceof Error || previewResult.content.trim() === "") {
             return; // Either an excluded file or nothing to apply a template to
         }
 
         this.userSelectFile(this.plugin, async (templateFile) => {
             await this.asSerialAction("Apply template", async () => {
-                const content = await this.fileSystemService.readFile(file);
-                if (content instanceof Error || content.trim() === "") {
+                const contentResult = await this.fileSystemService.readFile(file);
+                if (contentResult instanceof Error || contentResult.content.trim() === "") {
                     return; // Either an excluded file or nothing to apply a template to
                 }
+                const content = contentResult.content;
 
-                const templateContent = await this.fileSystemService.readFile(templateFile);
-                if (templateContent instanceof Error || templateContent.trim() === "") {
+                const templateContentResult = await this.fileSystemService.readFile(templateFile);
+                if (templateContentResult instanceof Error || templateContentResult.content.trim() === "") {
                     return; // Either an excluded file or the template is empty
                 }
+                const templateContent = templateContentResult.content;
 
                 const prompt = replaceCopy(ApplyTemplatePrompt,
                     [
@@ -148,7 +152,7 @@ export class QuickActionsDefinitionsService {
                     const context = `${Copy.ApplyTemplateTemplateSeparator}\n${templateContent}\n${Copy.ApplyTemplateContentSeparator}\n${content}`;
                     const result = await this.performAction(prompt, context);
                     if (result && result.trim() !== Copy.ApplyTemplateCancelled.toString()) {
-                        await this.fileSystemService.writeToFile(file, result, false, false);
+                        await this.fileSystemService.writeToFile(file, result, { allowAccessToPluginRoot: false, requiresConfirmation: false });
                     }
                 } finally {
                     notice.hide();
@@ -165,11 +169,12 @@ export class QuickActionsDefinitionsService {
             }
 
             const selection = editor.getSelection();
-            const content = await this.fileSystemService.readFile(file);
+            const readResult = await this.fileSystemService.readFile(file);
 
-            if (content instanceof Error || (selection.trim() === "" && content.trim() === "")) {
+            if (readResult instanceof Error || (selection.trim() === "" && readResult.content.trim() === "")) {
                 return; // Either an excluded file or nothing to proofread
             }
+            const content = readResult.content;
 
             const links = this.vaultcacheService.wikiLinks.links.join("\n");
             const prompt = replaceCopy(ApplyLinksPrompt, [links]);
@@ -179,7 +184,7 @@ export class QuickActionsDefinitionsService {
                 if (selection.length > 0) {
                     const result = await this.performAction(prompt, selection);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [selection], [result], false, false);
+                        await this.fileSystemService.patchFile(file, [selection], [result], { allowAccessToPluginRoot: false, requiresConfirmation: false });
                     }
                 } else {
                     const { body } = splitFrontmatter(content);
@@ -188,7 +193,7 @@ export class QuickActionsDefinitionsService {
                     }
                     const result = await this.performAction(prompt, body);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [body], [result], false, false);
+                        await this.fileSystemService.patchFile(file, [body], [result], { allowAccessToPluginRoot: false, requiresConfirmation: false });
                     }
                 }
             } finally {
@@ -204,13 +209,13 @@ export class QuickActionsDefinitionsService {
                 return;
             }
 
-            const content = await this.fileSystemService.readFile(file);
+            const readResult = await this.fileSystemService.readFile(file);
 
-            if (content instanceof Error || content.trim() === "") {
+            if (readResult instanceof Error || readResult.content.trim() === "") {
                 return; // Either an excluded file or nothing to tag
             }
 
-            const { body } = splitFrontmatter(content);
+            const { body } = splitFrontmatter(readResult.content);
             if (body.trim() === "") {
                 return; // Nothing to base tags on
             }
@@ -252,13 +257,13 @@ export class QuickActionsDefinitionsService {
                 return;
             }
 
-            const content = await this.fileSystemService.readFile(file);
+            const readResult = await this.fileSystemService.readFile(file);
 
-            if (content instanceof Error || content.trim() === "") {
+            if (readResult instanceof Error || readResult.content.trim() === "") {
                 return; // Either an excluded file or nothing to tag
             }
 
-            const { body } = splitFrontmatter(content);
+            const { body } = splitFrontmatter(readResult.content);
             if (body.trim() === "") {
                 return; // Nothing to base tags on
             }
@@ -300,13 +305,13 @@ export class QuickActionsDefinitionsService {
                 return;
             }
 
-            const content = await this.fileSystemService.readFile(file);
+            const readResult = await this.fileSystemService.readFile(file);
 
-            if (content instanceof Error || content.trim() === "") {
+            if (readResult instanceof Error || readResult.content.trim() === "") {
                 return; // Either an excluded file or nothing to describe
             }
 
-            const { body } = splitFrontmatter(content);
+            const { body } = splitFrontmatter(readResult.content);
             if (body.trim() === "") {
                 return; // Nothing to base frontmatter on
             }

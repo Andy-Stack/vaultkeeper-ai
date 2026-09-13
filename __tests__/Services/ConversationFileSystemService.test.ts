@@ -130,8 +130,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						})
 					])
 				}),
-				true,
-				false
+				{ allowAccessToPluginRoot: true, requiresConfirmation: false }
 			);
 		});
 
@@ -306,8 +305,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(result).toBeUndefined(); // void = success
 			expect(mockFileSystemService.deleteFile).toHaveBeenCalledWith(
 				'Vaultkeeper AI/Conversations/To Delete.json',
-				true,
-				false
+				{ allowAccessToPluginRoot: true, requiresConfirmation: false }
 			);
 			expect(service.getCurrentConversationPath()).toBeNull();
 		});
@@ -404,8 +402,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(conversations[1].title).toBe('Conversation 2');
 			expect(mockFileSystemService.listFilesInDirectory).toHaveBeenCalledWith(
 				'Vaultkeeper AI/Conversations',
-				false,
-				true
+				{ recursive: false, allowAccessToPluginRoot: true }
 			);
 		});
 
@@ -621,7 +618,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 			expect(mockFileSystemService.readBinaryFile).toHaveBeenCalledWith(
 				'Vaultkeeper AI/Conversations/Artifacts/hash123.bin',
-				true
+				{ allowAccessToPluginRoot: true }
 			);
 			const artifact = conversations[0].contents[0].artifacts[0];
 			expect(artifact).toBeInstanceOf(Artifact);
@@ -728,8 +725,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 				expect(mockFileSystemService.deleteFile).toHaveBeenCalledTimes(1);
 				expect(mockFileSystemService.deleteFile).toHaveBeenCalledWith(
 					'Vaultkeeper AI/Conversations/Artifacts/orphaned.bin',
-					true,
-					false
+					{ allowAccessToPluginRoot: true, requiresConfirmation: false }
 				);
 			});
 
@@ -810,13 +806,11 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 			expect(mockFileSystemService.listFilesInDirectory).toHaveBeenCalledWith(
 				'Vaultkeeper AI/Conversations/Attachments',
-				false,
-				true
+				{ recursive: false, allowAccessToPluginRoot: true }
 			);
 			expect(mockFileSystemService.listFilesInDirectory).toHaveBeenCalledWith(
 				'Vaultkeeper AI/Conversations/Artifacts',
-				false,
-				true
+				{ recursive: false, allowAccessToPluginRoot: true }
 			);
 		});
 	});
@@ -833,7 +827,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(mockFileSystemService.moveFile).toHaveBeenCalledWith(
 				'Vaultkeeper AI/Conversations/Old Title.json',
 				'Vaultkeeper AI/Conversations/New Title.json',
-				true
+				{ allowAccessToPluginRoot: true }
 			);
 		});
 
@@ -882,7 +876,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(mockFileSystemService.moveFile).toHaveBeenCalledWith(
 				'Vaultkeeper AI/Conversations/Old.json',
 				'Vaultkeeper AI/Conversations/New: Title & More!.json',
-				true
+				{ allowAccessToPluginRoot: true }
 			);
 		});
 	});

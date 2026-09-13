@@ -13,7 +13,10 @@ export const SearchVaultFilesArgsSchema = z.object({
 });
 
 export const ReadVaultFilesArgsSchema = z.object({
-	file_paths: z.array(z.string()),
+	files: z.array(z.object({
+		file_path: z.string(),
+		index: z.number().optional()
+	})),
 	user_message: z.string()
 });
 

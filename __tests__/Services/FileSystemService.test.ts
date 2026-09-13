@@ -81,13 +81,14 @@ describe('FileSystemService', () => {
 			const fileContent = 'This is test content';
 
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
-			mockVaultService.read = vi.fn().mockResolvedValue(fileContent);
+			mockVaultService.read = vi.fn().mockResolvedValue({ content: fileContent, nextIndex: undefined });
 
 			const result = await fileSystemService.readFilePath('test.md');
 
-			expect(result).toBe(fileContent);
-			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('test.md', false);
-			expect(mockVaultService.read).toHaveBeenCalledWith(mockFile, false);
+			if (result instanceof Error) throw result;
+			expect(result.content).toBe(fileContent);
+			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('test.md', undefined);
+			expect(mockVaultService.read).toHaveBeenCalledWith(mockFile, undefined);
 		});
 
 		it('should return Error when file does not exist', async () => {
@@ -105,12 +106,12 @@ describe('FileSystemService', () => {
 			const fileContent = '{"key": "value"}';
 
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
-			mockVaultService.read = vi.fn().mockResolvedValue(fileContent);
+			mockVaultService.read = vi.fn().mockResolvedValue({ content: fileContent, nextIndex: undefined });
 
-			await fileSystemService.readFilePath('plugin/config.json', true);
+			await fileSystemService.readFilePath('plugin/config.json', { allowAccessToPluginRoot: true });
 
-			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/config.json', true);
-			expect(mockVaultService.read).toHaveBeenCalledWith(mockFile, true);
+			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/config.json', { allowAccessToPluginRoot: true });
+			expect(mockVaultService.read).toHaveBeenCalledWith(mockFile, { allowAccessToPluginRoot: true });
 		});
 
 		it('should return Error when path is not a file', async () => {
@@ -135,7 +136,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.writeToFilePath('new.md', 'content');
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.create).toHaveBeenCalledWith('new.md', 'content', false, true);
+			expect(mockVaultService.create).toHaveBeenCalledWith('new.md', 'content', undefined);
 			expect(mockVaultService.modify).not.toHaveBeenCalled();
 		});
 
@@ -148,7 +149,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.writeToFilePath('existing.md', 'new content');
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.modify).toHaveBeenCalledWith(mockFile, 'new content', false, true);
+			expect(mockVaultService.modify).toHaveBeenCalledWith(mockFile, 'new content', undefined);
 			expect(mockVaultService.create).not.toHaveBeenCalled();
 		});
 
@@ -156,10 +157,10 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(null);
 			mockVaultService.create = vi.fn().mockResolvedValue(undefined);
 
-			await fileSystemService.writeToFilePath('plugin/data.json', 'content', true);
+			await fileSystemService.writeToFilePath('plugin/data.json', 'content', { allowAccessToPluginRoot: true });
 
-			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/data.json', true);
-			expect(mockVaultService.create).toHaveBeenCalledWith('plugin/data.json', 'content', true, true);
+			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/data.json', { allowAccessToPluginRoot: true });
+			expect(mockVaultService.create).toHaveBeenCalledWith('plugin/data.json', 'content', { allowAccessToPluginRoot: true });
 		});
 
 		it('should return error object when create fails', async () => {
@@ -200,7 +201,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.patchFileAtPath('existing.md', oldContent, newContent);
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, false, true);
+			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, undefined);
 		});
 
 		it('should create file with empty content when file does not exist', async () => {
@@ -218,8 +219,8 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.patchFileAtPath('new.md', oldContent, newContent);
 
 			// writeFile should create the file with empty content
-			expect(mockVaultService.create).toHaveBeenCalledWith('new.md', '', false, true);
-			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, false, true);
+			expect(mockVaultService.create).toHaveBeenCalledWith('new.md', '', undefined);
+			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, undefined);
 			expect(result).toBe(mockFile);
 		});
 
@@ -261,10 +262,10 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 			mockVaultService.patch = vi.fn().mockResolvedValue(mockFile);
 
-			await fileSystemService.patchFileAtPath('plugin/config.md', oldContent, newContent, true);
+			await fileSystemService.patchFileAtPath('plugin/config.md', oldContent, newContent, { allowAccessToPluginRoot: true });
 
-			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/config.md', true);
-			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, true, true);
+			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/config.md', { allowAccessToPluginRoot: true });
+			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, { allowAccessToPluginRoot: true });
 		});
 
 		it('should handle complex multi-line replacement', async () => {
@@ -278,7 +279,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.patchFileAtPath('document.md', oldContent, newContent);
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, false, true);
+			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, undefined);
 		});
 
 		it('should handle file creation when getAbstractFileByPath returns null after create', async () => {
@@ -292,7 +293,7 @@ describe('FileSystemService', () => {
 			await fileSystemService.patchFileAtPath('new.md', oldContent, newContent);
 
 			// Should call patch on the created file
-			expect(mockVaultService.create).toHaveBeenCalledWith('new.md', '', false, true);
+			expect(mockVaultService.create).toHaveBeenCalledWith('new.md', '', undefined);
 			expect(mockVaultService.patch).toHaveBeenCalled();
 		});
 
@@ -304,9 +305,9 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 			mockVaultService.patch = vi.fn().mockResolvedValue(mockFile);
 
-			await fileSystemService.patchFileAtPath('test.md', oldContent, newContent, false, true);
+			await fileSystemService.patchFileAtPath('test.md', oldContent, newContent, { allowAccessToPluginRoot: false, requiresConfirmation: true });
 
-			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, false, true);
+			expect(mockVaultService.patch).toHaveBeenCalledWith(mockFile, oldContent, newContent, { allowAccessToPluginRoot: false, requiresConfirmation: true });
 		});
 	});
 
@@ -320,7 +321,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.deleteFile('delete-me.md');
 
 			expect(result).toBeUndefined();
-			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFile, false, true);
+			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFile, undefined);
 		});
 
 		it('should return error when file does not exist', async () => {
@@ -339,10 +340,10 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
 			mockVaultService.delete = vi.fn().mockResolvedValue(undefined);
 
-			await fileSystemService.deleteFile('plugin/temp.json', true);
+			await fileSystemService.deleteFile('plugin/temp.json', { allowAccessToPluginRoot: true });
 
-			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/temp.json', true);
-			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFile, true, true);
+			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/temp.json', { allowAccessToPluginRoot: true });
+			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFile, { allowAccessToPluginRoot: true });
 		});
 
 		it('should delete folder successfully', async () => {
@@ -355,7 +356,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.deleteFolder('folder');
 
 			expect(result).toBeUndefined();
-			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFolder, false);
+			expect(mockVaultService.delete).toHaveBeenCalledWith(mockFolder, undefined);
 		});
 	});
 
@@ -366,7 +367,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.moveFile('old/path.md', 'new/path.md');
 
 			expect(result).toBeUndefined();
-			expect(mockVaultService.move).toHaveBeenCalledWith('old/path.md', 'new/path.md', false);
+			expect(mockVaultService.move).toHaveBeenCalledWith('old/path.md', 'new/path.md', undefined);
 		});
 
 		it('should return error when move fails', async () => {
@@ -382,9 +383,9 @@ describe('FileSystemService', () => {
 		it('should respect allowAccessToPluginRoot parameter', async () => {
 			mockVaultService.move = vi.fn().mockResolvedValue(undefined);
 
-			await fileSystemService.moveFile('plugin/old.json', 'plugin/new.json', true);
+			await fileSystemService.moveFile('plugin/old.json', 'plugin/new.json', { allowAccessToPluginRoot: true });
 
-			expect(mockVaultService.move).toHaveBeenCalledWith('plugin/old.json', 'plugin/new.json', true);
+			expect(mockVaultService.move).toHaveBeenCalledWith('plugin/old.json', 'plugin/new.json', { allowAccessToPluginRoot: true });
 		});
 	});
 
@@ -400,7 +401,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.listFilesInDirectory('test-dir');
 
 			expect(result).toEqual(mockFiles);
-			expect(mockVaultService.listFilesInDirectory).toHaveBeenCalledWith('test-dir', true, false);
+			expect(mockVaultService.listFilesInDirectory).toHaveBeenCalledWith('test-dir', undefined);
 		});
 
 		it('should list files non-recursively when specified', async () => {
@@ -408,10 +409,10 @@ describe('FileSystemService', () => {
 
 			mockVaultService.listFilesInDirectory = vi.fn().mockResolvedValue(mockFiles);
 
-			const result = await fileSystemService.listFilesInDirectory('test-dir', false);
+			const result = await fileSystemService.listFilesInDirectory('test-dir', { recursive: false });
 
 			expect(result).toEqual(mockFiles);
-			expect(mockVaultService.listFilesInDirectory).toHaveBeenCalledWith('test-dir', false, false);
+			expect(mockVaultService.listFilesInDirectory).toHaveBeenCalledWith('test-dir', { recursive: false });
 		});
 
 		it('should return empty array when directory does not exist', async () => {
@@ -427,9 +428,9 @@ describe('FileSystemService', () => {
 
 			mockVaultService.listFilesInDirectory = vi.fn().mockResolvedValue(mockFiles);
 
-			await fileSystemService.listFilesInDirectory('plugin', true, true);
+			await fileSystemService.listFilesInDirectory('plugin', { recursive: true, allowAccessToPluginRoot: true });
 
-			expect(mockVaultService.listFilesInDirectory).toHaveBeenCalledWith('plugin', true, true);
+			expect(mockVaultService.listFilesInDirectory).toHaveBeenCalledWith('plugin', { recursive: true, allowAccessToPluginRoot: true });
 		});
 	});
 
@@ -445,7 +446,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.listFoldersInDirectory('test-dir');
 
 			expect(result).toEqual(mockFolders);
-			expect(mockVaultService.listFoldersInDirectory).toHaveBeenCalledWith('test-dir', true, false);
+			expect(mockVaultService.listFoldersInDirectory).toHaveBeenCalledWith('test-dir', undefined);
 		});
 
 		it('should list folders non-recursively when specified', async () => {
@@ -453,10 +454,10 @@ describe('FileSystemService', () => {
 
 			mockVaultService.listFoldersInDirectory = vi.fn().mockResolvedValue(mockFolders);
 
-			const result = await fileSystemService.listFoldersInDirectory('test-dir', false);
+			const result = await fileSystemService.listFoldersInDirectory('test-dir', { recursive: false });
 
 			expect(result).toEqual(mockFolders);
-			expect(mockVaultService.listFoldersInDirectory).toHaveBeenCalledWith('test-dir', false, false);
+			expect(mockVaultService.listFoldersInDirectory).toHaveBeenCalledWith('test-dir', { recursive: false });
 		});
 
 		it('should return empty array when directory does not exist', async () => {
@@ -472,9 +473,9 @@ describe('FileSystemService', () => {
 
 			mockVaultService.listFoldersInDirectory = vi.fn().mockResolvedValue(mockFolders);
 
-			await fileSystemService.listFoldersInDirectory('plugin', true, true);
+			await fileSystemService.listFoldersInDirectory('plugin', { recursive: true, allowAccessToPluginRoot: true });
 
-			expect(mockVaultService.listFoldersInDirectory).toHaveBeenCalledWith('plugin', true, true);
+			expect(mockVaultService.listFoldersInDirectory).toHaveBeenCalledWith('plugin', { recursive: true, allowAccessToPluginRoot: true });
 		});
 	});
 
@@ -485,31 +486,31 @@ describe('FileSystemService', () => {
 				createMockFolder('test-dir/subfolder')
 			];
 
-			mockVaultService.listDirectoryContents = vi.fn().mockResolvedValue(mockContents);
+			mockVaultService.listDirectoryContents = vi.fn().mockResolvedValue({ results: mockContents, nextIndex: undefined });
 
 			const result = await fileSystemService.listDirectoryContents('test-dir');
 
-			expect(result).toEqual(mockContents);
-			expect(mockVaultService.listDirectoryContents).toHaveBeenCalledWith('test-dir', true, 0, false, false);
+			expect(result.results).toEqual(mockContents);
+			expect(mockVaultService.listDirectoryContents).toHaveBeenCalledWith('test-dir', undefined);
 		});
 
 		it('should list contents non-recursively when specified', async () => {
 			const mockContents = [createMockFile('test-dir/file.md')];
 
-			mockVaultService.listDirectoryContents = vi.fn().mockResolvedValue(mockContents);
+			mockVaultService.listDirectoryContents = vi.fn().mockResolvedValue({ results: mockContents, nextIndex: undefined });
 
-			const result = await fileSystemService.listDirectoryContents('test-dir', false);
+			const result = await fileSystemService.listDirectoryContents('test-dir', { recursive: false });
 
-			expect(result).toEqual(mockContents);
-			expect(mockVaultService.listDirectoryContents).toHaveBeenCalledWith('test-dir', false, 0, false, false);
+			expect(result.results).toEqual(mockContents);
+			expect(mockVaultService.listDirectoryContents).toHaveBeenCalledWith('test-dir', { recursive: false });
 		});
 
 		it('should return empty array when directory does not exist', async () => {
-			mockVaultService.listDirectoryContents = vi.fn().mockResolvedValue([]);
+			mockVaultService.listDirectoryContents = vi.fn().mockResolvedValue({ results: [], nextIndex: undefined });
 
 			const result = await fileSystemService.listDirectoryContents('nonexistent');
 
-			expect(result).toEqual([]);
+			expect(result.results).toEqual([]);
 		});
 
 		it('should respect allowAccessToPluginRoot parameter', async () => {
@@ -518,11 +519,11 @@ describe('FileSystemService', () => {
 				createMockFolder('plugin/modules')
 			];
 
-			mockVaultService.listDirectoryContents = vi.fn().mockResolvedValue(mockContents);
+			mockVaultService.listDirectoryContents = vi.fn().mockResolvedValue({ results: mockContents, nextIndex: undefined });
 
-			await fileSystemService.listDirectoryContents('plugin', true, 0, false, true);
+			await fileSystemService.listDirectoryContents('plugin', { recursive: true, primaryIndex: 0, limitResults: false, allowAccessToPluginRoot: true });
 
-			expect(mockVaultService.listDirectoryContents).toHaveBeenCalledWith('plugin', true, 0, false, true);
+			expect(mockVaultService.listDirectoryContents).toHaveBeenCalledWith('plugin', { recursive: true, primaryIndex: 0, limitResults: false, allowAccessToPluginRoot: true });
 		});
 	});
 
@@ -533,7 +534,7 @@ describe('FileSystemService', () => {
 			const expectedObject = { name: 'test', value: 42 };
 
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
-			mockVaultService.read = vi.fn().mockResolvedValue(jsonContent);
+			mockVaultService.read = vi.fn().mockResolvedValue({ content: jsonContent, nextIndex: undefined });
 
 			const result = await fileSystemService.readObjectFromFile('data.json');
 
@@ -554,7 +555,7 @@ describe('FileSystemService', () => {
 			const invalidJson = '{name: "test", invalid}';
 
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
-			mockVaultService.read = vi.fn().mockResolvedValue(invalidJson);
+			mockVaultService.read = vi.fn().mockResolvedValue({ content: invalidJson, nextIndex: undefined });
 
 			await expect(async () => {
 				await fileSystemService.readObjectFromFile('invalid.json');
@@ -567,7 +568,7 @@ describe('FileSystemService', () => {
 			const expectedObject = { user: { name: 'John', age: 30 }, active: true };
 
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
-			mockVaultService.read = vi.fn().mockResolvedValue(jsonContent);
+			mockVaultService.read = vi.fn().mockResolvedValue({ content: jsonContent, nextIndex: undefined });
 
 			const result = await fileSystemService.readObjectFromFile('nested.json');
 
@@ -580,7 +581,7 @@ describe('FileSystemService', () => {
 			const expectedArray = [1, 2, 3, 4, 5];
 
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
-			mockVaultService.read = vi.fn().mockResolvedValue(jsonContent);
+			mockVaultService.read = vi.fn().mockResolvedValue({ content: jsonContent, nextIndex: undefined });
 
 			const result = await fileSystemService.readObjectFromFile('array.json');
 
@@ -592,12 +593,12 @@ describe('FileSystemService', () => {
 			const jsonContent = '{"setting": "value"}';
 
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(mockFile);
-			mockVaultService.read = vi.fn().mockResolvedValue(jsonContent);
+			mockVaultService.read = vi.fn().mockResolvedValue({ content: jsonContent, nextIndex: undefined });
 
-			await fileSystemService.readObjectFromFile('plugin/settings.json', true);
+			await fileSystemService.readObjectFromFile('plugin/settings.json', { allowAccessToPluginRoot: true });
 
-			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/settings.json', true);
-			expect(mockVaultService.read).toHaveBeenCalledWith(mockFile, true);
+			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/settings.json', { allowAccessToPluginRoot: true });
+			expect(mockVaultService.read).toHaveBeenCalledWith(mockFile, { allowAccessToPluginRoot: true });
 		});
 	});
 
@@ -613,7 +614,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.writeObjectToFile('data.json', data);
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.create).toHaveBeenCalledWith('data.json', expectedJson, false, true);
+			expect(mockVaultService.create).toHaveBeenCalledWith('data.json', expectedJson, undefined);
 		});
 
 		it('should serialize and write object to existing file', async () => {
@@ -627,7 +628,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.writeObjectToFile('existing.json', data);
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.modify).toHaveBeenCalledWith(mockFile, expectedJson, false, true);
+			expect(mockVaultService.modify).toHaveBeenCalledWith(mockFile, expectedJson, undefined);
 		});
 
 		it('should format JSON with 4-space indentation', async () => {
@@ -639,7 +640,7 @@ describe('FileSystemService', () => {
 			await fileSystemService.writeObjectToFile('formatted.json', data);
 
 			const expectedJson = JSON.stringify(data, null, 4);
-			expect(mockVaultService.create).toHaveBeenCalledWith('formatted.json', expectedJson, false, true);
+			expect(mockVaultService.create).toHaveBeenCalledWith('formatted.json', expectedJson, undefined);
 			// Verify it contains newlines and indentation
 			expect(expectedJson).toContain('\n');
 			expect(expectedJson).toContain('    ');
@@ -656,7 +657,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.writeObjectToFile('empty.json', data);
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.create).toHaveBeenCalledWith('empty.json', expectedJson, false, true);
+			expect(mockVaultService.create).toHaveBeenCalledWith('empty.json', expectedJson, undefined);
 		});
 
 		it('should handle arrays', async () => {
@@ -670,7 +671,7 @@ describe('FileSystemService', () => {
 			const result = await fileSystemService.writeObjectToFile('array.json', data);
 
 			expect(result).toBe(mockFile);
-			expect(mockVaultService.create).toHaveBeenCalledWith('array.json', expectedJson, false, true);
+			expect(mockVaultService.create).toHaveBeenCalledWith('array.json', expectedJson, undefined);
 		});
 
 		it('should respect allowAccessToPluginRoot parameter', async () => {
@@ -680,10 +681,10 @@ describe('FileSystemService', () => {
 			mockVaultService.getAbstractFileByPath = vi.fn().mockReturnValue(null);
 			mockVaultService.create = vi.fn().mockResolvedValue(undefined);
 
-			await fileSystemService.writeObjectToFile('plugin/config.json', data, true);
+			await fileSystemService.writeObjectToFile('plugin/config.json', data, { allowAccessToPluginRoot: true });
 
-			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/config.json', true);
-			expect(mockVaultService.create).toHaveBeenCalledWith('plugin/config.json', expectedJson, true, true);
+			expect(mockVaultService.getAbstractFileByPath).toHaveBeenCalledWith('plugin/config.json', { allowAccessToPluginRoot: true });
+			expect(mockVaultService.create).toHaveBeenCalledWith('plugin/config.json', expectedJson, { allowAccessToPluginRoot: true });
 		});
 
 		it('should return Error on write error', async () => {
@@ -729,16 +730,16 @@ describe('FileSystemService', () => {
 
 			mockVaultService.searchVaultFiles = vi.fn().mockResolvedValue(mockMatches);
 
-			const result = await fileSystemService.searchVaultFiles(searchTerm, 0, 0, false);
+			const result = await fileSystemService.searchVaultFiles(searchTerm, { primaryIndex: 0, secondaryIndex: 0, limitResults: false });
 
 			expect(result).toEqual(mockMatches);
-			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith(searchTerm, 0, 0, false, false);
+			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith(searchTerm, { primaryIndex: 0, secondaryIndex: 0, limitResults: false });
 		});
 
 		it('should return empty array when no matches found', async () => {
 			mockVaultService.searchVaultFiles = vi.fn().mockResolvedValue([]);
 
-			const result = await fileSystemService.searchVaultFiles('nonexistent term', 0, 0, false);
+			const result = await fileSystemService.searchVaultFiles('nonexistent term', { primaryIndex: 0, secondaryIndex: 0, limitResults: false });
 
 			expect(result).toEqual([]);
 		});
@@ -748,18 +749,18 @@ describe('FileSystemService', () => {
 
 			mockVaultService.searchVaultFiles = vi.fn().mockResolvedValue([]);
 
-			await fileSystemService.searchVaultFiles(searchTerm, 0, 0, true);
+			await fileSystemService.searchVaultFiles(searchTerm, { primaryIndex: 0, secondaryIndex: 0, limitResults: true });
 
-			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith(searchTerm, 0, 0, true, false);
+			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith(searchTerm, { primaryIndex: 0, secondaryIndex: 0, limitResults: true });
 		});
 
 		it('should handle empty search term', async () => {
 			mockVaultService.searchVaultFiles = vi.fn().mockResolvedValue([]);
 
-			const result = await fileSystemService.searchVaultFiles('', 0, 0, false);
+			const result = await fileSystemService.searchVaultFiles('', { primaryIndex: 0, secondaryIndex: 0, limitResults: false });
 
 			expect(result).toEqual([]);
-			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith('', 0, 0, false, false);
+			expect(mockVaultService.searchVaultFiles).toHaveBeenCalledWith('', { primaryIndex: 0, secondaryIndex: 0, limitResults: false });
 		});
 	});
 });

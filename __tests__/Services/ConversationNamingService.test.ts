@@ -95,9 +95,9 @@ describe('ConversationNamingService', () => {
             const result = await (service as any).validateName('Test Title');
 
             expect(result).toBe('Test Title(2)');
-            expect(mockVaultService.exists).toHaveBeenCalledWith(`${Path.Conversations}/Test Title.json`, true);
-            expect(mockVaultService.exists).toHaveBeenCalledWith(`${Path.Conversations}/Test Title(1).json`, true);
-            expect(mockVaultService.exists).toHaveBeenCalledWith(`${Path.Conversations}/Test Title(2).json`, true);
+            expect(mockVaultService.exists).toHaveBeenCalledWith(`${Path.Conversations}/Test Title.json`, { allowAccessToPluginRoot: true });
+            expect(mockVaultService.exists).toHaveBeenCalledWith(`${Path.Conversations}/Test Title(1).json`, { allowAccessToPluginRoot: true });
+            expect(mockVaultService.exists).toHaveBeenCalledWith(`${Path.Conversations}/Test Title(2).json`, { allowAccessToPluginRoot: true });
         });
 
         it('should throw error when stack limit is reached', async () => {
@@ -120,7 +120,7 @@ describe('ConversationNamingService', () => {
             const result = await (service as any).validateName('Unique Title');
 
             expect(result).toBe('Unique Title');
-            expect(mockVaultService.exists).toHaveBeenCalledWith(`${Path.Conversations}/Unique Title.json`, true);
+            expect(mockVaultService.exists).toHaveBeenCalledWith(`${Path.Conversations}/Unique Title.json`, { allowAccessToPluginRoot: true });
             expect(mockVaultService.exists).toHaveBeenCalledTimes(1);
         });
     });

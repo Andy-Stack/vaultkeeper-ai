@@ -30,7 +30,7 @@ describe('MemoriesService', () => {
 
     describe('readMemories', () => {
         it('should return file contents when file exists', async () => {
-            mockFileSystemService.readFilePath.mockResolvedValue('Remember: user prefers TypeScript.');
+            mockFileSystemService.readFilePath.mockResolvedValue({ content: 'Remember: user prefers TypeScript.', nextIndex: undefined });
 
             const result = await service.readMemories();
 

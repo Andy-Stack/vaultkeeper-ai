@@ -2,15 +2,16 @@ import type VaultkeeperAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type { WebviewElement } from "Types/WebviewElement";
+import type { SettingsService } from "./SettingsService";
 
 export class WebViewerService {
 
-    private readonly CONTENT_CHUNK_SIZE = 20000;
-
     private readonly plugin: VaultkeeperAIPlugin;
+    private readonly settingsService: SettingsService;
 
     public constructor() {
         this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
+        this.settingsService = Resolve<SettingsService>(Services.SettingsService);
     }
 
     public async getWebViewContent(urlHint?: string, index: number = 0): Promise<{ content: string, nextIndex: number | undefined } | null> {
@@ -25,7 +26,7 @@ export class WebViewerService {
                 'document.body.innerText'
             ) as string ?? "Failed to retrieve page content";
 
-            const nextIndex = index + this.CONTENT_CHUNK_SIZE;
+            const nextIndex = index + this.settingsService.settings.contextSizeLimit;
             return {
                 content: pageContent.slice(index, nextIndex),
                 nextIndex: nextIndex < pageContent.length ? nextIndex : undefined

@@ -43,7 +43,7 @@ export class ConversationFileSystemService {
             this.currentConversationPath = this.generateConversationPath(conversation);
         } else {
             // can happen if the conversation is deleted during an active request
-            const fileExists = await this.fileSystemService.exists(this.currentConversationPath, true);
+            const fileExists = await this.fileSystemService.exists(this.currentConversationPath, { allowAccessToPluginRoot: true });
             if (!fileExists) {
                 return;
             }
@@ -95,7 +95,7 @@ export class ConversationFileSystemService {
                 }))
         };
 
-        const result = await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData, true, false);
+        const result = await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData, { allowAccessToPluginRoot: true, requiresConfirmation: false });
 
         if (result instanceof Error) {
             new Notice(`Failed to save conversation data for '${conversation.title}'`);
@@ -130,7 +130,7 @@ export class ConversationFileSystemService {
         // Queue this to execute silently in the background - it's just a best effort
         this.deletionQueue = this.deletionQueue.then(() => this.attemptAIFileDeletion(readResult));
 
-        const deleteResult = await this.fileSystemService.deleteFile(this.currentConversationPath, true, false);
+        const deleteResult = await this.fileSystemService.deleteFile(this.currentConversationPath, { allowAccessToPluginRoot: true, requiresConfirmation: false });
 
         if (deleteResult instanceof Error) {
             return deleteResult;
@@ -148,7 +148,7 @@ export class ConversationFileSystemService {
     }
 
     public async getAllConversations(): Promise<Conversation[]> {
-        const files = await this.fileSystemService.listFilesInDirectory(Path.Conversations, false, true);
+        const files = await this.fileSystemService.listFilesInDirectory(Path.Conversations, { recursive: false, allowAccessToPluginRoot: true });
         const conversations: Conversation[] = [];
 
         for (const file of files) {
@@ -166,8 +166,7 @@ export class ConversationFileSystemService {
             // 1. Get all attachment files
             const attachmentFiles = await this.fileSystemService.listFilesInDirectory(
                 Path.Attachments,
-                false,
-                true
+                { recursive: false, allowAccessToPluginRoot: true }
             );
 
             if (attachmentFiles.length === 0) {
@@ -197,8 +196,7 @@ export class ConversationFileSystemService {
                 if (refCount === 0) {
                     const deleteResult = await this.fileSystemService.deleteFile(
                         file.path,
-                        true,
-                        false
+                        { allowAccessToPluginRoot: true, requiresConfirmation: false }
                     );
 
                     if (deleteResult instanceof Error) {
@@ -217,8 +215,7 @@ export class ConversationFileSystemService {
             // 1. Get all artifact files
             const artifactFiles = await this.fileSystemService.listFilesInDirectory(
                 Path.Artifacts,
-                false,
-                true
+                { recursive: false, allowAccessToPluginRoot: true }
             );
 
             if (artifactFiles.length === 0) {
@@ -248,8 +245,7 @@ export class ConversationFileSystemService {
                 if (refCount === 0) {
                     const deleteResult = await this.fileSystemService.deleteFile(
                         file.path,
-                        true,
-                        false
+                        { allowAccessToPluginRoot: true, requiresConfirmation: false }
                     );
 
                     if (deleteResult instanceof Error) {
@@ -266,7 +262,7 @@ export class ConversationFileSystemService {
     public async updateConversationTitle(oldPath: string, newTitle: string): Promise<void | Error> {
         const newPath = `${Path.Conversations}/${newTitle}.json`;
 
-        const result = await this.fileSystemService.moveFile(oldPath, newPath, true);
+        const result = await this.fileSystemService.moveFile(oldPath, newPath, { allowAccessToPluginRoot: true });
 
         if (result instanceof Error) {
             return result;
@@ -286,10 +282,10 @@ export class ConversationFileSystemService {
         const fileName = `${hash}.bin`;
         const filePath = `${storageFolder}/${fileName}`;
 
-        const exists = await this.fileSystemService.exists(filePath, true);
+        const exists = await this.fileSystemService.exists(filePath, { allowAccessToPluginRoot: true });
         if (!exists) {
             const arrayBuffer = StringTools.toBuffer(file.base64);
-            const result = await this.fileSystemService.writeBinaryFile(filePath, arrayBuffer, true);
+            const result = await this.fileSystemService.writeBinaryFile(filePath, arrayBuffer, { allowAccessToPluginRoot: true });
 
             if (result instanceof Error) {
                 Exception.log(result);
@@ -302,7 +298,7 @@ export class ConversationFileSystemService {
 
     private async loadBinaryFile(storagePath: string): Promise<string> {
         const fullPath = `${Path.Conversations}/${storagePath}`;
-        const arrayBuffer = await this.fileSystemService.readBinaryFile(fullPath, true);
+        const arrayBuffer = await this.fileSystemService.readBinaryFile(fullPath, { allowAccessToPluginRoot: true });
 
         if (arrayBuffer instanceof Error) {
             Exception.log(arrayBuffer);
@@ -313,7 +309,7 @@ export class ConversationFileSystemService {
     }
 
     private async readConversation(path: string): Promise<Conversation | Error> {
-        const result = await this.fileSystemService.readObjectFromFile(path, true);
+        const result = await this.fileSystemService.readObjectFromFile(path, { allowAccessToPluginRoot: true });
         
         if (result instanceof Error) {
             Exception.log(result);

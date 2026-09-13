@@ -126,7 +126,7 @@ export class ArtifactView extends ItemView {
                     return;
                 }
 
-                await this.fileSystemService.writeToFilePath(this.artifact.filePath, this.artifact.originalContent, false, false);
+                await this.fileSystemService.writeToFilePath(this.artifact.filePath, this.artifact.originalContent, { allowAccessToPluginRoot: false, requiresConfirmation: false });
                 await this.closeArtifactView();
             });
         }
@@ -143,7 +143,7 @@ export class ArtifactView extends ItemView {
 
             if (this.artifact.base64) {
                 const arrayBuffer = base64ToArrayBuffer(this.artifact.base64);
-                await this.fileSystemService.writeBinaryFile(this.artifact.filePath, arrayBuffer, false);
+                await this.fileSystemService.writeBinaryFile(this.artifact.filePath, arrayBuffer, { allowAccessToPluginRoot: false });
                 await this.closeArtifactView();
                 return;
             }
@@ -152,7 +152,7 @@ export class ArtifactView extends ItemView {
             const restoreOriginal = this.artifact.action === ArtifactAction.Delete;
 
             await this.fileSystemService.writeToFilePath(this.artifact.filePath, restoreOriginal
-                ? this.artifact.originalContent : this.artifact.updatedContent, false, false);
+                ? this.artifact.originalContent : this.artifact.updatedContent, { allowAccessToPluginRoot: false, requiresConfirmation: false });
             
             await this.closeArtifactView();
         });

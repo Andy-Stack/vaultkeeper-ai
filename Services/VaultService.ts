@@ -7,7 +7,7 @@ import { pathExtname } from "Helpers/Helpers";
 import type { IPageText, ISearchResult, ISearchSnippet } from "../Types/SearchTypes";
 import type { SanitiserService } from "./SanitiserService";
 import { FileEvent } from "Enums/FileEvent";
-import type { SettingsService } from "./SettingsService";
+import { DEFAULT_SETTINGS, type SettingsService } from "./SettingsService";
 import { Exception } from "Helpers/Exception";
 import type { EventService } from "./EventService";
 import { DiffService } from "./DiffService";
@@ -23,8 +23,30 @@ interface IFileEventArgs {
     oldPath: string;
 }
 
+export interface IVaultOptions {
+    recursive?: boolean;
+    chunkSize?: number;
+    limitResults?: boolean;
+    primaryIndex?: number | undefined;
+    secondaryIndex?: number | undefined;
+    allowAccessToPluginRoot?: boolean;
+    requiresConfirmation?: boolean;
+}
+
+type ResolvedVaultOptions = Required<Omit<IVaultOptions, 'primaryIndex' | 'secondaryIndex'>> & Pick<IVaultOptions, 'primaryIndex' | 'secondaryIndex'>;
+
 /* This service protects the users vault through their exclusions. The plugin root is excluded by default */
 export class VaultService {
+
+    private readonly defaultOptions: ResolvedVaultOptions = {
+        recursive: true,
+        chunkSize: DEFAULT_SETTINGS.contextSizeLimit,
+        limitResults: false,
+        primaryIndex: undefined,
+        secondaryIndex: undefined,
+        allowAccessToPluginRoot: false,
+        requiresConfirmation: true
+    };
 
     private readonly AGENT_ROOT_DIR = Path.VaultkeeperAIDir;
     private readonly AGENT_ROOT_CONTENTS = `${Path.VaultkeeperAIDir}/**`;
@@ -75,22 +97,22 @@ export class VaultService {
         this.plugin.registerEvent(this.vault.on(FileEvent.Delete, file => handleFileEvent(FileEvent.Delete, file, { oldPath: "" })));
     }
 
-    public getMarkdownFiles(allowAccessToPluginRoot: boolean = false): TFile[] {
-        return this.vault.getMarkdownFiles().filter(file => !this.isExclusion(file.path, allowAccessToPluginRoot));
+    public getMarkdownFiles(vaultOptions?: IVaultOptions): TFile[] {
+        return this.vault.getMarkdownFiles().filter(file => !this.isExclusion(file.path, this.getOptions(vaultOptions)));
     }
 
-    public getAbstractFileByPath(filePath: string, allowAccessToPluginRoot: boolean = false): TAbstractFile | null {
+    public getAbstractFileByPath(filePath: string, vaultOptions?: IVaultOptions): TAbstractFile | null {
         filePath = this.sanitiserService.sanitize(filePath);
-        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
+        if (this.isExclusion(filePath, this.getOptions(vaultOptions))) {
             Exception.log(`Plugin attempted to retrieve a file that is in the exclusions list: ${filePath}`);
             return null;
         }
         return this.vault.getAbstractFileByPath(filePath);
     }
 
-    public async exists(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<boolean> {
+    public async exists(filePath: string, vaultOptions?: IVaultOptions): Promise<boolean> {
         filePath = this.sanitiserService.sanitize(filePath);
-        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
+        if (this.isExclusion(filePath, this.getOptions(vaultOptions))) {
             Exception.log(`Plugin attempted to access a file that is in the exclusions list: ${filePath}`);
             return false;
         }
@@ -98,9 +120,11 @@ export class VaultService {
         return await this.vault.adapter.exists(filePath, true);
     }
 
-    public async read(file: TFile, allowAccessToPluginRoot: boolean = false): Promise<string | Error> {
+    public async read(file: TFile, vaultOptions?: IVaultOptions): Promise<{ content: string, nextIndex: number | undefined } | Error> {
+        const options = this.getOptions(vaultOptions);
+
         const filePath = this.sanitiserService.sanitize(file.path);
-        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
+        if (this.isExclusion(filePath, options)) {
             Exception.log(`Plugin attempted to read a file that is in the exclusions list: ${filePath}`);
             return Exception.new(`File does not exist: ${filePath}`);
         }
@@ -108,36 +132,48 @@ export class VaultService {
         const fileExtension = file.extension.toLowerCase();
 
         if (isBinaryFile(fileExtension)) {
-            const arrayBuffer = await this.readBinaryData(file, allowAccessToPluginRoot);
+            const arrayBuffer = await this.readBinaryData(file, options);
             if (arrayBuffer) {
-                return arrayBufferToBase64(arrayBuffer);
+                return { content: arrayBufferToBase64(arrayBuffer), nextIndex: undefined };
             }
         }
 
+        let content: string;
         if (isDocumentFile(fileExtension)) {
-            const arrayBuffer = await this.readBinaryData(file, allowAccessToPluginRoot);
-            if (arrayBuffer) {
-                return (readDocument(arrayBuffer, fileExtension))[0].text;
-            }
+            const arrayBuffer = await this.readBinaryData(file, options);
+            content = arrayBuffer ? (readDocument(arrayBuffer, fileExtension))[0].text : "";
+        } else {
+            content = await this.vault.read(file);
         }
 
-        return await this.vault.read(file);
+        if (!options.limitResults) {
+            return { content, nextIndex: undefined };
+        }
+
+        const index = options.primaryIndex ?? 0;
+        const nextIndex = index + options.chunkSize;
+        return {
+            content: content.slice(index, nextIndex),
+            nextIndex: nextIndex < content.length ? nextIndex : undefined
+        };
     }
 
-    public async readBinaryData(file: TFile, allowAccessToPluginRoot: boolean = false): Promise<ArrayBuffer | null> {
+    public async readBinaryData(file: TFile, vaultOptions?: IVaultOptions): Promise<ArrayBuffer | null> {
         const filePath = this.sanitiserService.sanitize(file.path);
-        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
+        if (this.isExclusion(filePath, this.getOptions(vaultOptions))) {
             Exception.log(`Plugin attempted to read a file that is in the exclusions list: ${filePath}`);
             return null;
         }
         return await this.vault.readBinary(file);
     }
 
-    public async create(filePath: string, content: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+    public async create(filePath: string, content: string, vaultOptions?: IVaultOptions): Promise<TFile | Error> {
+        const options = this.getOptions(vaultOptions);
         filePath = this.sanitiserService.sanitize(filePath);
+
         const fileExtension = pathExtname(filePath);
 
-        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
+        if (this.isExclusion(filePath, options)) {
             Exception.log(`Plugin attempted to create a file that is in the exclusion list: ${filePath}`);
             return Exception.new(`Failed to create file, permission denied: ${filePath}`);
         }
@@ -147,17 +183,18 @@ export class VaultService {
         }
 
         const fileName = path.basename(filePath);
-        return this.proposeChange(fileName, fileName, "", content, requiresConfirmation, async () => {
-            await this.createDirectories(filePath, allowAccessToPluginRoot);
+        return this.proposeChange(fileName, fileName, "", content, options, async () => {
+            await this.createDirectories(filePath, options);
             return await this.vault.create(filePath, content);
         });
     }
 
-    public async modify(file: TFile, content: string, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+    public async modify(file: TFile, content: string, vaultOptions?: IVaultOptions): Promise<TFile | Error> {
+        const options = this.getOptions(vaultOptions);
         const filePath = this.sanitiserService.sanitize(file.path);
         const fileExtension = pathExtname(filePath);
 
-        if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
+        if (this.isExclusion(file.path, options)) {
             Exception.log(`Plugin attempted to modify a file that is in the exclusion list: ${filePath}`);
             return Exception.new(`File does not exist: ${filePath}`);
         }
@@ -166,23 +203,23 @@ export class VaultService {
             return Exception.new(`Modifying ${pathExtname(filePath)} files is not supported`);
         }
 
-        const currentContent = await this.read(file, allowAccessToPluginRoot);
+        const currentContentResult = await this.read(file, options);
 
-        if (currentContent instanceof Error) {
-            return currentContent;
+        if (currentContentResult instanceof Error) {
+            return currentContentResult;
         }
 
-        return this.proposeChange(file.name, file.name, currentContent, content, requiresConfirmation, async () => {
+        return this.proposeChange(file.name, file.name, currentContentResult.content, content, options, async () => {
             await this.vault.process(file, () => content);
             return file;
         });
     }
 
-    public async updateFrontmatter(file: TFile, mutate: (frontmatter: Record<string, unknown>) => void, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
+    public async updateFrontmatter(file: TFile, mutate: (frontmatter: Record<string, unknown>) => void, vaultOptions?: IVaultOptions): Promise<TFile | Error> {
         const filePath = this.sanitiserService.sanitize(file.path);
         const fileExtension = pathExtname(filePath);
 
-        if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
+        if (this.isExclusion(file.path, this.getOptions(vaultOptions))) {
             Exception.log(`Plugin attempted to update frontmatter of a file that is in the exclusion list: ${filePath}`);
             return Exception.new(`File does not exist: ${filePath}`);
         }
@@ -201,9 +238,10 @@ export class VaultService {
         }
     }
 
-    public async patch(file: TFile, oldContent: string[], newContent: string[], allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<TFile | Error> {
+    public async patch(file: TFile, oldContent: string[], newContent: string[], vaultOptions?: IVaultOptions): Promise<TFile | Error> {
+        const options = this.getOptions(vaultOptions);
         const filePath = this.sanitiserService.sanitize(file.path);
-        if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
+        if (this.isExclusion(file.path, options)) {
             Exception.log(`Plugin attempted to patch a file that is in the exclusion list: ${filePath}`);
             return Exception.new(`File does not exist: ${filePath}`);
         }
@@ -216,11 +254,13 @@ export class VaultService {
             return Exception.new(`Mismatched patch arrays: ${oldContent.length} old content entries but ${newContent.length} new content entries. Each old content entry must have a corresponding new content entry.`);
         }
 
-        const currentContent = await this.read(file, allowAccessToPluginRoot);
+        const currentContentResult = await this.read(file, options);
 
-        if (currentContent instanceof Error) {
-            return currentContent;
+        if (currentContentResult instanceof Error) {
+            return currentContentResult;
         }
+
+        const currentContent = currentContentResult.content;
 
         for (const content of oldContent) {
             if (!currentContent.includes(content) && !RegexTools.toWhitespaceFlexibleRegex(content).test(currentContent)) {
@@ -237,17 +277,18 @@ export class VaultService {
             }
         }
 
-        return this.proposeChange(file.name, file.name, currentContent, updatedContent, requiresConfirmation, async () => {
+        return this.proposeChange(file.name, file.name, currentContent, updatedContent, options, async () => {
             await this.vault.process(file, () => updatedContent);
             return file;
         });
     }
 
-    public async delete(file: TAbstractFile, allowAccessToPluginRoot: boolean = false, requiresConfirmation: boolean = true): Promise<void | Error> {
+    public async delete(file: TAbstractFile, vaultOptions?: IVaultOptions): Promise<void | Error> {
+        const options = this.getOptions(vaultOptions);
         const filePath = this.sanitiserService.sanitize(file.path);
         const isFile = file instanceof TFile;
 
-        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
+        if (this.isExclusion(filePath, options)) {
             Exception.log(`Plugin attempted to delete a ${isFile ? "file" : "folder"} that is in the exclusions list: ${filePath}`)
             return isFile ? Exception.new(`File does not exist: ${filePath} GOT`)
                           : Exception.new(`Deletion failed. The folder or its contents may be protected: ${filePath}`);
@@ -255,13 +296,13 @@ export class VaultService {
 
         // handle file deletion
         if (isFile) {
-            const currentContent = await this.read(file, allowAccessToPluginRoot)
+            const currentContentResult = await this.read(file, options)
 
-            if (currentContent instanceof Error) {
-                return currentContent;
+            if (currentContentResult instanceof Error) {
+                return currentContentResult;
             }
 
-            return this.proposeChange(file.name, file.name, currentContent, "", requiresConfirmation, async () => {
+            return this.proposeChange(file.name, file.name, currentContentResult.content, "", options, async () => {
                 await this.fileManager.trashFile(file);
             });
         }
@@ -275,10 +316,11 @@ export class VaultService {
         }
     }
 
-    public async move(sourcePath: string, destinationPath: string, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
+    public async move(sourcePath: string, destinationPath: string, vaultOptions?: IVaultOptions): Promise<void | Error> {
+        const options = this.getOptions(vaultOptions);
         sourcePath = this.sanitiserService.sanitize(sourcePath);
         destinationPath = this.sanitiserService.sanitize(destinationPath);
-        const file = this.getAbstractFileByPath(sourcePath, allowAccessToPluginRoot);
+        const file = this.getAbstractFileByPath(sourcePath, options);
 
         if (file === null) {
             return Exception.new(`Move failed as source does not exist: ${sourcePath}`);
@@ -286,16 +328,16 @@ export class VaultService {
 
         const isFile = file instanceof TFile;
 
-        if (this.isExclusion(destinationPath, allowAccessToPluginRoot)) {
+        if (this.isExclusion(destinationPath, options)) {
             return Exception.new(`Failed to rename "${sourcePath}" to "${destinationPath}", permission denied.`)
         }
 
         try {
             if (isFile) {
-                await this.createDirectories(destinationPath, allowAccessToPluginRoot);
+                await this.createDirectories(destinationPath, options);
             } else {
                 const parentPath = destinationPath.substring(0, destinationPath.lastIndexOf("/"));
-                if (parentPath) await this.createDirectories(parentPath, allowAccessToPluginRoot);
+                if (parentPath) await this.createDirectories(parentPath, options);
             }
             await this.fileManager.renameFile(file, destinationPath);
         } catch (error) {
@@ -304,15 +346,16 @@ export class VaultService {
         }
     }
 
-    public async createBinary(filePath: string, data: ArrayBuffer, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
+    public async createBinary(filePath: string, data: ArrayBuffer, vaultOptions?: IVaultOptions): Promise<TFile | Error> {
+        const options = this.getOptions(vaultOptions);
         filePath = this.sanitiserService.sanitize(filePath);
-        if (this.isExclusion(filePath, allowAccessToPluginRoot)) {
+        if (this.isExclusion(filePath, options)) {
             Exception.log(`Plugin attempted to create a binary file that is in the exclusion list: ${filePath}`);
             return Exception.new(`Failed to create file, permission denied: ${filePath}`);
         }
 
         try {
-            await this.createDirectories(filePath, allowAccessToPluginRoot);
+            await this.createDirectories(filePath, options);
             return await this.vault.createBinary(filePath, data);
         } catch (error) {
             Exception.log(error);
@@ -320,9 +363,9 @@ export class VaultService {
         }
     }
 
-    public async modifyBinary(file: TFile, data: ArrayBuffer, allowAccessToPluginRoot: boolean = false): Promise<TFile | Error> {
+    public async modifyBinary(file: TFile, data: ArrayBuffer, vaultOptions?: IVaultOptions): Promise<TFile | Error> {
         const filePath = this.sanitiserService.sanitize(file.path);
-        if (this.isExclusion(file.path, allowAccessToPluginRoot)) {
+        if (this.isExclusion(file.path, this.getOptions(vaultOptions))) {
             Exception.log(`Plugin attempted to modify a binary file that is in the exclusion list: ${filePath}`);
             return Exception.new(`File does not exist: ${filePath}`);
         }
@@ -336,17 +379,19 @@ export class VaultService {
         }
     }
 
-    public async listDirectoryContents(path: string, recursive: boolean = true, index: number = 0, limitResults: boolean = false, allowAccessToPluginRoot: boolean = false): Promise<{ results: TAbstractFile[], nextIndex: number | undefined }> {
+    public async listDirectoryContents(path: string, vaultOptions?: IVaultOptions): Promise<{ results: TAbstractFile[], nextIndex: number | undefined }> {
+        const options = this.getOptions(vaultOptions);
         path = this.sanitiserService.sanitize(path);
 
-        const files = await this.listFilesInDirectory(path, recursive, allowAccessToPluginRoot);
-        const folders = await this.listFoldersInDirectory(path, recursive, allowAccessToPluginRoot);
+        const files = await this.listFilesInDirectory(path, options);
+        const folders = await this.listFoldersInDirectory(path, options);
 
         const contents = [...files, ...folders] as TAbstractFile[];
 
-        if (limitResults) {
+        if (options.limitResults) {
+            const index = options.primaryIndex ?? 0;
             const nextIndex = index + this.settingsService.settings.searchResultsLimit;
-            return { 
+            return {
                 results: contents.slice(index, nextIndex),
                 nextIndex: nextIndex > contents.length - 1 ? undefined : nextIndex
             };
@@ -355,10 +400,11 @@ export class VaultService {
         return { results: contents, nextIndex: undefined };
     }
 
-    public async listFilesInDirectory(path: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFile[]> {
+    public async listFilesInDirectory(path: string, vaultOptions?: IVaultOptions): Promise<TFile[]> {
+        const options = this.getOptions(vaultOptions);
         path = this.sanitiserService.sanitize(path);
 
-        const dir: TAbstractFile | null = this.getAbstractFileByPath(path, allowAccessToPluginRoot);
+        const dir: TAbstractFile | null = this.getAbstractFileByPath(path, options);
 
         if (dir == null || !(dir instanceof TFolder)) {
             return [];
@@ -367,12 +413,12 @@ export class VaultService {
         let files: TFile[] = [];
         for (const child of dir.children) {
             if (child instanceof TFile) {
-                if (!this.isExclusion(child.path, allowAccessToPluginRoot)) {
+                if (!this.isExclusion(child.path, options)) {
                     files.push(child);
                 }
-            } else if (child instanceof TFolder && recursive) {
-                if (!this.isExclusion(child.path, allowAccessToPluginRoot)) {
-                    const childFiles = await this.listFilesInDirectory(child.path, recursive, allowAccessToPluginRoot);
+            } else if (child instanceof TFolder && options.recursive) {
+                if (!this.isExclusion(child.path, options)) {
+                    const childFiles = await this.listFilesInDirectory(child.path, options);
                     files = files.concat(childFiles);
                 }
             }
@@ -381,10 +427,11 @@ export class VaultService {
         return files;
     }
 
-    public async listFoldersInDirectory(path: string, recursive: boolean = true, allowAccessToPluginRoot: boolean = false): Promise<TFolder[]> {
+    public async listFoldersInDirectory(path: string, vaultOptions?: IVaultOptions): Promise<TFolder[]> {
+        const options = this.getOptions(vaultOptions);
         path = this.sanitiserService.sanitize(path);
 
-        const dir: TAbstractFile | null = this.getAbstractFileByPath(path, allowAccessToPluginRoot);
+        const dir: TAbstractFile | null = this.getAbstractFileByPath(path, options);
 
         if (dir == null || !(dir instanceof TFolder)) {
             return [];
@@ -396,11 +443,11 @@ export class VaultService {
                 continue;
             }
 
-            if (!this.isExclusion(child.path, allowAccessToPluginRoot)) {
+            if (!this.isExclusion(child.path, options)) {
                 folders.push(child);
 
-                if (recursive) {
-                    const childFolders = await this.listFoldersInDirectory(child.path, recursive, allowAccessToPluginRoot);
+                if (options.recursive) {
+                    const childFolders = await this.listFoldersInDirectory(child.path, options);
                     folders = folders.concat(childFolders);
                 }
             }
@@ -409,7 +456,8 @@ export class VaultService {
         return folders;
     }
 
-    public async searchVaultFiles(searchTerm: string, fileNamesIndex: number = 0, fileContentsIndex: number = 0, limitResults: boolean = false, allowAccessToPluginRoot: boolean = false): Promise<ISearchResult | Error> {
+    public async searchVaultFiles(searchTerm: string, vaultOptions?: IVaultOptions): Promise<ISearchResult | Error> {
+        const options = this.getOptions(vaultOptions);
         // Always ensure 'g' flag is present for extractSnippets to work correctly
         // (regex.exec in a loop requires 'g' flag to advance, otherwise infinite loop)
         const regex = RegexTools.asRegex(searchTerm, ["i", "g"]);
@@ -422,15 +470,18 @@ export class VaultService {
         let fileContentsMatches: { file: TFile, snippets: ISearchSnippet[] }[] = [];
 
         const literals = RegexTools.extractRegexLiterals(regex);
-        const resultsLimit = limitResults ? this.settingsService.settings.searchResultsLimit : Infinity;
+        const resultsLimit = options.limitResults ? this.settingsService.settings.searchResultsLimit : Infinity;
 
-        const files: TFile[] = await this.listFilesInDirectory(Path.Root, true, allowAccessToPluginRoot);
+        const files: TFile[] = await this.listFilesInDirectory(Path.Root, options);
         files.sort(VaultService.recentFileSorter());
 
-        const fileNamesExhausted = fileNamesIndex < 0 || fileNamesIndex > files.length - 1;
-        const fileContentsExhausted = fileContentsIndex < 0 || fileContentsIndex > files.length - 1;
+        const primaryIndex = options.primaryIndex ?? 0;
+        const secondaryIndex = options.secondaryIndex ?? 0;
 
-        let fileNameIndex = fileNamesIndex;
+        const fileNamesExhausted = primaryIndex < 0 || primaryIndex > files.length - 1;
+        const fileContentsExhausted = secondaryIndex < 0 || secondaryIndex > files.length - 1;
+
+        let fileNameIndex = primaryIndex;
         let fileNameLimitIndex: number | undefined;
 
         while (!fileNamesExhausted && fileNameIndex < files.length) {
@@ -454,7 +505,7 @@ export class VaultService {
 
         let contentLimitIndex: number | undefined;
 
-        let fileContentIndex = fileContentsIndex;
+        let fileContentIndex = secondaryIndex;
         while (!fileContentsExhausted && fileContentIndex < files.length) {
             if (contentLimitIndex !== undefined) {
                 break;
@@ -515,9 +566,10 @@ export class VaultService {
         };
     }
 
-    public isExclusion(filePath: string, allowAccessToPluginRoot: boolean = false): boolean {
-        const exclusions = allowAccessToPluginRoot ? this.exclusions : this.rootExclusions;
-        const exclusionRegExps = allowAccessToPluginRoot ? this.userExclusionRegExps : this.rootExclusionRegExps;
+    public isExclusion(filePath: string, vaultOptions?: IVaultOptions): boolean {
+        const options = this.getOptions(vaultOptions);
+        const exclusions = options.allowAccessToPluginRoot ? this.exclusions : this.rootExclusions;
+        const exclusionRegExps = options.allowAccessToPluginRoot ? this.userExclusionRegExps : this.rootExclusionRegExps;
 
         if (exclusions.some(exclusion => filePath === exclusion)) {
             return true;
@@ -528,7 +580,8 @@ export class VaultService {
         });
     }
 
-    public async createDirectories(filePath: string, allowAccessToPluginRoot: boolean = false): Promise<void | Error> {
+    public async createDirectories(filePath: string, vaultOptions?: IVaultOptions): Promise<void | Error> {
+        const options = this.getOptions(vaultOptions);
         const dirPath: string = path.extname(filePath)
             ? filePath.substring(0, filePath.lastIndexOf("/"))
             : filePath;
@@ -540,8 +593,8 @@ export class VaultService {
         for (const dir of dirs) {
             if (dir) {
                 currentPath = currentPath ? `${currentPath}/${dir}` : dir;
-                if (!(await this.exists(currentPath, allowAccessToPluginRoot))) {
-                    const result = await this.createDirectory(currentPath, allowAccessToPluginRoot);
+                if (!(await this.exists(currentPath, options))) {
+                    const result = await this.createDirectory(currentPath, options);
                     if (result instanceof Error) {
                         failures.push(currentPath);
                     }
@@ -553,9 +606,9 @@ export class VaultService {
         }
     }
 
-    private async createDirectory(path: string, allowAccessToPluginRoot: boolean = false): Promise<TFolder | Error> {
+    private async createDirectory(path: string, options: IVaultOptions): Promise<TFolder | Error> {
         path = this.sanitiserService.sanitize(path);
-        if (this.isExclusion(path, allowAccessToPluginRoot)) {
+        if (this.isExclusion(path, options)) {
             Exception.log(`Plugin attempted to create a folder that is in the exclusion list: ${path}`);
             return Exception.new(`Failed to create folder, permission denied: ${path}`);
         }
@@ -694,9 +747,9 @@ export class VaultService {
     }
 
     private async proposeChange<T>(oldFileName: string, newFileName: string, oldContent: string, newContent: string,
-        requiresConfirmation: boolean = true, performChange: () => Promise<T>): Promise<T | Error> {
+        options: IVaultOptions, performChange: () => Promise<T>): Promise<T | Error> {
             try {
-                const result = this.settingsService.settings.freeEdit || !requiresConfirmation ? { accepted: true } :
+                const result = this.settingsService.settings.freeEdit || !options.requiresConfirmation ? { accepted: true } :
                     await this.diffService.requestDiff(oldFileName, newFileName, oldContent, newContent);
 
                 if (result.accepted) {
@@ -729,4 +782,16 @@ export class VaultService {
         };
     }
 
+    private getOptions(vaultOptions?: IVaultOptions): ResolvedVaultOptions {
+        return {
+          recursive: vaultOptions?.recursive ?? this.defaultOptions.recursive,
+          chunkSize: vaultOptions?.chunkSize ?? this.defaultOptions.chunkSize,
+          limitResults: vaultOptions?.limitResults ?? this.defaultOptions.limitResults,
+          primaryIndex: vaultOptions?.primaryIndex ?? this.defaultOptions.primaryIndex,
+          secondaryIndex: vaultOptions?.secondaryIndex ?? this.defaultOptions.secondaryIndex,
+          allowAccessToPluginRoot: vaultOptions?.allowAccessToPluginRoot ?? this.defaultOptions.allowAccessToPluginRoot,
+          requiresConfirmation: vaultOptions?.requiresConfirmation ?? this.defaultOptions.requiresConfirmation
+        };
+    }
+      
 }

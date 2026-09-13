@@ -151,6 +151,20 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					});
 			});
 
+		new Setting(containerEl)
+			.setName(replaceCopy(Copy.SettingContextSizeLimit, [DEFAULT_SETTINGS.contextSizeLimit.toString()]))
+			.setDesc(Copy.SettingContextSizeLimitDesc)
+			.addSlider(slider => {
+				slider
+					.setLimits(SEARCH_SETTINGS_RANGE.contextSizeLimit.min, SEARCH_SETTINGS_RANGE.contextSizeLimit.max, SEARCH_SETTINGS_RANGE.contextSizeLimit.step)
+					.setValue(this.settingsService.settings.contextSizeLimit)
+					.onChange(async value => {
+						await this.settingsService.updateSettings(settings => {
+							settings.contextSizeLimit = value;
+						});
+					});
+			});
+
 		/* Web Access Header */
 		new Setting(containerEl)
 			.setHeading()

@@ -74,6 +74,7 @@ export const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     searchTimeLimit: 5000,
     searchResultsLimit: 40,
     snippetSizeLimit: 10,
+    contextSizeLimit: 20000,
 
     enableMemories: false,
     allowUpdatingMemories: true,
@@ -121,6 +122,7 @@ export interface IVaultkeeperAISettings {
     searchTimeLimit: number;
     searchResultsLimit: number;
     snippetSizeLimit: number;
+    contextSizeLimit: number;
 
     enableMemories: boolean;
     allowUpdatingMemories: boolean;
@@ -254,11 +256,12 @@ export class SettingsService {
     }
 
     private async ensureValidSearchSettings() {
-        const { searchTimeLimit, searchResultsLimit, snippetSizeLimit } = SEARCH_SETTINGS_RANGE;
+        const { searchTimeLimit, searchResultsLimit, snippetSizeLimit, contextSizeLimit } = SEARCH_SETTINGS_RANGE;
         
         let resetTimeLimit = this.settings.searchTimeLimit < searchTimeLimit.min || this.settings.searchTimeLimit > searchTimeLimit.max;
         let resetresultLimit = this.settings.searchResultsLimit < searchResultsLimit.min || this.settings.searchResultsLimit > searchResultsLimit.max;
         let resetSnippetLimit = this.settings.snippetSizeLimit < snippetSizeLimit.min || this.settings.snippetSizeLimit > snippetSizeLimit.max;
+        let resetContextLimit = this.settings.contextSizeLimit < contextSizeLimit.min || this.settings.contextSizeLimit > contextSizeLimit.max;
 
         await this.updateSettings(settings => {
             if (resetTimeLimit) {
@@ -269,6 +272,9 @@ export class SettingsService {
             }
             if (resetSnippetLimit) {
                 settings.snippetSizeLimit = DEFAULT_SETTINGS.snippetSizeLimit;
+            }
+            if (resetContextLimit) {
+                settings.contextSizeLimit = DEFAULT_SETTINGS.contextSizeLimit;
             }
         });
     }

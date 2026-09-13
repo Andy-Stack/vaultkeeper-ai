@@ -33,7 +33,7 @@ export class WorkSpaceService {
     public getActiveFile(allowAccessToPluginRoot: boolean = false): TFile | null {
         const activeFile = this.plugin.app.workspace.getActiveFile();
         
-        if (!activeFile || this.fileSystemService.isExclusion(activeFile.path, allowAccessToPluginRoot)) {
+        if (!activeFile || this.fileSystemService.isExclusion(activeFile.path, { allowAccessToPluginRoot })) {
             return null;
         }
         

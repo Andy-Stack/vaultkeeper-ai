@@ -77,7 +77,7 @@ export class ConversationNamingService {
 
         let index = 1;
         let availableTitle = cleanedTitle;
-        while (await this.vaultService.exists(`${Path.Conversations}/${availableTitle}.json`, true)) {
+        while (await this.vaultService.exists(`${Path.Conversations}/${availableTitle}.json`, { allowAccessToPluginRoot: true })) {
             availableTitle = `${cleanedTitle}(${index})`;
             index++;
 

@@ -293,9 +293,7 @@ async function measureSearch(
 
 	const results = await vaultService.searchVaultFiles(
 		QUERY_PATTERNS[queryPattern],
-		0,
-		0,
-		true
+		{ primaryIndex: 0, secondaryIndex: 0, limitResults: true }
 	);
 
 	const duration = performance.now() - startTime;

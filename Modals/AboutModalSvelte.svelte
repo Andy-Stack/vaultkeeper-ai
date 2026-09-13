@@ -24,40 +24,40 @@
 
 	const topics: Record<number, { title: string; content: string }> = {
 		1: {
-			title: Copy.HelpModalAboutTitle,
-			content: Copy.HelpModalAboutContent
+			title: Copy.AboutModalAboutTitle,
+			content: Copy.AboutModalAboutContent
 		},
 		2: {
-			title: Copy.HelpModalGettingStartedTitle,
-			content: Copy.HelpModalGettingStartedContent
+			title: Copy.AboutModalGettingStartedTitle,
+			content: Copy.AboutModalGettingStartedContent
 		},
 		3: {
-			title: Copy.HelpModalChatModesTitle,
-			content: Copy.HelpModalChatModesContent
+			title: Copy.AboutModalChatModesTitle,
+			content: Copy.AboutModalChatModesContent
 		},
 		4: {
-			title: Copy.HelpModalReferenceTitle,
-			content: Copy.HelpModalReferenceContent
+			title: Copy.AboutModalReferenceTitle,
+			content: Copy.AboutModalReferenceContent
 		},
 		5: {
-			title: Copy.HelpModalCustomInstructionsTitle,
-			content: Copy.HelpModalCustomInstructionsContent
+			title: Copy.AboutModalCustomInstructionsTitle,
+			content: Copy.AboutModalCustomInstructionsContent
 		},
 		6: {
-			title: Copy.HelpModalQuickActionsTitle,
-			content: Copy.HelpModalQuickActionsContent
+			title: Copy.AboutModalQuickActionsTitle,
+			content: Copy.AboutModalQuickActionsContent
 		},
 		7: {
-			title: Copy.HelpModalUploadedFilesTitle,
-			content: Copy.HelpModalUploadedFilesContent
+			title: Copy.AboutModalUploadedFilesTitle,
+			content: Copy.AboutModalUploadedFilesContent
 		},
 		8: {
-			title: Copy.HelpModalTroubleshootTitle,
-			content: Copy.HelpModalTroubleshootContent
+			title: Copy.AboutModalTroubleshootTitle,
+			content: Copy.AboutModalTroubleshootContent
 		},
 		9: {
-			title: Copy.HelpModalPrivacyTitle,
-			content: Copy.HelpModalPrivacyContent
+			title: Copy.AboutModalPrivacyTitle,
+			content: Copy.AboutModalPrivacyContent
 		}
 	};
 
@@ -132,11 +132,11 @@
 	});
 </script>
 
-<div class="help-modal-container">
-	<div class="help-modal-top-bar">
-		<div class="help-modal-top-bar-content">
+<div class="about-modal-container">
+	<div class="about-modal-top-bar">
+		<div class="about-modal-top-bar-content">
 			{#if title !== ""}
-				<div id="help-modal-title" transition:fade={{ duration: 100 }}>
+				<div id="about-modal-title" transition:fade={{ duration: 100 }}>
 					{title}
 				</div>
 			{/if}
@@ -145,31 +145,31 @@
 			id="close-button"
 			class="top-bar-button clickable-icon"
 			on:click={onClose}
-			aria-label={Copy.HelpModalCloseAriaLabel}
+			aria-label={Copy.AboutModalCloseAriaLabel}
 			></button>
 		</div>
 	</div>
-	<div class="help-modal-body">
-		<div class="help-modal-dropdown" bind:this={dropdownContainer}></div>
-		<div class="help-modal-topics">
+	<div class="about-modal-body">
+		<div class="about-modal-dropdown" bind:this={dropdownContainer}></div>
+		<div class="about-modal-topics">
 			{#each Object.entries(topics) as [key, topic] (key)}
 				<div
-					class="help-modal-topic-frame"
+					class="about-modal-topic-frame"
 					class:hidden={selectedTopic !== Number(key)}
 					on:click={() => selectTopic(Number(key))}
 					on:keydown={(e) => e.key === 'Enter' && selectTopic(Number(key))}
 					role="button"
 					tabindex="0">
-					<div class="help-modal-topic-item">
+					<div class="about-modal-topic-item">
 						{topic.title}
 					</div>
 				</div>
 			{/each}
 		</div>
-		<div class="help-modal-content" bind:this={contentContainer}>
+		<div class="about-modal-content" bind:this={contentContainer}>
 			{#if contentVisible}
 				{#if selectedTopic === 1}
-					<img class="help-modal-banner" src={assetsService.bannerSource} alt="Plugin Banner">
+					<img class="about-modal-banner" src={assetsService.bannerSource} alt="Plugin Banner">
 				{/if}
 				<div transition:fade={{ duration: 100 }} use:helpContentAction={selectedTopic}></div>
 				<div transition:fade={{ duration: 100 }}>
@@ -199,7 +199,7 @@
 					{/if}
 				</div>
 				{#if selectedTopic === 1}
-					<div class="help-modal-version-string" transition:fade={{ duration: 100 }}>
+					<div class="about-modal-version-string" transition:fade={{ duration: 100 }}>
 						<p>{Copy.PluginVersionPrefix}{plugin.manifest.version}</p>
 					</div>
 				{/if}
@@ -214,7 +214,7 @@
 		font-size: var(--font-smallest); -->
 
 <style>
-	.help-modal-container {
+	.about-modal-container {
 		display: grid;
 		grid-template-rows: auto var(--size-4-1) 1fr var(--size-4-2);
 		grid-template-columns: var(--size-4-2) 1fr var(--size-4-2);
@@ -223,7 +223,7 @@
 		margin: 10px;
 	}
 
-	.help-modal-top-bar {
+	.about-modal-top-bar {
 		grid-row: 1;
 		grid-column: 2;
 		height: var(--size-4-16);
@@ -232,7 +232,7 @@
 		grid-template-columns: 1fr;
 	}
 
-	.help-modal-top-bar-content {
+	.about-modal-top-bar-content {
 		grid-row: 2;
 		grid-column: 1;
 		display: grid;
@@ -242,7 +242,7 @@
 		border-radius: var(--radius-m);
 	}
 
-	#help-modal-title {
+	#about-modal-title {
 		grid-row: 1;
 		grid-column: 2 / 4;
 		display: inline-block;
@@ -261,7 +261,7 @@
 		z-index: 1;
 	}
 
-	.help-modal-body {
+	.about-modal-body {
 		grid-row: 3;
 		grid-column: 2;
 		display: grid;
@@ -272,11 +272,11 @@
 		overflow: auto;
 	}
 
-	.help-modal-dropdown {
+	.about-modal-dropdown {
 		display: none;
 	}
 
-	.help-modal-topic-frame {
+	.about-modal-topic-frame {
 		grid-column: 1 / 4;
 		display: grid;
 		grid-template-rows: auto;
@@ -289,11 +289,11 @@
 		transition: background-color 0.25s ease-in-out;
 	}
 
-	.help-modal-topic-frame.hidden {
+	.about-modal-topic-frame.hidden {
 		background-color: transparent;
 	}
 
-	.help-modal-topics {
+	.about-modal-topics {
 		grid-row: 1 / 9;
 		grid-column: 1;
 		display: flex;
@@ -302,7 +302,7 @@
 		max-width: 150px;
 	}
 
-	.help-modal-topic-item {
+	.about-modal-topic-item {
 		display: inline-block;
 		white-space: nowrap;
 		overflow: hidden;
@@ -312,11 +312,11 @@
 		transition: color 0.15s ease-in-out;
 	}
 
-	.help-modal-topic-item:hover {
+	.about-modal-topic-item:hover {
 		color: var(--text-normal);
 	}
 
-	.help-modal-content {
+	.about-modal-content {
 		grid-row: 1 / 9;
 		grid-column: 3;
 		height: 100%;
@@ -328,14 +328,14 @@
 		overflow-y: auto;
 	}
 
-	.help-modal-banner {
+	.about-modal-banner {
 		margin-top: var(--size-2-2);
 		margin-left: calc(var(--size-4-2) * -1);
 		width: calc(100% + (var(--size-4-2) * 2) - var(--size-2-2));
 		border-radius: var(--radius-s);
 	}
 
-	.help-modal-version-string {
+	.about-modal-version-string {
 		/* Absorbs leftover vertical space so the version sits bottom-right on tall
 		   screens, but collapses and scrolls naturally when content overflows. */
 		margin-top: auto;
@@ -344,31 +344,31 @@
 		padding-top: var(--size-4-2);
 	}
 
-	.help-modal-version-string p {
+	.about-modal-version-string p {
 		margin: 0;
 		font-size: var(--font-smallest);
 		color: var(--text-muted);
 	}
 
 	/* Mobile styles */
-	:global(.is-mobile) .help-modal-banner {
+	:global(.is-mobile) .about-modal-banner {
 		margin-top: calc(var(--size-4-1) * -1);;
 		margin-left: calc(var(--size-4-2) * -0.6);
 	}
 
-	:global(.is-mobile) .help-modal-body {
+	:global(.is-mobile) .about-modal-body {
 		grid-template-rows: auto var(--size-4-2) 1fr var(--size-4-2) auto;
 		grid-template-columns: 1fr;
 	}
 
-	:global(.is-mobile) .help-modal-dropdown {
+	:global(.is-mobile) .about-modal-dropdown {
 		display: block;
 		grid-row: 1;
 		grid-column: 1;
 		width: 100%;
 	}
 
-	.help-modal-dropdown :global(.dropdown) {
+	.about-modal-dropdown :global(.dropdown) {
 		width: 100%;
 		border: solid;
 		border-width: 1px;
@@ -377,16 +377,16 @@
 	}
 
 	@media (max-width: 600px) {
-		.help-modal-container {
+		.about-modal-container {
 			margin: 0px;
 		}
 	}
 
-	:global(.is-mobile) .help-modal-topics {
+	:global(.is-mobile) .about-modal-topics {
 		display: none;
 	}
 
-	:global(.is-mobile) .help-modal-content {
+	:global(.is-mobile) .about-modal-content {
 		grid-row: 3;
 		grid-column: 1;
 		padding: var(--size-4-2);

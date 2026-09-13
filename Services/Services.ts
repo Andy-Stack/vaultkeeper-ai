@@ -41,5 +41,5 @@ export class Services {
 
     // modals
     static ConversationHistoryModal = Symbol("ConversationHistoryModal");
-    static HelpModal = Symbol("HelpModal");
+    static AboutModal = Symbol("AboutModal");
 }

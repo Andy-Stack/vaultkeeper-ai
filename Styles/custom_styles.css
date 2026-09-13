@@ -227,14 +227,14 @@ body:not(.is-tablet) .workspace-drawer.mod-right {
   display: none;
 }
 
-.help-modal {
+.about-modal {
   padding: 0px;
   overflow: hidden;
 }
-.help-modal .modal-header {
+.about-modal .modal-header {
   display: none;
 }
-.help-modal .modal-close-button {
+.about-modal .modal-close-button {
   display: none;
 }
 

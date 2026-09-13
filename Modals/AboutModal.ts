@@ -2,11 +2,11 @@ import type VaultkeeperAIPlugin from "main";
 import { Modal } from "obsidian";
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
-import HelpModalSvelte from './HelpModalSvelte.svelte';
+import AboutModalSvelte from './AboutModalSvelte.svelte';
 import { mount, unmount } from 'svelte';
 import { Selector } from 'Enums/Selector';
 
-export class HelpModal extends Modal {
+export class AboutModal extends Modal {
 
     private component: ReturnType<typeof mount> | null = null;
     private initialTopic?: number;
@@ -19,11 +19,11 @@ export class HelpModal extends Modal {
     onOpen() {
         const { contentEl, modalEl, containerEl } = this;
 
-        containerEl.addClass(Selector.HelpModal);
-        modalEl.addClass(Selector.HelpModal);
+        containerEl.addClass(Selector.AboutModal);
+        modalEl.addClass(Selector.AboutModal);
         modalEl.addClass(Selector.PluginModal);
 
-        this.component = mount(HelpModalSvelte, {
+        this.component = mount(AboutModalSvelte, {
             target: contentEl,
             props: {
                 onClose: () => this.close(),

@@ -9,7 +9,7 @@
   import { openPluginSettings } from "Helpers/ObsidianInternals";
 	import type { ChatService } from "Services/ChatService";
 	import { fade } from "svelte/transition";
-	import type { HelpModal } from "Modals/HelpModal";
+	import type { AboutModal } from "Modals/AboutModal";
 
   export let leaf: WorkspaceLeaf;
   export let onNewConversation: (() => void) | undefined = undefined;
@@ -56,8 +56,8 @@
     openPluginSettings(plugin);
   }
 
-  function openHelpMenu() {
-    const modal = Resolve<HelpModal>(Services.HelpModal);
+  function openAboutModal() {
+    const modal = Resolve<AboutModal>(Services.AboutModal);
     modal.open();
   }
 
@@ -69,8 +69,9 @@
   let deleteConversationButton: HTMLButtonElement;
   let conversationHistoryButton: HTMLButtonElement;
   let settingsButton: HTMLButtonElement;
-  let helpMenuButton: HTMLButtonElement;
+  let aboutMenuButton: HTMLButtonElement;
   let closeButton: HTMLButtonElement;
+  let aboutMenuDot: HTMLSpanElement | undefined;
 
   $: if (newConversationButton) {
     setIcon(newConversationButton, "plus");
@@ -84,8 +85,9 @@
   $: if (settingsButton) {
     setIcon(settingsButton, "settings");
   }
-  $: if (helpMenuButton) {
-    setIcon(helpMenuButton, "circle-help");
+  $: if (aboutMenuButton && aboutMenuDot) {
+    setIcon(aboutMenuButton, "info");
+    aboutMenuButton.appendChild(aboutMenuDot);
   }
   $: if (closeButton) {
     setIcon(closeButton, "circle-x");
@@ -124,12 +126,13 @@
       aria-label="Vaultkeeper AI Settings"
     ></button>
     <button
-      bind:this={helpMenuButton}
-      id="help-menu-button"
+      bind:this={aboutMenuButton}
+      id="about-menu-button"
       class="top-bar-button clickable-icon"
-      on:click={openHelpMenu}
-      aria-label="Help"
+      on:click={openAboutModal}
+      aria-label="About"
     ></button>
+    <span bind:this={aboutMenuDot} class="about-menu-dot" aria-hidden="true"></span>
     {#if conversationTitle !== ""}
       <div id="conversation-divider-2" class="top-bar-divider" out:fade></div>
       <div id="conversation-title" class="typing-in" out:fade>{conversationTitle}</div>
@@ -206,9 +209,21 @@
     grid-column: 6;
   }
 
-  #help-menu-button {
+  #about-menu-button {
     grid-row: 1;
     grid-column: 7;
+    position: relative;
+  }
+
+  .about-menu-dot {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    box-shadow: 0px 0px 2px 1px var(--color-accent);
   }
 
   #conversation-divider-2 {

@@ -37,7 +37,7 @@ import { SearchStateStore } from "Stores/SearchStateStore";
 
 // Modals
 import { ConversationHistoryModal } from "Modals/ConversationHistoryModal";
-import { HelpModal } from "Modals/HelpModal";
+import { AboutModal } from "Modals/AboutModal";
 
 // AI Classes
 import type { IAIClass } from "AIClasses/IAIClass";
@@ -149,5 +149,5 @@ export function RegisterAiProvider() {
 
 function RegisterModals() {
     RegisterTransient<ConversationHistoryModal>(Services.ConversationHistoryModal, () => new ConversationHistoryModal());
-    RegisterTransient<HelpModal>(Services.HelpModal, () => new HelpModal())
+    RegisterTransient<AboutModal>(Services.AboutModal, () => new AboutModal())
 }

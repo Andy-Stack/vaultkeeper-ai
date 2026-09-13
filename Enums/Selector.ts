@@ -6,7 +6,7 @@ export enum Selector {
     ApiKeySettingError = "api-key-setting-error",
     PluginModal = "vaultkeeper-ai-modal",
     ConversationHistoryModal =  "conversation-history-modal",
-    HelpModal = "help-modal",
+    AboutModal = "about-modal",
     ContextSettingItemDescription = "context-setting-item-description",
     SettingDescIconGrid = "setting-desc-icon-grid",
     TemplateWarningIcon = "template-warning-icon",

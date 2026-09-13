@@ -3,7 +3,7 @@ import { Copy } from "Enums/Copy";
 import { SEARCH_SETTINGS_RANGE } from "Enums/SearchSettings";
 import { Selector } from "Enums/Selector";
 import type VaultkeeperAIPlugin from "main";
-import { HelpModal } from "Modals/HelpModal";
+import { AboutModal } from "Modals/AboutModal";
 import { DropdownComponent, PluginSettingTab, Setting, ToggleComponent, setIcon, setTooltip } from "obsidian";
 import { Resolve } from "Services/DependencyService";
 import { DEFAULT_SETTINGS, type SettingsService } from "Services/SettingsService";
@@ -653,8 +653,8 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				text: Copy.SettingFileMonitoringLinkText,
 				cls: Selector.FileDisclaimerLink
 			}).addEventListener("click", () => {
-				const modal = Resolve<HelpModal>(Services.HelpModal);
-				modal.open(7); // Opens HelpModal to "Uploaded Files" (topic 7)
+				const modal = Resolve<AboutModal>(Services.AboutModal);
+				modal.open(7); // Opens AboutModal to "Uploaded Files" (topic 7)
 			});
 
 			this.fileDisclaimerSetting.setDesc(disclaimerFragment);

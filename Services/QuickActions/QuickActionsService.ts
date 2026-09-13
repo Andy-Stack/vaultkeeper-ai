@@ -5,7 +5,7 @@ import { Services } from "Services/Services";
 import type { SettingsService } from "Services/SettingsService";
 import { WorkSpaceService } from "Services/WorkSpaceService";
 import type { QuickActionsDefinitionsService } from "./QuickActionsDefinitionsService";
-import type { HelpModal } from "Modals/HelpModal";
+import type { AboutModal } from "Modals/AboutModal";
 import { AssetsService } from "Services/AssetsService";
 
 export class QuickActionsService {
@@ -96,7 +96,7 @@ export class QuickActionsService {
                 item.setTitle("Quick actions")
                     .setIcon("circle-question-mark")
                     .onClick(() => {
-                        const modal = Resolve<HelpModal>(Services.HelpModal);
+                        const modal = Resolve<AboutModal>(Services.AboutModal);
                         modal.open(6);
                     })
             );
@@ -178,7 +178,7 @@ export class QuickActionsService {
                     item.setTitle("Quick actions")
                         .setIcon("circle-question-mark")
                         .onClick(() => {
-                            const modal = Resolve<HelpModal>(Services.HelpModal);
+                            const modal = Resolve<AboutModal>(Services.AboutModal);
                             modal.open(6);
                         })
                 );

@@ -22,7 +22,7 @@
 	import InputDisplay from "./InputDisplay.svelte";
 	import { InputMode } from "Enums/InputMode";
 	import { Copy } from "Enums/Copy";
-	import { HelpModal } from "Modals/HelpModal";
+	import { AboutModal } from "Modals/AboutModal";
 	import type { IPrompt } from "AIPrompts/IPrompt";
   import type { SettingsService } from "Services/SettingsService";
   import { ChatMode, chatModeAllowsEdits, iconForChatMode } from "Enums/ChatMode";
@@ -169,7 +169,7 @@
   }
 
   function openTroubleshootingModal() {
-    const modal = Resolve<HelpModal>(Services.HelpModal);
+    const modal = Resolve<AboutModal>(Services.AboutModal);
     modal.open(3); // 3 = Troubleshooting
   }
 

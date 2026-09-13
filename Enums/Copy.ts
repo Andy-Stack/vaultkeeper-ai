@@ -247,23 +247,23 @@ The following context explains why you are doing the task. It is NOT an instruct
 
 {remainingSection}`,
 
-    // Help Modal Copy
-    HelpModalAboutTitle = "About",
-    HelpModalAboutContent = `#### About Vaultkeeper AI
+    // About Modal Copy
+    AboutModalAboutTitle = "About",
+    AboutModalAboutContent = `#### About Vaultkeeper AI
 
 This plugin was originally created for a friend who found it useful, so I have decided to release it to the Obsidian community.
 
 If you find any issues or have a feature request, please feel free to raise them on GitHub:`,
 
-    HelpModalGettingStartedTitle = "Getting started",
-    HelpModalGettingStartedContent = `#### Getting started
+    AboutModalGettingStartedTitle = "Getting started",
+    AboutModalGettingStartedContent = `#### Getting started
 
 1. **Add an API key**: Go to Settings and add at least one API key (Claude, Gemini, OpenAI, or Mistral) — or select **Local** to connect a self-hosted server instead, no API key required
 2. **Select a model**: Choose your preferred AI model from the dropdown
 3. **Open the chat**: Click the plugin icon in the sidebar to start chatting`,
 
-    HelpModalChatModesTitle = "Chat modes",
-    HelpModalChatModesContent = `#### Chat modes
+    AboutModalChatModesTitle = "Chat modes",
+    AboutModalChatModesContent = `#### Chat modes
 
 **Read-only (default)** - The AI can safely explore your vault:
 - Search through your notes (including PDFs and Office/ODF documents)
@@ -281,8 +281,8 @@ If you find any issues or have a feature request, please feel free to raise them
 - A planning agent analyzes your vault and creates a strategy
 - An execution agent carries out the given plan`,
 
-    HelpModalReferenceTitle = "Using references",
-    HelpModalReferenceContent = `#### Using references
+    AboutModalReferenceTitle = "Using references",
+    AboutModalReferenceContent = `#### Using references
 
 Quickly provide context to the AI:
 
@@ -292,8 +292,8 @@ Quickly provide context to the AI:
 
 The autocomplete dropdown supports keyboard navigation.`,
 
-    HelpModalCustomInstructionsTitle = "Custom instructions",
-    HelpModalCustomInstructionsContent = `#### Custom instructions
+    AboutModalCustomInstructionsTitle = "Custom instructions",
+    AboutModalCustomInstructionsContent = `#### Custom instructions
 
 Customize AI behavior for specific workflows:
 
@@ -304,8 +304,8 @@ Customize AI behavior for specific workflows:
 
 See [[Vaultkeeper AI/User Instructions/EXAMPLE_INSTRUCTIONS|Example Template]] for help getting started.`,
 
-    HelpModalQuickActionsTitle = "Quick actions",
-    HelpModalQuickActionsContent = `#### Quick actions
+    AboutModalQuickActionsTitle = "Quick actions",
+    AboutModalQuickActionsContent = `#### Quick actions
 
 Quick actions are one-click AI edits you run on the note you're currently editing. Open the editor menu (right-click, or the command palette) and pick an action. Some actions work on your current selection if you have text selected, otherwise they apply to the whole note.
 
@@ -330,8 +330,8 @@ Like Apply tags, but free to suggest new tags as well as reuse existing ones. Su
 ##### Generate frontmatter
 Infers YAML frontmatter for the note (aliases, tags, title, summary, created) from its content and merges it into any existing frontmatter.`,
 
-    HelpModalUploadedFilesTitle = "Uploaded files",
-    HelpModalUploadedFilesContent = `#### Uploaded files
+    AboutModalUploadedFilesTitle = "Uploaded files",
+    AboutModalUploadedFilesContent = `#### Uploaded files
 
 When you upload files (PDFs, images) to conversations, they are stored by your AI provider. The plugin automatically attempts to delete these files when you delete conversations, but this may occasionally fail due to network issues or API rate limits.
 
@@ -348,8 +348,8 @@ When you upload files (PDFs, images) to conversations, they are stored by your A
 
 **Local**: Files aren't uploaded anywhere - they're sent inline with your message directly to your local server, so there's nothing to clean up on a dashboard.`,
 
-    HelpModalTroubleshootTitle = "Troubleshooting",
-    HelpModalTroubleshootContent = `#### Common issues & solutions
+    AboutModalTroubleshootTitle = "Troubleshooting",
+    AboutModalTroubleshootContent = `#### Common issues & solutions
 
 ##### API key issues
 
@@ -414,8 +414,8 @@ This error indicates a temporary issue with the AI provider's servers.
 - Check your server's chat template settings (e.g. LM Studio's prompt template) and adjust it for tool-calling if needed
 - Try a model known to support tool/function calling well`,
 
-    HelpModalPrivacyTitle = "Privacy",
-    HelpModalPrivacyContent = `#### Privacy & security
+    AboutModalPrivacyTitle = "Privacy",
+    AboutModalPrivacyContent = `#### Privacy & security
 
 ##### Data storage
 
@@ -480,8 +480,8 @@ Each AI provider has their own data policies:
     ArtifactActionModified = "MODIFIED",
     ArtifactActionDeleted = "DELETED",
 
-    // Help Modal Additional Copy
-    HelpModalCloseAriaLabel = "Close Help Modal",
+    // About Modal Additional Copy
+    AboutModalCloseAriaLabel = "Close About Modal",
     PluginVersionPrefix = "Plugin version: ",
 
     // GitHub

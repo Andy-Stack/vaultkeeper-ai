@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Copy } from "Enums/Copy";
 	import { Path } from "Enums/Path";
-	import { HelpModal } from "Modals/HelpModal";
+	import { AboutModal } from "Modals/AboutModal";
 	import { basename } from "path-browserify";
 	import { Resolve } from "Services/DependencyService";
 	import type { FileSystemService } from "Services/FileSystemService";
@@ -128,8 +128,8 @@
         });
     }
 
-    function openHelpModal() {
-        const modal = Resolve<HelpModal>(Services.HelpModal);
+    function openAboutModal() {
+        const modal = Resolve<AboutModal>(Services.AboutModal);
         modal.open(2);
     }
 </script>
@@ -145,8 +145,8 @@
                             <span id="user-instruction-link" 
                                 role="link"
                                 tabindex="-1"
-                                on:click={openHelpModal}
-                                on:keydown={openHelpModal}>
+                                on:click={openAboutModal}
+                                on:keydown={openAboutModal}>
                                 {Copy.UserInstructions2}
                             </span>
                             {Copy.UserInstructions3}

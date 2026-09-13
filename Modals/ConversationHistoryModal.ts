@@ -43,6 +43,7 @@ export class ConversationHistoryModal extends Modal {
 
         containerEl.addClass(Selector.ConversationHistoryModal);
         modalEl.addClass(Selector.ConversationHistoryModal);
+        modalEl.addClass(Selector.PluginModal);
 
         const state = this.state;
 

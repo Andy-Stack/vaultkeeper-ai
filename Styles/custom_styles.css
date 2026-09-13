@@ -104,6 +104,18 @@ body:not(.is-tablet) .workspace-drawer.mod-right {
 }
 
 /* ============================== */
+/* Modal Native Close Button */
+/* ============================== */
+
+/* Obsidian injects its own raised close button into every modal header.
+   Our modals render their own close control, so hide the native one to
+   avoid showing two. Applies to every modal with the shared PluginModal
+   class (see Selector.PluginModal) so future modals inherit this for free. */
+.vaultkeeper-ai-modal .modal-header-button.mod-raised {
+  display: none;
+}
+
+/* ============================== */
 /* Settings Styles */
 /* ============================== */
 

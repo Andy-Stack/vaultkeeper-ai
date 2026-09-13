@@ -21,6 +21,7 @@ export class HelpModal extends Modal {
 
         containerEl.addClass(Selector.HelpModal);
         modalEl.addClass(Selector.HelpModal);
+        modalEl.addClass(Selector.PluginModal);
 
         this.component = mount(HelpModalSvelte, {
             target: contentEl,

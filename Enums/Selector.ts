@@ -4,6 +4,7 @@ export enum Selector {
     LocalUrlInput = "local-url-input",
     ApiKeySettingOk = "api-key-setting-ok",
     ApiKeySettingError = "api-key-setting-error",
+    PluginModal = "vaultkeeper-ai-modal",
     ConversationHistoryModal =  "conversation-history-modal",
     HelpModal = "help-modal",
     ContextSettingItemDescription = "context-setting-item-description",

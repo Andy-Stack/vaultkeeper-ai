@@ -213,11 +213,6 @@
 	</div>
 </div>
 
-<!-- margin-top: auto;
-		align-self: flex-end;
-		padding: var(--size-4-1) var(--size-4-3);
-		font-size: var(--font-smallest); -->
-
 <style>
 	.about-modal-container {
 		display: grid;

@@ -27,6 +27,8 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 	private modelDropdown: DropdownComponent | null = null;
 	private planningModelDropdown: DropdownComponent | null = null;
 	private quickActionModelDropdown: DropdownComponent | null = null;
+	private enableContinuityToggleComponent: ToggleComponent | null = null;
+	private enableAgentContinuityToggleComponent: ToggleComponent | null = null;
 	private allowUpdatingMemoriesSetting: Setting | null = null;
 	private allowUpdatingMemoriesToggleComponent: ToggleComponent | null = null;
 
@@ -152,6 +154,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					});
 			});
 
+		/* Context Size Limit Setting */
 		new Setting(containerEl)
 			.setName(replaceCopy(Copy.SettingContextSizeLimit, [DEFAULT_SETTINGS.contextSizeLimit.toString()]))
 			.setDesc(Copy.SettingContextSizeLimitDesc)
@@ -162,6 +165,50 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 					.onChange(async value => {
 						await this.settingsService.updateSettings(settings => {
 							settings.contextSizeLimit = value;
+						});
+					});
+			});
+
+		/* Continuity Checks Header */
+		new Setting(containerEl)
+			.setHeading()
+			.setName("Vault continuity");
+
+		/* Enable Vault Continuity Setting */
+		new Setting(containerEl)
+			.setName("Enable vault continuity checks")
+			.setDesc("Receive warnings when a note is modified that would cause a lack of continuity. Examples include the introduction of invalid wiki links and tags. No warning is shown when in autonomous mode")
+			.addToggle(toggle => {
+				this.enableContinuityToggleComponent = toggle;
+				toggle
+					.setValue(this.settingsService.settings.enableContinuity)
+					.onChange(async value => {
+						await this.settingsService.updateSettings(settings => {
+							settings.enableContinuity = value;
+						});
+						if (!value && this.enableAgentContinuityToggleComponent?.getValue()) {
+							this.enableAgentContinuityToggleComponent.setValue(false);
+						}
+					});
+			});
+
+		/* Enable Agent Continuity Setting */
+		new Setting(containerEl)
+			.setName("Enable agent continuity resolution")
+			.setDesc("When a continuity discrepancy is detected, the agent will be informed and attempt to correct/resolve the discrepancy automatically.")
+			.addToggle(toggle => {
+				this.enableAgentContinuityToggleComponent = toggle;
+				toggle
+					.setValue(this.settingsService.settings.enableAgentContinuity)
+					.onChange(async value => {
+						if (value && !this.enableContinuityToggleComponent?.getValue()) {
+							this.enableContinuityToggleComponent?.setValue(true);
+						}
+						await this.settingsService.updateSettings(settings => {
+							settings.enableAgentContinuity = value;
+							if (value) {
+								settings.enableContinuity = true;
+							}
 						});
 					});
 			});
@@ -201,7 +248,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 						await this.settingsService.updateSettings(settings => {
 							settings.enableMemories = value;
 						});
-						this.updateAllowUpdatingMemoriesSetting();
+						this.updateAllowUpdatingMemoriesSettings();
 					});
 			});
 
@@ -219,7 +266,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 						});
 					})
 			});
-		this.updateAllowUpdatingMemoriesSetting();
+		this.updateAllowUpdatingMemoriesSettings();
 
 		/* Access Memories banner */
 		new Setting(containerEl)
@@ -608,7 +655,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 		}
 	}
 
-	private updateAllowUpdatingMemoriesSetting() {
+	private updateAllowUpdatingMemoriesSettings() {
 		if (this.allowUpdatingMemoriesToggleComponent && this.allowUpdatingMemoriesSetting) {
 			const enabled = this.settingsService.settings.enableMemories;
 			const updateEnabled = this.settingsService.settings.allowUpdatingMemories;

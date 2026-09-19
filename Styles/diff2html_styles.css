@@ -67,11 +67,24 @@
 /* Structural / layout fixes      */
 /* ============================== */
 
+.diff-view-content {
+    display: flex;
+    flex-direction: column;
+}
+
 .d2h-wrapper {
     container-type: size;
-    container-name: diff-wrapper;
-    transform: translateZ(0);
-    height: 100cqh;
+    height: 100%;
+}
+
+.d2h-file-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.diff-view-mobile .d2h-file-wrapper {
+    height: unset;
 }
 
 .d2h-file-header {
@@ -89,7 +102,6 @@
 
 .d2h-file-diff {
     overflow: auto;
-    max-height: calc(100cqh - 37px);
 }
 
 .d2h-diff-table {
@@ -99,6 +111,27 @@
 .d2h-code-side-linenumber {
     position: relative;
     display: table-cell;
+}
+
+/* ============================== */
+/* Banner                         */
+/* ============================== */
+
+.diff-view-banner-link {
+    color: var(--color-accent);
+}
+
+.diff-view-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: var(--size-4-2) var(--size-4-3);
+    margin-bottom: var(--size-4-2);
+    background-color: rgba(224,175,104,0.10);
+    border: 1px solid rgba(224,175,104,0.22);
+    color: var(--text-normal);
+    border-radius: var(--radius-s);
+    font-size: var(--font-smaller);
 }
 
 /* ============================== */

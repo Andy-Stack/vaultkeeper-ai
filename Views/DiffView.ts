@@ -8,11 +8,14 @@ import { Services } from "Services/Services";
 import { VIEW_TYPE_MAIN, type MainView } from "./MainView";
 import { tick } from "svelte";
 import { Copy } from "Enums/Copy";
+import type { IDocumentReport } from "../DocumentValidation/IDocumentReport";
+import { VaultContinuityModal } from "../Modals/VaultContinuityModal";
 
 export const VIEW_TYPE_DIFF = 'vaultkeeper-ai-diff-view';
 
 interface DiffViewState {
     diffString: string;
+    report: IDocumentReport | undefined;
     config: Diff2HtmlUIConfig;
 }
 
@@ -22,10 +25,12 @@ export class DiffView extends ItemView {
     private readonly diffService: DiffService;
 
     private diffString: string = "";
+    private report: IDocumentReport | undefined;
     private config: Diff2HtmlUIConfig = {};
 
     private diffContainer: HTMLElement | null = null;
     private mobileButtonsContainer: HTMLElement | null = null;
+    private bannerEl: HTMLElement | null = null;
 
     constructor(leaf: WorkspaceLeaf) {
         super(leaf);
@@ -54,6 +59,7 @@ export class DiffView extends ItemView {
 
     public async setState(state: DiffViewState, result: ViewStateResult): Promise<void> {
         this.diffString = state.diffString;
+        this.report = state.report;
         this.config = state.config;
 
         this.renderDiff();
@@ -64,15 +70,35 @@ export class DiffView extends ItemView {
     public getState(): Record<string, unknown> {
         return {
             diffString: this.diffString,
+            report: this.report,
             config: this.config
         };
     }
 
     private renderDiff() {
         const container = this.resetContainer();
+        container.addClass('diff-view-content');
 
         if (Platform.isMobile) {
             container.addClass('diff-view-mobile');
+        }
+
+        if (this.report && this.report.issueCount() > 0) {
+            this.bannerEl = container.createDiv({ cls: 'diff-view-banner' });
+            this.bannerEl.appendText(`${this.report.issueCount()} continuity issues found in this change.`);
+
+            const viewReportLink = this.bannerEl.createEl('a', {
+                cls: 'diff-view-banner-link',
+                text: 'View report',
+                href: '#'
+            });
+
+            this.registerDomEvent(viewReportLink, 'click', (event) => {
+                event.preventDefault();
+                if (this.report) {
+                    new VaultContinuityModal(this.report).open();
+                }
+            });
         }
 
         this.diffContainer = container.createDiv({ cls: 'd2h-wrapper' });
@@ -93,6 +119,11 @@ export class DiffView extends ItemView {
     private resetContainer(): HTMLElement {
         const container = this.contentEl;
         container.empty();
+
+        if (this.bannerEl) {
+            this.bannerEl.remove();
+            this.bannerEl = null;
+        }
 
         if (this.diffContainer) {
             this.diffContainer.remove();

@@ -200,6 +200,7 @@ The following context explains why you are doing the task. It is NOT an instruct
     MemoriesUpdatingDisabledError = "Illegal tool call, updating memories has been disabled by the user.",
     WebViewerNoMatchingUrl = "No open web view was found matching the URL '{urlHint}'. Ensure the correct page is open in the web viewer.",
     WebViewerNoOpenView = "No open web view was found. Ask the user to open a page in the web viewer and try again.",
+    NoContinuityIssues = "No continuity issues detected",
 
     // Apply Template
     ApplyTemplateTemplateSeparator = "---TEMPLATE---",

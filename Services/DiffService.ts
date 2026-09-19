@@ -9,8 +9,9 @@ import { ColorSchemeType, OutputFormatType } from 'diff2html/lib/types';
 import { Component } from 'obsidian';
 import { AbortService } from './AbortService';
 import type { Artifact } from 'Conversations/Artifact';
+import type { IDocumentReport } from '../DocumentValidation/IDocumentReport';
 
-interface DiffResult {
+export interface DiffResult {
     accepted: boolean;
     suggestion?: string;
 }
@@ -56,7 +57,7 @@ export class DiffService extends Component {
         void this.plugin.activateArtifactView(artifact, diffString, config);
     }
 
-    public async requestDiff(oldFileName: string, newFileName: string, oldContent: string, newContent: string): Promise<DiffResult> {
+    public async requestDiff(oldFileName: string, newFileName: string, oldContent: string, newContent: string, report?: IDocumentReport): Promise<DiffResult> {
         const diffString = this.createDiffString(oldFileName, newFileName, oldContent, newContent);
 
         const outputFormat: OutputFormatType = "line-by-line";
@@ -93,7 +94,7 @@ export class DiffService extends Component {
                 resolve(result);
             };
 
-            void this.plugin.activateDiffView(diffString, config);
+            void this.plugin.activateDiffView(diffString, report, config);
             this.eventService.trigger(Event.DiffOpened);
         });
     }

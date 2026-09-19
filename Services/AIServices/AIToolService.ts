@@ -38,7 +38,7 @@ import {
 import { Artifact } from "Conversations/Artifact";
 import { extname } from "path-browserify";
 import { ArtifactAction } from "Enums/ArtifactAction";
-import type { IVaultOptions } from "Services/VaultService";
+import type { IVaultChangeResponse, IVaultOptions } from "Services/VaultService";
 
 export class AIToolService {
 
@@ -382,13 +382,13 @@ export class AIToolService {
 
         for (const filePath of filePaths) {
             const deleteResult = await this.fileSystemService.deleteFile(filePath);
-            if (deleteResult instanceof Error) {
-                results.push({ path: filePath, success: false, error: deleteResult.message });
+            if (deleteResult.error instanceof Error) {
+                results.push({ path: filePath, success: false, error: deleteResult.error.message });
                 continue;
             }
-            results.push({ path: filePath, success: true });
+            results.push({ path: filePath, success: true, continuityReport: deleteResult.report
+                ? deleteResult.report.toString() : Copy.NoContinuityIssues });
         }
-
         return new AIToolResponsePayload({ results }, artifacts);
     }
 
@@ -400,10 +400,11 @@ export class AIToolService {
         const results = await Promise.all(sourcePaths.map(async (sourcePath, index) => {
             const destinationPath = destinationPaths[index];
             const result = await this.fileSystemService.moveFile(sourcePath, destinationPath);
-            if (result instanceof Error) {
-                return { path: destinationPath, success: false, error: result.message };
+            if (result.error instanceof Error) {
+                return { path: destinationPath, success: false, error: result.error.message };
             }
-            return { path: destinationPath, success: true };
+            return { path: destinationPath, success: true, continuityReport: result.report
+                ? result.report.toString() : Copy.NoContinuityIssues };
         }));
 
         return new AIToolResponsePayload({ results });
@@ -428,17 +429,17 @@ export class AIToolService {
         const artifacts = await this.collectDeletionCandidatesArtifacts(filePaths);
         const result = await this.fileSystemService.deleteFolder(path);
 
-        return result instanceof Error
-            ? new AIToolResponsePayload({ path: path, success: false, error: result.message }, artifacts)
-            : new AIToolResponsePayload({ path: path, success: true }, artifacts);
+        return result.error instanceof Error
+            ? new AIToolResponsePayload({ path: path, success: false, error: result.error.message }, artifacts)
+            : new AIToolResponsePayload({ path: path, success: true, continuityReport: result.report ? result.report.toString() : Copy.NoContinuityIssues }, artifacts);
     }
 
     private async moveVaultFolder(sourcePath: string, destinationPath: string): Promise<AIToolResponsePayload> {
         const result = await this.fileSystemService.moveFile(sourcePath, destinationPath);
-        if (result instanceof Error) {
-            return new AIToolResponsePayload({ path: destinationPath, success: false, error: result.message });
+        if (result.error instanceof Error) {
+            return new AIToolResponsePayload({ path: destinationPath, success: false, error: result.error.message });
         }
-        return new AIToolResponsePayload({ path: destinationPath, success: true });
+        return new AIToolResponsePayload({ path: destinationPath, success: true, continuityReport: result.report ? result.report.toString() : Copy.NoContinuityIssues });
     }
 
     private async listVaultFiles(path: string, recursive: boolean, index: number | undefined): Promise<AIToolResponsePayload> {
@@ -524,7 +525,7 @@ export class AIToolService {
         return artifacts;
     }
 
-    private async asTrackedAction(filePath: string, action: () => Promise<TFile|Error|void>): Promise<AIToolResponsePayload> {
+    private async asTrackedAction<T>(filePath: string, action: () => Promise<IVaultChangeResponse<T>>): Promise<AIToolResponsePayload> {
         let artifactAction: ArtifactAction | undefined;
 
         const preActionReadResult = await this.fileSystemService.readFilePath(filePath);
@@ -536,10 +537,10 @@ export class AIToolService {
             preActionResult = preActionReadResult.content;
         }
         const actionResult = await action();
-        if (actionResult instanceof Error) {
-            return new AIToolResponsePayload({ success: false, error: actionResult.message });
+        if (actionResult.error instanceof Error) {
+            return new AIToolResponsePayload({ success: false, error: actionResult.error.message });
         }
-        const postActionReadResult = actionResult ? await this.fileSystemService.readFile(actionResult) : undefined;
+        const postActionReadResult = actionResult.result instanceof TFile ? await this.fileSystemService.readFile(actionResult.result) : undefined;
         let postActionResult: string;
         if (!postActionReadResult || postActionReadResult instanceof Error) {
             postActionResult = ""; // The file has been deleted
@@ -554,7 +555,7 @@ export class AIToolService {
 
         const fileType = toFileType(extname(filePath));
 
-        return new AIToolResponsePayload({ success: true },
+        return new AIToolResponsePayload({ success: true, continuityReport: actionResult.report ? actionResult.report.toString() : Copy.NoContinuityIssues },
             [new Artifact(filePath, FileTypeToMimeType[fileType], artifactAction, preActionResult, postActionResult)]);
     }
 }

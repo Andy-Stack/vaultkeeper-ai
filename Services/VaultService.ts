@@ -18,6 +18,8 @@ import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import { FileType, isBinaryFile, isDocumentFile, isFileType } from "Enums/FileType";
 import { readDocument, readPDF } from "Helpers/DocumentHelper";
 import { RegexTools } from "Helpers/RegexTools";
+import type { DocumentValidationService } from "./DocumentValidationService";
+import type { IDocumentReport } from "../DocumentValidation/IDocumentReport";
 
 interface IFileEventArgs {
     oldPath: string;
@@ -33,7 +35,13 @@ export interface IVaultOptions {
     requiresConfirmation?: boolean;
 }
 
-type ResolvedVaultOptions = Required<Omit<IVaultOptions, 'primaryIndex' | 'secondaryIndex'>> & Pick<IVaultOptions, 'primaryIndex' | 'secondaryIndex'>;
+export interface IVaultChangeResponse<T> {
+    result?: T;
+    report?: IDocumentReport;
+    error?: Error;
+}
+
+type ResolvedVaultOptions = Required<Omit<IVaultOptions, "primaryIndex" | "secondaryIndex">> & Pick<IVaultOptions, "primaryIndex" | "secondaryIndex">;
 
 /* This service protects the users vault through their exclusions. The plugin root is excluded by default */
 export class VaultService {
@@ -58,6 +66,7 @@ export class VaultService {
     private readonly sanitiserService: SanitiserService;
     private readonly diffService: DiffService;
     private readonly eventService: EventService;
+    private readonly documentValidationService: DocumentValidationService;
 
     private settingsSubscription: object;
 
@@ -76,6 +85,7 @@ export class VaultService {
         this.sanitiserService = Resolve<SanitiserService>(Services.SanitiserService);
         this.diffService = Resolve<DiffService>(Services.DiffService);
         this.eventService = Resolve<EventService>(Services.EventService);
+        this.documentValidationService = Resolve<DocumentValidationService>(Services.DocumentValidationService);
 
         this.settingsSubscription = this.settingsService.subscribeToSettingsChanged(changed => {
             if (changed.includes("exclusions")) {
@@ -167,7 +177,7 @@ export class VaultService {
         return await this.vault.readBinary(file);
     }
 
-    public async create(filePath: string, content: string, vaultOptions?: IVaultOptions): Promise<TFile | Error> {
+    public async create(filePath: string, content: string, vaultOptions?: IVaultOptions): Promise<IVaultChangeResponse<TFile>> {
         const options = this.getOptions(vaultOptions);
         filePath = this.sanitiserService.sanitize(filePath);
 
@@ -175,11 +185,11 @@ export class VaultService {
 
         if (this.isExclusion(filePath, options)) {
             Exception.log(`Plugin attempted to create a file that is in the exclusion list: ${filePath}`);
-            return Exception.new(`Failed to create file, permission denied: ${filePath}`);
+            return { error: Exception.new(`Failed to create file, permission denied: ${filePath}`) };
         }
 
-        if (isBinaryFile(pathExtname(fileExtension)) || isDocumentFile(pathExtname(fileExtension))) {
-            return Exception.new(`Creating ${pathExtname(filePath)} files is not supported`);
+        if (isBinaryFile(fileExtension) || isDocumentFile(fileExtension)) {
+            return { error: Exception.new(`Creating ${fileExtension} files is not supported`) };
         }
 
         const fileName = path.basename(filePath);
@@ -189,24 +199,24 @@ export class VaultService {
         });
     }
 
-    public async modify(file: TFile, content: string, vaultOptions?: IVaultOptions): Promise<TFile | Error> {
+    public async modify(file: TFile, content: string, vaultOptions?: IVaultOptions): Promise<IVaultChangeResponse<TFile>> {
         const options = this.getOptions(vaultOptions);
         const filePath = this.sanitiserService.sanitize(file.path);
         const fileExtension = pathExtname(filePath);
 
         if (this.isExclusion(file.path, options)) {
             Exception.log(`Plugin attempted to modify a file that is in the exclusion list: ${filePath}`);
-            return Exception.new(`File does not exist: ${filePath}`);
+            return { error: Exception.new(`File does not exist: ${filePath}`) };
         }
 
-        if (isBinaryFile(pathExtname(filePath)) || isDocumentFile(pathExtname(fileExtension))) {
-            return Exception.new(`Modifying ${pathExtname(filePath)} files is not supported`);
+        if (isBinaryFile(fileExtension) || isDocumentFile(fileExtension)) {
+            return { error: Exception.new(`Modifying ${fileExtension} files is not supported`) };
         }
 
         const currentContentResult = await this.read(file, options);
 
         if (currentContentResult instanceof Error) {
-            return currentContentResult;
+            return { error: currentContentResult };
         }
 
         return this.proposeChange(file.name, file.name, currentContentResult.content, content, options, async () => {
@@ -224,8 +234,8 @@ export class VaultService {
             return Exception.new(`File does not exist: ${filePath}`);
         }
 
-        if (isBinaryFile(pathExtname(filePath)) || isDocumentFile(pathExtname(fileExtension))) {
-            return Exception.new(`Modifying ${pathExtname(filePath)} files is not supported`);
+        if (isBinaryFile(fileExtension) || isDocumentFile(fileExtension)) {
+            return Exception.new(`Modifying ${fileExtension} files is not supported`);
         }
 
         try {
@@ -238,33 +248,33 @@ export class VaultService {
         }
     }
 
-    public async patch(file: TFile, oldContent: string[], newContent: string[], vaultOptions?: IVaultOptions): Promise<TFile | Error> {
+    public async patch(file: TFile, oldContent: string[], newContent: string[], vaultOptions?: IVaultOptions): Promise<IVaultChangeResponse<TFile>> {
         const options = this.getOptions(vaultOptions);
         const filePath = this.sanitiserService.sanitize(file.path);
         if (this.isExclusion(file.path, options)) {
             Exception.log(`Plugin attempted to patch a file that is in the exclusion list: ${filePath}`);
-            return Exception.new(`File does not exist: ${filePath}`);
+            return { error: Exception.new(`File does not exist: ${filePath}`) };
         }
 
         if (isBinaryFile(pathExtname(filePath))) {
-            return Exception.new(`Patching ${pathExtname(filePath)} files is not supported`);
+            return { error: Exception.new(`Patching ${pathExtname(filePath)} files is not supported`) };
         }
 
         if (oldContent.length !== newContent.length) {
-            return Exception.new(`Mismatched patch arrays: ${oldContent.length} old content entries but ${newContent.length} new content entries. Each old content entry must have a corresponding new content entry.`);
+            return { error: Exception.new(`Mismatched patch arrays: ${oldContent.length} old content entries but ${newContent.length} new content entries. Each old content entry must have a corresponding new content entry.`) };
         }
 
         const currentContentResult = await this.read(file, options);
 
         if (currentContentResult instanceof Error) {
-            return currentContentResult;
+            return { error: currentContentResult };
         }
 
         const currentContent = currentContentResult.content;
 
         for (const content of oldContent) {
             if (!currentContent.includes(content) && !RegexTools.toWhitespaceFlexibleRegex(content).test(currentContent)) {
-                return Exception.new(`Content to replace was not found in the file, the old content must match exactly. No changes have been made. Unmatched content: "${content}"`);
+                return { error: Exception.new(`Content to replace was not found in the file, the old content must match exactly. No changes have been made. Unmatched content: "${content}"`) };
             }
         }
 
@@ -283,15 +293,15 @@ export class VaultService {
         });
     }
 
-    public async delete(file: TAbstractFile, vaultOptions?: IVaultOptions): Promise<void | Error> {
+    public async delete(file: TAbstractFile, vaultOptions?: IVaultOptions): Promise<IVaultChangeResponse<TAbstractFile>> {
         const options = this.getOptions(vaultOptions);
         const filePath = this.sanitiserService.sanitize(file.path);
         const isFile = file instanceof TFile;
 
         if (this.isExclusion(filePath, options)) {
-            Exception.log(`Plugin attempted to delete a ${isFile ? "file" : "folder"} that is in the exclusions list: ${filePath}`)
-            return isFile ? Exception.new(`File does not exist: ${filePath} GOT`)
-                          : Exception.new(`Deletion failed. The folder or its contents may be protected: ${filePath}`);
+            Exception.log(`Attempted to delete a ${isFile ? "file" : "folder"} that is in the exclusions list: ${filePath}`)
+            return isFile ? { error: Exception.new(`File does not exist: ${filePath}`) }
+                          : { error: Exception.new(`Deletion failed. The folder or its contents may be protected: ${filePath}`) };
         }
 
         // handle file deletion
@@ -299,50 +309,58 @@ export class VaultService {
             const currentContentResult = await this.read(file, options)
 
             if (currentContentResult instanceof Error) {
-                return currentContentResult;
+                return { error: currentContentResult };
             }
 
             return this.proposeChange(file.name, file.name, currentContentResult.content, "", options, async () => {
                 await this.fileManager.trashFile(file);
+                return file;
             });
         }
 
         // handle folder deletion
         try {
             await this.fileManager.trashFile(file);
+            return { result: file };
         } catch (error) {
             Exception.log(error);
-            return Exception.new(error);
+            return { error: Exception.new(error) };
         }
     }
 
-    public async move(sourcePath: string, destinationPath: string, vaultOptions?: IVaultOptions): Promise<void | Error> {
+    public async move(sourcePath: string, destinationPath: string, vaultOptions?: IVaultOptions): Promise<IVaultChangeResponse<void>> {
         const options = this.getOptions(vaultOptions);
         sourcePath = this.sanitiserService.sanitize(sourcePath);
         destinationPath = this.sanitiserService.sanitize(destinationPath);
         const file = this.getAbstractFileByPath(sourcePath, options);
 
-        if (file === null) {
-            return Exception.new(`Move failed as source does not exist: ${sourcePath}`);
+        const sourceIsExclusion = this.isExclusion(sourcePath, options);
+        const destinationIsExclusion = this.isExclusion(destinationPath, options);
+
+        if (sourceIsExclusion || destinationIsExclusion) {
+            const message = sourceIsExclusion 
+                ? `Operation failed. The source path may be protected: ${sourcePath}` 
+                : `Operation failed. The destination path may be protected: ${destinationPath}`;
+            return { error: Exception.new(message) };
         }
 
-        const isFile = file instanceof TFile;
-
-        if (this.isExclusion(destinationPath, options)) {
-            return Exception.new(`Failed to rename "${sourcePath}" to "${destinationPath}", permission denied.`)
+        if (file === null) {
+            return { error: Exception.new(`Move failed as source does not exist: ${sourcePath}`) };
         }
 
         try {
-            if (isFile) {
+            if (file instanceof TFile) {
                 await this.createDirectories(destinationPath, options);
             } else {
                 const parentPath = destinationPath.substring(0, destinationPath.lastIndexOf("/"));
                 if (parentPath) await this.createDirectories(parentPath, options);
             }
-            await this.fileManager.renameFile(file, destinationPath);
+            return await this.proposeChange(sourcePath, destinationPath, "", "", options, async () => {
+                await this.fileManager.renameFile(file, destinationPath);
+            });
         } catch (error) {
             Exception.log(error);
-            return Exception.new(error);
+            return { error: Exception.new(error) };
         }
     }
 
@@ -747,20 +765,40 @@ export class VaultService {
     }
 
     private async proposeChange<T>(oldFileName: string, newFileName: string, oldContent: string, newContent: string,
-        options: IVaultOptions, performChange: () => Promise<T>): Promise<T | Error> {
+        options: IVaultOptions, performChange: () => Promise<T>): Promise<IVaultChangeResponse<T>> {
             try {
-                const result = this.settingsService.settings.freeEdit || !options.requiresConfirmation ? { accepted: true } :
-                    await this.diffService.requestDiff(oldFileName, newFileName, oldContent, newContent);
+                if (!options.requiresConfirmation) {
+                    return { result: await performChange() };
+                }
+
+                const report = this.settingsService.settings.enableContinuity 
+                    ? this.documentValidationService.process(oldFileName, newFileName, oldContent, newContent)
+                    : undefined;
+
+                if (this.settingsService.settings.freeEdit) {
+                    if (this.settingsService.settings.enableAgentContinuity) {
+                        return { result: await performChange(), report: report };
+                    } else {
+                        return { result: await performChange() };
+                    }
+                }
+
+                const result = !options.requiresConfirmation ? { accepted: true } :
+                    await this.diffService.requestDiff(oldFileName, newFileName, oldContent, newContent, report);
 
                 if (result.accepted) {
-                    return await performChange();
+                    if (this.settingsService.settings.enableAgentContinuity) {
+                        return { result: await performChange(), report: report };
+                    } else {
+                        return { result: await performChange() };
+                    }
                 }
 
                 let response = AIToolResponse.UserRejectionMessage;
                 if (result.suggestion) {
                     response = `${AIToolResponse.UserSuggestionMessage}\n${result.suggestion}`;
                 }
-                return Exception.new(response);
+                return { error: Exception.new(response), report: report };
             } catch (error) {
                 if (AbortService.isAbortError(error)) {
                     throw error;
@@ -768,7 +806,7 @@ export class VaultService {
                 this.eventService.trigger(Event.DiffClosed);
                 Exception.log(error);
 
-                return Exception.new(error);
+                return { error: Exception.new(error) };
             }
     }
 
@@ -793,5 +831,5 @@ export class VaultService {
           requiresConfirmation: vaultOptions?.requiresConfirmation ?? this.defaultOptions.requiresConfirmation
         };
     }
-      
+
 }

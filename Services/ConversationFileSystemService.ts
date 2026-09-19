@@ -262,7 +262,7 @@ export class ConversationFileSystemService {
     public async updateConversationTitle(oldPath: string, newTitle: string): Promise<void | Error> {
         const newPath = `${Path.Conversations}/${newTitle}.json`;
 
-        const result = await this.fileSystemService.moveFile(oldPath, newPath, { allowAccessToPluginRoot: true });
+        const result = await this.fileSystemService.moveFile(oldPath, newPath, { allowAccessToPluginRoot: true, requiresConfirmation: false });
 
         if (result instanceof Error) {
             return result;

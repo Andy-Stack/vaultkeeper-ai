@@ -74,6 +74,9 @@ export const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     },
     exclusions: [],
 
+    enableContinuity: true,
+    enableAgentContinuity: false,
+
     searchTimeLimit: 5000,
     searchResultsLimit: 40,
     snippetSizeLimit: 10,
@@ -124,6 +127,9 @@ export interface IVaultkeeperAISettings {
         local: string;
     }
     exclusions: string[];
+
+    enableContinuity: boolean;
+    enableAgentContinuity: boolean;
 
     searchTimeLimit: number;
     searchResultsLimit: number;

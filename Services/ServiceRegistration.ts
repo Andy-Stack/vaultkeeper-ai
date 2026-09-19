@@ -64,6 +64,7 @@ import { AIPrompt, type IPrompt } from "AIPrompts/IPrompt";
 import { QuickAgent } from "./AIServices/QuickAgent";
 import { QuickActionsDefinitionsService } from "./QuickActions/QuickActionsDefinitionsService";
 import { QuickActionsService } from "./QuickActions/QuickActionsService";
+import { DocumentValidationService } from "./DocumentValidationService";
 
 
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
@@ -83,6 +84,7 @@ export function RegisterDependencies() {
     RegisterSingleton<SanitiserService>(Services.SanitiserService, new SanitiserService());
     RegisterSingleton<DiffService>(Services.DiffService, new DiffService());
     RegisterSingleton<PlanApprovalService>(Services.PlanApprovalService, new PlanApprovalService());
+    RegisterSingleton<DocumentValidationService>(Services.DocumentValidationService, new DocumentValidationService());
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
     RegisterSingleton<VaultCacheService>(Services.VaultCacheService, new VaultCacheService());
     RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());

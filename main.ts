@@ -12,13 +12,14 @@ import { Copy } from "Enums/Copy";
 import type { SettingsService } from "Services/SettingsService";
 import type { Diff2HtmlUIConfig } from "diff2html/lib/ui/js/diff2html-ui";
 import type { ExecutionPlan } from "Types/ExecutionPlan";
+import type { AssetsService } from "Services/AssetsService";
+import type { Artifact } from "Conversations/Artifact";
+import { ArtifactView, VIEW_TYPE_ARTIFACT } from "Views/ArtifactView";
+import type { IDocumentReport } from "./DocumentValidation/IDocumentReport";
 
 import "katex/dist/katex.min.css";
 import 'highlight.js/styles/monokai.min.css';
 import 'diff2html/bundles/css/diff2html.min.css';
-import type { AssetsService } from "Services/AssetsService";
-import type { Artifact } from "Conversations/Artifact";
-import { ArtifactView, VIEW_TYPE_ARTIFACT } from "Views/ArtifactView";
 
 export default class VaultkeeperAIPlugin extends Plugin {
 	
@@ -86,7 +87,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		}
 	}
 
-	public async activateDiffView(diffString: string, config: Diff2HtmlUIConfig) {
+	public async activateDiffView(diffString: string, report: IDocumentReport | undefined, config: Diff2HtmlUIConfig) {
 		const { workspace } = this.app;
 
 		const leaves = workspace.getLeavesOfType(VIEW_TYPE_DIFF);
@@ -95,7 +96,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		await leaf?.setViewState({
 			type: VIEW_TYPE_DIFF,
 			active: true,
-			state: { diffString, config }
+			state: { diffString, report, config }
 		});
 
 		if (leaf != null) {

@@ -20,6 +20,11 @@ import { FileTypeToMimeType } from "Enums/FileTypeMimeTypeMapping";
 import { StringTools } from "Helpers/StringTools";
 import { AIToolDefinitions } from "AIClasses/ToolDefinitions/AIToolDefinitions";
 import { chatModeAllowsEdits } from "Enums/ChatMode";
+import { Artifact } from "Conversations/Artifact";
+import { extname } from "path-browserify";
+import { ArtifactAction } from "Enums/ArtifactAction";
+import type { IVaultChangeResponse, IVaultOptions } from "Services/VaultService";
+import type { TemporaryVaultService } from "Services/TemporaryVaultService";
 import {
     SearchVaultFilesArgsSchema,
     ReadVaultFilesArgsSchema,
@@ -35,13 +40,10 @@ import {
     DeleteVaultFolderArgsSchema,
     MoveVaultFolderArgsSchema
 } from "AIClasses/Schemas/AIToolSchemas";
-import { Artifact } from "Conversations/Artifact";
-import { extname } from "path-browserify";
-import { ArtifactAction } from "Enums/ArtifactAction";
-import type { IVaultChangeResponse, IVaultOptions } from "Services/VaultService";
 
 export class AIToolService {
 
+    private readonly temporaryVaultService: TemporaryVaultService;
     private readonly fileSystemService: FileSystemService;
     private readonly memoriesService: MemoriesService;
     private readonly settingsService: SettingsService;
@@ -51,6 +53,7 @@ export class AIToolService {
     private lastToolReadMemories: boolean = false;
 
     public constructor() {
+        this.temporaryVaultService = Resolve<TemporaryVaultService>(Services.TemporaryVaultService);
         this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
         this.memoriesService = Resolve<MemoriesService>(Services.MemoriesService);
         this.settingsService = Resolve<SettingsService>(Services.SettingsService);

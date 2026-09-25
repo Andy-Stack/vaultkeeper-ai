@@ -772,7 +772,7 @@ export class VaultService {
                 }
 
                 const report = this.settingsService.settings.enableContinuity 
-                    ? this.documentValidationService.process(oldFileName, newFileName, oldContent, newContent)
+                    ? this.documentValidationService.generateReport()
                     : undefined;
 
                 if (this.settingsService.settings.freeEdit) {

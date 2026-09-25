@@ -12,10 +12,10 @@ export class DocumentValidationService {
         this.stages.push(new WikilinkValidation());
     }
 
-    public process(oldFileName: string, newFileName: string, oldContent: string, newContent: string): IDocumentReport {
+    public generateReport(): IDocumentReport {
         const results: IDocumentValidationResult[] = [];
         for (const stage of this.stages) {
-            results.push(stage.process(oldFileName, newFileName, oldContent, newContent));
+            results.push(stage.validate());
         }
         return new DocumentReport(results);
     }

@@ -7,6 +7,7 @@ export class Services {
     static HTMLService = Symbol("HTMLService");
     static DocumentValidationService = Symbol("DocumentValidationService");
     static VaultService = Symbol("VaultService");
+    static TemporaryVaultService = Symbol("TemporaryVaultService");
     static VaultCacheService = Symbol("VaultCacheService");
     static UserInputService = Symbol("UserInputService");
     static WorkSpaceService = Symbol("WorkSpaceService");

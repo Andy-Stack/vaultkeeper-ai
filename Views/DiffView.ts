@@ -1,20 +1,17 @@
-import { Diff2HtmlUI, type Diff2HtmlUIConfig } from "diff2html/lib/ui/js/diff2html-ui-base";
+import type { Diff2HtmlUIConfig } from "diff2html/lib/ui/js/diff2html-ui-base";
 import { Event } from "Enums/Event";
-import { ItemView, WorkspaceLeaf, Platform, type ViewStateResult } from "obsidian";
+import { ItemView, WorkspaceLeaf, type ViewStateResult } from "obsidian";
+import { mount, unmount } from "svelte";
 import { Resolve } from "Services/DependencyService";
 import type { EventService } from "Services/EventService";
-import type { DiffService } from "Services/DiffService";
 import { Services } from "Services/Services";
-import { VIEW_TYPE_MAIN, type MainView } from "./MainView";
-import { tick } from "svelte";
-import { Copy } from "Enums/Copy";
+import DiffWindow from "Components/DiffWindow.svelte";
 import type { IDocumentReport } from "../DocumentValidation/IDocumentReport";
-import { VaultContinuityModal } from "../Modals/VaultContinuityModal";
+import { DocumentReport } from "../DocumentValidation/DocumentReport";
 
 export const VIEW_TYPE_DIFF = 'vaultkeeper-ai-diff-view';
 
 interface DiffViewState {
-    diffString: string;
     report: IDocumentReport | undefined;
     config: Diff2HtmlUIConfig;
 }
@@ -22,21 +19,16 @@ interface DiffViewState {
 export class DiffView extends ItemView {
 
     private readonly eventService: EventService;
-    private readonly diffService: DiffService;
 
-    private diffString: string = "";
     private report: IDocumentReport | undefined;
     private config: Diff2HtmlUIConfig = {};
 
-    private diffContainer: HTMLElement | null = null;
-    private mobileButtonsContainer: HTMLElement | null = null;
-    private bannerEl: HTMLElement | null = null;
+    private diffWindow: ReturnType<typeof DiffWindow> | undefined;
 
     constructor(leaf: WorkspaceLeaf) {
         super(leaf);
 
         this.eventService = Resolve<EventService>(Services.EventService);
-        this.diffService = Resolve<DiffService>(Services.DiffService);
 
         this.registerEvent(this.eventService.on(Event.DiffClosed, () => {
             this.leaf.detach();
@@ -46,20 +38,20 @@ export class DiffView extends ItemView {
     protected override onClose(): Promise<void> {
         // trigger DiffClosed event in case the user closed the tab
         this.eventService.trigger(Event.DiffClosed);
+        this.unmountDiffWindow();
         return Promise.resolve();
     }
 
     public getViewType(): string {
         return VIEW_TYPE_DIFF;
     }
-    
+
     public getDisplayText(): string {
         return "Vaultkeeper AI diff viewer";
     }
 
     public async setState(state: DiffViewState, result: ViewStateResult): Promise<void> {
-        this.diffString = state.diffString;
-        this.report = state.report;
+        this.report = state.report instanceof DocumentReport ? state.report : undefined;
         this.config = state.config;
 
         this.renderDiff();
@@ -68,128 +60,33 @@ export class DiffView extends ItemView {
     }
 
     public getState(): Record<string, unknown> {
+        // report is transient and can't be serialised, so it isn't persisted
         return {
-            diffString: this.diffString,
-            report: this.report,
             config: this.config
         };
     }
 
     private renderDiff() {
-        const container = this.resetContainer();
-        container.addClass('diff-view-content');
+        this.unmountDiffWindow();
 
-        if (Platform.isMobile) {
-            container.addClass('diff-view-mobile');
-        }
-
-        if (this.report && this.report.issueCount() > 0) {
-            this.bannerEl = container.createDiv({ cls: 'diff-view-banner' });
-            this.bannerEl.appendText(`${this.report.issueCount()} continuity issues found in this change.`);
-
-            const viewReportLink = this.bannerEl.createEl('a', {
-                cls: 'diff-view-banner-link',
-                text: 'View report',
-                href: '#'
-            });
-
-            this.registerDomEvent(viewReportLink, 'click', (event) => {
-                event.preventDefault();
-                if (this.report) {
-                    new VaultContinuityModal(this.report).open();
-                }
-            });
-        }
-
-        this.diffContainer = container.createDiv({ cls: 'd2h-wrapper' });
-        const diff2htmlUi = new Diff2HtmlUI(this.diffContainer, this.diffString, this.config);
-
-        diff2htmlUi.draw();
-
-        if (Platform.isMobile) {
-            this.mobileButtonsContainer = this.createMobileButtons();
-        }
-
-        window.requestAnimationFrame(() => {
-            const firstChange = this.diffContainer?.querySelector('.d2h-change, .d2h-ins, .d2h-del');
-            firstChange?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-    }
-
-    private resetContainer(): HTMLElement {
         const container = this.contentEl;
         container.empty();
+        container.addClass('diff-view-content');
 
-        if (this.bannerEl) {
-            this.bannerEl.remove();
-            this.bannerEl = null;
-        }
-
-        if (this.diffContainer) {
-            this.diffContainer.remove();
-            this.diffContainer = null;
-        }
-
-        if (this.mobileButtonsContainer) {
-            this.mobileButtonsContainer.remove();
-            this.mobileButtonsContainer = null;
-        }
-
-        return container;
-    }
-
-    private createMobileButtons(): HTMLElement {
-        const container = this.contentEl.createDiv({ cls: 'diff-mobile-controls' });
-
-        const acceptButton = container.createEl('button', {
-            cls: 'diff-mobile-button diff-mobile-accept',
-            text: Copy.ButtonApprove
-        });
-        acceptButton.setAttribute('aria-label', Copy.ButtonApprove);
-
-        const discussButton = container.createEl('button', {
-            cls: 'diff-mobile-button diff-mobile-discuss',
-            text: Copy.ButtonDiscuss
-        });
-        discussButton.setAttribute('aria-label', Copy.ButtonDiscuss);
-
-        const rejectButton = container.createEl('button', {
-            cls: 'diff-mobile-button diff-mobile-reject',
-            text: Copy.ButtonReject
-        });
-        rejectButton.setAttribute('aria-label', Copy.ButtonReject);
-
-        this.registerDomEvent(acceptButton, 'click', async () => {
-            this.diffService.onAccept();
-            await this.refocusMainView();
-        });
-
-        this.registerDomEvent(discussButton, 'click', async () => {
-            await this.refocusMainView(true);
-        });
-
-        this.registerDomEvent(rejectButton, 'click', async () => {
-            this.diffService.onReject();
-            await this.refocusMainView();
-        });
-
-        return container;
-    }
-
-    private async refocusMainView(focusChatInput: boolean = false): Promise<void> {
-        await tick().then(async () => {
-            const { workspace } = this.app;
-            const leaves = workspace.getLeavesOfType(VIEW_TYPE_MAIN);
-
-            if (leaves.length > 0) {
-                await workspace.revealLeaf(leaves[0]);
-                workspace.setActiveLeaf(leaves[0], { focus: true });
-
-                if (focusChatInput) {
-                    (leaves[0].view as MainView).input?.focusInput(true);
-                }
+        this.diffWindow = mount(DiffWindow, {
+            target: container,
+            props: {
+                config: this.config,
+                report: this.report
             }
         });
+    }
+
+    private unmountDiffWindow() {
+        if (this.diffWindow) {
+            void unmount(this.diffWindow);
+            this.diffWindow = undefined;
+        }
     }
 
 }

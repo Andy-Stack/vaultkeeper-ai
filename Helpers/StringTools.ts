@@ -1,6 +1,20 @@
 import { Exception } from "./Exception";
+import { RegexTools } from "./RegexTools";
 
 export abstract class StringTools {
+
+    public static serialPatch(content: string, edits: { old_content: string; new_content: string; replace_all?: boolean }[]): { result: string; patched: boolean; failure: string } {
+        const original = content;
+    
+        for (const edit of edits) {
+            if (!this.includesWithFlexibleWhiteSpace(content, edit.old_content)) {
+                return { result: original, patched: false, failure: edit.old_content };
+            }
+            content = edit.replace_all ? this.replaceAllFlexible(content, edit) : this.replace(content, edit);
+        }
+    
+        return { result: content, patched: true, failure: "" };
+    }
 
     public static isValidJson(str: string): boolean {
         try {
@@ -127,6 +141,28 @@ export abstract class StringTools {
             }
             img.src = base64;
         });
+    }
+
+    /* Helpers */
+
+    private static includesWithFlexibleWhiteSpace(content: string, target: string): boolean {
+        return content.includes(target) && !RegexTools.toWhitespaceFlexibleRegex(target).test(content)
+    }
+
+    private static replace(content: string, edit: { old_content: string; new_content: string; }): string {
+        if (content.includes(edit.old_content)) {
+            content = content.replace(edit.old_content, edit.new_content);
+        } else {
+            content = content.replace(RegexTools.toWhitespaceFlexibleRegex(edit.old_content), edit.new_content);
+        }
+        return content;
+    }
+
+    private static replaceAllFlexible(content: string, edit: { old_content: string; new_content: string }): string {
+        const base = RegexTools.toWhitespaceFlexibleRegex(edit.old_content);
+        const flags = base.flags.includes("g") ? base.flags : base.flags + "g";
+        const regex = new RegExp(base.source, flags);
+        return content.replace(regex, () => edit.new_content);
     }
 
 } 

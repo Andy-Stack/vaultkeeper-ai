@@ -95,7 +95,7 @@ export class ConversationFileSystemService {
                 }))
         };
 
-        const result = await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData, { allowAccessToPluginRoot: true, requiresConfirmation: false });
+        const result = await this.fileSystemService.writeObjectToFile(this.currentConversationPath, conversationData, { allowAccessToPluginRoot: true });
 
         if (result instanceof Error) {
             new Notice(`Failed to save conversation data for '${conversation.title}'`);
@@ -130,7 +130,7 @@ export class ConversationFileSystemService {
         // Queue this to execute silently in the background - it's just a best effort
         this.deletionQueue = this.deletionQueue.then(() => this.attemptAIFileDeletion(readResult));
 
-        const deleteResult = await this.fileSystemService.deleteFile(this.currentConversationPath, { allowAccessToPluginRoot: true, requiresConfirmation: false });
+        const deleteResult = await this.fileSystemService.deleteFile(this.currentConversationPath, { allowAccessToPluginRoot: true });
 
         if (deleteResult instanceof Error) {
             return deleteResult;
@@ -196,7 +196,7 @@ export class ConversationFileSystemService {
                 if (refCount === 0) {
                     const deleteResult = await this.fileSystemService.deleteFile(
                         file.path,
-                        { allowAccessToPluginRoot: true, requiresConfirmation: false }
+                        { allowAccessToPluginRoot: true }
                     );
 
                     if (deleteResult instanceof Error) {
@@ -245,7 +245,7 @@ export class ConversationFileSystemService {
                 if (refCount === 0) {
                     const deleteResult = await this.fileSystemService.deleteFile(
                         file.path,
-                        { allowAccessToPluginRoot: true, requiresConfirmation: false }
+                        { allowAccessToPluginRoot: true }
                     );
 
                     if (deleteResult instanceof Error) {
@@ -262,7 +262,7 @@ export class ConversationFileSystemService {
     public async updateConversationTitle(oldPath: string, newTitle: string): Promise<void | Error> {
         const newPath = `${Path.Conversations}/${newTitle}.json`;
 
-        const result = await this.fileSystemService.moveFile(oldPath, newPath, { allowAccessToPluginRoot: true, requiresConfirmation: false });
+        const result = await this.fileSystemService.moveFile(oldPath, newPath, { allowAccessToPluginRoot: true });
 
         if (result instanceof Error) {
             return result;

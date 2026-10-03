@@ -77,14 +77,16 @@
     height: 100%;
 }
 
-.d2h-file-wrapper {
+.d2h-wrapper .d2h-file-wrapper.d2h-file-wrapper {
     display: flex;
     flex-direction: column;
     height: 100%;
+    border-top: none;
+    border-radius: 0 0 var(--radius-s) var(--radius-s);
 }
 
-.diff-view-mobile .d2h-file-wrapper {
-    height: unset;
+.diff-view-content .d2h-file-header {
+    display: none;
 }
 
 .d2h-file-header {
@@ -100,8 +102,14 @@
     cursor: default;
 }
 
+/* Neutral rows' left border clashes with the file wrapper's border; keep it only on coloured rows */
+.d2h-wrapper :is(.d2h-code-linenumber, .d2h-code-side-linenumber):not(.d2h-ins, .d2h-del, .d2h-info) {
+    border-left-color: transparent;
+}
+
 .d2h-file-diff {
     overflow: auto;
+    height: 100%;
 }
 
 .d2h-diff-table {
@@ -111,100 +119,6 @@
 .d2h-code-side-linenumber {
     position: relative;
     display: table-cell;
-}
-
-/* ============================== */
-/* Banner                         */
-/* ============================== */
-
-.diff-view-banner-link {
-    color: var(--color-accent);
-}
-
-.diff-view-banner {
-    display: flex;
-    align-items: center;
-    gap: 0.4em;
-    padding: var(--size-4-2) var(--size-4-3);
-    margin-bottom: var(--size-4-2);
-    background-color: rgba(224,175,104,0.10);
-    border: 1px solid rgba(224,175,104,0.22);
-    color: var(--text-normal);
-    border-radius: var(--radius-s);
-    font-size: var(--font-smaller);
-}
-
-/* ============================== */
-/* Mobile Controls                */
-/* ============================== */
-
-.diff-mobile-controls {
-    display: none; /* Hidden by default (desktop) */
-}
-
-/* Avoid the floating obsidian controls */
-@media (max-width: 600px) {
-    .diff-mobile-controls {
-        margin-bottom: 85px;
-    }
-}
-
-.diff-view-mobile .diff-mobile-controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: var(--size-4-2);
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: var(--size-4-3);
-    z-index: 10;
-}
-
-.diff-mobile-controls .diff-mobile-button {
-    min-height: 44px;
-    font-size: var(--font-ui-medium);
-    border-radius: var(--button-radius);
-    cursor: pointer;
-    transition: background-color 0.2s ease-out;
-}
-
-.diff-mobile-controls .diff-mobile-accept {
-    color: white;
-    background-color: #38533a;
-}
-
-.diff-mobile-controls .diff-mobile-accept:hover,
-.diff-mobile-controls .diff-mobile-accept:focus,
-.diff-mobile-controls .diff-mobile-accept:active {
-    background-color: #537555;
-}
-
-.diff-mobile-controls .diff-mobile-discuss {
-    color: white;
-}
-
-.diff-mobile-controls .diff-mobile-reject {
-    color: white;
-    background-color: #593030;
-}
-
-.diff-mobile-controls .diff-mobile-reject:hover,
-.diff-mobile-controls .diff-mobile-reject:focus,
-.diff-mobile-controls .diff-mobile-reject:active {
-    background-color: #774545;
-}
-
-/* Adjust diff height on mobile to account for buttons */
-.diff-view-mobile .d2h-file-diff {
-    max-height: calc(100cqh - 37px - 40px);
-}
-
-/* Avoid the floating obsidian controls */
-@media (max-width: 600px) {
-    .diff-view-mobile .d2h-file-diff {
-        max-height: calc(100cqh - 37px - 120px);
-    }
 }
 
 /* ============================== */

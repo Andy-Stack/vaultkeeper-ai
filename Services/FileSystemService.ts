@@ -17,12 +17,26 @@ export class FileSystemService {
         return this.vaultService.getMarkdownFiles(options);
     }
 
+    public containsExclusions(folderPath: string, options?: IVaultOptions): boolean {
+        return this.vaultService.containsExclusions(folderPath, options);
+    }
+    
     public isExclusion(filePath: string, options?: IVaultOptions): boolean {
         return this.vaultService.isExclusion(filePath, options);
     }
 
     public async exists(filePath: string, options?: IVaultOptions): Promise<boolean> {
         return await this.vaultService.exists(filePath, options);
+    }
+
+    public getFile(filePath: string, options?: IVaultOptions): TFile | undefined {
+        const result = this.vaultService.getAbstractFileByPath(filePath, options);
+        return result instanceof TFile ? result : undefined;
+    }
+
+    public getFolder(folderPath: string, options?: IVaultOptions): TFolder | undefined {
+        const result = this.vaultService.getAbstractFileByPath(folderPath, options);
+        return result instanceof TFolder ? result : undefined;
     }
 
     public async readFile(file: TFile, options?: IVaultOptions): Promise<{ content: string, nextIndex: number | undefined } | Error> {
@@ -75,33 +89,11 @@ export class FileSystemService {
         return await this.vaultService.modifyBinary(file, data, options);
     }
 
-    public async patchFile(file: TFile, oldContent: string[], newContent: string[], options?: IVaultOptions): Promise<IVaultChangeResponse<TFile>> {
-        return await this.vaultService.patch(file, oldContent, newContent, options);
-    }
-
     public async updateFrontmatter(file: TFile, mutate: (frontmatter: Record<string, unknown>) => void, options?: IVaultOptions): Promise<TFile | Error> {
         return await this.vaultService.updateFrontmatter(file, mutate, options);
     }
 
-    public async patchFileAtPath(filePath: string, oldContent: string[], newContent: string[], options?: IVaultOptions): Promise<IVaultChangeResponse<TFile>> {
-        const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, options);
-
-        let fileToPatch: TFile;
-        if (file instanceof TFile) {
-            fileToPatch = file;
-        } else {
-            // if the file doesn't exist we may as well create it even though this is just a patch operation
-            const result = await this.writeToFilePath(filePath, "", options);
-            if (!(result.result instanceof TFile) || result.error instanceof Error) {
-                return result;
-            }
-            fileToPatch = result.result;
-        }
-
-        return await this.vaultService.patch(fileToPatch, oldContent, newContent, options);
-    }
-
-    public async deleteFile(filePath: string, options?: IVaultOptions): Promise<IVaultChangeResponse<TAbstractFile>> {
+    public async deleteFile(filePath: string, options?: IVaultOptions): Promise<IVaultChangeResponse<TFile>> {
         const file: TAbstractFile | null = this.vaultService.getAbstractFileByPath(filePath, options);
 
         if (!file || !(file instanceof TFile)) {

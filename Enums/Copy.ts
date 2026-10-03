@@ -492,6 +492,7 @@ Each AI provider has their own data policies:
     ArtifactActionCreated = "CREATED",
     ArtifactActionModified = "MODIFIED",
     ArtifactActionDeleted = "DELETED",
+    ArtifactActionMoved = "MOVED",
 
     // About Modal Additional Copy
     AboutModalCloseAriaLabel = "Close About Modal",

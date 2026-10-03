@@ -13,6 +13,7 @@ export class Artifact implements IBinaryFile {
     public updatedContent: string;
     public base64: string | undefined;
     public artifactPath?: string;
+    public previousPath?: string;
 
     public static sort(artifacts: Artifact[]): Artifact[] {
         artifacts.sort((a, b) =>
@@ -22,7 +23,9 @@ export class Artifact implements IBinaryFile {
         return artifacts;
     }
 
-    public constructor(filePath: string, mimeType: string, action: ArtifactAction, originalContent: string, updatedContent: string, base64?: string, artifactPath?: string) {
+    public constructor(filePath: string, mimeType: string, action: ArtifactAction, originalContent: string,
+        updatedContent: string, base64?: string, artifactPath?: string, previousPath?: string)
+    {
         this.filePath = filePath;
         this.mimeType = mimeType;
         this.action = action;
@@ -30,6 +33,7 @@ export class Artifact implements IBinaryFile {
         this.updatedContent = updatedContent;
         this.base64 = base64;
         this.artifactPath = artifactPath;
+        this.previousPath = previousPath;
     }
 
     public getStoragePath(): string | undefined {
@@ -69,6 +73,7 @@ export class Artifact implements IBinaryFile {
         updatedContent: string;
         base64?: string;
         artifactPath?: string;
+        previousPath?: string;
     } {
         return (
             data !== null &&
@@ -85,7 +90,8 @@ export class Artifact implements IBinaryFile {
             "updatedContent" in data &&
             typeof data.updatedContent === "string" &&
             (!("base64" in data) || typeof data.base64 === "string") &&
-            (!("artifactPath" in data) || typeof data.artifactPath === "string")
+            (!("artifactPath" in data) || typeof data.artifactPath === "string") &&
+            (!("previousPath" in data) || typeof data.previousPath === "string")
         );
     }
 

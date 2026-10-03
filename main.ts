@@ -87,7 +87,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		}
 	}
 
-	public async activateDiffView(diffString: string, report: IDocumentReport | undefined, config: Diff2HtmlUIConfig) {
+	public async activateDiffView(report: IDocumentReport | undefined, config: Diff2HtmlUIConfig) {
 		const { workspace } = this.app;
 
 		const leaves = workspace.getLeavesOfType(VIEW_TYPE_DIFF);
@@ -96,7 +96,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		await leaf?.setViewState({
 			type: VIEW_TYPE_DIFF,
 			active: true,
-			state: { diffString, report, config }
+			state: { report, config }
 		});
 
 		if (leaf != null) {
@@ -157,6 +157,6 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		});
 
 		const vaultService: VaultService = Resolve<VaultService>(Services.VaultService);
-		await vaultService.create(Path.ExampleUserInstructions, Copy.EXAMPLE_USER_INSTRUCTION, { allowAccessToPluginRoot: true, requiresConfirmation: false });
+		await vaultService.create(Path.ExampleUserInstructions, Copy.EXAMPLE_USER_INSTRUCTION, { allowAccessToPluginRoot: true });
 	}
 }

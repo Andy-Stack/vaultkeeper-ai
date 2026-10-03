@@ -1,12 +1,16 @@
 import type VaultkeeperAIPlugin from "main";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
-import { Notice, TFile, type WorkspaceLeaf } from "obsidian";
+import { Notice, TFile, Workspace, type WorkspaceLeaf } from "obsidian";
 import type { FileSystemService } from "./FileSystemService";
 
 export class WorkSpaceService {
     private readonly plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
     private readonly fileSystemService: FileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
+
+    public getWorkSpace(): Workspace {
+        return this.plugin.app.workspace;
+    }
 
     public async openNote(noteName: string) {
         const file: TFile | null = this.plugin.app.metadataCache.getFirstLinkpathDest(noteName, "");

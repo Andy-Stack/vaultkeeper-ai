@@ -293,7 +293,7 @@
       return;
     }
     const suggestion = requestFromInput();
-    diffService.onSuggest(suggestion.formattedRequest);
+    //diffService.onSuggest(suggestion.formattedRequest);
   }
 
   function handlePlanSuggestion() {

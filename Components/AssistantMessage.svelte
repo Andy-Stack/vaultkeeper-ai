@@ -52,7 +52,7 @@
   }
 
   function handleArtifactCardClick(artifact: Artifact) {
-    diffService.showArtifactDiff(artifact);
+    diffService.showArtifactDiff(artifact); // need to handle a nice UI for move
   }
 </script>
 
@@ -286,6 +286,11 @@
   .artifact-ellipse-delete {
     background: var(--color-red);
     color: var(--color-red);
+  }
+
+  .artifact-ellipse-move {
+    background: var(--color-cyan);
+    color: var(--color-cyan);
   }
 
   .artifact-icon {

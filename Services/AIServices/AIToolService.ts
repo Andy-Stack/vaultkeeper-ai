@@ -21,10 +21,14 @@ import { StringTools } from "Helpers/StringTools";
 import { AIToolDefinitions } from "AIClasses/ToolDefinitions/AIToolDefinitions";
 import { chatModeAllowsEdits } from "Enums/ChatMode";
 import { Artifact } from "Conversations/Artifact";
-import { extname } from "path-browserify";
+import { basename, extname } from "path-browserify";
 import { ArtifactAction } from "Enums/ArtifactAction";
-import type { IVaultChangeResponse, IVaultOptions } from "Services/VaultService";
-import type { TemporaryVaultService } from "Services/TemporaryVaultService";
+import type { IVaultOptions } from "Services/VaultService";
+import type { IVaultChangeRequest } from "Services/TemporaryVaultService";
+import type { DiffService } from "Services/DiffService";
+import type { SanitiserService } from "Services/SanitiserService";
+import { FileEvent } from "Enums/FileEvent";
+import { DiffState } from "Enums/DiffState";
 import {
     SearchVaultFilesArgsSchema,
     ReadVaultFilesArgsSchema,
@@ -43,22 +47,24 @@ import {
 
 export class AIToolService {
 
-    private readonly temporaryVaultService: TemporaryVaultService;
+    private readonly diffService: DiffService;
     private readonly fileSystemService: FileSystemService;
     private readonly memoriesService: MemoriesService;
     private readonly settingsService: SettingsService;
     private readonly webViewerService: WebViewerService;
     private readonly abortService: AbortService;
+    private readonly sanitiserService: SanitiserService;
 
     private lastToolReadMemories: boolean = false;
 
     public constructor() {
-        this.temporaryVaultService = Resolve<TemporaryVaultService>(Services.TemporaryVaultService);
+        this.diffService = Resolve<DiffService>(Services.DiffService);
         this.fileSystemService = Resolve<FileSystemService>(Services.FileSystemService);
         this.memoriesService = Resolve<MemoriesService>(Services.MemoriesService);
         this.settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.webViewerService = Resolve<WebViewerService>(Services.WebViewerService);
         this.abortService = Resolve<AbortService>(Services.AbortService);
+        this.sanitiserService = Resolve<SanitiserService>(Services.SanitiserService);
     }
 
     public async performAITool(toolCall: AIToolCall): Promise<AIToolResponse> {
@@ -124,7 +130,7 @@ export class AIToolService {
                             toolCall.toolId
                         );
                     }
-                    return new AIToolResponse(toolCall.name, await this.patchVaultFile(parseResult.data.file_path, parseResult.data.oldContent, parseResult.data.newContent), toolCall.toolId);
+                    return new AIToolResponse(toolCall.name, await this.patchVaultFile(parseResult.data.file_path, parseResult.data.edits), toolCall.toolId);
                 }
     
                 case AITool.DeleteVaultFiles: {
@@ -364,15 +370,63 @@ export class AIToolService {
     }
 
     private async writeVaultFile(filePath: string, content: string): Promise<AIToolResponsePayload> {
-        return await this.asTrackedAction(filePath, async () => {
-            return await this.fileSystemService.writeToFilePath(normalizePath(filePath), content);
-        });
+        const file = this.fileSystemService.getFile(filePath);
+    
+        let oldContent: string | undefined;
+        if (file instanceof TFile) {
+            const currentContent = await this.fileSystemService.readFile(file, { limitResults: false });
+            if (currentContent instanceof Error) {
+                return new AIToolResponsePayload({ error: `Unable to read existing file, no changes have been made: ${Exception.messageFrom(currentContent)}` });
+            }
+            oldContent = currentContent.content;
+        }
+    
+        return await this.asTrackedAction([{
+            oldPath: file instanceof TFile ? filePath : undefined,
+            newPath: filePath,
+            oldContent: oldContent,
+            newContent: content,
+            file: file,
+            changeType: file instanceof TFile ? FileEvent.Modify : FileEvent.Create,
+            changeAction: async () => await this.fileSystemService.writeToFilePath(normalizePath(filePath), content),
+            status: DiffState.None
+        }]);
     }
+    
 
-    private async patchVaultFile(filePath: string, oldContent: string[], newContent: string[]): Promise<AIToolResponsePayload> {
-        return await this.asTrackedAction(filePath, async () => {
-            return await this.fileSystemService.patchFileAtPath(normalizePath(filePath), oldContent, newContent);
-        });
+    private async patchVaultFile(filePath: string, edits: { old_content: string; new_content: string; replace_all?: boolean | undefined; }[]): Promise<AIToolResponsePayload> {
+        const file = this.fileSystemService.getFile(filePath);
+
+        if (isBinaryFile(pathExtname(filePath))) {
+            return new AIToolResponsePayload({ error: Exception.new(`Patching ${pathExtname(filePath)} files is not supported`) });
+        }
+
+        if (!(file instanceof TFile)) {
+            return new AIToolResponsePayload({ error: `Patch failed, file does not exist: ${filePath}` }); 
+        }
+
+        const readResult = await this.fileSystemService.readFile(file, { limitResults: false });
+
+        if (readResult instanceof Error) {
+            return new AIToolResponsePayload({ error: Exception.messageFrom(readResult) }); 
+        }
+
+        const patchResult = StringTools.serialPatch(readResult.content, edits);
+
+        if (!patchResult.patched) {
+            return new AIToolResponsePayload({ error: `Content to replace was not found in the file, the old content must match exactly. No changes have been made. Unmatched content: "${patchResult.failure}"` });
+        }
+
+        return await this.asTrackedAction([{
+            oldPath: filePath,
+            newPath: filePath,
+            oldContent: readResult instanceof Error ? undefined : readResult?.content,
+            newContent: patchResult.result,
+            file: file,
+            changeType: FileEvent.Modify,
+            changeAction: async () => await this.fileSystemService.writeToFilePath(normalizePath(filePath), patchResult.result),
+            status: DiffState.None
+        }]);
     }
 
     private async deleteVaultFiles(filePaths: string[], confirmation: boolean): Promise<AIToolResponsePayload> {
@@ -380,37 +434,110 @@ export class AIToolService {
             return new AIToolResponsePayload({ error: "Confirmation was false, no action taken" });
         }
 
-        const results: object[] = [];
-        const artifacts = await this.collectDeletionCandidatesArtifacts(filePaths);
+        const { changeRequests, failures } = await this.createDeleteRequests(filePaths);
+        return await this.asTrackedAction(changeRequests, failures);
+    }
+
+    private async createDeleteRequests(filePaths: string[]): Promise<{ changeRequests: IVaultChangeRequest<TFile>[], failures: object[] }> {
+        const changeRequests: IVaultChangeRequest<TFile>[] = [];
+        const failures: object[] = [];
 
         for (const filePath of filePaths) {
-            const deleteResult = await this.fileSystemService.deleteFile(filePath);
-            if (deleteResult.error instanceof Error) {
-                results.push({ path: filePath, success: false, error: deleteResult.error.message });
+            const file = this.fileSystemService.getFile(filePath);
+            if (!(file instanceof TFile)) {
+                failures.push({ path: filePath, success: false, error: `File does not exist: ${filePath}` });
                 continue;
             }
-            results.push({ path: filePath, success: true, continuityReport: deleteResult.report
-                ? deleteResult.report.toString() : Copy.NoContinuityIssues });
+    
+            const fileType = toFileType(extname(filePath));
+            // Anything that isn't a note we will just store as a binary artifact
+            const isBinary = isBinaryFile(fileType) || isDocumentMimeType(FileTypeToMimeType[fileType]);
+            const currentContent = isBinary
+                ? await this.fileSystemService.readBinaryFile(filePath)
+                : await this.fileSystemService.readFile(file, { limitResults: false });
+
+            if (currentContent instanceof Error) {
+                failures.push({ path: filePath, success: false, error: `Unable to read file, it has not been deleted: ${Exception.messageFrom(currentContent)}` });
+                continue;
+            }
+
+            changeRequests.push({
+                oldPath: filePath,
+                newPath: "",
+                oldContent: currentContent instanceof ArrayBuffer ? `[Binary file: ${basename(filePath)}]` : currentContent.content,
+                newContent: "",
+                file: file,
+                base64: currentContent instanceof ArrayBuffer ? arrayBufferToBase64(currentContent) : undefined,
+                changeType: FileEvent.Delete,
+                changeAction: async () => await this.fileSystemService.deleteFile(filePath),
+                status: DiffState.None
+            });
         }
-        return new AIToolResponsePayload({ results }, artifacts);
+
+        return { changeRequests, failures };
     }
+    
 
     private async moveVaultFiles(sourcePaths: string[], destinationPaths: string[]): Promise<AIToolResponsePayload> {
         if (sourcePaths.length !== destinationPaths.length) {
             return new AIToolResponsePayload({ error: "Source paths array length does not equal destination paths array length" });
         }
 
-        const results = await Promise.all(sourcePaths.map(async (sourcePath, index) => {
-            const destinationPath = destinationPaths[index];
-            const result = await this.fileSystemService.moveFile(sourcePath, destinationPath);
-            if (result.error instanceof Error) {
-                return { path: destinationPath, success: false, error: result.error.message };
-            }
-            return { path: destinationPath, success: true, continuityReport: result.report
-                ? result.report.toString() : Copy.NoContinuityIssues };
-        }));
+        const moves = sourcePaths.map((source, index) => ({ source: source, destination: destinationPaths[index] }));
+        const { changeRequests, failures } = await this.createMoveRequests(moves);
+        return await this.asTrackedAction(changeRequests, failures);
+    }
 
-        return new AIToolResponsePayload({ results });
+    private async createMoveRequests(moves: { source: string, destination: string }[]): Promise<{ changeRequests: IVaultChangeRequest<TFile>[], failures: object[] }> {
+        const changeRequests: IVaultChangeRequest<TFile>[] = [];
+        const failures: object[] = [];
+
+        for (const { source, destination } of moves) {
+            const file = this.fileSystemService.getFile(source);
+            if (!(file instanceof TFile)) {
+                failures.push({ path: destination, success: false, error: `Move failed as source does not exist: ${source}` });
+                continue;
+            }
+            if (this.fileSystemService.isExclusion(destination)) {
+                failures.push({ path: destination, success: false, error: `Operation failed. The destination path may be protected: ${destination}` });
+                continue;
+            }
+            if (await this.fileSystemService.exists(destination)) {
+                failures.push({ path: destination, success: false, error: `Move failed as destination already exists: ${destination}` });
+                continue;
+            }
+
+            const fileType = toFileType(extname(source));
+            let content = `[Binary file: ${basename(source)}]`;
+
+            // Content is unchanged by a move so there is nothing to gain from reading binary data
+            if (!(isBinaryFile(fileType) || isDocumentMimeType(FileTypeToMimeType[fileType]))) {
+                const currentContent = await this.fileSystemService.readFile(file, { limitResults: false });
+                if (currentContent instanceof Error) {
+                    failures.push({ path: destination, success: false, error: `Unable to read file, it has not been moved: ${Exception.messageFrom(currentContent)}` });
+                    continue;
+                }
+                content = currentContent.content;
+            }
+
+            changeRequests.push({
+                oldPath: source,
+                newPath: destination,
+                oldContent: content,
+                newContent: content,
+                file: file,
+                changeType: FileEvent.Rename,
+                changeAction: async () => {
+                    const result = await this.fileSystemService.moveFile(source, destination);
+                    return result.error instanceof Error
+                        ? { error: result.error }
+                        : { result: this.fileSystemService.getFile(destination) };
+                },
+                status: DiffState.None
+            });
+        }
+
+        return { changeRequests, failures };
     }
 
     private async createVaultFolder(path: string): Promise<AIToolResponsePayload> {
@@ -426,23 +553,95 @@ export class AIToolService {
             return new AIToolResponsePayload({ error: "Confirmation was false, no action taken" });
         }
 
-        const contents = await this.fileSystemService.listDirectoryContents(path);
-        const filePaths = contents.results.filter(content => content instanceof TFile).map(file => file.path);
+        const protectedError = `Deletion failed. The folder or its contents may be protected: ${path}`;
 
-        const artifacts = await this.collectDeletionCandidatesArtifacts(filePaths);
+        if (this.fileSystemService.isExclusion(path) || !(await this.fileSystemService.exists(path))) {
+            return new AIToolResponsePayload({ path: path, success: false, error: `Folder does not exist or is protected: ${path}` });
+        }
+
+        // Protected files are hidden from listings, so refuse up front rather than trash them unseen with the folder
+        if (this.fileSystemService.containsExclusions(path)) {
+            return new AIToolResponsePayload({ path: path, success: false, error: protectedError });
+        }
+
+        const files = await this.fileSystemService.listFilesInDirectory(path, { recursive: true });
+        const { changeRequests, failures } = await this.createDeleteRequests(files.map(file => file.path));
+        const filesPayload = await this.asTrackedAction(changeRequests, failures);
+
+        // Only remove the folder once every file inside it has been deleted, rejected files keep the folder alive
+        const remainingFiles = await this.fileSystemService.listFilesInDirectory(path, { recursive: true });
+        if (remainingFiles.length > 0) {
+            return new AIToolResponsePayload({ ...filesPayload.response, folder: { path: path, success: false, error: protectedError } },
+                filesPayload.artifacts);
+        }
+
         const result = await this.fileSystemService.deleteFolder(path);
+        const folderResult = result.error instanceof Error
+            ? { path: path, success: false, error: result.error.message }
+            : { path: path, success: true };
 
-        return result.error instanceof Error
-            ? new AIToolResponsePayload({ path: path, success: false, error: result.error.message }, artifacts)
-            : new AIToolResponsePayload({ path: path, success: true, continuityReport: result.report ? result.report.toString() : Copy.NoContinuityIssues }, artifacts);
+        return new AIToolResponsePayload({ ...filesPayload.response, folder: folderResult }, filesPayload.artifacts);
     }
 
     private async moveVaultFolder(sourcePath: string, destinationPath: string): Promise<AIToolResponsePayload> {
-        const result = await this.fileSystemService.moveFile(sourcePath, destinationPath);
-        if (result.error instanceof Error) {
-            return new AIToolResponsePayload({ path: destinationPath, success: false, error: result.error.message });
+        // Paths are mapped by prefix below, so they must match the form Obsidian uses for file paths
+        sourcePath = this.sanitiserService.sanitize(sourcePath);
+        destinationPath = this.sanitiserService.sanitize(destinationPath);
+
+        const protectedError = `Move failed. The folder or its contents may be protected: ${sourcePath}`;
+
+        if (this.fileSystemService.isExclusion(sourcePath) || this.fileSystemService.isExclusion(destinationPath)) {
+            return new AIToolResponsePayload({ path: destinationPath, success: false, error: protectedError });
         }
-        return new AIToolResponsePayload({ path: destinationPath, success: true, continuityReport: result.report ? result.report.toString() : Copy.NoContinuityIssues });
+        if (sourcePath === "/") {
+            return new AIToolResponsePayload({ path: destinationPath, success: false, error: "Move failed as the vault root cannot be moved" });
+        }
+        if (!this.fileSystemService.getFolder(sourcePath)) {
+            return new AIToolResponsePayload({ path: destinationPath, success: false, error: `Move failed as source folder does not exist: ${sourcePath}` });
+        }
+        if (await this.fileSystemService.exists(destinationPath)) {
+            return new AIToolResponsePayload({ path: destinationPath, success: false, error: `Move failed as destination already exists: ${destinationPath}` });
+        }
+        if (destinationPath === sourcePath || destinationPath.startsWith(`${sourcePath}/`)) {
+            return new AIToolResponsePayload({ path: destinationPath, success: false, error: `Move failed as a folder cannot be moved inside itself: ${destinationPath}` });
+        }
+        // Protected files are hidden from listings and would be left behind or trashed with the source folder
+        if (this.fileSystemService.containsExclusions(sourcePath)) {
+            return new AIToolResponsePayload({ path: destinationPath, success: false, error: protectedError });
+        }
+
+        const toDestination = (path: string) => `${destinationPath}${path.slice(sourcePath.length)}`;
+
+        // Moving files only carries over folders that contain files, so empty ones are recreated afterwards
+        const emptyFolders = (await this.fileSystemService.listFoldersInDirectory(sourcePath, { recursive: true }))
+            .filter(folder => folder.children.length === 0)
+            .map(folder => toDestination(folder.path));
+
+        const files = await this.fileSystemService.listFilesInDirectory(sourcePath, { recursive: true });
+        const { changeRequests, failures } = await this.createMoveRequests(files.map(file => ({ source: file.path, destination: toDestination(file.path) })));
+        const filesPayload = await this.asTrackedAction(changeRequests, failures);
+
+        // Only remove the source once every file inside it has moved, rejected files keep the folder alive
+        const remainingFiles = await this.fileSystemService.listFilesInDirectory(sourcePath, { recursive: true });
+        if (remainingFiles.length > 0) {
+            return new AIToolResponsePayload({ ...filesPayload.response, folder: { path: sourcePath, success: false, error: protectedError } },
+                filesPayload.artifacts);
+        }
+
+        for (const folderPath of [destinationPath, ...emptyFolders]) {
+            const createResult = await this.fileSystemService.createFolder(folderPath);
+            if (createResult instanceof Error) {
+                return new AIToolResponsePayload({ ...filesPayload.response, folder: { path: destinationPath, success: false, error: createResult.message } },
+                    filesPayload.artifacts);
+            }
+        }
+
+        const result = await this.fileSystemService.deleteFolder(sourcePath);
+        const folderResult = result.error instanceof Error
+            ? { path: destinationPath, success: false, error: result.error.message }
+            : { path: destinationPath, success: true };
+
+        return new AIToolResponsePayload({ ...filesPayload.response, folder: folderResult }, filesPayload.artifacts);
     }
 
     private async listVaultFiles(path: string, recursive: boolean, index: number | undefined): Promise<AIToolResponsePayload> {
@@ -506,59 +705,60 @@ export class AIToolService {
 
     /** Helpers **/
 
-    private async collectDeletionCandidatesArtifacts(filePaths: string[]): Promise<Artifact[]> {
+    private async asTrackedAction(changeRequests: IVaultChangeRequest<TFile>[], failures: object[] = []): Promise<AIToolResponsePayload> {
+        if (changeRequests.length === 0) {
+            return new AIToolResponsePayload({ results: failures });
+        }
+    
+        const { results: changeResponses, report } = await this.diffService.proposeChanges(changeRequests);
+    
+        const results: object[] = [...failures];
         const artifacts: Artifact[] = [];
 
-        for (const filePath of filePaths) {
-            const fileType = toFileType(extname(filePath));
-            // Anything that isn't a note we will just store as a binary artifact
-            if (isBinaryFile(fileType) || isDocumentMimeType(FileTypeToMimeType[fileType])) {
-                const result = await this.fileSystemService.readBinaryFile(filePath);
-                if (result instanceof ArrayBuffer) {
-                    artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], ArtifactAction.Delete, filePath, "", arrayBufferToBase64(result)));
-                }
-            } else {
-                const result = await this.fileSystemService.readFilePath(filePath);
-                if (!(result instanceof Error)) {
-                    artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], ArtifactAction.Delete, result.content, ""));
-                }
+        for (const [index, changeRequest] of changeRequests.entries()) {
+            const changeResponse = changeResponses[index];
+            // Deletes have an empty newPath, so fall through on empty strings rather than just undefined
+            const filePath = changeRequest.newPath || changeRequest.oldPath || changeRequest.file?.path || "";
+
+            if (changeResponse.error instanceof Error) {
+                results.push({ path: filePath, success: false, error: changeResponse.error.message });
+                continue;
             }
+
+            results.push({ path: filePath, success: true });
+
+            const fileType = toFileType(extname(filePath));
+
+            // File rename is a special case since we don't need to track file content in the artifact
+            if (changeRequest.changeType === FileEvent.Rename) {
+                artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], this.toArtifactAction(changeRequest.changeType),
+                    "", "", undefined, undefined, changeRequest.oldPath));
+                continue;
+            }
+
+            // A deleted file is still returned as the result, but there is nothing left on disk to read
+            const postActionReadResult = changeResponse.result instanceof TFile && changeRequest.changeType !== FileEvent.Delete
+                ? await this.fileSystemService.readFile(changeResponse.result, { limitResults: false }) : undefined;
+            const postActionContent = !postActionReadResult || postActionReadResult instanceof Error
+                ? "" : postActionReadResult.content;
+
+            artifacts.push(new Artifact(filePath, FileTypeToMimeType[fileType], this.toArtifactAction(changeRequest.changeType),
+                changeRequest.base64 ? filePath : changeRequest.oldContent ?? "", postActionContent, changeRequest.base64));
         }
 
-        return artifacts;
+        return new AIToolResponsePayload({ results, ...(report && { continuityReport: report.toString() }) }, artifacts);
     }
 
-    private async asTrackedAction<T>(filePath: string, action: () => Promise<IVaultChangeResponse<T>>): Promise<AIToolResponsePayload> {
-        let artifactAction: ArtifactAction | undefined;
-
-        const preActionReadResult = await this.fileSystemService.readFilePath(filePath);
-        let preActionResult: string;
-        if (preActionReadResult instanceof Error) {
-            preActionResult = ""; // The file does not exist yet
-            artifactAction = ArtifactAction.Create;
-        } else {
-            preActionResult = preActionReadResult.content;
+    private toArtifactAction(changeType: FileEvent): ArtifactAction {
+        switch (changeType) {
+            case FileEvent.Create:
+                return ArtifactAction.Create;
+            case FileEvent.Delete:
+                return ArtifactAction.Delete;
+            case FileEvent.Modify:
+                return ArtifactAction.Modify;
+            case FileEvent.Rename:
+                return ArtifactAction.Move;
         }
-        const actionResult = await action();
-        if (actionResult.error instanceof Error) {
-            return new AIToolResponsePayload({ success: false, error: actionResult.error.message });
-        }
-        const postActionReadResult = actionResult.result instanceof TFile ? await this.fileSystemService.readFile(actionResult.result) : undefined;
-        let postActionResult: string;
-        if (!postActionReadResult || postActionReadResult instanceof Error) {
-            postActionResult = ""; // The file has been deleted
-            artifactAction = ArtifactAction.Delete;
-        } else {
-            postActionResult = postActionReadResult.content;
-        }
-
-        if (artifactAction === undefined) {
-            artifactAction = ArtifactAction.Modify;
-        }
-
-        const fileType = toFileType(extname(filePath));
-
-        return new AIToolResponsePayload({ success: true, continuityReport: actionResult.report ? actionResult.report.toString() : Copy.NoContinuityIssues },
-            [new Artifact(filePath, FileTypeToMimeType[fileType], artifactAction, preActionResult, postActionResult)]);
     }
 }

@@ -6,7 +6,7 @@ export function getOuterHeight(element: HTMLElement): number {
     return element.offsetHeight + marginTop + marginBottom;
 }
 
-export function setElementIcon(element: HTMLDivElement, iconName: string) {
+export function setElementIcon(element: HTMLElement, iconName: string) {
     if (element) {
         setIcon(element, iconName);
     }

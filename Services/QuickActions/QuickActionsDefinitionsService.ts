@@ -58,7 +58,7 @@ export class QuickActionsDefinitionsService {
                 if (selection.length > 0) {
                     const result = await this.performAction(ProofreadPrompt, selection);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [selection], [result], { allowAccessToPluginRoot: false, requiresConfirmation: false });
+                        await this.fileSystemService.patchFile(file, [selection], [result], { allowAccessToPluginRoot: false });
                     }
                 } else {
                     const { body } = splitFrontmatter(content);
@@ -67,7 +67,7 @@ export class QuickActionsDefinitionsService {
                     }
                     const result = await this.performAction(ProofreadPrompt, body);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [body], [result], { allowAccessToPluginRoot: false, requiresConfirmation: false });
+                        await this.fileSystemService.patchFile(file, [body], [result], { allowAccessToPluginRoot: false });
                     }
                 }
             } finally {
@@ -96,7 +96,7 @@ export class QuickActionsDefinitionsService {
                 if (selection.length > 0) {
                     const result = await this.performAction(BeautifyPrompt, selection);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [selection], [result], { allowAccessToPluginRoot: false, requiresConfirmation: false });
+                        await this.fileSystemService.patchFile(file, [selection], [result], { allowAccessToPluginRoot: false });
                     }
                 } else {
                     const { body } = splitFrontmatter(content);
@@ -105,7 +105,7 @@ export class QuickActionsDefinitionsService {
                     }
                     const result = await this.performAction(BeautifyPrompt, body);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [body], [result], { allowAccessToPluginRoot: false, requiresConfirmation: false });
+                        await this.fileSystemService.patchFile(file, [body], [result], { allowAccessToPluginRoot: false });
                     }
                 }
             } finally {
@@ -152,7 +152,7 @@ export class QuickActionsDefinitionsService {
                     const context = `${Copy.ApplyTemplateTemplateSeparator}\n${templateContent}\n${Copy.ApplyTemplateContentSeparator}\n${content}`;
                     const result = await this.performAction(prompt, context);
                     if (result && result.trim() !== Copy.ApplyTemplateCancelled.toString()) {
-                        await this.fileSystemService.writeToFile(file, result, { allowAccessToPluginRoot: false, requiresConfirmation: false });
+                        await this.fileSystemService.writeToFile(file, result, { allowAccessToPluginRoot: false });
                     }
                 } finally {
                     notice.hide();
@@ -184,7 +184,7 @@ export class QuickActionsDefinitionsService {
                 if (selection.length > 0) {
                     const result = await this.performAction(prompt, selection);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [selection], [result], { allowAccessToPluginRoot: false, requiresConfirmation: false });
+                        await this.fileSystemService.patchFile(file, [selection], [result], { allowAccessToPluginRoot: false });
                     }
                 } else {
                     const { body } = splitFrontmatter(content);
@@ -193,7 +193,7 @@ export class QuickActionsDefinitionsService {
                     }
                     const result = await this.performAction(prompt, body);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [body], [result], { allowAccessToPluginRoot: false, requiresConfirmation: false });
+                        await this.fileSystemService.patchFile(file, [body], [result], { allowAccessToPluginRoot: false });
                     }
                 }
             } finally {

@@ -3,13 +3,15 @@ import { Copy } from "Enums/Copy";
 export enum ArtifactAction {
     Create = "create",
     Modify = "modify",
-    Delete = "delete"
+    Delete = "delete",
+    Move = "move"
 }
 
 export const ARTIFACT_ACTION_RANK = {
     [ArtifactAction.Create]: 0,
     [ArtifactAction.Modify]: 1,
     [ArtifactAction.Delete]: 2,
+    [ArtifactAction.Move]: 3,
 };
 
 export function isArtifactAction(value: string): value is ArtifactAction {
@@ -24,5 +26,7 @@ export function artifactActionToCopy(artifactAction: ArtifactAction): string {
             return Copy.ArtifactActionModified;
         case ArtifactAction.Delete:
             return Copy.ArtifactActionDeleted;
+        case ArtifactAction.Move:
+            return Copy.ArtifactActionMoved;
     }
 }

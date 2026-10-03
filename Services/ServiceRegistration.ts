@@ -83,10 +83,10 @@ export function RegisterDependencies() {
     RegisterSingleton<AbortService>(Services.AbortService, new AbortService());
     RegisterSingleton<HTMLService>(Services.HTMLService, new HTMLService());
     RegisterSingleton<SanitiserService>(Services.SanitiserService, new SanitiserService());
+    RegisterSingleton<TemporaryVaultService>(Services.TemporaryVaultService, new TemporaryVaultService());
     RegisterSingleton<DiffService>(Services.DiffService, new DiffService());
     RegisterSingleton<PlanApprovalService>(Services.PlanApprovalService, new PlanApprovalService());
     RegisterSingleton<DocumentValidationService>(Services.DocumentValidationService, new DocumentValidationService());
-    RegisterSingleton<TemporaryVaultService>(Services.TemporaryVaultService, new TemporaryVaultService());
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
     RegisterSingleton<VaultCacheService>(Services.VaultCacheService, new VaultCacheService());
     RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());

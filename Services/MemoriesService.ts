@@ -27,7 +27,7 @@ export class MemoriesService {
     }
 
     public async readMemories(): Promise<string> {
-        const result = await this.fileSystemService.readFilePath(Path.Memories, { allowAccessToPluginRoot: true, requiresConfirmation: false });
+        const result = await this.fileSystemService.readFilePath(Path.Memories, { allowAccessToPluginRoot: true });
 
         if (result instanceof Error) {
             return Copy.MemoriesEmpty;
@@ -42,7 +42,7 @@ export class MemoriesService {
                 [this.maxMemoriesLength.toString(), this.maxMemoriesLineLength.toString()]);
         }
 
-        const result = await this.fileSystemService.writeToFilePath(Path.Memories, newMemories, { allowAccessToPluginRoot: true, requiresConfirmation: false });
+        const result = await this.fileSystemService.writeToFilePath(Path.Memories, newMemories, { allowAccessToPluginRoot: true });
         return result instanceof Error ? result : Copy.MemoriesUpdatedSuccess;
     }
 

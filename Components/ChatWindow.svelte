@@ -24,6 +24,7 @@
 	import { Artifact } from "Conversations/Artifact";
 	import { ConversationContent } from "Conversations/ConversationContent";
 	import { Role } from "Enums/Role";
+	import { ArtifactAction } from "Enums/ArtifactAction";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);
@@ -139,13 +140,21 @@
         }
       },
       onArtifactProduced: (artifact: Artifact) => {
-        const collectedArtifact = collectedArtifacts.find(a => a.filePath === artifact.filePath);
-        if (!collectedArtifact) {
-          collectedArtifacts.push(artifact);
-          return;
+      if (artifact.action === ArtifactAction.Move && artifact.previousPath) {
+        for (const collected of collectedArtifacts) {
+          if (collected.filePath === artifact.previousPath) {
+            collected.filePath = artifact.filePath;
+          }
         }
-        collectedArtifact.updatedContent = artifact.updatedContent;
-      },
+      }
+
+      const collectedArtifact = collectedArtifacts.find(a => a.filePath === artifact.filePath && a.action === artifact.action);
+      if (!collectedArtifact) {
+        collectedArtifacts.push(artifact);
+        return;
+      }
+      collectedArtifact.updatedContent = artifact.updatedContent;
+    },
       onPlanningStarted: () => {
         busyPlanning = true;
       },

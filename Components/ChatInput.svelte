@@ -117,6 +117,10 @@
   });
 
   onDestroy(() => {
+    // focusout isn't guaranteed when the input is torn down while focused
+    if (textareaElement) {
+      restoreDrawerElements(textareaElement);
+    }
     eventService.offref(diffOpenedRef);
     eventService.offref(diffClosedRef);
     eventService.offref(planApprovalOpenedRef);
@@ -580,14 +584,14 @@
 
   function handleFocusIn() {
     if (Platform.isMobile && settingsService.settings.hideDrawerElements) {
-      hideDrawerElements();
+      hideDrawerElements(textareaElement);
     }
   }
 
   function handleFocusOut() {
     searchStateStore.resetSearch();
     if (Platform.isMobile && settingsService.settings.hideDrawerElements) {
-      restoreDrawerElements();
+      restoreDrawerElements(textareaElement);
     }
   }
 </script>

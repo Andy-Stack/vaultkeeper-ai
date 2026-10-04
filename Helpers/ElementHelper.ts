@@ -19,8 +19,8 @@ export function setElementIcon(element: HTMLElement, iconName: string) {
     };
 }
 
-export function hideDrawerElements() {
-    for (const element of getDrawerElements()) {
+export function hideDrawerElements(origin: HTMLElement) {
+    for (const element of getDrawerElements(origin)) {
         if ("vaultKeeperHidden" in element.dataset) continue;
 
         const computed = getComputedStyle(element);
@@ -47,8 +47,8 @@ export function hideDrawerElements() {
     }
 }
 
-export function restoreDrawerElements() {
-    for (const element of getDrawerElements()) {
+export function restoreDrawerElements(origin: HTMLElement) {
+    for (const element of getDrawerElements(origin)) {
         if (!("vaultKeeperHidden" in element.dataset)) continue;
 
         const targetHeight = element.dataset.vaultKeeperHidden ?? "0";
@@ -77,6 +77,11 @@ export function restoreDrawerElements() {
     }
 }
 
-function getDrawerElements(): NodeListOf<HTMLElement> {
-    return activeDocument.querySelectorAll<HTMLElement>(".workspace-drawer-header, .workspace-drawer-tab-options");
+// Only the drawer hosting the origin element, so other drawers (e.g. the file explorer) are never touched
+function getDrawerElements(origin: HTMLElement): HTMLElement[] {
+    const drawer = origin.closest<HTMLElement>(".workspace-drawer");
+    if (!drawer) {
+        return [];
+    }
+    return Array.from(drawer.querySelectorAll<HTMLElement>(".workspace-drawer-header, .workspace-drawer-tab-options"));
 }

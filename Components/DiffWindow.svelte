@@ -245,7 +245,7 @@
 	}
 </script>
 
-<div id="diff-view-grid">
+<div id="diff-view-grid" class="mobile-navbar-clearance">
 	{#if issueCount > 0}
 		<div id="diff-view-banner">
 			{issueCount} continuity issues found in this change.

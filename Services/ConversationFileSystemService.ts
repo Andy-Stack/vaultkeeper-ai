@@ -79,7 +79,8 @@ export class ConversationFileSystemService {
                         action: artifact.action,
                         originalContent: artifact.originalContent,
                         updatedContent: artifact.updatedContent,
-                        artifactPath: artifact.artifactPath
+                        artifactPath: artifact.artifactPath,
+                        previousPath: artifact.previousPath
                     })),
                     attachments: content.attachments.map(att => ({
                         fileName: att.fileName,
@@ -407,7 +408,8 @@ export class ConversationFileSystemService {
                 artifactData.originalContent,
                 artifactData.updatedContent,
                 base64,
-                artifactData.artifactPath
+                artifactData.artifactPath,
+                artifactData.previousPath
             ));
         }
 

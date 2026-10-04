@@ -66,14 +66,16 @@
       <div class="artifacts-container" in:fade={{ duration: 300 }}>
         <span class="artifacts-container-title">{message.artifacts.length} FILES CHANGED</span>
         <div class="artifacts-tally">
-          {#each Object.values(ArtifactAction) as action}
-            {#if artifactTally[action]}
-              <div class="artifact-tally-container">
-                <span class="artifact-tally-ellipse artifact-{action}"></span>
-                <span class="artifact-tally-count">{artifactTally[action]}</span>
-              </div>
-            {/if}
-          {/each}
+          <div class="artifacts-tally-flex">
+            {#each Object.values(ArtifactAction) as action}
+              {#if artifactTally[action]}
+                <div class="artifact-tally-container">
+                  <span class="artifact-tally-ellipse artifact-{action}"></span>
+                  <span class="artifact-tally-count">{artifactTally[action]}</span>
+                </div>
+              {/if}
+            {/each}
+          </div>
         </div>
         <div class="artifacts-list-wrapper">
           <div class="artifacts-list-container" use:artifactsListScrollAction>
@@ -172,10 +174,14 @@
     flex-direction: row;
   }
 
+  .artifacts-tally-flex {
+    display: flex;
+    margin-left: auto;
+  }
+
   .artifact-tally-container {
     display: flex;
     flex-direction: row;
-    margin-left: auto;
     align-items: center;
   }
 
@@ -197,6 +203,10 @@
 
   .artifact-delete {
     background: var(--color-red);
+  }
+
+  .artifact-move {
+    background: var(--color-cyan);
   }
 
   .artifact-tally-count {
@@ -360,6 +370,19 @@
     color: color-mix(
         in srgb,
         var(--color-red) 100%,
+        white 10%
+    );
+  }
+
+  .artifact-action-move {
+    background-color: color-mix(
+        in srgb,
+        var(--color-cyan) 25%,
+        black 20%
+    );
+    color: color-mix(
+        in srgb,
+        var(--color-cyan) 100%,
         white 10%
     );
   }

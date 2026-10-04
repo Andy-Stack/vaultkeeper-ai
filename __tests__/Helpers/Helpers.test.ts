@@ -82,6 +82,50 @@ describe('Helpers', () => {
 		});
 	});
 
+	describe('serialPatch', () => {
+		it('should apply an exact match', () => {
+			const result = StringTools.serialPatch('hello world', [{ old_content: 'world', new_content: 'there' }]);
+			expect(result).toEqual({ result: 'hello there', patched: true, failure: '' });
+		});
+
+		it('should match with differing whitespace', () => {
+			const result = StringTools.serialPatch('a  b\n\tc', [{ old_content: 'a b c', new_content: 'x' }]);
+			expect(result.patched).toBe(true);
+			expect(result.result).toBe('x');
+		});
+
+		it('should apply edits in sequence', () => {
+			const result = StringTools.serialPatch('one two', [
+				{ old_content: 'one', new_content: 'three' },
+				{ old_content: 'three two', new_content: 'done' }
+			]);
+			expect(result.result).toBe('done');
+		});
+
+		it('should replace only the first occurrence by default', () => {
+			const result = StringTools.serialPatch('a a a', [{ old_content: 'a', new_content: 'b' }]);
+			expect(result.result).toBe('b a a');
+		});
+
+		it('should replace all occurrences when replace_all is set', () => {
+			const result = StringTools.serialPatch('a a a', [{ old_content: 'a', new_content: 'b', replace_all: true }]);
+			expect(result.result).toBe('b b b');
+		});
+
+		it('should insert dollar signs in new content literally', () => {
+			const result = StringTools.serialPatch('x', [{ old_content: 'x', new_content: '$$E = mc^2$$ $&' }]);
+			expect(result.result).toBe('$$E = mc^2$$ $&');
+		});
+
+		it('should fail and return the original content when any edit does not match', () => {
+			const result = StringTools.serialPatch('hello world', [
+				{ old_content: 'hello', new_content: 'bye' },
+				{ old_content: 'missing', new_content: 'x' }
+			]);
+			expect(result).toEqual({ result: 'hello world', patched: false, failure: 'missing' });
+		});
+	});
+
 	describe('isValidJson', () => {
 		it('should return true for valid JSON object', () => {
 			expect(StringTools.isValidJson('{"key": "value"}')).toBe(true);

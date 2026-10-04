@@ -85,7 +85,7 @@
     border-radius: 0 0 var(--radius-s) var(--radius-s);
 }
 
-.diff-view-content .d2h-file-header {
+.d2h-wrapper .d2h-file-header {
     display: none;
 }
 
@@ -179,14 +179,4 @@
 .artifact-view-controls .artifact-view-close {
     color: var(--interactive-accent);
     border-color: var(--interactive-accent);
-}
-
-.workspace-leaf-content[data-type="vaultkeeper-ai-artifact-view"] .d2h-file-diff {
-    max-height: calc(100cqh - 37px - 40px);
-}
-
-@media (max-width: 600px) {
-    .workspace-leaf-content[data-type="vaultkeeper-ai-artifact-view"] .d2h-file-diff {
-        max-height: calc(100cqh - 37px - 120px);
-    }
 }

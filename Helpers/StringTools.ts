@@ -146,14 +146,14 @@ export abstract class StringTools {
     /* Helpers */
 
     private static includesWithFlexibleWhiteSpace(content: string, target: string): boolean {
-        return content.includes(target) && !RegexTools.toWhitespaceFlexibleRegex(target).test(content)
+        return content.includes(target) || RegexTools.toWhitespaceFlexibleRegex(target).test(content);
     }
 
     private static replace(content: string, edit: { old_content: string; new_content: string; }): string {
         if (content.includes(edit.old_content)) {
-            content = content.replace(edit.old_content, edit.new_content);
+            content = content.replace(edit.old_content, () => edit.new_content);
         } else {
-            content = content.replace(RegexTools.toWhitespaceFlexibleRegex(edit.old_content), edit.new_content);
+            content = content.replace(RegexTools.toWhitespaceFlexibleRegex(edit.old_content), () => edit.new_content);
         }
         return content;
     }

@@ -21,6 +21,7 @@ import { GenerateFrontmatterPrompt } from "AIPrompts/QuickActionPrompts/Generate
 import { Semaphore } from "Helpers/Semaphore";
 import { SuggestTagsPrompt } from "AIPrompts/QuickActionPrompts/SuggestTagsPrompt";
 import { AIProvider } from "Enums/ApiProvider";
+import { StringTools } from "Helpers/StringTools";
 
 export class QuickActionsDefinitionsService {
 
@@ -58,7 +59,7 @@ export class QuickActionsDefinitionsService {
                 if (selection.length > 0) {
                     const result = await this.performAction(ProofreadPrompt, selection);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [selection], [result], { allowAccessToPluginRoot: false });
+                        await this.patchFile(file, selection, result);
                     }
                 } else {
                     const { body } = splitFrontmatter(content);
@@ -67,7 +68,7 @@ export class QuickActionsDefinitionsService {
                     }
                     const result = await this.performAction(ProofreadPrompt, body);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [body], [result], { allowAccessToPluginRoot: false });
+                        await this.patchFile(file, body, result);
                     }
                 }
             } finally {
@@ -96,7 +97,7 @@ export class QuickActionsDefinitionsService {
                 if (selection.length > 0) {
                     const result = await this.performAction(BeautifyPrompt, selection);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [selection], [result], { allowAccessToPluginRoot: false });
+                        await this.patchFile(file, selection, result);
                     }
                 } else {
                     const { body } = splitFrontmatter(content);
@@ -105,7 +106,7 @@ export class QuickActionsDefinitionsService {
                     }
                     const result = await this.performAction(BeautifyPrompt, body);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [body], [result], { allowAccessToPluginRoot: false });
+                        await this.patchFile(file, body, result);
                     }
                 }
             } finally {
@@ -184,7 +185,7 @@ export class QuickActionsDefinitionsService {
                 if (selection.length > 0) {
                     const result = await this.performAction(prompt, selection);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [selection], [result], { allowAccessToPluginRoot: false });
+                        await this.patchFile(file, selection, result);
                     }
                 } else {
                     const { body } = splitFrontmatter(content);
@@ -193,7 +194,7 @@ export class QuickActionsDefinitionsService {
                     }
                     const result = await this.performAction(prompt, body);
                     if (result) {
-                        await this.fileSystemService.patchFile(file, [body], [result], { allowAccessToPluginRoot: false });
+                        await this.patchFile(file, body, result);
                     }
                 }
             } finally {
@@ -368,6 +369,21 @@ export class QuickActionsDefinitionsService {
         } finally {
             this.semaphore.release();
         }
+    }
+
+    private async patchFile(file: TFile, oldContent: string, newContent: string): Promise<void> {
+        const readResult = await this.fileSystemService.readFile(file, { limitResults: false, allowAccessToPluginRoot: false });
+        if (readResult instanceof Error) {
+            return;
+        }
+
+        const patchResult = StringTools.serialPatch(readResult.content, [{ old_content: oldContent, new_content: newContent }]);
+        if (!patchResult.patched) {
+            this.showNotice("Content changed while the quick action was running, no changes were made", 3000);
+            return;
+        }
+
+        await this.fileSystemService.writeToFile(file, patchResult.result, { allowAccessToPluginRoot: false });
     }
 
     private async performAction(action: string, context: string): Promise<string | null> {

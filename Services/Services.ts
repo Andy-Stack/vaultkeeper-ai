@@ -30,6 +30,7 @@ export class Services {
     static PlanApprovalService = Symbol("PlanApprovalService");
     static MemoriesService = Symbol("MemoriesService");
     static DebugService = Symbol("DebugService");
+    static BottomSheetService = Symbol("BottomSheetService");
 
     // stores
     static SearchStateStore = Symbol("SearchStateStore");

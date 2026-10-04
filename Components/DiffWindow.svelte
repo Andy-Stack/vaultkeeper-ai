@@ -6,7 +6,7 @@
 	import { Services } from "Services/Services";
 	import type { InputService } from "Services/InputService";
 	import type { IVaultChange, TemporaryVaultService } from "Services/TemporaryVaultService";
-	import { basename, dirname } from "path-browserify";
+	import { onDestroy } from "svelte";
 	import { slide } from "svelte/transition";
 	import { DiffState } from "Enums/DiffState";
 	import type { EventService } from "Services/EventService";
@@ -14,6 +14,9 @@
 	import { setElementIcon } from "Helpers/ElementHelper";
 	import { FileEvent } from "Enums/FileEvent";
 	import { Platform } from "obsidian";
+	import { displayState, reviewDoneLabel, vaultChangeFolder, vaultChangeName } from "Helpers/VaultChangeHelper";
+	import type { BottomSheetService, IBottomSheetHandle } from "Services/BottomSheetService";
+	import DiffChangeListSheet from "Components/DiffChangeListSheet.svelte";
 
 	interface DiffRenderOptions {
 		vaultChange: IVaultChange | undefined;
@@ -26,10 +29,12 @@
 	const temporaryVaultService: TemporaryVaultService = Resolve<TemporaryVaultService>(Services.TemporaryVaultService);
 	const eventService: EventService = Resolve<EventService>(Services.EventService);
 	const inputService: InputService = Resolve<InputService>(Services.InputService);
+	const bottomSheetService: BottomSheetService = Resolve<BottomSheetService>(Services.BottomSheetService);
 
 	const isPhone = Platform.isPhone;
 
 	let suggestionElement: HTMLDivElement | undefined;
+	let changeListSheet: IBottomSheetHandle | undefined;
 
 	let vaultChanges: IVaultChange[] = temporaryVaultService.getVaultChanges();
 
@@ -38,7 +43,10 @@
 	let stateCounts = countStates();
 	$: issueCount = report?.issueCount() ?? 0;
 	$: selectedIndex = selectedItem ? vaultChanges.indexOf(selectedItem) : -1;
-	$: doneLabel = stateCounts[DiffState.None] > 0 ? `Decide ${stateCounts[DiffState.None]} more` : "Done";
+	$: doneLabel = reviewDoneLabel(stateCounts[DiffState.None]);
+
+	// The sheet lives on document.body, so it would otherwise outlive this view
+	onDestroy(() => changeListSheet?.close());
 
 	function countStates(): Record<DiffState, number> {
 		const counts: Record<DiffState, number> = {
@@ -59,14 +67,6 @@
 		vaultChanges = [...vaultChanges];
 		selectedItem = selectedItem;
 		stateCounts = countStates();
-	}
-
-	function displayState(vaultChange: IVaultChange): DiffState {
-		if (vaultChange.status === DiffState.Suggestion && vaultChange.suggestion === undefined) {
-			return DiffState.None;
-		}
-
-		return vaultChange.status;
 	}
 
 	function draw(element: HTMLElement, options: DiffRenderOptions) {
@@ -248,12 +248,20 @@
 		eventService.trigger(Event.DiffClosed);
 	}
 
-	function name(vaultChange: IVaultChange): string {
-		return vaultChange.file?.basename ?? basename(vaultChange.newPath ?? "-");
-	}
+	function openChangeList() {
+		changeListSheet = bottomSheetService.show(
+			DiffChangeListSheet,
+			{
+				vaultChanges,
+				selectedItem,
+				onSelect: select,
+				onMarkRemaining: markRemaining,
+				onDone: handleDone
+			},
+			{ label: "Proposed changes" }
+		);
 
-	function path(vaultChange: IVaultChange): string {
-		return vaultChange.file?.parent?.path ?? dirname(vaultChange.newPath ?? "-");
+		void changeListSheet.closed.then(() => changeListSheet = undefined);
 	}
 </script>
 
@@ -273,10 +281,17 @@
 			use:setElementIcon={"chevron-left"}
 			onclick={() => step(-1)}>
 		</button>
-		<div id="diff-view-navigator-center">
-			<span id="diff-view-navigator-count">{selectedIndex + 1} of {vaultChanges.length}</span>
-			<span id="diff-view-navigator-name" class="diff-view-ellipsis-label">{selectedItem ? name(selectedItem) : "-"}</span>
-		</div>
+		<button
+			id="diff-view-navigator-center"
+			class="transparent-button"
+			aria-label="Show all proposed changes"
+			onclick={openChangeList}>
+			<span id="diff-view-navigator-count">
+				{selectedIndex + 1} of {vaultChanges.length}
+				<span id="diff-view-navigator-chevron" use:setElementIcon={"chevron-down"}></span>
+			</span>
+			<span id="diff-view-navigator-name" class="diff-view-ellipsis-label">{selectedItem ? vaultChangeName(selectedItem) : "-"}</span>
+		</button>
 		<button
 			class="diff-view-navigator-step transparent-button"
 			aria-label="Next change"
@@ -296,7 +311,7 @@
 				<div
 					class="diff-view-panel-body-item"
 					class:diff-view-panel-body-item-selected={vaultChange === selectedItem}
-					aria-label={vaultChange.newPath ?? vaultChange.file?.path ?? name(vaultChange)}
+					aria-label={vaultChange.newPath ?? vaultChange.file?.path ?? vaultChangeName(vaultChange)}
 					role="button"
 					tabindex="0"
 					onclick={() => select(vaultChange)}
@@ -309,8 +324,8 @@
 						 class:red={displayState(vaultChange) === DiffState.Rejected}
 						 class:accent={displayState(vaultChange) === DiffState.Suggestion}>
 					 </span>
-					<span class="diff-view-panel-body-item-name diff-view-ellipsis-label">{name(vaultChange)}</span>
-					<span class="diff-view-panel-body-item-path diff-view-ellipsis-label">{path(vaultChange)}</span>
+					<span class="diff-view-panel-body-item-name diff-view-ellipsis-label">{vaultChangeName(vaultChange)}</span>
+					<span class="diff-view-panel-body-item-path diff-view-ellipsis-label">{vaultChangeFolder(vaultChange)}</span>
 					<div class="diff-view-panel-body-item-controls">
 						<button 
 							   class="diff-view-panel-body-item-control suggest" aria-label="Suggest changes"
@@ -361,7 +376,7 @@
 					 class:green={displayState(selectedItem) === DiffState.Accepted}
 					 class:red={displayState(selectedItem) === DiffState.Rejected}
 					 class:accent={displayState(selectedItem) === DiffState.Suggestion}></span>
-				<span id="diff-view-preview-meta-path" class="diff-view-ellipsis-label">{path(selectedItem)}</span>
+				<span id="diff-view-preview-meta-path" class="diff-view-ellipsis-label">{vaultChangeFolder(selectedItem)}</span>
 			</div>
 			{:else}
 			<div id="diff-view-preview-header">
@@ -372,8 +387,8 @@
 					 class:green={displayState(selectedItem) === DiffState.Accepted}
 					 class:red={displayState(selectedItem) === DiffState.Rejected}
 					 class:accent={displayState(selectedItem) === DiffState.Suggestion}></span>
-				<span id="diff-view-preview-header-name" class="diff-view-ellipsis-label">{name(selectedItem)}</span>
-				<span id="diff-view-preview-header-path" class="diff-view-ellipsis-label">{path(selectedItem)}</span>
+				<span id="diff-view-preview-header-name" class="diff-view-ellipsis-label">{vaultChangeName(selectedItem)}</span>
+				<span id="diff-view-preview-header-path" class="diff-view-ellipsis-label">{vaultChangeFolder(selectedItem)}</span>
 				<div id="diff-view-preview-header-controls">
 					<button 
 						id="diff-view-preview-header-control-suggest"
@@ -961,17 +976,29 @@
 		cursor: default;
 	}
 
-	#diff-view-navigator-center {
+	#diff-view-navigator-center.transparent-button {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		min-width: 0;
+		height: auto;
 		padding: var(--size-4-2);
+		color: var(--text-normal);
+		cursor: pointer;
+		border-radius: 0;
 	}
 
 	#diff-view-navigator-count {
+		display: flex;
+		align-items: center;
+		gap: var(--size-2-1);
 		font-size: var(--font-smallest);
 		color: var(--text-muted);
+	}
+
+	#diff-view-navigator-chevron {
+		display: flex;
+		--icon-size: var(--icon-xs);
 	}
 
 	#diff-view-navigator-name {

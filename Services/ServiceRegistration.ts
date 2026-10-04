@@ -16,6 +16,7 @@ import { DebugService } from "./DebugService";
 import { DiffService } from "./DiffService";
 import { EventService } from "./EventService";
 import { PlanApprovalService } from "./PlanApprovalService";
+import { BottomSheetService } from "./BottomSheetService";
 import { FileSystemService } from "./FileSystemService";
 import { HTMLService } from "./HTMLService";
 import { InputService } from "./InputService";
@@ -86,6 +87,7 @@ export function RegisterDependencies() {
     RegisterSingleton<TemporaryVaultService>(Services.TemporaryVaultService, new TemporaryVaultService());
     RegisterSingleton<DiffService>(Services.DiffService, new DiffService());
     RegisterSingleton<PlanApprovalService>(Services.PlanApprovalService, new PlanApprovalService());
+    RegisterSingleton<BottomSheetService>(Services.BottomSheetService, new BottomSheetService());
     RegisterSingleton<DocumentValidationService>(Services.DocumentValidationService, new DocumentValidationService());
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
     RegisterSingleton<VaultCacheService>(Services.VaultCacheService, new VaultCacheService());

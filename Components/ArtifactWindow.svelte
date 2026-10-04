@@ -209,11 +209,11 @@
 					<div class="artifact-view-move-file-paths">
 						<div class="artifact-view-move-file-old-path-container">
 							<span class="artifact-view-move-file-path-prefix">from:</span>
-							<span class="artifact-view-move-file-path">{artifact.previousPath}</span>
+							<span class="artifact-view-move-file-path" title={artifact.previousPath}>{artifact.previousPath}</span>
 						</div>
 						<div class="artifact-view-move-file-new-path-container">
 							<span class="artifact-view-move-file-path-prefix">to:</span>
-							<span class="artifact-view-move-file-path">{artifact.filePath}</span>
+							<span class="artifact-view-move-file-path" title={artifact.filePath}>{artifact.filePath}</span>
 						</div>
 					</div>
 				</div>
@@ -320,6 +320,7 @@
 	.artifact-view-move-file {
 		display: grid;
 		grid-template-rows: 1fr auto auto auto 1fr;
+		grid-template-columns: minmax(0, 1fr);
 		height: 100%;
 		background-color: var(--background-primary);
 	}
@@ -341,7 +342,7 @@
 		grid-row: 4;
 		justify-self: center;
 		display: grid;
-		grid-template-columns: auto 1fr;
+		grid-template-columns: auto minmax(0, 1fr);
 		max-width: 80%;
 	}
 
@@ -382,6 +383,10 @@
 	.artifact-view-move-file-path {
 		font-size: var(--font-smaller);
 		align-self: center;
+		min-width: 0;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.artifact-view-footer {
@@ -401,6 +406,15 @@
 		display: flex;
     	gap: var(--size-4-2);
 		margin-left: auto;
+	}
+
+	:global(.is-mobile) .artifact-view-footer {
+		flex-direction: column;
+		gap: var(--size-4-2);
+	}
+
+	:global(.is-mobile) .artifact-view-footer-label {
+		align-self: stretch;
 	}
 
 	.artifact-view-diff:focus-visible {

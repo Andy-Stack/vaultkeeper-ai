@@ -445,11 +445,11 @@
 					<div id="diff-view-preview-move-file-paths">
 						<div id="diff-view-preview-move-file-old-path-container">
 							<span class="diff-view-preview-move-file-path-prefix">from:</span>
-							<span id="diff-view-preview-move-file-old-path">{selectedItem.oldPath}</span>
+							<span id="diff-view-preview-move-file-old-path" title={selectedItem.oldPath}>{selectedItem.oldPath}</span>
 						</div>
 						<div id="diff-view-preview-move-file-new-path-container">
 							<span class="diff-view-preview-move-file-path-prefix">to:</span>
-							<span id="diff-view-preview-move-file-new-path">{selectedItem.newPath}</span>
+							<span id="diff-view-preview-move-file-new-path" title={selectedItem.newPath}>{selectedItem.newPath}</span>
 						</div>
 					</div>
 				</div>
@@ -834,6 +834,7 @@
 		grid-row: 3;
 		display: grid;
 		grid-template-rows: 1fr auto auto auto 1fr;
+		grid-template-columns: minmax(0, 1fr);
 		height: 100%;
 		border: solid;
 		border-width: 1px;
@@ -861,7 +862,7 @@
 		grid-row: 4;
 		justify-self: center;
 		display: grid;
-		grid-template-columns: auto 1fr;
+		grid-template-columns: auto minmax(0, 1fr);
 		max-width: 80%;
 	}
 
@@ -888,6 +889,10 @@
 	#diff-view-preview-move-file-old-path {
 		font-size: var(--font-smaller);
 		align-self: center;
+		min-width: 0;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	#diff-view-preview-move-file-new-path-container {
@@ -907,6 +912,10 @@
 	#diff-view-preview-move-file-new-path {
 		font-size: var(--font-smaller);
 		align-self: center;
+		min-width: 0;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	#diff-view-preview .d2h-wrapper {

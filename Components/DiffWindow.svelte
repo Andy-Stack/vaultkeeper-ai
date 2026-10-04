@@ -13,6 +13,7 @@
 	import { Event } from "Enums/Event";
 	import { setElementIcon } from "Helpers/ElementHelper";
 	import { FileEvent } from "Enums/FileEvent";
+	import { Platform } from "obsidian";
 
 	interface DiffRenderOptions {
 		vaultChange: IVaultChange | undefined;
@@ -26,14 +27,18 @@
 	const eventService: EventService = Resolve<EventService>(Services.EventService);
 	const inputService: InputService = Resolve<InputService>(Services.InputService);
 
+	const isPhone = Platform.isPhone;
+
 	let suggestionElement: HTMLDivElement | undefined;
 
 	let vaultChanges: IVaultChange[] = temporaryVaultService.getVaultChanges();
-	
+
 	let selectedItem: IVaultChange | undefined = vaultChanges[0];
 
 	let stateCounts = countStates();
 	$: issueCount = report?.issueCount() ?? 0;
+	$: selectedIndex = selectedItem ? vaultChanges.indexOf(selectedItem) : -1;
+	$: doneLabel = stateCounts[DiffState.None] > 0 ? `Decide ${stateCounts[DiffState.None]} more` : "Done";
 
 	function countStates(): Record<DiffState, number> {
 		const counts: Record<DiffState, number> = {
@@ -98,6 +103,13 @@
 		selectedItem = vaultChange;
 		if (suggestionElement) {
 			suggestionElement.textContent = selectedItem.suggestion ?? "";
+		}
+	}
+
+	function step(offset: number) {
+		const vaultChange = vaultChanges[selectedIndex + offset];
+		if (vaultChange) {
+			select(vaultChange);
 		}
 	}
 
@@ -245,13 +257,35 @@
 	}
 </script>
 
-<div id="diff-view-grid" class="mobile-navbar-clearance">
+<div id="diff-view-grid" class="mobile-navbar-clearance" class:diff-view-phone={isPhone}>
 	{#if issueCount > 0}
 		<div id="diff-view-banner">
-			{issueCount} continuity issues found in this change.
+			{issueCount} continuity issues{isPhone ? "." : " found in this change."}
 			<button id="diff-view-banner-link" class="transparent-button" aria-label="View report" onclick={openReport}>View report</button>
 		</div>
 	{/if}
+	{#if isPhone}
+	<div id="diff-view-navigator" class="diff-view-border">
+		<button
+			class="diff-view-navigator-step transparent-button"
+			aria-label="Previous change"
+			disabled={selectedIndex <= 0}
+			use:setElementIcon={"chevron-left"}
+			onclick={() => step(-1)}>
+		</button>
+		<div id="diff-view-navigator-center">
+			<span id="diff-view-navigator-count">{selectedIndex + 1} of {vaultChanges.length}</span>
+			<span id="diff-view-navigator-name" class="diff-view-ellipsis-label">{selectedItem ? name(selectedItem) : "-"}</span>
+		</div>
+		<button
+			class="diff-view-navigator-step transparent-button"
+			aria-label="Next change"
+			disabled={selectedIndex >= vaultChanges.length - 1}
+			use:setElementIcon={"chevron-right"}
+			onclick={() => step(1)}>
+		</button>
+	</div>
+	{:else}
 	<div id="diff-view-panel" class="diff-view-border">
 		<div id="diff-view-panel-header">
 			<span id="diff-view-panel-header-title">Proposed changes</span>
@@ -315,8 +349,21 @@
 				</button>
 		</div>
 	</div>
+	{/if}
 	<div id="diff-view-preview">
 		{#if selectedItem}
+			{#if isPhone}
+			<div id="diff-view-preview-meta">
+				<span
+					 class="diff-view-ellipse"
+					 aria-hidden="true"
+					 class:secondary={displayState(selectedItem) === DiffState.None}
+					 class:green={displayState(selectedItem) === DiffState.Accepted}
+					 class:red={displayState(selectedItem) === DiffState.Rejected}
+					 class:accent={displayState(selectedItem) === DiffState.Suggestion}></span>
+				<span id="diff-view-preview-meta-path" class="diff-view-ellipsis-label">{path(selectedItem)}</span>
+			</div>
+			{:else}
 			<div id="diff-view-preview-header">
 				<span 
 					 id="diff-view-preview-header-ellipse" class="diff-view-ellipse"
@@ -351,6 +398,7 @@
 						</button>
 				</div>
 			</div>
+			{/if}
 			{#if selectedItem.status === DiffState.Suggestion}
 				<div id="diff-view-preview-suggestion" transition:slide>
 					<div
@@ -402,17 +450,44 @@
 		<span class="diff-view-footer-label">{stateCounts[DiffState.Rejected]} rejected</span>
 		<span class="diff-view-ellipse accent" aria-hidden="true"></span>
 		<span class="diff-view-footer-label">{stateCounts[DiffState.Suggestion]} to revise</span>
+		{#if !isPhone}
 		<span class="diff-view-ellipse secondary" aria-hidden="true"></span>
 		<span class="diff-view-footer-label">{stateCounts[DiffState.None]} remaining</span>
-		<button 
+		{/if}
+		<button
 			   id="diff-view-footer-done"
-			   aria-label="Done"
+			   aria-label={doneLabel}
 			   class:diff-view-footer-done-active={stateCounts[DiffState.None] === 0}
 			   disabled={stateCounts[DiffState.None] > 0}
 			   onclick={handleDone}>
-			   Done
+			   {doneLabel}
 			</button>
 	</div>
+	{#if isPhone && selectedItem}
+	<div id="diff-view-actions">
+		<button
+			id="diff-view-actions-suggest"
+			aria-label="Suggest changes"
+			class:diff-view-preview-header-control-suggest-active={selectedItem.status === DiffState.Suggestion}
+			use:setElementIcon={"pencil"}
+			onclick={toggleSuggestion}>
+		</button>
+		<button
+			class="diff-view-actions-button"
+			class:button-red={selectedItem.status === DiffState.Rejected}
+			aria-label="Reject"
+			onclick={handleReject}>
+			Reject
+		</button>
+		<button
+			class="diff-view-actions-button"
+			class:button-green={selectedItem.status === DiffState.Accepted}
+			aria-label="Accept"
+			onclick={handleAccept}>
+			Accept
+		</button>
+	</div>
+	{/if}
 </div>
 
 <style>
@@ -846,6 +921,117 @@
 		border: solid;
 		border-width: 1px;
 		border-color: var(--color-accent);
+	}
+
+	#diff-view-grid.diff-view-phone {
+		grid-template-rows: auto auto 1fr auto auto;
+		grid-template-columns: 1fr;
+	}
+
+	.diff-view-phone #diff-view-banner {
+		grid-column: 1;
+		padding: var(--size-4-2);
+	}
+
+	#diff-view-navigator {
+		grid-row: 2;
+		display: grid;
+		grid-template-columns: auto 1fr auto;
+		background-color: var(--background-primary-alt);
+	}
+
+	.diff-view-navigator-step.diff-view-navigator-step {
+		height: 100%;
+		padding: 0 var(--size-4-4);
+		border-radius: 0;
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+
+	.diff-view-navigator-step:first-child {
+		border-right: 1px solid var(--background-secondary-alt);
+	}
+
+	.diff-view-navigator-step:last-child {
+		border-left: 1px solid var(--background-secondary-alt);
+	}
+
+	.diff-view-navigator-step:disabled {
+		opacity: 0.4;
+		cursor: default;
+	}
+
+	#diff-view-navigator-center {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		min-width: 0;
+		padding: var(--size-4-2);
+	}
+
+	#diff-view-navigator-count {
+		font-size: var(--font-smallest);
+		color: var(--text-muted);
+	}
+
+	#diff-view-navigator-name {
+		max-width: 100%;
+	}
+
+	.diff-view-phone #diff-view-preview {
+		grid-row: 3;
+		grid-column: 1;
+		min-height: 0;
+	}
+
+	#diff-view-preview-meta {
+		grid-row: 1;
+		display: flex;
+		align-items: center;
+		gap: var(--size-4-2);
+		padding: var(--size-4-2) var(--size-4-3);
+		background-color: var(--background-primary-alt);
+		border: 1px solid var(--background-secondary-alt);
+		border-top-left-radius: var(--radius-s);
+		border-top-right-radius: var(--radius-s);
+	}
+
+	#diff-view-preview-meta-path {
+		min-width: 0;
+		font-size: var(--font-smallest);
+		color: var(--text-muted);
+	}
+
+	.diff-view-phone #diff-view-footer {
+		grid-row: 4;
+		grid-column: 1;
+	}
+
+	.diff-view-phone .diff-view-footer-label {
+		margin-left: var(--size-4-1);
+		margin-right: var(--size-4-2);
+	}
+
+	#diff-view-actions {
+		grid-row: 5;
+		display: grid;
+		grid-template-columns: auto 1fr 1fr;
+		gap: var(--size-4-2);
+	}
+
+	#diff-view-actions button {
+		min-height: 44px;
+		box-shadow: none;
+		cursor: pointer;
+		transition: background-color 0.2s ease-out, border-color 0.2s ease-out;
+	}
+
+	#diff-view-actions-suggest {
+		padding: 0 var(--size-4-4);
+	}
+
+	.diff-view-actions-button {
+		font-size: var(--font-ui-medium);
 	}
 
 	.diff-view-ellipsis-label {

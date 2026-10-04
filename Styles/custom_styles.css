@@ -189,18 +189,22 @@ body:not(.is-tablet) .workspace-drawer.mod-right {
    Floating: the bar is lifted by --navbar-bottom-offset. Anchored full screen: the bar sits at bottom: 0 and its
    height already includes the bottom offset as padding. While full screen hides the bar there is nothing to clear.
    Keyboard is subtracted because Obsidian already pads .view-content for it.
+   .view-content already has padding-bottom: max(safe-area-inset-bottom, size-4-8), which covers part of the
+   navbar's footprint, so that is subtracted too (--view-content-bottom-padding mirrors Obsidian's rule).
    Scoped to this plugin's own leaves so it can never apply outside them. */
 .workspace-leaf-content[data-type^="vaultkeeper-ai-"] .mobile-navbar-clearance {
+  --view-content-bottom-padding: max(var(--safe-area-inset-bottom, 0px), var(--size-4-8));
   padding-bottom: max(0px, calc(var(--mobile-navbar-clearance, 0px) - var(--keyboard-height, 0px)));
   transition: padding-bottom 0.3s ease-out;
 }
 
+/* The floating bar is a pill, so leave a little breathing room above it */
 .is-phone.is-floating-nav:not(.is-hidden-nav) .workspace-leaf-content[data-type^="vaultkeeper-ai-"] .mobile-navbar-clearance {
-  --mobile-navbar-clearance: calc(var(--navbar-height, 0px) + var(--navbar-bottom-offset, 0px));
+  --mobile-navbar-clearance: calc(var(--navbar-height, 0px) + var(--navbar-bottom-offset, 0px) + var(--size-4-2) - var(--view-content-bottom-padding));
 }
 
 .is-phone.auto-full-screen:not(.is-floating-nav, .is-hidden-nav) .workspace-leaf-content[data-type^="vaultkeeper-ai-"] .mobile-navbar-clearance {
-  --mobile-navbar-clearance: var(--navbar-height, 0px);
+  --mobile-navbar-clearance: calc(var(--navbar-height, 0px) - var(--view-content-bottom-padding));
 }
 
 .search-trigger {

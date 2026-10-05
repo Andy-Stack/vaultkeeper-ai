@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Diff2HtmlUI, type Diff2HtmlUIConfig } from "diff2html/lib/ui/js/diff2html-ui-base";
 	import type { IDocumentReport } from "../DocumentValidation/IDocumentReport";
-	import { VaultContinuityModal } from "../Modals/VaultContinuityModal";
 	import { Resolve } from "Services/DependencyService";
 	import { Services } from "Services/Services";
 	import type { InputService } from "Services/InputService";
@@ -92,12 +91,6 @@
 				draw(element, newOptions);
 			}
 		};
-	}
-
-	function openReport() {
-		if (report) {
-			new VaultContinuityModal(report).open();
-		}
 	}
 
 	function select(vaultChange: IVaultChange) {
@@ -270,7 +263,6 @@
 	{#if issueCount > 0}
 		<div id="diff-view-banner">
 			{issueCount} continuity issues{isPhone ? "." : " found in this change."}
-			<button id="diff-view-banner-link" class="transparent-button" aria-label="View report" onclick={openReport}>View report</button>
 		</div>
 	{/if}
 	{#if isPhone}
@@ -527,13 +519,6 @@
 		color: var(--text-normal);
 		border-radius: var(--radius-s);
 		font-size: var(--font-smaller);
-	}
-
-	#diff-view-banner-link {
-		color: var(--color-accent-1);
-		text-decoration: underline;
-		padding: 0;
-		cursor: pointer;
 	}
 
 	#diff-view-panel {

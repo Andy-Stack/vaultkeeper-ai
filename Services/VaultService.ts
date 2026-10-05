@@ -9,7 +9,7 @@ import type { SanitiserService } from "./SanitiserService";
 import { FileEvent } from "Enums/FileEvent";
 import { DEFAULT_SETTINGS, type SettingsService } from "./SettingsService";
 import { Exception } from "Helpers/Exception";
-import * as path from "path-browserify";
+import path from "path-browserify";
 import { FileType, isBinaryFile, isDocumentFile, isFileType } from "Enums/FileType";
 import { readDocument, readPDF } from "Helpers/DocumentHelper";
 import { RegexTools } from "Helpers/RegexTools";

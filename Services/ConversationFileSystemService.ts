@@ -71,7 +71,7 @@ export class ConversationFileSystemService {
                     timestamp: content.timestamp.toISOString(),
                     content: content.content,
                     displayContent: content.displayContent,
-                    toolCall: content.toolCall,
+                    toolCalls: content.toolCalls,
                     functionResponse: content.functionResponse,
                     artifacts: content.artifacts.map(artifact => ({
                         filePath: artifact.filePath,
@@ -91,7 +91,6 @@ export class ConversationFileSystemService {
                     references: content.references,
                     shouldDisplayContent: content.shouldDisplayContent,
                     toolId: content.toolId,
-                    thoughtSignature: content.thoughtSignature,
                     errorType: content.errorType
                 }))
         };
@@ -334,14 +333,13 @@ export class ConversationFileSystemService {
                     timestamp: new Date(content.timestamp),
                     content: content.content,
                     displayContent: content.displayContent,
-                    toolCall: content.toolCall,
+                    toolCalls: content.toolCalls,
                     functionResponse: content.functionResponse,
                     artifacts: artifacts,
                     attachments: attachments,
                     references: references,
                     shouldDisplayContent: content.shouldDisplayContent,
                     toolId: content.toolId,
-                    thoughtSignature: content.thoughtSignature,
                     errorType: content.errorType
                 });
             });

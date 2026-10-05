@@ -1,4 +1,4 @@
-import type { AIToolCall } from "AIClasses/AIToolCall";
+import { AIToolCall } from "AIClasses/AIToolCall";
 import type { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIPrompts/IPrompt";
@@ -58,17 +58,17 @@ export abstract class BaseAgent {
     }
 
     protected async runAgentLoop(agentType: AgentType, conversation: Conversation, callbacks: IChatServiceCallbacks,
-        handleToolCall: (toolCall: AIToolCall) => Promise<{ shouldExit: boolean }>
+        handleToolCalls: (toolCalls: AIToolCall[]) => Promise<{ shouldExit: boolean }>
     ): Promise<void> {
         this.debugService?.log("AgentLoop", `Starting ${agentType} agent loop`);
         let response = await this.streamRequestResponse(agentType, this.ensureCorrectConversationStructure(conversation), callbacks);
 
         await this.saveConversation(agentType, conversation);
 
-        while (response.toolCall || response.shouldContinue) {
-            if (response.toolCall) {
-                this.debugService?.log("ToolCall", `${agentType} received function call: ${response.toolCall.name}`);
-                const result = await handleToolCall(response.toolCall);
+        while (response.toolCalls.length > 0 || response.shouldContinue) {
+            if (response.toolCalls.length > 0) {
+                this.debugService?.log("ToolCall", `${agentType} received ${response.toolCalls.length} function call(s): ${response.toolCalls.map(toolCall => toolCall.name).join(", ")}`);
+                const result = await handleToolCalls(response.toolCalls);
                 if (result.shouldExit) {
                     this.debugService?.log("AgentLoop", `${agentType} exiting loop (shouldExit: true)`);
                     await this.saveConversation(agentType, conversation);
@@ -83,6 +83,33 @@ export abstract class BaseAgent {
             await this.saveConversation(agentType, conversation);
         }
         this.debugService?.log("AgentLoop", `${agentType} agent loop completed`);
+    }
+
+    /**
+     * Resolves every call made in a turn, returning a response for each in the order they were called.
+     * Agent-specific tools are resolved by the agent, everything else is performed as a single batch so
+     * that all edits are reviewed in one diff. The batch runs first so agent tools that end the turn
+     * (e.g. completing a task) are answered after the work they summarise.
+     */
+    protected async resolveToolCalls(toolCalls: AIToolCall[], callbacks: IChatServiceCallbacks,
+        isAgentTool: (toolCall: AIToolCall) => boolean,
+        resolveAgentTool: (toolCall: AIToolCall) => Promise<AIToolResponse>
+    ): Promise<AIToolResponse[]> {
+        for (const toolCall of toolCalls) {
+            this.updateThought(toolCall, callbacks);
+        }
+
+        const responses = new Map<AIToolCall, AIToolResponse>();
+
+        const batchToolCalls = toolCalls.filter(toolCall => !isAgentTool(toolCall));
+        const batchResponses = await this.performAITools(batchToolCalls, callbacks);
+        batchToolCalls.forEach((toolCall, index) => responses.set(toolCall, batchResponses[index]));
+
+        for (const toolCall of toolCalls.filter(isAgentTool)) {
+            responses.set(toolCall, await resolveAgentTool(toolCall));
+        }
+
+        return toolCalls.map(toolCall => responses.get(toolCall)!);
     }
 
     protected async requestAgentResponse(agentType: AgentType, conversation: Conversation, callbacks: IChatServiceCallbacks): Promise<string> {
@@ -134,16 +161,16 @@ export abstract class BaseAgent {
     }
 
     private async streamRequestResponse(agentType: AgentType, conversation: Conversation, callbacks: IChatServiceCallbacks
-    ): Promise<{ toolCall: AIToolCall | null, shouldContinue: boolean }> {
+    ): Promise<{ toolCalls: AIToolCall[], shouldContinue: boolean }> {
         if (!this.ai) { // this should never happen
-            return { toolCall: null, shouldContinue: false };
+            return { toolCalls: [], shouldContinue: false };
         }
 
         const conversationContent = new ConversationContent({ role: Role.Assistant });
         conversation.contents.push(conversationContent);
 
         let accumulatedContent = "";
-        let capturedToolCall: AIToolCall | null = null;
+        const capturedToolCalls: AIToolCall[] = [];
         let capturedShouldContinue = false;
 
         for await (const chunk of this.ai.streamRequest(conversation)) {
@@ -160,9 +187,11 @@ export abstract class BaseAgent {
                 callbacks.onToolCallStarted(chunk.toolCallStarted);
             }
 
-            if (chunk.toolCall) {
-                this.debugService?.log("ToolCall", `Function call captured: ${chunk.toolCall.name}`);
-                capturedToolCall = chunk.toolCall;
+            if (chunk.toolCalls) {
+                for (const toolCall of chunk.toolCalls) {
+                    this.debugService?.log("ToolCall", `Function call captured: ${toolCall.name}`);
+                }
+                capturedToolCalls.push(...chunk.toolCalls);
             }
 
             if (chunk.shouldContinue) {
@@ -179,19 +208,15 @@ export abstract class BaseAgent {
             }
 
             if (chunk.isComplete) {
-                const sanitizedContent = sanitizeToolCallContent(accumulatedContent, capturedToolCall);
+                const sanitizedContent = sanitizeToolCallContent(accumulatedContent, capturedToolCalls);
 
-                if (sanitizedContent.trim() === "" && !capturedToolCall) {
+                if (sanitizedContent.trim() === "" && capturedToolCalls.length === 0) {
                     conversation.contents.pop();
                 } else {
                     conversationContent.content = sanitizedContent;
-                    if (capturedToolCall) {
-                        conversationContent.toolCall = capturedToolCall.toConversationString();
-                        conversationContent.toolId = capturedToolCall.toolId;
+                    if (capturedToolCalls.length > 0) {
+                        conversationContent.toolCalls = AIToolCall.toConversationString(capturedToolCalls);
                         conversationContent.shouldDisplayContent = sanitizedContent.trim() !== "";
-                        if (capturedToolCall.thoughtSignature) {
-                            conversationContent.thoughtSignature = capturedToolCall.thoughtSignature;
-                        }
                     }
                 }
             }
@@ -205,21 +230,38 @@ export abstract class BaseAgent {
 
         callbacks.onStreamingUpdate();
 
-        return { toolCall: capturedToolCall, shouldContinue: capturedShouldContinue };
+        return { toolCalls: capturedToolCalls, shouldContinue: capturedShouldContinue };
     }
 
-    protected async performAITool(toolCall: AIToolCall, callbacks: IChatServiceCallbacks): Promise<AIToolResponse> {
-        const providerResult = await this.ai?.resolveToolCall?.(toolCall) ?? null;
-        if (providerResult !== null) {
-            return providerResult;
-        }
-        const result = await this.aiToolService.performAITool(toolCall);
-
-        for (const artifact of result.payload.artifacts) {
-            callbacks.onArtifactProduced(artifact);
+    // Returns a response for each call, in call order
+    private async performAITools(toolCalls: AIToolCall[], callbacks: IChatServiceCallbacks): Promise<AIToolResponse[]> {
+        if (toolCalls.length === 0) {
+            return [];
         }
 
-        return result;
+        const responses = new Map<AIToolCall, AIToolResponse>();
+
+        // Provider-level tools (e.g. Mistral web search) are resolved before the tool service
+        for (const toolCall of toolCalls) {
+            const providerResult = await this.ai?.resolveToolCall?.(toolCall) ?? null;
+            if (providerResult !== null) {
+                responses.set(toolCall, providerResult);
+            }
+        }
+
+        const serviceToolCalls = toolCalls.filter(toolCall => !responses.has(toolCall));
+        if (serviceToolCalls.length > 0) {
+            const serviceResponses = await this.aiToolService.performAITool(serviceToolCalls);
+            serviceToolCalls.forEach((toolCall, index) => responses.set(toolCall, serviceResponses[index]));
+
+            for (const response of serviceResponses) {
+                for (const artifact of response.payload.artifacts) {
+                    callbacks.onArtifactProduced(artifact);
+                }
+            }
+        }
+
+        return toolCalls.map(toolCall => responses.get(toolCall)!);
     }
 
     private async withToolCallingDisabled<T>(callback: () => Promise<T>): Promise<T> {

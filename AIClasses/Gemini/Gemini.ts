@@ -5,7 +5,7 @@ import type { Attachment } from "Conversations/Attachment";
 import { Role } from "Enums/Role";
 import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIToolCall } from "AIClasses/AIToolCall";
-import { AITool, fromString as aiToolFromString } from "Enums/AITool";
+import { AITool, fromString as aiToolFromString, isAITool } from "Enums/AITool";
 import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Candidate, Part, FunctionDeclaration } from "@google/genai";
@@ -15,7 +15,7 @@ import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
-import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
+import { parseToolCalls, parseFunctionResponse } from "Helpers/ResponseHelper";
 import type { GeminiRetryInfo, GeminiErrorResponse } from "./GeminiTypes";
 import { replaceCopy } from 'Helpers/Helpers';
 import { Copy } from "Enums/Copy";
@@ -76,9 +76,8 @@ export class Gemini extends BaseAIClass {
     return this.SUPPORTED_MIMETYPES;
   }
 
-  private accumulatedFunctionName: string | null = null;
-  private accumulatedFunctionArgs: Record<string, unknown> = {};
-  private accumulatedThoughtSignature: string | null = null;
+  // Every function call made in the current turn, in the order they arrived
+  private accumulatedToolCalls: { name: string, args: Record<string, unknown>, thoughtSignature?: string }[] = [];
 
   public constructor() {
     super(AIProvider.Gemini);
@@ -86,11 +85,9 @@ export class Gemini extends BaseAIClass {
 
   public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
     // next request should use web search only (gemini api doesn't support custom tooling and grounding at the same time)
-    const requestWebSearch = this.accumulatedFunctionName == AITool.RequestWebSearch;
+    const requestWebSearch = this.accumulatedToolCalls.some(toolCall => isAITool(toolCall.name, AITool.RequestWebSearch));
 
-    this.accumulatedFunctionName = null;
-    this.accumulatedFunctionArgs = {};
-    this.accumulatedThoughtSignature = null;
+    this.accumulatedToolCalls = [];
 
     // Refresh file cache only if conversation has attachments
     if (conversation.hasAttachments()) {
@@ -150,7 +147,7 @@ export class Gemini extends BaseAIClass {
       const data = JSON.parse(chunk) as { candidates?: Candidate[] };
 
       let text = "";
-      let toolCall: AIToolCall | undefined = undefined;
+      let toolCalls: AIToolCall[] | undefined = undefined;
       let toolCallStarted: string | undefined = undefined;
       const candidate = data.candidates?.[0];
 
@@ -160,34 +157,34 @@ export class Gemini extends BaseAIClass {
           text = candidate.content.parts[0].text;
         }
 
-        // Check for function call and accumulate
+        // Accumulate every function call, parallel calls arrive as separate parts
+        // Gemini delivers a whole call - name, args, and finishReason - in a single chunk, so this must NOT short-circuit the finalize logic below
         const parts = candidate.content?.parts || [];
         for (const part of parts) {
-          if (part.functionCall) {
-            // Signal tool call start the first time we see its name
-            // Gemini delivers the whole call - name, args, and finishReason - in a single chunk, so this must NOT short-circuit the finalize logic below
-            if (!this.accumulatedFunctionName && part.functionCall.name) {
-              toolCallStarted = part.functionCall.name;
-            }
+          if (!part.functionCall) {
+            continue;
+          }
 
-            // Accumulate function name
-            if (part.functionCall.name) {
-              this.accumulatedFunctionName = part.functionCall.name;
-            }
+          const lastToolCall = this.accumulatedToolCalls[this.accumulatedToolCalls.length - 1];
 
-            // Accumulate function arguments (merge with existing)
-            if (part.functionCall.args) {
-              this.accumulatedFunctionArgs = {
-                ...this.accumulatedFunctionArgs,
-                ...part.functionCall.args
-              };
-            }
+          if (part.functionCall.name || !lastToolCall) {
+            // Signal tool call start the first time we see a new call in this chunk
+            toolCallStarted ??= part.functionCall.name;
+            this.accumulatedToolCalls.push({
+              name: part.functionCall.name ?? "",
+              args: part.functionCall.args ?? {},
+              thoughtSignature: part.thoughtSignature
+            });
+            continue;
+          }
 
-            // Accumulate thought signature (sibling property on Part)
-            if (part.thoughtSignature) {
-              this.accumulatedThoughtSignature = part.thoughtSignature;
-            }
-            break; // Only handle first function call per chunk
+          // A part without a name continues the previous call (merge with existing)
+          if (part.functionCall.args) {
+            lastToolCall.args = { ...lastToolCall.args, ...part.functionCall.args };
+          }
+          // Thought signature is a sibling property on Part
+          if (part.thoughtSignature) {
+            lastToolCall.thoughtSignature = part.thoughtSignature;
           }
         }
       }
@@ -197,20 +194,22 @@ export class Gemini extends BaseAIClass {
 
       const shouldContinue = isComplete && finishReason !== FinishReason.STOP;
 
-      // If streaming is complete and we have accumulated a function call, return it
-      if (isComplete && this.accumulatedFunctionName) {
-        toolCall = new AIToolCall(
-          aiToolFromString(this.accumulatedFunctionName),
-          this.accumulatedFunctionArgs,
-          undefined,  // toolId not used by Gemini
-          this.accumulatedThoughtSignature || undefined
-        );
+      // If streaming is complete and we have accumulated function calls, return them
+      if (isComplete && this.accumulatedToolCalls.length > 0) {
+        toolCalls = this.accumulatedToolCalls
+          .filter(toolCall => toolCall.name !== "")
+          .map(toolCall => new AIToolCall(
+            aiToolFromString(toolCall.name),
+            toolCall.args,
+            undefined,  // toolId not used by Gemini
+            toolCall.thoughtSignature
+          ));
       }
 
       return {
         content: text,
         isComplete: isComplete,
-        toolCall: toolCall,
+        toolCalls: toolCalls,
         toolCallStarted: toolCallStarted,
         shouldContinue: shouldContinue,
       };
@@ -231,31 +230,35 @@ export class Gemini extends BaseAIClass {
           parts.push({ text: contentToExtract });
         }
 
-        // Add function call if present
-        if (content.toolCall) {
-          const parsedContent = parseToolCall(content.toolCall);
+        // Add every function call made in the turn
+        if (content.toolCalls) {
+          const parsedContent = parseToolCalls(content.toolCalls);
 
           if (parsedContent) {
-            // Check if this is a cross-provider function call (has toolId in the stored format)
-            // Gemini never uses toolId, so presence of toolId indicates Claude/OpenAI origin
-            const isCrossProvider = parsedContent.toolCall.id && parsedContent.toolCall.id.trim() !== "";
+            for (const storedToolCall of parsedContent) {
+              // Check if this is a cross-provider function call (has toolId in the stored format)
+              // Gemini never uses toolId, so presence of toolId indicates Claude/OpenAI origin
+              const isCrossProvider = storedToolCall.toolCall.id && storedToolCall.toolCall.id.trim() !== "";
 
-            if (isCrossProvider) {
-              // Cross-provider function call (from Claude/OpenAI) - use legacy text format
-              parts.push({
-                text: this.convertToolCallToText(parsedContent)
-              });
-            } else {
+              if (isCrossProvider) {
+                // Cross-provider function call (from Claude/OpenAI) - use legacy text format
+                parts.push({
+                  text: this.convertToolCallToText(storedToolCall)
+                });
+                continue;
+              }
+
               // Native Gemini function call - use proper function call format
               const part: Part = {
                 functionCall: {
-                  name: parsedContent.toolCall.name,
-                  args: parsedContent.toolCall.args
+                  name: storedToolCall.toolCall.name,
+                  args: storedToolCall.toolCall.args
                 }
               };
               // Include thoughtSignature if present (optional Gemini feature)
-              if (content.thoughtSignature && content.thoughtSignature.trim() !== "") {
-                part.thoughtSignature = content.thoughtSignature;
+              const thoughtSignature = storedToolCall.toolCall.thoughtSignature;
+              if (thoughtSignature && thoughtSignature.trim() !== "") {
+                part.thoughtSignature = thoughtSignature;
               }
               parts.push(part);
             }
@@ -315,7 +318,9 @@ export class Gemini extends BaseAIClass {
       });
     }
 
-    return results.filter(message => message.parts.length > 0);
+    // Responses for every call in a turn must share a single content
+    return this.mergeConsecutiveRoles(results.filter(message => message.parts.length > 0),
+      (target, source) => target.parts = [...target.parts, ...source.parts]);
   }
 
   protected mapFunctionDefinitions(aiToolDefinitions: IAIToolDefinition[]): FunctionDeclaration[] {

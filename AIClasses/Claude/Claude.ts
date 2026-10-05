@@ -13,7 +13,7 @@ import { Exception } from "Helpers/Exception";
 import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
-import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
+import { parseToolCalls, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { Copy } from "Enums/Copy";
 import { replaceCopy } from 'Helpers/Helpers';
 
@@ -100,7 +100,7 @@ export class Claude extends BaseAIClass {
             const data = JSON.parse(chunk) as RawMessageStreamEvent;
 
             let text = "";
-            let toolCall: AIToolCall | undefined = undefined;
+            let toolCalls: AIToolCall[] | undefined = undefined;
             let isComplete = false;
             let shouldContinue = false;
 
@@ -134,17 +134,18 @@ export class Claude extends BaseAIClass {
                 }
             }
 
-            // Handle content_block_stop - finalize tool calls
+            // Handle content_block_stop - finalize tool calls, each tool_use block in a turn is its own call
             if (data.type === "content_block_stop") {
-                if (this.accumulatedFunctionName && this.accumulatedFunctionArgs) {
+                if (this.accumulatedFunctionName) {
                     try {
-                        const args = JSON.parse(this.accumulatedFunctionArgs) as Record<string, unknown>;
-                        toolCall = new AIToolCall(
+                        // A tool without arguments streams no input deltas
+                        const args = JSON.parse(this.accumulatedFunctionArgs || "{}") as Record<string, unknown>;
+                        toolCalls = [new AIToolCall(
                             aiToolFromString(this.accumulatedFunctionName),
                             args,
                             this.accumulatedFunctionId || undefined,
                             undefined  // thoughtSignature not used by Claude
-                        );
+                        )];
                     } catch (error) {
                         Exception.log(error);
                     }
@@ -173,7 +174,7 @@ export class Claude extends BaseAIClass {
             return {
                 content: text,
                 isComplete: isComplete,
-                toolCall: toolCall,
+                toolCalls: toolCalls,
                 shouldContinue: shouldContinue,
             };
         } catch (error) {
@@ -195,22 +196,22 @@ export class Claude extends BaseAIClass {
                 });
             }
 
-            // Add function call if present
-            if (content.toolCall) {
-                const parsedContent = parseToolCall(content.toolCall);
+            // Add every function call made in the turn
+            if (content.toolCalls) {
+                const parsedContent = parseToolCalls(content.toolCalls);
 
                 if (parsedContent) {
-                    if (parsedContent.toolCall.id && parsedContent.toolCall.id.trim() !== "") {
-                        contentBlocks.push({
-                            type: "tool_use",
-                            id: parsedContent.toolCall.id,
-                            name: parsedContent.toolCall.name,
-                            input: parsedContent.toolCall.args
-                        });
+                    if (parsedContent.every(storedToolCall => storedToolCall.toolCall.id && storedToolCall.toolCall.id.trim() !== "")) {
+                        contentBlocks.push(...parsedContent.map(storedToolCall => ({
+                            type: "tool_use" as const,
+                            id: storedToolCall.toolCall.id,
+                            name: storedToolCall.toolCall.name,
+                            input: storedToolCall.toolCall.args
+                        })));
                     } else {
                         contentBlocks.push({
                             type: "text",
-                            text: this.convertToolCallToText(parsedContent)
+                            text: this.convertToolCallsToText(parsedContent)
                         });
                     }
                 } else {
@@ -269,7 +270,9 @@ export class Claude extends BaseAIClass {
             });
         }
 
-        return results.filter(message => message.content.length > 0);
+        // Results for every call in a turn must share a single user message
+        return this.mergeConsecutiveRoles(results.filter(message => message.content.length > 0),
+            (target, source) => target.content = [...target.content, ...source.content]);
     }
 
     protected mapFunctionDefinitions(aiToolDefinitions: IAIToolDefinition[]): Tool[] {

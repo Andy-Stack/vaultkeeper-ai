@@ -1,7 +1,7 @@
 import { Resolve } from "../DependencyService";
 import { Services } from "../Services";
 import type { FileSystemService } from "../FileSystemService";
-import { AITool, fromString } from "Enums/AITool";
+import { AITool, fromString, isDestructiveAITool } from "Enums/AITool";
 import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
 import { AIToolCall } from "AIClasses/AIToolCall";
 import { AbortService } from "../AbortService";
@@ -23,7 +23,7 @@ import { chatModeAllowsEdits } from "Enums/ChatMode";
 import { Artifact } from "Conversations/Artifact";
 import { basename, extname } from "path-browserify";
 import { ArtifactAction } from "Enums/ArtifactAction";
-import type { IVaultOptions } from "Services/VaultService";
+import type { IVaultChangeResponse, IVaultOptions } from "Services/VaultService";
 import type { IVaultChangeRequest } from "Services/TemporaryVaultService";
 import type { DiffService } from "Services/DiffService";
 import type { SanitiserService } from "Services/SanitiserService";
@@ -45,6 +45,18 @@ import {
     MoveVaultFolderArgsSchema
 } from "AIClasses/Schemas/AIToolSchemas";
 
+interface IPendingChangeRequest {
+    toolCall: AIToolCall;
+    changeRequests: IVaultChangeRequest<TFile>[];
+    failures: object[];
+    // Runs after the diff once every accepted change in the batch has been applied.
+    // The result is merged into the tool response
+    postAction?: () => Promise<Record<string, unknown>>;
+}
+
+// What a destructive tool builds before the tool call is attached
+type PendingChanges = Omit<IPendingChangeRequest, "toolCall">;
+
 export class AIToolService {
 
     private readonly diffService: DiffService;
@@ -55,7 +67,9 @@ export class AIToolService {
     private readonly abortService: AbortService;
     private readonly sanitiserService: SanitiserService;
 
+    // Updates are only allowed after memories were read in an earlier turn, a read in the same batch hasn't been seen by the agent yet
     private lastToolReadMemories: boolean = false;
+    private memoriesReadThisTurn: boolean = false;
 
     public constructor() {
         this.diffService = Resolve<DiffService>(Services.DiffService);
@@ -67,218 +81,260 @@ export class AIToolService {
         this.sanitiserService = Resolve<SanitiserService>(Services.SanitiserService);
     }
 
-    public async performAITool(toolCall: AIToolCall): Promise<AIToolResponse> {
-        
-        // This can happen if the agent hallucinates a legitimate tool call it doesn't currently have access to
-        if (!chatModeAllowsEdits(this.settingsService.settings.chatMode) && AIToolDefinitions.requiresEditModeEnabled(toolCall.name)) {
-            Exception.log(`Invalid tool call: ${toolCall.name}. Agent has hallucinated a legitimate tool call that requires edit mode`);
-            return new AIToolResponse(
-                toolCall.name,
-                new AIToolResponsePayload({ error: `Invalid tool call: ${toolCall.name}. The user has not allowed edits to be made.` }),
-                toolCall.toolId
-            );
-        }
+    public async performAITool(toolCalls: AIToolCall[]): Promise<AIToolResponse[]> {
 
-        if (toolCall.name !== AITool.ReadMemories && toolCall.name !== AITool.UpdateMemories) {
-            this.lastToolReadMemories = false;
-        }
+        const validToolCalls: AIToolCall[] = [];
+        const responses = new Map<AIToolCall, AIToolResponse>();
 
-        return await this.abortService.abortableOperation(async () => {
-            switch (toolCall.name) {
-                case AITool.SearchVaultFiles: {
-                    const parseResult = SearchVaultFilesArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.SearchVaultFiles}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.searchVaultFiles(parseResult.data.search_terms), toolCall.toolId);
-                }
-    
-                case AITool.ReadVaultFiles: {
-                    const parseResult = ReadVaultFilesArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.ReadVaultFiles}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.readVaultFiles(parseResult.data.files), toolCall.toolId);
-                }
-    
-                case AITool.WriteVaultFile: {
-                    const parseResult = WriteVaultFileArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.WriteVaultFile}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.writeVaultFile(parseResult.data.file_path, parseResult.data.content), toolCall.toolId);
-                }
+        this.memoriesReadThisTurn = false;
 
-                case AITool.PatchVaultFile: {
-                    const parseResult = PatchVaultFileArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.PatchVaultFile}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.patchVaultFile(parseResult.data.file_path, parseResult.data.edits), toolCall.toolId);
-                }
-    
-                case AITool.DeleteVaultFiles: {
-                    const parseResult = DeleteVaultFilesArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.DeleteVaultFiles}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.deleteVaultFiles(parseResult.data.file_paths, parseResult.data.confirm_deletion), toolCall.toolId);
-                }
-    
-                case AITool.MoveVaultFiles: {
-                    const parseResult = MoveVaultFilesArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.MoveVaultFiles}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.moveVaultFiles(parseResult.data.source_paths, parseResult.data.destination_paths), toolCall.toolId);
-                }
-
-                case AITool.CreateVaultFolder: {
-                    const parseResult = CreateVaultFolderArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.CreateVaultFolder}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.createVaultFolder(parseResult.data.path), toolCall.toolId);
-                }
-
-                case AITool.DeleteVaultFolder: {
-                    const parseResult = DeleteVaultFolderArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.DeleteVaultFolder}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.deleteVaultFolder(parseResult.data.path, parseResult.data.confirm_deletion), toolCall.toolId);
-                }
-
-                case AITool.MoveVaultFolder: {
-                    const parseResult = MoveVaultFolderArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.MoveVaultFolder}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.moveVaultFolder(parseResult.data.source_path, parseResult.data.destination_path), toolCall.toolId);
-                }
-    
-                case AITool.ListVaultFiles: {
-                    const parseResult = ListVaultFilesArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.ListVaultFiles}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.listVaultFiles(parseResult.data.path, parseResult.data.recursive, parseResult.data.index), toolCall.toolId);
-                }
-
-                case AITool.GetWebViewerContent: {
-                    const parseResult = GetWebViewerContentArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.GetWebViewerContent}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.getWebViewerContent(parseResult.data.format, parseResult.data.url_hint, parseResult.data.index ?? 0), toolCall.toolId);
-                }
-
-                case AITool.ReadMemories: {
-                    const parseResult = ReadMemoriesArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.ReadMemories}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.readMemories(), toolCall.toolId);
-                }
-
-                case AITool.UpdateMemories: {
-                    const parseResult = UpdateMemoriesArgsSchema.safeParse(toolCall.arguments);
-                    if (!parseResult.success) {
-                        return new AIToolResponse(
-                            toolCall.name,
-                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.UpdateMemories}: ${parseResult.error.message}` }),
-                            toolCall.toolId
-                        );
-                    }
-                    return new AIToolResponse(toolCall.name, await this.updateMemories(parseResult.data.content), toolCall.toolId);
-                }
-    
-                // This is only used by gemini
-                case AITool.RequestWebSearch: {
-                    return new AIToolResponse(toolCall.name, new AIToolResponsePayload({}), toolCall.toolId);
-                }
-
-                // Multi-agent functions are handled elsewhere - this shouldn't really ever get hit
-                case AITool.ExecuteWorkflow:
-                case AITool.ContinuePlanExecution:
-                case AITool.SubmitPlan:
-                case AITool.AskUserQuestionPlanning:
-                case AITool.AskUserQuestionExecution:
-                case AITool.CompleteTask:
-                case AITool.CompleteStep:
-                case AITool.SkipStep:
-                case AITool.ReviseStep:
-                case AITool.RevisePlan:
-                case AITool.CompletePlan:
-                case AITool.CancelPlan: {
-                    Exception.log(`Multi-agent function ${toolCall.name} should not be handled by AIToolService`);
-                    return new AIToolResponse(
-                        toolCall.name,
-                        new AIToolResponsePayload({ error: `Failed to execute ${toolCall.name}.` }),
-                        toolCall.toolId
-                    );
-                }
-
-                case AITool.Unknown:
-                default: {
-                    const toolCallName = fromString(toolCall.name);
-                    const error = `Unknown function request ${toolCallName}`
-                    Exception.log(error);
-                    return new AIToolResponse(
-                        toolCallName,
-                        new AIToolResponsePayload({ error: error }),
-                        toolCall.toolId
-                    );
-                }
+        for (const toolCall of toolCalls) {
+            // This can happen if the agent hallucinates a legitimate tool call it doesn't currently have access to
+            if (!chatModeAllowsEdits(this.settingsService.settings.chatMode) && AIToolDefinitions.requiresEditModeEnabled(toolCall.name)) {
+                Exception.log(`Invalid tool call: ${toolCall.name}. Agent has hallucinated a legitimate tool call that requires edit mode`);
+                responses.set(toolCall, new AIToolResponse(
+                    toolCall.name,
+                    new AIToolResponsePayload({ error: `Invalid tool call: ${toolCall.name}. The user has not allowed edits to be made.` }),
+                    toolCall.toolId
+                ));
+                continue;
             }
+
+            validToolCalls.push(toolCall);
+        }
+
+        const { destructiveToolCalls, nonDestructiveToolCalls } = this.sortToolCalls(validToolCalls);
+
+        const signal = this.abortService.signal();
+
+        try {
+            // Reads run before the diff, they were issued alongside any edits so the agent can't expect them to see the changes
+            for (const toolCall of nonDestructiveToolCalls) {
+                responses.set(toolCall, await this.performNonDestructiveAITool(toolCall));
+            }
+
+            if (destructiveToolCalls.length > 0) {
+                await this.abortService.abortableOperation(async () => {
+                    const pendingChangeRequests: IPendingChangeRequest[] = [];
+
+                    for (const toolCall of destructiveToolCalls) {
+                        const pending = await this.buildDestructiveAITool(toolCall);
+                        if (pending instanceof AIToolResponse) {
+                            responses.set(toolCall, pending);
+                        } else {
+                            pendingChangeRequests.push(pending);
+                        }
+                    }
+
+                    const trackedResponses = await this.asTrackedAction(pendingChangeRequests, signal);
+                    trackedResponses.forEach((response, index) => responses.set(pendingChangeRequests[index].toolCall, response));
+                });
+            }
+        } finally {
+            this.lastToolReadMemories = this.memoriesReadThisTurn;
+        }
+
+        // Respond in the order the agent made the calls
+        return toolCalls.flatMap(toolCall => responses.get(toolCall) ?? []);
+    }
+
+    private sortToolCalls(toolCalls: AIToolCall[]): { destructiveToolCalls: AIToolCall[], nonDestructiveToolCalls: AIToolCall[] } {
+        const destructive: AIToolCall[] = [];
+        const nonDestructive: AIToolCall[] = [];
+
+        for (const toolCall of toolCalls) {
+            if (toolCall.name === AITool.CreateVaultFolder) {
+                nonDestructive.push(toolCall);
+            }
+            else if (isDestructiveAITool(toolCall.name)) {
+                destructive.push(toolCall);
+            } else {
+                nonDestructive.push(toolCall);
+            }
+        }
+
+        return { destructiveToolCalls: destructive, nonDestructiveToolCalls: nonDestructive };
+    }
+
+    public async performNonDestructiveAITool(toolCall: AIToolCall): Promise<AIToolResponse> {
+        return await this.abortService.abortableOperation(async () => {
+            if (toolCall.name === AITool.SearchVaultFiles) {
+                const parseResult = SearchVaultFilesArgsSchema.safeParse(toolCall.arguments);
+                if (!parseResult.success) {
+                    return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+                }
+                return new AIToolResponse(toolCall.name, await this.searchVaultFiles(parseResult.data.search_terms), toolCall.toolId);
+            }
+
+            if (toolCall.name === AITool.ReadVaultFiles) {
+                const parseResult = ReadVaultFilesArgsSchema.safeParse(toolCall.arguments);
+                if (!parseResult.success) {
+                    return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+                }
+                return new AIToolResponse(toolCall.name, await this.readVaultFiles(parseResult.data.files), toolCall.toolId);
+            }
+
+            if (toolCall.name === AITool.ListVaultFiles) {
+                const parseResult = ListVaultFilesArgsSchema.safeParse(toolCall.arguments);
+                if (!parseResult.success) {
+                    return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+                }
+                return new AIToolResponse(toolCall.name, await this.listVaultFiles(parseResult.data.path, parseResult.data.recursive, parseResult.data.index), toolCall.toolId);
+            }
+
+            if (toolCall.name === AITool.CreateVaultFolder) {
+                const parseResult = CreateVaultFolderArgsSchema.safeParse(toolCall.arguments);
+                if (!parseResult.success) {
+                    return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+                }
+                return new AIToolResponse(toolCall.name, await this.createVaultFolder(parseResult.data.path), toolCall.toolId);
+            }
+
+            if (toolCall.name === AITool.GetWebViewerContent) {
+                const parseResult = GetWebViewerContentArgsSchema.safeParse(toolCall.arguments);
+                if (!parseResult.success) {
+                    return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+                }
+                return new AIToolResponse(toolCall.name, await this.getWebViewerContent(parseResult.data.format, parseResult.data.url_hint, parseResult.data.index ?? 0), toolCall.toolId);
+            }
+
+            if (toolCall.name === AITool.ReadMemories) {
+                const parseResult = ReadMemoriesArgsSchema.safeParse(toolCall.arguments);
+                if (!parseResult.success) {
+                    return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+                }
+                return new AIToolResponse(toolCall.name, await this.readMemories(), toolCall.toolId);
+            }
+
+            if (toolCall.name === AITool.UpdateMemories) {
+                const parseResult = UpdateMemoriesArgsSchema.safeParse(toolCall.arguments);
+                if (!parseResult.success) {
+                    return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+                }
+                return new AIToolResponse(toolCall.name, await this.updateMemories(parseResult.data.content), toolCall.toolId);
+            }
+
+            // This is only used by gemini
+            if (toolCall.name === AITool.RequestWebSearch) {
+                return new AIToolResponse(toolCall.name, new AIToolResponsePayload({}), toolCall.toolId);
+            }
+
+            // Destructive tools must go through the diff, and multi-agent functions are handled elsewhere
+            if (toolCall.name !== AITool.Unknown && Object.values(AITool).includes(toolCall.name)) {
+                Exception.log(`Function ${toolCall.name} should not be handled as a non-destructive tool`);
+                return new AIToolResponse(
+                    toolCall.name,
+                    new AIToolResponsePayload({ error: `Failed to execute ${toolCall.name}.` }),
+                    toolCall.toolId
+                );
+            }
+
+            const toolCallName = fromString(toolCall.name);
+            const error = `Unknown function request ${toolCallName}`;
+            Exception.log(error);
+            return new AIToolResponse(toolCallName, new AIToolResponsePayload({ error: error }), toolCall.toolId);
+        });
+    }
+
+    private invalidArgumentsResponse(toolCall: AIToolCall, message: string): AIToolResponse {
+        return new AIToolResponse(
+            toolCall.name,
+            new AIToolResponsePayload({ error: `Invalid arguments for ${toolCall.name}: ${message}` }),
+            toolCall.toolId
+        );
+    }
+
+    private async buildDestructiveAITool(toolCall: AIToolCall): Promise<IPendingChangeRequest | AIToolResponse> {
+        if (toolCall.name === AITool.WriteVaultFile) {
+            const parseResult = WriteVaultFileArgsSchema.safeParse(toolCall.arguments);
+            if (!parseResult.success) {
+                return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+            }
+            return { toolCall, ...await this.writeVaultFile(parseResult.data.file_path, parseResult.data.content) };
+        }
+
+        if (toolCall.name === AITool.PatchVaultFile) {
+            const parseResult = PatchVaultFileArgsSchema.safeParse(toolCall.arguments);
+            if (!parseResult.success) {
+                return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+            }
+            return { toolCall, ...await this.patchVaultFile(parseResult.data.file_path, parseResult.data.edits) };
+        }
+
+        if (toolCall.name === AITool.DeleteVaultFiles) {
+            const parseResult = DeleteVaultFilesArgsSchema.safeParse(toolCall.arguments);
+            if (!parseResult.success) {
+                return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+            }
+            return { toolCall, ...await this.deleteVaultFiles(parseResult.data.file_paths, parseResult.data.confirm_deletion) };
+        }
+
+        if (toolCall.name === AITool.MoveVaultFiles) {
+            const parseResult = MoveVaultFilesArgsSchema.safeParse(toolCall.arguments);
+            if (!parseResult.success) {
+                return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+            }
+            return { toolCall, ...await this.moveVaultFiles(parseResult.data.source_paths, parseResult.data.destination_paths) };
+        }
+
+        if (toolCall.name === AITool.DeleteVaultFolder) {
+            const parseResult = DeleteVaultFolderArgsSchema.safeParse(toolCall.arguments);
+            if (!parseResult.success) {
+                return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+            }
+            return { toolCall, ...await this.deleteVaultFolder(parseResult.data.path, parseResult.data.confirm_deletion) };
+        }
+
+        if (toolCall.name === AITool.MoveVaultFolder) {
+            const parseResult = MoveVaultFolderArgsSchema.safeParse(toolCall.arguments);
+            if (!parseResult.success) {
+                return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
+            }
+            return { toolCall, ...await this.moveVaultFolder(parseResult.data.source_path, parseResult.data.destination_path) };
+        }
+
+        Exception.log(`Function ${toolCall.name} should not be handled as a destructive tool`);
+        return new AIToolResponse(
+            toolCall.name,
+            new AIToolResponsePayload({ error: `Failed to execute ${toolCall.name}.` }),
+            toolCall.toolId
+        );
+    }
+
+    // A builder that fails before producing any changes still needs a response, it just has nothing to put in the diff
+    private failedChanges(failure: object): PendingChanges {
+        return { changeRequests: [], failures: [failure] };
+    }
+
+    private async readMemories(): Promise<AIToolResponsePayload> {
+        if (!this.settingsService.settings.enableMemories) {
+            return new AIToolResponsePayload({ error: Copy.MemoriesDisabledError });
+        }
+        this.memoriesReadThisTurn = true;
+        return new AIToolResponsePayload({ memories: await this.memoriesService.readMemories() });
+    }
+
+    private async updateMemories(content: string): Promise<AIToolResponsePayload> {
+        if (!this.settingsService.settings.allowUpdatingMemories) {
+            return new AIToolResponsePayload({ error: Copy.MemoriesUpdatingDisabledError });
+        }
+
+        if (!this.lastToolReadMemories) {
+            return new AIToolResponsePayload({ error: Copy.UpdateMemoriesWithoutReadError });
+        }
+
+        return new AIToolResponsePayload({ result: await this.memoriesService.updateMemories(content) });
+    }
+
+    private async listVaultFiles(path: string, recursive: boolean, index: number | undefined): Promise<AIToolResponsePayload> {
+        const options: IVaultOptions = { primaryIndex: index, recursive: recursive };
+        const contents: { results: TAbstractFile[], nextIndex: number | undefined } = await this.fileSystemService.listDirectoryContents(path, options);
+        return new AIToolResponsePayload({
+            contents: contents.results.map(file => ({
+                type: file instanceof TFile ? "file" : "directory",
+                path: file.path
+            })),
+            nextIndex: contents.nextIndex
         });
     }
 
@@ -369,73 +425,112 @@ export class AIToolService {
         return new AIToolResponsePayload(response, [], attachments);
     }
 
-    private async writeVaultFile(filePath: string, content: string): Promise<AIToolResponsePayload> {
+    private async getWebViewerContent(format: "text" | "screenshot", urlHint?: string, index: number = 0): Promise<AIToolResponsePayload> {
+        if (format === "screenshot") {
+            const screenshot = await this.webViewerService.takeScreenshot(urlHint, true);
+
+            if (urlHint && !screenshot) {
+                return new AIToolResponsePayload({ error: replaceCopy(Copy.WebViewerNoMatchingUrl, [urlHint]) });
+            }
+            if (!screenshot) {
+                return new AIToolResponsePayload({ error: Copy.WebViewerNoOpenView });
+            }
+
+            return new AIToolResponsePayload({ success: true }, [], [new Attachment("screenshot.png", MimeType.IMAGE_PNG, screenshot)]);
+        }
+
+        const result = await this.webViewerService.getWebViewContent(urlHint, index);
+
+        if (urlHint && !result) {
+            return new AIToolResponsePayload({ error: replaceCopy(Copy.WebViewerNoMatchingUrl, [urlHint]) });
+        }
+        if (!result) {
+            return new AIToolResponsePayload({ error: Copy.WebViewerNoOpenView });
+        }
+
+        return new AIToolResponsePayload({ content: result.content, nextIndex: result.nextIndex });
+    }
+
+    private async createVaultFolder(path: string): Promise<AIToolResponsePayload> {
+        const result = await this.fileSystemService.createFolder(path);
+        if (result instanceof Error) {
+            return new AIToolResponsePayload({ path: path, success: false, error: result.message });
+        }
+        return new AIToolResponsePayload({ path: path, success: true });
+    }
+
+    private async writeVaultFile(filePath: string, content: string): Promise<PendingChanges> {
         const file = this.fileSystemService.getFile(filePath);
     
         let oldContent: string | undefined;
         if (file instanceof TFile) {
             const currentContent = await this.fileSystemService.readFile(file, { limitResults: false });
             if (currentContent instanceof Error) {
-                return new AIToolResponsePayload({ error: `Unable to read existing file, no changes have been made: ${Exception.messageFrom(currentContent)}` });
+                return this.failedChanges({ error: `Unable to read existing file, no changes have been made: ${Exception.messageFrom(currentContent)}` });
             }
             oldContent = currentContent.content;
         }
     
-        return await this.asTrackedAction([{
-            oldPath: file instanceof TFile ? filePath : undefined,
-            newPath: filePath,
-            oldContent: oldContent,
-            newContent: content,
-            file: file,
-            changeType: file instanceof TFile ? FileEvent.Modify : FileEvent.Create,
-            changeAction: async () => await this.fileSystemService.writeToFilePath(normalizePath(filePath), content),
-            status: DiffState.None
-        }]);
+        return {
+            changeRequests: [{
+                oldPath: file instanceof TFile ? filePath : undefined,
+                newPath: filePath,
+                oldContent: oldContent,
+                newContent: content,
+                file: file,
+                changeType: file instanceof TFile ? FileEvent.Modify : FileEvent.Create,
+                changeAction: async () => await this.fileSystemService.writeToFilePath(normalizePath(filePath), content),
+                status: DiffState.None
+            }],
+            failures: []
+        };
     }
     
 
-    private async patchVaultFile(filePath: string, edits: { old_content: string; new_content: string; replace_all?: boolean | undefined; }[]): Promise<AIToolResponsePayload> {
+    private async patchVaultFile(filePath: string, edits: { old_content: string; new_content: string; replace_all?: boolean | undefined; }[]): Promise<PendingChanges> {
         const file = this.fileSystemService.getFile(filePath);
 
         if (isBinaryFile(pathExtname(filePath))) {
-            return new AIToolResponsePayload({ error: Exception.new(`Patching ${pathExtname(filePath)} files is not supported`) });
+            return this.failedChanges({ error: `Patching ${pathExtname(filePath)} files is not supported` });
         }
 
         if (!(file instanceof TFile)) {
-            return new AIToolResponsePayload({ error: `Patch failed, file does not exist: ${filePath}` }); 
+            return this.failedChanges({ error: `Patch failed, file does not exist: ${filePath}` }); 
         }
 
         const readResult = await this.fileSystemService.readFile(file, { limitResults: false });
 
         if (readResult instanceof Error) {
-            return new AIToolResponsePayload({ error: Exception.messageFrom(readResult) }); 
+            return this.failedChanges({ error: Exception.messageFrom(readResult) }); 
         }
 
         const patchResult = StringTools.serialPatch(readResult.content, edits);
 
         if (!patchResult.patched) {
-            return new AIToolResponsePayload({ error: `Content to replace was not found in the file, the old content must match exactly. No changes have been made. Unmatched content: "${patchResult.failure}"` });
+            return this.failedChanges({ error: `Content to replace was not found in the file, the old content must match exactly. No changes have been made. Unmatched content: "${patchResult.failure}"` });
         }
 
-        return await this.asTrackedAction([{
-            oldPath: filePath,
-            newPath: filePath,
-            oldContent: readResult instanceof Error ? undefined : readResult?.content,
-            newContent: patchResult.result,
-            file: file,
-            changeType: FileEvent.Modify,
-            changeAction: async () => await this.fileSystemService.writeToFilePath(normalizePath(filePath), patchResult.result),
-            status: DiffState.None
-        }]);
+        return {
+            changeRequests: [{
+                oldPath: filePath,
+                newPath: filePath,
+                oldContent: readResult.content,
+                newContent: patchResult.result,
+                file: file,
+                changeType: FileEvent.Modify,
+                changeAction: async () => await this.fileSystemService.writeToFilePath(normalizePath(filePath), patchResult.result),
+                status: DiffState.None
+            }],
+            failures: []
+        };
     }
 
-    private async deleteVaultFiles(filePaths: string[], confirmation: boolean): Promise<AIToolResponsePayload> {
+    private async deleteVaultFiles(filePaths: string[], confirmation: boolean): Promise<PendingChanges> {
         if (!confirmation) {
-            return new AIToolResponsePayload({ error: "Confirmation was false, no action taken" });
+            return this.failedChanges({ error: "Confirmation was false, no action taken" });
         }
 
-        const { changeRequests, failures } = await this.createDeleteRequests(filePaths);
-        return await this.asTrackedAction(changeRequests, failures);
+        return await this.createDeleteRequests(filePaths);
     }
 
     private async createDeleteRequests(filePaths: string[]): Promise<{ changeRequests: IVaultChangeRequest<TFile>[], failures: object[] }> {
@@ -478,14 +573,13 @@ export class AIToolService {
     }
     
 
-    private async moveVaultFiles(sourcePaths: string[], destinationPaths: string[]): Promise<AIToolResponsePayload> {
+    private async moveVaultFiles(sourcePaths: string[], destinationPaths: string[]): Promise<PendingChanges> {
         if (sourcePaths.length !== destinationPaths.length) {
-            return new AIToolResponsePayload({ error: "Source paths array length does not equal destination paths array length" });
+            return this.failedChanges({ error: "Source paths array length does not equal destination paths array length" });
         }
 
         const moves = sourcePaths.map((source, index) => ({ source: source, destination: destinationPaths[index] }));
-        const { changeRequests, failures } = await this.createMoveRequests(moves);
-        return await this.asTrackedAction(changeRequests, failures);
+        return await this.createMoveRequests(moves);
     }
 
     private async createMoveRequests(moves: { source: string, destination: string }[]): Promise<{ changeRequests: IVaultChangeRequest<TFile>[], failures: object[] }> {
@@ -540,50 +634,44 @@ export class AIToolService {
         return { changeRequests, failures };
     }
 
-    private async createVaultFolder(path: string): Promise<AIToolResponsePayload> {
-        const result = await this.fileSystemService.createFolder(path);
-        if (result instanceof Error) {
-            return new AIToolResponsePayload({ path: path, success: false, error: result.message });
-        }
-        return new AIToolResponsePayload({ path: path, success: true });
-    }
-
-    private async deleteVaultFolder(path: string, confirmation: boolean): Promise<AIToolResponsePayload> {
+    private async deleteVaultFolder(path: string, confirmation: boolean): Promise<PendingChanges> {
         if (!confirmation) {
-            return new AIToolResponsePayload({ error: "Confirmation was false, no action taken" });
+            return this.failedChanges({ error: "Confirmation was false, no action taken" });
         }
 
         const protectedError = `Deletion failed. The folder or its contents may be protected: ${path}`;
 
         if (this.fileSystemService.isExclusion(path) || !(await this.fileSystemService.exists(path))) {
-            return new AIToolResponsePayload({ path: path, success: false, error: `Folder does not exist or is protected: ${path}` });
+            return this.failedChanges({ path: path, success: false, error: `Folder does not exist or is protected: ${path}` });
         }
 
         // Protected files are hidden from listings, so refuse up front rather than trash them unseen with the folder
         if (this.fileSystemService.containsExclusions(path)) {
-            return new AIToolResponsePayload({ path: path, success: false, error: protectedError });
+            return this.failedChanges({ path: path, success: false, error: protectedError });
         }
 
         const files = await this.fileSystemService.listFilesInDirectory(path, { recursive: true });
         const { changeRequests, failures } = await this.createDeleteRequests(files.map(file => file.path));
-        const filesPayload = await this.asTrackedAction(changeRequests, failures);
 
-        // Only remove the folder once every file inside it has been deleted, rejected files keep the folder alive
-        const remainingFiles = await this.fileSystemService.listFilesInDirectory(path, { recursive: true });
-        if (remainingFiles.length > 0) {
-            return new AIToolResponsePayload({ ...filesPayload.response, folder: { path: path, success: false, error: protectedError } },
-                filesPayload.artifacts);
-        }
+        const postAction = async (): Promise<Record<string, unknown>> => {
+            // Only remove the folder once every file inside it has been deleted, rejected files keep the folder alive
+            const remainingFiles = await this.fileSystemService.listFilesInDirectory(path, { recursive: true });
+            if (remainingFiles.length > 0) {
+                return { folder: { path: path, success: false, error: protectedError } };
+            }
 
-        const result = await this.fileSystemService.deleteFolder(path);
-        const folderResult = result.error instanceof Error
-            ? { path: path, success: false, error: result.error.message }
-            : { path: path, success: true };
+            const result = await this.fileSystemService.deleteFolder(path);
+            return {
+                folder: result.error instanceof Error
+                    ? { path: path, success: false, error: result.error.message }
+                    : { path: path, success: true }
+            };
+        };
 
-        return new AIToolResponsePayload({ ...filesPayload.response, folder: folderResult }, filesPayload.artifacts);
+        return { changeRequests, failures, postAction };
     }
 
-    private async moveVaultFolder(sourcePath: string, destinationPath: string): Promise<AIToolResponsePayload> {
+    private async moveVaultFolder(sourcePath: string, destinationPath: string): Promise<PendingChanges> {
         // Paths are mapped by prefix below, so they must match the form Obsidian uses for file paths
         sourcePath = this.sanitiserService.sanitize(sourcePath);
         destinationPath = this.sanitiserService.sanitize(destinationPath);
@@ -591,23 +679,23 @@ export class AIToolService {
         const protectedError = `Move failed. The folder or its contents may be protected: ${sourcePath}`;
 
         if (this.fileSystemService.isExclusion(sourcePath) || this.fileSystemService.isExclusion(destinationPath)) {
-            return new AIToolResponsePayload({ path: destinationPath, success: false, error: protectedError });
+            return this.failedChanges({ path: destinationPath, success: false, error: protectedError });
         }
         if (sourcePath === "/") {
-            return new AIToolResponsePayload({ path: destinationPath, success: false, error: "Move failed as the vault root cannot be moved" });
+            return this.failedChanges({ path: destinationPath, success: false, error: "Move failed as the vault root cannot be moved" });
         }
         if (!this.fileSystemService.getFolder(sourcePath)) {
-            return new AIToolResponsePayload({ path: destinationPath, success: false, error: `Move failed as source folder does not exist: ${sourcePath}` });
+            return this.failedChanges({ path: destinationPath, success: false, error: `Move failed as source folder does not exist: ${sourcePath}` });
         }
         if (await this.fileSystemService.exists(destinationPath)) {
-            return new AIToolResponsePayload({ path: destinationPath, success: false, error: `Move failed as destination already exists: ${destinationPath}` });
+            return this.failedChanges({ path: destinationPath, success: false, error: `Move failed as destination already exists: ${destinationPath}` });
         }
         if (destinationPath === sourcePath || destinationPath.startsWith(`${sourcePath}/`)) {
-            return new AIToolResponsePayload({ path: destinationPath, success: false, error: `Move failed as a folder cannot be moved inside itself: ${destinationPath}` });
+            return this.failedChanges({ path: destinationPath, success: false, error: `Move failed as a folder cannot be moved inside itself: ${destinationPath}` });
         }
         // Protected files are hidden from listings and would be left behind or trashed with the source folder
         if (this.fileSystemService.containsExclusions(sourcePath)) {
-            return new AIToolResponsePayload({ path: destinationPath, success: false, error: protectedError });
+            return this.failedChanges({ path: destinationPath, success: false, error: protectedError });
         }
 
         const toDestination = (path: string) => `${destinationPath}${path.slice(sourcePath.length)}`;
@@ -619,100 +707,75 @@ export class AIToolService {
 
         const files = await this.fileSystemService.listFilesInDirectory(sourcePath, { recursive: true });
         const { changeRequests, failures } = await this.createMoveRequests(files.map(file => ({ source: file.path, destination: toDestination(file.path) })));
-        const filesPayload = await this.asTrackedAction(changeRequests, failures);
 
-        // Only remove the source once every file inside it has moved, rejected files keep the folder alive
-        const remainingFiles = await this.fileSystemService.listFilesInDirectory(sourcePath, { recursive: true });
-        if (remainingFiles.length > 0) {
-            return new AIToolResponsePayload({ ...filesPayload.response, folder: { path: sourcePath, success: false, error: protectedError } },
-                filesPayload.artifacts);
-        }
-
-        for (const folderPath of [destinationPath, ...emptyFolders]) {
-            const createResult = await this.fileSystemService.createFolder(folderPath);
-            if (createResult instanceof Error) {
-                return new AIToolResponsePayload({ ...filesPayload.response, folder: { path: destinationPath, success: false, error: createResult.message } },
-                    filesPayload.artifacts);
-            }
-        }
-
-        const result = await this.fileSystemService.deleteFolder(sourcePath);
-        const folderResult = result.error instanceof Error
-            ? { path: destinationPath, success: false, error: result.error.message }
-            : { path: destinationPath, success: true };
-
-        return new AIToolResponsePayload({ ...filesPayload.response, folder: folderResult }, filesPayload.artifacts);
-    }
-
-    private async listVaultFiles(path: string, recursive: boolean, index: number | undefined): Promise<AIToolResponsePayload> {
-        const options: IVaultOptions = { primaryIndex: index, recursive: recursive };
-        const contents: { results: TAbstractFile[], nextIndex: number | undefined } = await this.fileSystemService.listDirectoryContents(path, options);
-        return new AIToolResponsePayload({
-            contents: contents.results.map(file => ({
-                type: file instanceof TFile ? "file" : "directory",
-                path: file.path
-            })),
-            nextIndex: contents.nextIndex
-        });
-    }
-
-    private async getWebViewerContent(format: "text" | "screenshot", urlHint?: string, index: number = 0): Promise<AIToolResponsePayload> {
-        if (format === "screenshot") {
-            const screenshot = await this.webViewerService.takeScreenshot(urlHint, true);
-
-            if (urlHint && !screenshot) {
-                return new AIToolResponsePayload({ error: replaceCopy(Copy.WebViewerNoMatchingUrl, [urlHint]) });
-            }
-            if (!screenshot) {
-                return new AIToolResponsePayload({ error: Copy.WebViewerNoOpenView });
+        const postAction = async (): Promise<Record<string, unknown>> => {
+            // Only remove the source once every file inside it has moved, rejected files keep the folder alive
+            const remainingFiles = await this.fileSystemService.listFilesInDirectory(sourcePath, { recursive: true });
+            if (remainingFiles.length > 0) {
+                return { folder: { path: sourcePath, success: false, error: protectedError } };
             }
 
-            return new AIToolResponsePayload({ success: true }, [], [new Attachment("screenshot.png", MimeType.IMAGE_PNG, screenshot)]);
-        }
+            for (const folderPath of [destinationPath, ...emptyFolders]) {
+                const createResult = await this.fileSystemService.createFolder(folderPath);
+                if (createResult instanceof Error) {
+                    return { folder: { path: destinationPath, success: false, error: createResult.message } };
+                }
+            }
 
-        const result = await this.webViewerService.getWebViewContent(urlHint, index);
+            const result = await this.fileSystemService.deleteFolder(sourcePath);
+            return {
+                folder: result.error instanceof Error
+                    ? { path: destinationPath, success: false, error: result.error.message }
+                    : { path: destinationPath, success: true }
+            };
+        };
 
-        if (urlHint && !result) {
-            return new AIToolResponsePayload({ error: replaceCopy(Copy.WebViewerNoMatchingUrl, [urlHint]) });
-        }
-        if (!result) {
-            return new AIToolResponsePayload({ error: Copy.WebViewerNoOpenView });
-        }
-
-        return new AIToolResponsePayload({ content: result.content, nextIndex: result.nextIndex });
+        return { changeRequests, failures, postAction };
     }
 
-    private async readMemories(): Promise<AIToolResponsePayload> {
-        if (!this.settingsService.settings.enableMemories) {
-            return new AIToolResponsePayload({ error: Copy.MemoriesDisabledError });
+    private async asTrackedAction(pendingChangeRequests: IPendingChangeRequest[], signal: AbortSignal): Promise<AIToolResponse[]> {
+        signal.throwIfAborted();
+
+        const changeRequests = pendingChangeRequests.flatMap(pending => pending.changeRequests);
+
+        for (const changeRequest of changeRequests) {
+            const changeAction = changeRequest.changeAction;
+            changeRequest.changeAction = async () => {
+                signal.throwIfAborted();
+                return await changeAction();
+            };
         }
-        this.lastToolReadMemories = true;
-        return new AIToolResponsePayload({ memories: await this.memoriesService.readMemories() });
+
+        // Calls with nothing to review (every path failed, empty folders) still need a response and their post action, but an empty diff shouldn't be shown
+        const proposal = changeRequests.length > 0 ? await this.diffService.proposeChanges(changeRequests) : undefined;
+        const changeResponses = proposal?.results ?? [];
+
+        const responses: AIToolResponse[] = [];
+        let offset = 0;
+
+        // Responses come back in request order, so each call's responses are the next slice of the same length
+        for (const pending of pendingChangeRequests) {
+            const pendingResponses = changeResponses.slice(offset, offset += pending.changeRequests.length);
+            const { results, artifacts } = await this.toTrackedResults(pending.changeRequests, pendingResponses);
+
+            const response: Record<string, unknown> = { results: [...pending.failures, ...results] };
+            if (pending.postAction) {
+                signal.throwIfAborted(); // Post actions delete or recreate folders, so they must not run once aborted
+                Object.assign(response, await pending.postAction());
+            }
+            // The report covers the whole batch, so only attach it once
+            if (proposal?.report && responses.length === 0) {
+                response.continuityReport = proposal.report.toString();
+            }
+
+            responses.push(new AIToolResponse(pending.toolCall.name, new AIToolResponsePayload(response, artifacts), pending.toolCall.toolId));
+        }
+
+        return responses;
     }
 
-    private async updateMemories(content: string): Promise<AIToolResponsePayload> {
-        if (!this.settingsService.settings.allowUpdatingMemories) {
-            return new AIToolResponsePayload({ error: Copy.MemoriesUpdatingDisabledError });
-        }
-
-        if (!this.lastToolReadMemories) {
-            return new AIToolResponsePayload({ error: Copy.UpdateMemoriesWithoutReadError });
-        }
-        this.lastToolReadMemories = false;
-
-        return new AIToolResponsePayload({ result: await this.memoriesService.updateMemories(content) });
-    }
-
-    /** Helpers **/
-
-    private async asTrackedAction(changeRequests: IVaultChangeRequest<TFile>[], failures: object[] = []): Promise<AIToolResponsePayload> {
-        if (changeRequests.length === 0) {
-            return new AIToolResponsePayload({ results: failures });
-        }
-    
-        const { results: changeResponses, report } = await this.diffService.proposeChanges(changeRequests);
-    
-        const results: object[] = [...failures];
+    private async toTrackedResults(changeRequests: IVaultChangeRequest<TFile>[], changeResponses: IVaultChangeResponse<TFile>[]): Promise<{ results: object[], artifacts: Artifact[] }> {
+        const results: object[] = [];
         const artifacts: Artifact[] = [];
 
         for (const [index, changeRequest] of changeRequests.entries()) {
@@ -746,7 +809,7 @@ export class AIToolService {
                 changeRequest.base64 ? filePath : changeRequest.oldContent ?? "", postActionContent, changeRequest.base64));
         }
 
-        return new AIToolResponsePayload({ results, ...(report && { continuityReport: report.toString() }) }, artifacts);
+        return { results, artifacts };
     }
 
     private toArtifactAction(changeType: FileEvent): ArtifactAction {

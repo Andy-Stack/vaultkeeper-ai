@@ -6,8 +6,9 @@ import { fromString as aiToolFromString } from "Enums/AITool";
 import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import { Exception } from "Helpers/Exception";
-import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
+import { parseToolCalls, parseFunctionResponse } from "Helpers/ResponseHelper";
 import type {
+    ChatCompletionToolCallDelta,
     ChatCompletionStreamChunk,
     ChatCompletionToolDefinition,
     ChatCompletionMessage,
@@ -26,10 +27,13 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
         return 16384;
     }
 
-    // Accumulation state for streaming tool calls
+    // Accumulation state for streaming tool calls, keyed in the order the calls started
     private accumulatedToolCalls: Map<number, { id: string; name: string; args: string }> = new Map();
-    // Indices for which toolCallStarted has already been emitted this stream
+    // Keys for which toolCallStarted has already been emitted this stream
     private startedToolCalls: Set<number> = new Set();
+    // Maps the index a server sent to the key of the call it is currently streaming
+    private toolCallKeys: Map<number, number> = new Map();
+    private latestToolCallKey: number | undefined = undefined;
 
     public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
         const messages = await this.buildMessages(conversation);
@@ -46,6 +50,8 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
         if (tools.length > 0) {
             requestBody.tools = tools;
             requestBody.tool_choice = this.buildChatCompletionsToolChoice();
+            // Some servers (e.g. llama.cpp) only make parallel calls when asked, servers that can't simply ignore it
+            requestBody.parallel_tool_calls = true;
         }
 
         const headers = {
@@ -65,6 +71,8 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
     private async buildMessages(conversation: Conversation): Promise<ChatCompletionMessage[]> {
         this.accumulatedToolCalls.clear();
         this.startedToolCalls.clear();
+        this.toolCallKeys.clear();
+        this.latestToolCallKey = undefined;
 
         // Refresh file cache only if conversation has attachments
         if (conversation.hasAttachments()) {
@@ -90,7 +98,7 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
             const data = JSON.parse(chunk) as ChatCompletionStreamChunk;
 
             let text = "";
-            let toolCall: AIToolCall | undefined = undefined;
+            let toolCalls: AIToolCall[] | undefined = undefined;
             let isComplete = false;
             let shouldContinue = false;
             let toolCallStarted: string | undefined = undefined;
@@ -109,18 +117,18 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
             // Handle tool call deltas
             if (choice.delta.tool_calls) {
                 for (const tc of choice.delta.tool_calls) {
-                    const index = tc.index ?? 0;
+                    const key = this.resolveToolCallKey(tc);
 
-                    if (!this.accumulatedToolCalls.has(index)) {
+                    if (!this.accumulatedToolCalls.has(key)) {
                         // New tool call starting
-                        this.accumulatedToolCalls.set(index, {
+                        this.accumulatedToolCalls.set(key, {
                             id: tc.id || "",
                             name: tc.function?.name || "",
                             args: tc.function?.arguments || ""
                         });
                     } else {
                         // Accumulate arguments for existing tool call
-                        const existing = this.accumulatedToolCalls.get(index)!;
+                        const existing = this.accumulatedToolCalls.get(key)!;
                         if (tc.id) existing.id = tc.id;
                         if (tc.function?.name) existing.name += tc.function.name;
                         if (tc.function?.arguments) existing.args += tc.function.arguments;
@@ -128,9 +136,9 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
 
                     // Some providers stream the function name fragmented across multiple deltas rather than
                     // whole in the first one, so fire "started" the moment the accumulated name first becomes non-empty.
-                    const accumulated = this.accumulatedToolCalls.get(index)!;
-                    if (!this.startedToolCalls.has(index) && accumulated.name) {
-                        this.startedToolCalls.add(index);
+                    const accumulated = this.accumulatedToolCalls.get(key)!;
+                    if (!this.startedToolCalls.has(key) && accumulated.name) {
+                        this.startedToolCalls.add(key);
                         toolCallStarted = accumulated.name;
                     }
                 }
@@ -143,31 +151,36 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
                 if (choice.finish_reason === this.STOP_REASON_TOOL_CALLS) {
                     shouldContinue = true;
 
-                    // Finalize the first accumulated tool call
-                    // (additional tool calls in a single response are not supported by this plugin's architecture)
-                    const firstToolCall = this.accumulatedToolCalls.get(0);
-                    if (firstToolCall && firstToolCall.name && firstToolCall.args) {
+                    // Finalize every accumulated tool call, in the order they started
+                    toolCalls = [];
+                    for (const accumulatedToolCall of this.accumulatedToolCalls.values()) {
+                        if (!accumulatedToolCall.name) {
+                            continue;
+                        }
                         try {
-                            const args = JSON.parse(firstToolCall.args) as Record<string, unknown>;
-                            toolCall = new AIToolCall(
-                                aiToolFromString(firstToolCall.name),
+                            // A tool without arguments may stream none
+                            const args = JSON.parse(accumulatedToolCall.args || "{}") as Record<string, unknown>;
+                            toolCalls.push(new AIToolCall(
+                                aiToolFromString(accumulatedToolCall.name),
                                 args,
-                                firstToolCall.id || undefined,
+                                accumulatedToolCall.id || undefined,
                                 undefined
-                            );
+                            ));
                         } catch (error) {
                             Exception.log(error);
                         }
                     }
 
                     this.accumulatedToolCalls.clear();
+                    this.toolCallKeys.clear();
+                    this.latestToolCallKey = undefined;
                 }
             }
 
             return {
                 content: text,
                 isComplete: isComplete,
-                toolCall: toolCall,
+                toolCalls: toolCalls,
                 shouldContinue: shouldContinue,
                 toolCallStarted: toolCallStarted
             };
@@ -176,41 +189,66 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
         }
     }
 
+    /**
+     * Resolves which accumulated call a delta belongs to. Local servers vary in how they stream parallel
+     * calls: some omit the index, others reuse index 0 for every call, so a delta that clearly starts a
+     * new call (a different id, or a name after arguments have already streamed) gets a key of its own.
+     */
+    private resolveToolCallKey(delta: ChatCompletionToolCallDelta): number {
+        const currentKey = delta.index !== undefined ? this.toolCallKeys.get(delta.index) : this.latestToolCallKey;
+        const current = currentKey !== undefined ? this.accumulatedToolCalls.get(currentKey) : undefined;
+
+        const startsNewCall = !current
+            || (!!delta.id && !!current.id && delta.id !== current.id)
+            || (!!delta.function?.name && current.args !== "");
+
+        if (currentKey !== undefined && !startsNewCall) {
+            return currentKey;
+        }
+
+        const newKey = this.accumulatedToolCalls.size;
+        if (delta.index !== undefined) {
+            this.toolCallKeys.set(delta.index, newKey);
+        }
+        this.latestToolCallKey = newKey;
+        return newKey;
+    }
+
     protected async extractContents(conversationContent: ConversationContent[]): Promise<ChatCompletionMessage[]> {
         const results: ChatCompletionMessage[] = [];
 
         for (const content of this.filterConversationContents(conversationContent)) {
             const contentToExtract = content.content ?? "";
 
-            // Case 1: Assistant message with tool call
-            if (content.toolCall) {
-                const parsedContent = parseToolCall(content.toolCall);
+            // Case 1: Assistant message with tool calls
+            if (content.toolCalls) {
+                const parsedContent = parseToolCalls(content.toolCalls);
 
                 if (parsedContent) {
                     // A native tool-call id means the call originated from this provider and
                     // can be replayed in the structured format. Otherwise (a call from another
                     // provider, or no id) fall back to legacy text so history stays coherent.
-                    const isNative = parsedContent.toolCall.id
-                        && parsedContent.toolCall.id.trim() !== ""
-                        && this.isNativeToolCallId(parsedContent.toolCall.id);
+                    const isNative = parsedContent.every(storedToolCall => storedToolCall.toolCall.id
+                        && storedToolCall.toolCall.id.trim() !== ""
+                        && this.isNativeToolCallId(storedToolCall.toolCall.id));
 
                     if (isNative) {
-                        // Native function call - use proper function call format
+                        // Native function calls - use proper function call format
                         results.push({
                             role: content.role,
                             content: contentToExtract || "",
-                            tool_calls: [{
-                                id: parsedContent.toolCall.id,
-                                type: "function",
+                            tool_calls: parsedContent.map(storedToolCall => ({
+                                id: storedToolCall.toolCall.id,
+                                type: "function" as const,
                                 function: {
-                                    name: parsedContent.toolCall.name,
-                                    arguments: JSON.stringify(parsedContent.toolCall.args)
+                                    name: storedToolCall.toolCall.name,
+                                    arguments: JSON.stringify(storedToolCall.toolCall.args)
                                 }
-                            }]
+                            }))
                         });
                     } else {
-                        // Cross-provider function call (from Claude/OpenAI) or no id - use legacy text format
-                        const legacyText = this.convertToolCallToText(parsedContent);
+                        // Cross-provider function calls (from Claude/OpenAI) or no id - use legacy text format
+                        const legacyText = this.convertToolCallsToText(parsedContent);
                         const combinedContent = contentToExtract.trim() !== ""
                             ? `${contentToExtract}\n\n${legacyText}`
                             : legacyText;

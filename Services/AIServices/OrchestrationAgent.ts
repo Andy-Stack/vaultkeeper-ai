@@ -19,6 +19,7 @@ import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
 import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
 import type { ExecutionPlan } from "Types/ExecutionPlan";
+import type { AIToolCall } from "AIClasses/AIToolCall";
 
 export class OrchestrationAgent extends BaseAgent {
 
@@ -201,184 +202,29 @@ export class OrchestrationAgent extends BaseAgent {
 
         let orchestrationResult: OrchestrationResult | undefined = undefined;
 
-        await this.runAgentLoop(AgentType.Orchestration, planningConversation, callbacks, async toolCall => {
-            const toolCallName = toolCall.name;
+        await this.runAgentLoop(AgentType.Orchestration, planningConversation, callbacks, async toolCalls => {
+            const responses = await this.resolveToolCalls(toolCalls, callbacks,
+                // Decisions and denials are resolved here, other orchestration tools (e.g. recovery searches) are executed with the batch
+                toolCall => !this.isOrchestrationTool(toolCall) || this.isDecisionTool(toolCall),
+                toolCall => {
+                    if (!this.isOrchestrationTool(toolCall)) {
+                        this.debugService?.log("Orchestration", `Invalid tool call denied: ${toolCall.name}`);
+                        return Promise.resolve(this.toolResponse(toolCall, { message: Copy.OrchestrationToolDenial }));
+                    }
 
-            if (!this.orchestrationTools().some(definition => isAITool(toolCallName, definition.name))) {
-                this.debugService?.log("Orchestration", `Invalid tool call denied: ${toolCallName}`);
-                planningConversation.addFunctionResponse(new AIToolResponse(
-                    toolCallName,
-                    new AIToolResponsePayload({ message: Copy.OrchestrationToolDenial }),
-                    toolCall.toolId
-                ));
-                return Promise.resolve({ shouldExit: false });
-            }
-
-            // Vault tools — execute and continue (for recovery searches)
-            if (isAITool(toolCallName, AITool.SearchVaultFiles) ||
-                isAITool(toolCallName, AITool.ReadVaultFiles) ||
-                isAITool(toolCallName, AITool.ListVaultFiles)) {
-                this.debugService?.log("Orchestration", `Vault tool called for recovery: ${toolCallName}`);
-                this.updateThought(toolCall, callbacks);
-                const toolResponse = await this.performAITool(toolCall, callbacks);
-                planningConversation.addFunctionResponse(toolResponse);
-                return Promise.resolve({ shouldExit: false });
-            }
-
-            if (isAITool(toolCallName, AITool.CompleteStep)) {
-                const parseResult = CompleteStepArgsSchema.safeParse(toolCall.arguments);
-                if (!parseResult.success) {
-                    planningConversation.addFunctionResponse(new AIToolResponse(
-                        toolCallName,
-                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.CompleteStep}: ${parseResult.error.message}` }),
-                        toolCall.toolId
-                    ));
-                    return Promise.resolve({ shouldExit: false });
-                }
-                if (!parseResult.data.confirm_completion) {
-                    planningConversation.addFunctionResponse(new AIToolResponse(
-                        toolCallName,
-                        new AIToolResponsePayload({ error: "Confirmation was false, no action taken" }),
-                        toolCall.toolId
-                    ));
-                    return Promise.resolve({ shouldExit: false });
-                }
-                this.debugService?.log("Orchestration", "CompleteStep called");
-                this.updateThought(toolCall, callbacks);
-                planningConversation.addFunctionResponse(new AIToolResponse(
-                    toolCallName,
-                    new AIToolResponsePayload({ message: "Step completed" }),
-                    toolCall.toolId
-                ));
-                orchestrationResult = new OrchestrationResult({ continue: true, continueContext: parseResult.data.context_for_next_step });
-                return Promise.resolve({ shouldExit: true });
-            }
-
-            if (isAITool(toolCallName, AITool.ReviseStep)) {
-                const parseResult = ReviseStepArgsSchema.safeParse(toolCall.arguments);
-                if (!parseResult.success) {
-                    planningConversation.addFunctionResponse(new AIToolResponse(
-                        toolCallName,
-                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.ReviseStep}: ${parseResult.error.message}` }),
-                        toolCall.toolId
-                    ));
-                    return Promise.resolve({ shouldExit: false });
-                }
-                this.debugService?.log("Orchestration", "ReviseStep called");
-                this.updateThought(toolCall, callbacks);
-                planningConversation.addFunctionResponse(new AIToolResponse(
-                    toolCallName,
-                    new AIToolResponsePayload({ message: "Step revision accepted — retrying" }),
-                    toolCall.toolId
-                ));
-                orchestrationResult = new OrchestrationResult({
-                    reviseStep: true,
-                    revisedDescription: parseResult.data.revised_description,
-                    revisedInstruction: parseResult.data.revised_instruction,
-                    revisedContext: parseResult.data.revised_context
+                    const decision = this.resolveDecision(toolCall);
+                    if (decision.result && orchestrationResult) {
+                        return Promise.resolve(this.toolResponse(toolCall, { error: "Only one orchestration decision can be made per turn, this call was ignored." }));
+                    }
+                    if (decision.result) {
+                        this.debugService?.log("Orchestration", `${toolCall.name} called`);
+                        orchestrationResult = decision.result;
+                    }
+                    return Promise.resolve(decision.response);
                 });
-                return Promise.resolve({ shouldExit: true });
-            }
 
-            if (isAITool(toolCallName, AITool.RevisePlan)) {
-                const parseResult = RevisePlanArgsSchema.safeParse(toolCall.arguments);
-                if (!parseResult.success) {
-                    planningConversation.addFunctionResponse(new AIToolResponse(
-                        toolCallName,
-                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.RevisePlan}: ${parseResult.error.message}` }),
-                        toolCall.toolId
-                    ));
-                    return Promise.resolve({ shouldExit: false });
-                }
-                this.debugService?.log("Orchestration", `RevisePlan called — ${parseResult.data.steps.length} new step(s)`);
-                this.updateThought(toolCall, callbacks);
-                planningConversation.addFunctionResponse(new AIToolResponse(
-                    toolCallName,
-                    new AIToolResponsePayload({ message: `Plan revised with ${parseResult.data.steps.length} remaining step(s)` }),
-                    toolCall.toolId
-                ));
-                orchestrationResult = new OrchestrationResult({
-                    revisePlan: true,
-                    revisedSteps: parseResult.data.steps
-                });
-                return Promise.resolve({ shouldExit: true });
-            }
-
-            if (isAITool(toolCallName, AITool.SkipStep)) {
-                const parseResult = SkipStepArgsSchema.safeParse(toolCall.arguments);
-                if (!parseResult.success) {
-                    planningConversation.addFunctionResponse(new AIToolResponse(
-                        toolCallName,
-                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.SkipStep}: ${parseResult.error.message}` }),
-                        toolCall.toolId
-                    ));
-                    return Promise.resolve({ shouldExit: false });
-                }
-                this.debugService?.log("Orchestration", `SkipStep called — ${parseResult.data.reason}`);
-                this.updateThought(toolCall, callbacks);
-                planningConversation.addFunctionResponse(new AIToolResponse(
-                    toolCallName,
-                    new AIToolResponsePayload({ message: "Step skipped" }),
-                    toolCall.toolId
-                ));
-                orchestrationResult = new OrchestrationResult({
-                    skipStep: true,
-                    skipReason: parseResult.data.reason
-                });
-                return Promise.resolve({ shouldExit: true });
-            }
-
-            if (isAITool(toolCallName, AITool.CompletePlan)) {
-                const parseResult = CompletePlanArgsSchema.safeParse(toolCall.arguments);
-                if (!parseResult.success) {
-                    planningConversation.addFunctionResponse(new AIToolResponse(
-                        toolCallName,
-                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.CompletePlan}: ${parseResult.error.message}` }),
-                        toolCall.toolId
-                    ));
-                    return Promise.resolve({ shouldExit: false });
-                }
-                if (!parseResult.data.confirm_completion) {
-                    planningConversation.addFunctionResponse(new AIToolResponse(
-                        toolCallName,
-                        new AIToolResponsePayload({ error: "Confirmation was false, no action taken" }),
-                        toolCall.toolId
-                    ));
-                    return Promise.resolve({ shouldExit: false });
-                }
-                this.debugService?.log("Orchestration", "CompletePlan called");
-                this.updateThought(toolCall, callbacks);
-                planningConversation.addFunctionResponse(new AIToolResponse(
-                    toolCallName,
-                    new AIToolResponsePayload({ message: "Plan completed" }),
-                    toolCall.toolId
-                ));
-                orchestrationResult = new OrchestrationResult({ complete: true });
-                return Promise.resolve({ shouldExit: true });
-            }
-
-            if (isAITool(toolCallName, AITool.CancelPlan)) {
-                const parseResult = CancelPlanArgsSchema.safeParse(toolCall.arguments);
-                if (!parseResult.success) {
-                    planningConversation.addFunctionResponse(new AIToolResponse(
-                        toolCallName,
-                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.CancelPlan}: ${parseResult.error.message}` }),
-                        toolCall.toolId
-                    ));
-                    return Promise.resolve({ shouldExit: false });
-                }
-                this.debugService?.log("Orchestration", `CancelPlan called — ${parseResult.data.context}`);
-                this.updateThought(toolCall, callbacks);
-                planningConversation.addFunctionResponse(new AIToolResponse(
-                    toolCallName,
-                    new AIToolResponsePayload({ message: "Plan cancelled" }),
-                    toolCall.toolId
-                ));
-                orchestrationResult = new OrchestrationResult({ abort: true, abortContext: parseResult.data.context });
-                return Promise.resolve({ shouldExit: true });
-            }
-
-            return Promise.resolve({ shouldExit: false });
+            planningConversation.addFunctionResponses(responses);
+            return { shouldExit: orchestrationResult !== undefined };
         });
 
         if (!orchestrationResult) {
@@ -390,6 +236,117 @@ export class OrchestrationAgent extends BaseAgent {
             return await this.runOrchestrationAgentLoop(planningConversation, callbacks);
         }
         return orchestrationResult;
+    }
+
+    private isOrchestrationTool(toolCall: AIToolCall): boolean {
+        return this.orchestrationTools().some(definition => isAITool(toolCall.name, definition.name));
+    }
+
+    private isDecisionTool(toolCall: AIToolCall): boolean {
+        return isAITool(toolCall.name, AITool.CompleteStep) ||
+            isAITool(toolCall.name, AITool.ReviseStep) ||
+            isAITool(toolCall.name, AITool.RevisePlan) ||
+            isAITool(toolCall.name, AITool.SkipStep) ||
+            isAITool(toolCall.name, AITool.CompletePlan) ||
+            isAITool(toolCall.name, AITool.CancelPlan);
+    }
+
+    // Resolves an orchestration decision tool, the result is only present when the decision was accepted
+    private resolveDecision(toolCall: AIToolCall): { response: AIToolResponse, result?: OrchestrationResult } {
+        const toolCallName: string = toolCall.name;
+        const invalidArguments = (message: string) => ({
+            response: this.toolResponse(toolCall, { error: `Invalid arguments for ${toolCall.name}: ${message}` })
+        });
+        const unconfirmed = () => ({
+            response: this.toolResponse(toolCall, { error: "Confirmation was false, no action taken" })
+        });
+
+        if (isAITool(toolCall.name, AITool.CompleteStep)) {
+            const parseResult = CompleteStepArgsSchema.safeParse(toolCall.arguments);
+            if (!parseResult.success) {
+                return invalidArguments(parseResult.error.message);
+            }
+            if (!parseResult.data.confirm_completion) {
+                return unconfirmed();
+            }
+            return {
+                response: this.toolResponse(toolCall, { message: "Step completed" }),
+                result: new OrchestrationResult({ continue: true, continueContext: parseResult.data.context_for_next_step })
+            };
+        }
+
+        if (isAITool(toolCall.name, AITool.ReviseStep)) {
+            const parseResult = ReviseStepArgsSchema.safeParse(toolCall.arguments);
+            if (!parseResult.success) {
+                return invalidArguments(parseResult.error.message);
+            }
+            return {
+                response: this.toolResponse(toolCall, { message: "Step revision accepted — retrying" }),
+                result: new OrchestrationResult({
+                    reviseStep: true,
+                    revisedDescription: parseResult.data.revised_description,
+                    revisedInstruction: parseResult.data.revised_instruction,
+                    revisedContext: parseResult.data.revised_context
+                })
+            };
+        }
+
+        if (isAITool(toolCall.name, AITool.RevisePlan)) {
+            const parseResult = RevisePlanArgsSchema.safeParse(toolCall.arguments);
+            if (!parseResult.success) {
+                return invalidArguments(parseResult.error.message);
+            }
+            this.debugService?.log("Orchestration", `RevisePlan — ${parseResult.data.steps.length} new step(s)`);
+            return {
+                response: this.toolResponse(toolCall, { message: `Plan revised with ${parseResult.data.steps.length} remaining step(s)` }),
+                result: new OrchestrationResult({ revisePlan: true, revisedSteps: parseResult.data.steps })
+            };
+        }
+
+        if (isAITool(toolCall.name, AITool.SkipStep)) {
+            const parseResult = SkipStepArgsSchema.safeParse(toolCall.arguments);
+            if (!parseResult.success) {
+                return invalidArguments(parseResult.error.message);
+            }
+            this.debugService?.log("Orchestration", `SkipStep — ${parseResult.data.reason}`);
+            return {
+                response: this.toolResponse(toolCall, { message: "Step skipped" }),
+                result: new OrchestrationResult({ skipStep: true, skipReason: parseResult.data.reason })
+            };
+        }
+
+        if (isAITool(toolCall.name, AITool.CompletePlan)) {
+            const parseResult = CompletePlanArgsSchema.safeParse(toolCall.arguments);
+            if (!parseResult.success) {
+                return invalidArguments(parseResult.error.message);
+            }
+            if (!parseResult.data.confirm_completion) {
+                return unconfirmed();
+            }
+            return {
+                response: this.toolResponse(toolCall, { message: "Plan completed" }),
+                result: new OrchestrationResult({ complete: true })
+            };
+        }
+
+        if (isAITool(toolCall.name, AITool.CancelPlan)) {
+            const parseResult = CancelPlanArgsSchema.safeParse(toolCall.arguments);
+            if (!parseResult.success) {
+                return invalidArguments(parseResult.error.message);
+            }
+            this.debugService?.log("Orchestration", `CancelPlan — ${parseResult.data.context}`);
+            return {
+                response: this.toolResponse(toolCall, { message: "Plan cancelled" }),
+                result: new OrchestrationResult({ abort: true, abortContext: parseResult.data.context })
+            };
+        }
+
+        Exception.log(`Function ${toolCallName} is not an orchestration decision`);
+        return { response: this.toolResponse(toolCall, { error: `Failed to execute ${toolCallName}.` }) };
+    }
+
+    private toolResponse(toolCall: AIToolCall, response: object): AIToolResponse {
+        return new AIToolResponse(toolCall.name, new AIToolResponsePayload(response), toolCall.toolId);
     }
 
     private preparePlanRequest(input: ExecuteWorkflowArgs): string {

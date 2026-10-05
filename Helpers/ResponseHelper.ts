@@ -3,10 +3,14 @@ import type { StoredToolCall, StoredFunctionResponse } from "AIClasses/Schemas/A
 import { StringTools } from "./StringTools";
 import { Exception } from "./Exception";
 
-// handle the rare event where a function call is also included in content (gemini sometimes does this)
-export function sanitizeToolCallContent(content: string, toolCall: AIToolCall | null): string {
+// handle the rare event where function calls are also included in content (gemini sometimes does this)
+export function sanitizeToolCallContent(content: string, toolCalls: AIToolCall[]): string {
+    return toolCalls.reduce((sanitized, toolCall) => sanitizeSingleToolCallContent(sanitized, toolCall), content);
+}
+
+function sanitizeSingleToolCallContent(content: string, toolCall: AIToolCall): string {
     // Early returns for simple cases
-    if (!toolCall || !content.trim()) {
+    if (!content.trim()) {
         return content;
     }
 
@@ -62,13 +66,14 @@ export function sanitizeToolCallContent(content: string, toolCall: AIToolCall | 
     return sanitized;
 }
 
-export function parseToolCall(toolCallJson: string): StoredToolCall | null {
-    if (!StringTools.isValidJson(toolCallJson)) {
-        Exception.log(`Invalid JSON in toolCall field:\n${toolCallJson}`);
+// Parses every call stored on an assistant's conversation content
+export function parseToolCalls(toolCallsJson: string): StoredToolCall[] | null {
+    if (!StringTools.isValidJson(toolCallsJson)) {
+        Exception.log(`Invalid JSON in toolCalls field:\n${toolCallsJson}`);
         return null;
     }
     try {
-        return JSON.parse(toolCallJson) as StoredToolCall;
+        return JSON.parse(toolCallsJson) as StoredToolCall[];
     } catch (error) {
         Exception.log(error);
         return null;

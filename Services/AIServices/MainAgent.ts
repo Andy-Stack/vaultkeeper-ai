@@ -5,9 +5,8 @@ import { Exception } from "Helpers/Exception";
 import { AITool, isAITool } from "Enums/AITool";
 import { AgentType } from "Enums/AgentType";
 import { BaseAgent } from "./BaseAgent";
-import { ExecuteWorkflowArgsSchema, type ExecuteWorkflowArgs } from "AIClasses/Schemas/AIToolSchemas";
+import { ExecuteWorkflowArgsSchema } from "AIClasses/Schemas/AIToolSchemas";
 import { AIToolResponse } from "AIClasses/ToolDefinitions/AIToolResponse";
-import type { AIToolCall } from "AIClasses/AIToolCall";
 import { OrchestrationAgent } from "./OrchestrationAgent";
 import { ConversationContent } from "Conversations/ConversationContent";
 import { Role } from "Enums/Role";
@@ -31,59 +30,46 @@ export class MainAgent extends BaseAgent {
             }));
         }
 
-        let result = await this.runMainAgentLoop(conversation, callbacks);
+        let workflowExecuted = false;
 
-        while (result.planRequest && result.toolCall) {
-            this.debugService?.log("MainAgent", "Spawning OrchestrationAgent for planned workflow");
-            const orchestrationAgent = new OrchestrationAgent();
-            orchestrationAgent.resolveAIProvider();
-            const workflowResult = await orchestrationAgent.runPlannedWorkflow(result.planRequest, callbacks);
-            this.debugService?.log("MainAgent", "OrchestrationAgent workflow completed");
+        await this.runAgentLoop(AgentType.Main, conversation, callbacks, async toolCalls => {
+            const responses = await this.resolveToolCalls(toolCalls, callbacks,
+                toolCall => isAITool(toolCall.name, AITool.ExecuteWorkflow),
+                async toolCall => {
+                    const parseResult = ExecuteWorkflowArgsSchema.safeParse(toolCall.arguments);
+                    if (!parseResult.success) {
+                        return new AIToolResponse(
+                            toolCall.name,
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.ExecuteWorkflow}: ${parseResult.error.message}` }),
+                            toolCall.toolId
+                        );
+                    }
+                    if (workflowExecuted) {
+                        return new AIToolResponse(
+                            toolCall.name,
+                            new AIToolResponsePayload({ error: `${AITool.ExecuteWorkflow} was already called this turn, only one workflow can run at a time. This call was ignored.` }),
+                            toolCall.toolId
+                        );
+                    }
+                    workflowExecuted = true;
 
-            conversation.addFunctionResponse(new AIToolResponse(
-                result.toolCall.name,
-                workflowResult,
-                result.toolCall.toolId
-            ));
+                    // The workflow is answered alongside any other calls from this turn, so it runs inline
+                    this.debugService?.log("MainAgent", "Spawning OrchestrationAgent for planned workflow");
+                    const orchestrationAgent = new OrchestrationAgent();
+                    orchestrationAgent.resolveAIProvider();
+                    const workflowResult = await orchestrationAgent.runPlannedWorkflow(parseResult.data, callbacks);
+                    this.debugService?.log("MainAgent", "OrchestrationAgent workflow completed");
 
-            await this.setAgentPromptAndTools(chatMode);
-            result = await this.runMainAgentLoop(conversation, callbacks);
-        }
-    }
+                    // The orchestration agents share the AI provider, so restore the main agent's configuration
+                    await this.setAgentPromptAndTools(chatMode);
 
-    // the main agent loop - may return an execution plan if the agent has requested a planned workflow
-    private async runMainAgentLoop(conversation: Conversation, callbacks: IChatServiceCallbacks
-    ): Promise<{ planRequest: ExecuteWorkflowArgs | undefined, toolCall: AIToolCall | undefined }> {
-        
-        let planRequest: ExecuteWorkflowArgs | undefined;
-        let planToolCall: AIToolCall | undefined;
+                    return new AIToolResponse(toolCall.name, workflowResult, toolCall.toolId);
+                });
 
-        await this.runAgentLoop(AgentType.Main, conversation, callbacks, async toolCall => {
-            const toolCallName = toolCall.name;
-            if (isAITool(toolCallName, AITool.ExecuteWorkflow)) {
-                this.debugService?.log("MainAgent", "ExecuteWorkflow function detected - transitioning to orchestration");
-                const parseResult = ExecuteWorkflowArgsSchema.safeParse(toolCall.arguments);
-                if (!parseResult.success) {
-                    conversation.addFunctionResponse(new AIToolResponse(
-                        toolCallName,
-                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.ExecuteWorkflow}: ${parseResult.error.message}` }),
-                        toolCall.toolId
-                    ));
-                    return { shouldExit: false };
-                }
-                planRequest = parseResult.data;
-                planToolCall = toolCall;
-                this.updateThought(toolCall, callbacks);
-                return { shouldExit: true };
-            }
-
-            this.debugService?.log("MainAgent", `Executing function: ${toolCall.name}`);
-            this.updateThought(toolCall, callbacks);
-            const functionResponse = await this.performAITool(toolCall, callbacks);
-            conversation.addFunctionResponse(functionResponse);
+            workflowExecuted = false;
+            conversation.addFunctionResponses(responses);
             return { shouldExit: false };
         });
-        return { planRequest: planRequest, toolCall: planToolCall };
     }
 
     private async setAgentPromptAndTools(chatMode: ChatMode): Promise<void> {

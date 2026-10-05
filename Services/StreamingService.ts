@@ -13,7 +13,7 @@ export interface IStreamChunk {
   isComplete: boolean;
   error?: string;
   errorType?: ApiErrorType;
-  toolCall?: AIToolCall;
+  toolCalls?: AIToolCall[];
   toolCallStarted?: string;
   shouldContinue?: boolean;
 }

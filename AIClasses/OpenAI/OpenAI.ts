@@ -13,7 +13,7 @@ import { ApiErrorType } from "Types/ApiError";
 import { MimeType, toMimeType } from "Enums/MimeType";
 import { isTextFile } from "Enums/FileType";
 import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
-import { parseToolCall, parseFunctionResponse } from "Helpers/ResponseHelper";
+import { parseToolCalls, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { replaceCopy } from 'Helpers/Helpers';
 import { Copy } from "Enums/Copy";
 
@@ -81,7 +81,7 @@ export class OpenAI extends BaseAIClass {
             const event = JSON.parse(chunk) as ResponseEvent;
 
             let text = "";
-            let toolCall: AIToolCall | undefined = undefined;
+            let toolCalls: AIToolCall[] | undefined = undefined;
             let isComplete = false;
             let shouldContinue = false;
 
@@ -169,21 +169,19 @@ export class OpenAI extends BaseAIClass {
                 }
 
                 case "response.output_item.done": {
-                    // Complete output item received - this includes function calls with name
+                    // Complete output item received - this includes function calls with name, each call in a turn is its own item
                     const itemDoneEvent = event as ResponseOutputItemDone;
 
                     // Check if this is a function call
-                    if (itemDoneEvent.item.type === "function_call" &&
-                        itemDoneEvent.item.name &&
-                        itemDoneEvent.item.arguments) {
+                    if (itemDoneEvent.item.type === "function_call" && itemDoneEvent.item.name) {
                         try {
-                            const args = JSON.parse(itemDoneEvent.item.arguments) as Record<string, unknown>;
-                            toolCall = new AIToolCall(
+                            const args = JSON.parse(itemDoneEvent.item.arguments || "{}") as Record<string, unknown>;
+                            toolCalls = [new AIToolCall(
                                 aiToolFromString(itemDoneEvent.item.name),
                                 args,
                                 itemDoneEvent.item.call_id || itemDoneEvent.item_id,
                                 undefined  // thoughtSignature not used by OpenAI
-                            );
+                            )];
                             // When we receive a function call, we should continue the conversation
                             shouldContinue = true;
                         } catch (error) {
@@ -214,7 +212,7 @@ export class OpenAI extends BaseAIClass {
             return {
                 content: text,
                 isComplete: isComplete,
-                toolCall: toolCall,
+                toolCalls: toolCalls,
                 shouldContinue: shouldContinue,
             };
         } catch (error) {
@@ -228,13 +226,13 @@ export class OpenAI extends BaseAIClass {
         for (const content of this.filterConversationContents(conversationContent)) {
             const contentToExtract = content.content ?? "";
 
-            // Case 1: Assistant message with function call
-            if (content.toolCall) {
-                const parsedContent = parseToolCall(content.toolCall);
+            // Case 1: Assistant message with function calls
+            if (content.toolCalls) {
+                const parsedContent = parseToolCalls(content.toolCalls);
 
                 if (parsedContent) {
-                    // Check if function call has required id field (for OpenAI Responses API)
-                    if (parsedContent.toolCall.id && parsedContent.toolCall.id.trim() !== "") {
+                    // Check every function call has the required id field (for OpenAI Responses API)
+                    if (parsedContent.every(storedToolCall => storedToolCall.toolCall.id && storedToolCall.toolCall.id.trim() !== "")) {
                         // Add assistant text message if present
                         if (contentToExtract.trim() !== "") {
                             results.push({
@@ -243,16 +241,18 @@ export class OpenAI extends BaseAIClass {
                             });
                         }
 
-                        // Add function call as separate input item
-                        results.push({
-                            type: "function_call",
-                            call_id: parsedContent.toolCall.id,
-                            name: parsedContent.toolCall.name,
-                            arguments: JSON.stringify(parsedContent.toolCall.args)
-                        });
+                        // Add each function call as a separate input item
+                        for (const storedToolCall of parsedContent) {
+                            results.push({
+                                type: "function_call",
+                                call_id: storedToolCall.toolCall.id,
+                                name: storedToolCall.toolCall.name,
+                                arguments: JSON.stringify(storedToolCall.toolCall.args)
+                            });
+                        }
                     } else {
                         // No id (from other provider or legacy) - convert to text message
-                        const legacyText = this.convertToolCallToText(parsedContent);
+                        const legacyText = this.convertToolCallsToText(parsedContent);
                         const messageContent = contentToExtract.trim();
                         const combinedContent = messageContent !== ""
                             ? `${messageContent}\n\n${legacyText}`

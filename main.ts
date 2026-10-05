@@ -13,6 +13,7 @@ import type { SettingsService } from "Services/SettingsService";
 import type { Diff2HtmlUIConfig } from "diff2html/lib/ui/js/diff2html-ui";
 import type { ExecutionPlan } from "Types/ExecutionPlan";
 import type { AssetsService } from "Services/AssetsService";
+import { LegacyConversationMigration } from "Helpers/LegacyConversationMigration";
 import type { Artifact } from "Conversations/Artifact";
 import { ArtifactView, VIEW_TYPE_ARTIFACT } from "Views/ArtifactView";
 import type { IDocumentReport } from "./DocumentValidation/IDocumentReport";
@@ -61,6 +62,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 
 		this.app.workspace.onLayoutReady(async () => {
 			this.closeStaleViews();
+			await LegacyConversationMigration.migrate();
 			await this.setup();
 		});
 	}

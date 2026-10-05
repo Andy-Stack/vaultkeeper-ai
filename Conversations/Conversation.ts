@@ -23,17 +23,25 @@ export class Conversation {
     }
 
     public addFunctionResponse(functionResponse: AIToolResponse): void {
-        this.contents.push(new ConversationContent({
-            role: Role.User,
-            functionResponse: functionResponse.toConversationString(),
-            shouldDisplayContent: false,
-            toolId: functionResponse.toolId
-        }));
+        this.addFunctionResponses([functionResponse]);
+    }
 
-        if (functionResponse.payload.attachments.length > 0) {
+    // Responses to the same turn must be contiguous, so any attachments they produce follow all of them in a single entry
+    public addFunctionResponses(functionResponses: AIToolResponse[]): void {
+        for (const functionResponse of functionResponses) {
             this.contents.push(new ConversationContent({
                 role: Role.User,
-                attachments: functionResponse.payload.attachments,
+                functionResponse: functionResponse.toConversationString(),
+                shouldDisplayContent: false,
+                toolId: functionResponse.toolId
+            }));
+        }
+
+        const attachments = functionResponses.flatMap(functionResponse => functionResponse.payload.attachments);
+        if (attachments.length > 0) {
+            this.contents.push(new ConversationContent({
+                role: Role.User,
+                attachments: attachments,
                 shouldDisplayContent: false
             }));
         }

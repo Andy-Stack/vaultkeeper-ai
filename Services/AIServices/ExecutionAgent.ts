@@ -47,35 +47,36 @@ export class ExecutionAgent extends BaseAgent {
 
         let executionResult: CompleteTaskArgs | undefined = undefined;
 
-        await this.runAgentLoop(AgentType.Execution, this.conversation, callbacks, async toolCall => {
-            const toolCallName = toolCall.name;
-
-            if (isAITool(toolCallName, AITool.CompleteTask)) {
-                const parseResult = CompleteTaskArgsSchema.safeParse(toolCall.arguments);
-                if (!parseResult.success) {
-                    this.conversation.addFunctionResponse(new AIToolResponse(
-                        toolCallName,
-                        new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.CompleteTask}: ${parseResult.error.message}` }),
+        await this.runAgentLoop(AgentType.Execution, this.conversation, callbacks, async toolCalls => {
+            const responses = await this.resolveToolCalls(toolCalls, callbacks,
+                toolCall => isAITool(toolCall.name, AITool.CompleteTask),
+                toolCall => {
+                    const parseResult = CompleteTaskArgsSchema.safeParse(toolCall.arguments);
+                    if (!parseResult.success) {
+                        return Promise.resolve(new AIToolResponse(
+                            toolCall.name,
+                            new AIToolResponsePayload({ error: `Invalid arguments for ${AITool.CompleteTask}: ${parseResult.error.message}` }),
+                            toolCall.toolId
+                        ));
+                    }
+                    if (executionResult) {
+                        return Promise.resolve(new AIToolResponse(
+                            toolCall.name,
+                            new AIToolResponsePayload({ error: `${AITool.CompleteTask} was already called this turn, this call was ignored.` }),
+                            toolCall.toolId
+                        ));
+                    }
+                    this.debugService?.log("ExecutionAgent", `Task completed (success: ${parseResult.data.success}): ${parseResult.data.description}`);
+                    executionResult = parseResult.data;
+                    return Promise.resolve(new AIToolResponse(
+                        toolCall.name,
+                        new AIToolResponsePayload({ result: parseResult.data.success ? "Task completed successfully." : "Task failed, attempting recovery..." }),
                         toolCall.toolId
                     ));
-                    return { shouldExit: false };
-                }
-                this.debugService?.log("ExecutionAgent", `Task completed (success: ${parseResult.data.success}): ${parseResult.data.description}`);
-                this.conversation.addFunctionResponse(new AIToolResponse(
-                    toolCallName,
-                    new AIToolResponsePayload({ result: parseResult.data.success ? "Task completed successfully." : "Task failed, attempting recovery..." }),
-                    toolCall.toolId
-                ));
-                this.updateThought(toolCall, callbacks);
-                executionResult = parseResult.data;
-                return { shouldExit: true };
-            }
+                });
 
-            this.debugService?.log("ExecutionAgent", `Executing function: ${toolCall.name}`);
-            this.updateThought(toolCall, callbacks);
-            const functionResponse = await this.performAITool(toolCall, callbacks);
-            this.conversation.addFunctionResponse(functionResponse);
-            return { shouldExit: false };
+            this.conversation.addFunctionResponses(responses);
+            return { shouldExit: executionResult !== undefined };
         });
 
         if (!executionResult) {

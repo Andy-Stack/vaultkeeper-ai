@@ -17,6 +17,7 @@ import type { IAIFileService } from "./IAIFileService";
 import { AgentType } from "Enums/AgentType";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import type { MimeType } from "Enums/MimeType";
+import { parseToolCalls } from "Helpers/ResponseHelper";
 
 export abstract class BaseAIClass implements IAIClass {
 
@@ -209,44 +210,85 @@ export abstract class BaseAIClass implements IAIClass {
     }
 
     protected filterConversationContents(conversationContent: ConversationContent[]): ConversationContent[] {
-        return conversationContent.filter((content, index, array) => {
-            if (!content.content && !content.toolCall && !content.functionResponse && (!content.attachments || content.attachments.length === 0)) {
-                return false; // Filter out empty content
+        const results: ConversationContent[] = [];
+        let index = 0;
+
+        while (index < conversationContent.length) {
+            const content = conversationContent[index];
+
+            if (!content.content && !content.toolCalls && !content.functionResponse && (!content.attachments || content.attachments.length === 0)) {
+                index++;
+                continue; // Filter out empty content
             }
 
-            if (content.functionResponse) { // Filter out 'lone' function responses
-                const previousItem = array[index - 1];
-                const hasValidCall = previousItem && previousItem.toolCall && content.toolId === previousItem.toolId;
-                if (!hasValidCall) {
-                    Exception.warn(`[Filter Debug] Filtered orphaned function response at index ${index}/${array.length}:\n` +
-                        `  ToolId: ${content.toolId}\n` +
-                        `  Previous item has toolCall: ${previousItem?.toolCall ? 'yes' : 'no'}\n` +
-                        `  Previous item toolId: ${previousItem?.toolId}\n` +
-                        `  Response: ${content.functionResponse}`);
-                }
-                return hasValidCall;
-            }
-
-            if (!content.toolCall) {
-                return true; // Keep non-function-calls
-            }
-
-            if (index === array.length - 1) {
-                return true; // Keep if it's the last item (most recent)
-            }
-
-            // Keep if next item is a matched function response
-            const nextItem = array[index + 1];
-            const hasValidResponse = nextItem && nextItem.functionResponse && content.toolId === nextItem.toolId;
-            if (!hasValidResponse) {
-                Exception.warn(`[Filter Debug] Filtered orphaned function call at index ${index}/${array.length}:\n` +
+            if (content.functionResponse) { // Filter out 'lone' function responses, valid ones are consumed with their calls below
+                Exception.warn(`[Filter Debug] Filtered orphaned function response at index ${index}/${conversationContent.length}:\n` +
                     `  ToolId: ${content.toolId}\n` +
-                    `  Next item has functionResponse: ${nextItem?.functionResponse ? 'yes' : 'no'}\n` +
-                    `  Next item toolId: ${nextItem?.toolId}\n` +
-                    `  Call: ${content.toolCall}`);
+                    `  Response: ${content.functionResponse}`);
+                index++;
+                continue;
             }
-            return hasValidResponse;
-        });
+
+            if (!content.toolCalls) {
+                results.push(content); // Keep non-function-calls
+                index++;
+                continue;
+            }
+
+            // Every call made in a turn is answered by a contiguous run of responses
+            let groupEnd = index + 1;
+            while (groupEnd < conversationContent.length && conversationContent[groupEnd].functionResponse) {
+                groupEnd++;
+            }
+            const responses = conversationContent.slice(index + 1, groupEnd);
+
+            if (responses.length === 0 && groupEnd === conversationContent.length) {
+                results.push(content); // Keep if it's the last item (most recent)
+            } else if (this.isAnsweredToolCallGroup(content, responses)) {
+                results.push(content, ...responses);
+            } else {
+                Exception.warn(`[Filter Debug] Filtered unanswered function calls at index ${index}/${conversationContent.length}:\n` +
+                    `  Calls: ${content.toolCalls}\n` +
+                    `  Response toolIds: ${responses.map(response => response.toolId).join(", ")}`);
+            }
+            index = groupEnd;
+        }
+
+        return results;
+    }
+
+    // Calls with ids are matched to responses by id, providers without ids (Gemini) answer in call order
+    private isAnsweredToolCallGroup(content: ConversationContent, responses: ConversationContent[]): boolean {
+        const toolCalls = parseToolCalls(content.toolCalls ?? "");
+        if (!toolCalls || toolCalls.length !== responses.length) {
+            return false;
+        }
+
+        const hasId = (id: string | undefined) => !!id && id.trim() !== "";
+
+        if (toolCalls.every(toolCall => hasId(toolCall.toolCall.id))) {
+            const responseIds = new Set(responses.map(response => response.toolId));
+            return toolCalls.every(toolCall => responseIds.has(toolCall.toolCall.id));
+        }
+
+        return responses.every(response => !hasId(response.toolId));
+    }
+
+    /**
+     * Merges consecutive messages with the same role, so every result for a turn's tool calls
+     * (and any attachments they produced) is sent in a single message, as Claude and Gemini require.
+     */
+    protected mergeConsecutiveRoles<T extends { role: string }>(messages: T[], mergeInto: (target: T, source: T) => void): T[] {
+        const merged: T[] = [];
+        for (const message of messages) {
+            const previous = merged[merged.length - 1];
+            if (previous && previous.role === message.role) {
+                mergeInto(previous, message);
+                continue;
+            }
+            merged.push(message);
+        }
+        return merged;
     }
 
     protected throwRetryableError(message: string, code?: string, errorType?: ApiErrorType): never {
@@ -312,6 +354,10 @@ export abstract class BaseAIClass implements IAIClass {
         return `<!-- Historical tool call. This action was ALREADY COMPLETED.
      Use your native function calling for any NEW operations. -->
 ${formattedJson}`;
+    }
+
+    protected convertToolCallsToText(toolCalls: StoredToolCall[]): string {
+        return toolCalls.map(toolCall => this.convertToolCallToText(toolCall)).join("\n\n");
     }
 
     /**

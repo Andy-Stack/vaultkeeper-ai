@@ -44,3 +44,40 @@ export function fromString(functionName: string): AITool {
 export function isAITool(value: unknown, aiTool: AITool): value is AITool {
     return value === aiTool;
 }
+
+export function isDestructiveAITool(aiTool: AITool): boolean {
+    switch (aiTool) {
+        case AITool.WriteVaultFile:
+        case AITool.PatchVaultFile:
+        case AITool.DeleteVaultFiles:
+        case AITool.MoveVaultFiles:
+        case AITool.CreateVaultFolder:
+        case AITool.DeleteVaultFolder:
+        case AITool.MoveVaultFolder:
+            return true;
+
+        case AITool.SearchVaultFiles:
+        case AITool.ReadVaultFiles:
+        case AITool.ListVaultFiles:
+        case AITool.GetWebViewerContent:
+        case AITool.ReadMemories:
+        case AITool.UpdateMemories:
+        case AITool.RequestWebSearch:
+            return false;
+
+        case AITool.ExecuteWorkflow:
+        case AITool.SubmitPlan:
+        case AITool.CompleteTask:
+        case AITool.CompleteStep:
+        case AITool.SkipStep:
+        case AITool.ReviseStep:
+        case AITool.RevisePlan:
+        case AITool.ContinuePlanExecution:
+        case AITool.CompletePlan:
+        case AITool.CancelPlan:
+        case AITool.AskUserQuestionPlanning:
+        case AITool.AskUserQuestionExecution:
+        case AITool.Unknown:
+            return false;
+    }
+}

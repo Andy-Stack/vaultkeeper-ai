@@ -10,7 +10,8 @@
 	import { Services } from "Services/Services";
 	import type { FileSystemService } from "Services/FileSystemService";
 	import type { WorkSpaceService } from "Services/WorkSpaceService";
-	import { basename, dirname } from "path-browserify";
+	import { basename } from "path-browserify";
+	import TruncatedPath from "Components/TruncatedPath.svelte";
 
 	type ConfirmAction = "restorePrevious" | "restore";
 
@@ -181,14 +182,6 @@
 				return "Restore this version";
 		}
 	}
-
-	function name(): string {
-		return basename(artifact.filePath);
-	}
-
-	function path(): string {
-		return dirname(artifact.filePath);
-	}
 </script>
 
 <div class="artifact-container mobile-navbar-clearance">
@@ -198,8 +191,7 @@
 				class="artifact-view-header-ellipse artifact-action-{artifact.action}"
 				role="img"
 				aria-label="File action: {artifact.action}"></span>
-			<span class="artifact-view-header-file-path">{path()}/</span>
-			<span class="artifact-view-header-file-name">{name()}</span>
+			<span class="artifact-view-header-file-path"><TruncatedPath path={artifact.filePath} /></span>
 		</div>
 		<div class="artifact-view-diff">
 			{#if artifact.action === ArtifactAction.Move}
@@ -209,11 +201,11 @@
 					<div class="artifact-view-move-file-paths">
 						<div class="artifact-view-move-file-old-path-container">
 							<span class="artifact-view-move-file-path-prefix">from:</span>
-							<span class="artifact-view-move-file-path" title={artifact.previousPath}>{artifact.previousPath}</span>
+							<span class="artifact-view-move-file-path"><TruncatedPath path={artifact.previousPath} /></span>
 						</div>
 						<div class="artifact-view-move-file-new-path-container">
 							<span class="artifact-view-move-file-path-prefix">to:</span>
-							<span class="artifact-view-move-file-path" title={artifact.filePath}>{artifact.filePath}</span>
+							<span class="artifact-view-move-file-path"><TruncatedPath path={artifact.filePath} /></span>
 						</div>
 					</div>
 				</div>
@@ -302,13 +294,17 @@
 	}
 
 	.artifact-view-header-file-path {
+		display: flex;
+		min-width: 0;
 		font-size: var(--font-size-smaller);
-		color: var(--text-muted);
 		margin-left: var(--size-4-2);
 	}
 
-	.artifact-view-header-file-name {
-		font-size: var(--font-size-smaller);
+	.artifact-view-header-file-path :global(.truncated-path-directory) {
+		color: var(--text-muted);
+	}
+
+	.artifact-view-header-file-path :global(.truncated-path-name) {
 		font-weight: var(--font-bold);
 	}
 
@@ -381,12 +377,10 @@
 	}
 
 	.artifact-view-move-file-path {
+		display: flex;
 		font-size: var(--font-smaller);
 		align-self: center;
 		min-width: 0;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
 	.artifact-view-footer {

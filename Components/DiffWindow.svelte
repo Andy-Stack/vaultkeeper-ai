@@ -17,6 +17,7 @@
 	import { displayState, reviewDoneLabel, vaultChangeFolder, vaultChangeName } from "Helpers/VaultChangeHelper";
 	import type { BottomSheetService, IBottomSheetHandle } from "Services/BottomSheetService";
 	import DiffChangeListSheet from "Components/DiffChangeListSheet.svelte";
+	import TruncatedPath from "Components/TruncatedPath.svelte";
 
 	interface DiffRenderOptions {
 		vaultChange: IVaultChange | undefined;
@@ -388,7 +389,7 @@
 					 class:red={displayState(selectedItem) === DiffState.Rejected}
 					 class:accent={displayState(selectedItem) === DiffState.Suggestion}></span>
 				<span id="diff-view-preview-header-name" class="diff-view-ellipsis-label">{vaultChangeName(selectedItem)}</span>
-				<span id="diff-view-preview-header-path" class="diff-view-ellipsis-label">{vaultChangeFolder(selectedItem)}</span>
+				<span id="diff-view-preview-header-path"><TruncatedPath path={vaultChangeFolder(selectedItem)} /></span>
 				<div id="diff-view-preview-header-controls">
 					<button 
 						id="diff-view-preview-header-control-suggest"
@@ -445,11 +446,11 @@
 					<div id="diff-view-preview-move-file-paths">
 						<div id="diff-view-preview-move-file-old-path-container">
 							<span class="diff-view-preview-move-file-path-prefix">from:</span>
-							<span id="diff-view-preview-move-file-old-path" title={selectedItem.oldPath}>{selectedItem.oldPath}</span>
+							<span id="diff-view-preview-move-file-old-path"><TruncatedPath path={selectedItem.oldPath} /></span>
 						</div>
 						<div id="diff-view-preview-move-file-new-path-container">
 							<span class="diff-view-preview-move-file-path-prefix">to:</span>
-							<span id="diff-view-preview-move-file-new-path" title={selectedItem.newPath}>{selectedItem.newPath}</span>
+							<span id="diff-view-preview-move-file-new-path"><TruncatedPath path={selectedItem.newPath} /></span>
 						</div>
 					</div>
 				</div>
@@ -714,6 +715,7 @@
 	#diff-view-preview-header-path {
 		grid-row: 2;
 		grid-column: 2;
+		display: flex;
 		max-width: 100%;
 		min-width: 5vw;
 		align-self: center;
@@ -725,6 +727,7 @@
 		grid-row: 1 / 3;
     	grid-column: 3;
 		display: flex;
+		margin-left: var(--size-4-4);
 	}
 
 	#diff-view-preview-header-control-suggest {
@@ -887,12 +890,10 @@
 	}
 
 	#diff-view-preview-move-file-old-path {
+		display: flex;
 		font-size: var(--font-smaller);
 		align-self: center;
 		min-width: 0;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
 	#diff-view-preview-move-file-new-path-container {
@@ -910,12 +911,10 @@
 	}
 
 	#diff-view-preview-move-file-new-path {
+		display: flex;
 		font-size: var(--font-smaller);
 		align-self: center;
 		min-width: 0;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
 	#diff-view-preview .d2h-wrapper {

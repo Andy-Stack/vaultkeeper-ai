@@ -19,9 +19,14 @@ export interface ChatCompletionStreamChoice {
 
 export interface ChatCompletionDelta {
     role?: string;
-    content?: string;
+    // Usually a plain string, but reasoning models (e.g. Mistral Large 4) stream an array of typed chunks
+    content?: string | ChatCompletionDeltaContentChunk[];
     tool_calls?: ChatCompletionToolCallDelta[];
 }
+
+export type ChatCompletionDeltaContentChunk =
+    | { type: "text"; text: string }
+    | { type: "thinking"; thinking: { type: "text"; text: string }[] };
 
 export interface ChatCompletionToolCallDelta {
     id?: string;

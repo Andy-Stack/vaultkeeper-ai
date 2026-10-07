@@ -21,6 +21,7 @@ export enum Copy {
     GPT_5_6_Luna = "GPT-5.6 Luna",
     GPT_6_Astra = "GPT-6 Astra",
 
+    MistralLarge = "Mistral Large 4",
     MistralMedium = "Mistral Medium 3.5",
     MistralSmall = "Mistral Small 4",
 

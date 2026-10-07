@@ -1,8 +1,12 @@
 import type VaultkeeperAIPlugin from "main";
-import type { EventRef, MetadataCache } from "obsidian";
+import type { EventRef, MetadataCache, Vault } from "obsidian";
 
 interface IInternalMetadataCache {
     onCleanCache(callback: () => Promise<void>): EventRef;
+}
+
+interface IInternalVault {
+    getConfig(key: string): unknown;
 }
 
 export function openPluginSettings(plugin: VaultkeeperAIPlugin) {
@@ -50,4 +54,13 @@ export function onMetaDataCacheReady(plugin: VaultkeeperAIPlugin, action: () => 
     }
 
     plugin.registerEvent(eventReference);
+}
+
+export function getConfig(config: string, plugin: VaultkeeperAIPlugin): unknown {
+    const vault = plugin.app.vault as Vault & Partial<IInternalVault>;
+    if (typeof vault.getConfig !== "function") {
+        return;
+    }
+
+    return vault.getConfig(config);
 }

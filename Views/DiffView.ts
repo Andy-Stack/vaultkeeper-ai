@@ -6,13 +6,10 @@ import { Resolve } from "Services/DependencyService";
 import type { EventService } from "Services/EventService";
 import { Services } from "Services/Services";
 import DiffWindow from "Components/DiffWindow.svelte";
-import type { IDocumentReport } from "../DocumentValidation/IDocumentReport";
-import { DocumentReport } from "../DocumentValidation/DocumentReport";
 
 export const VIEW_TYPE_DIFF = 'vaultkeeper-ai-diff-view';
 
 interface DiffViewState {
-    report: IDocumentReport | undefined;
     config: Diff2HtmlUIConfig;
 }
 
@@ -20,9 +17,7 @@ export class DiffView extends ItemView {
 
     private readonly eventService: EventService;
 
-    private report: IDocumentReport | undefined;
     private config: Diff2HtmlUIConfig = {};
-
     private diffWindow: ReturnType<typeof DiffWindow> | undefined;
 
     constructor(leaf: WorkspaceLeaf) {
@@ -51,7 +46,6 @@ export class DiffView extends ItemView {
     }
 
     public async setState(state: DiffViewState, result: ViewStateResult): Promise<void> {
-        this.report = state.report instanceof DocumentReport ? state.report : undefined;
         this.config = state.config;
 
         this.renderDiff();
@@ -60,7 +54,6 @@ export class DiffView extends ItemView {
     }
 
     public getState(): Record<string, unknown> {
-        // report is transient and can't be serialised, so it isn't persisted
         return {
             config: this.config
         };
@@ -76,8 +69,7 @@ export class DiffView extends ItemView {
         this.diffWindow = mount(DiffWindow, {
             target: container,
             props: {
-                config: this.config,
-                report: this.report
+                config: this.config
             }
         });
     }

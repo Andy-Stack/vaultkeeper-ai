@@ -132,6 +132,28 @@ describe('Mistral', () => {
             expect(result.isComplete).toBe(false);
         });
 
+        it('should extract text and drop thinking from array-shaped delta content', () => {
+            const thinkingChunk = JSON.stringify({
+                choices: [{
+                    delta: {
+                        content: [{ type: 'thinking', thinking: [{ type: 'text', text: 'The user greets me' }] }]
+                    },
+                    finish_reason: null
+                }]
+            });
+            const textChunk = JSON.stringify({
+                choices: [{
+                    delta: {
+                        content: [{ type: 'text', text: 'Hello' }, { type: 'text', text: ' there' }]
+                    },
+                    finish_reason: null
+                }]
+            });
+
+            expect((mistral as any).parseStreamChunk(thinkingChunk).content).toBe('');
+            expect((mistral as any).parseStreamChunk(textChunk).content).toBe('Hello there');
+        });
+
         it('should handle tool call start and accumulate arguments', () => {
             // Start tool call
             const chunk1 = JSON.stringify({

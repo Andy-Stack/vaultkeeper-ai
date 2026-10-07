@@ -17,6 +17,7 @@ import { basename } from 'path-browserify';
 import { DiffState } from 'Enums/DiffState';
 import { AIToolResponse } from 'AIClasses/ToolDefinitions/AIToolResponse';
 import type { SettingsService } from './SettingsService';
+import type { DocumentValidationService } from './DocumentValidationService';
 
 export class DiffService extends Component {
 
@@ -25,6 +26,7 @@ export class DiffService extends Component {
     private readonly abortService: AbortService;
     private readonly settingsService: SettingsService;
     private readonly temporaryVaultService: TemporaryVaultService;
+    private readonly documentValidationService: DocumentValidationService;
 
     private diffResolve?: () => void;
 
@@ -48,6 +50,7 @@ export class DiffService extends Component {
         this.abortService = Resolve<AbortService>(Services.AbortService);
         this.settingsService = Resolve<SettingsService>(Services.SettingsService);
         this.temporaryVaultService = Resolve<TemporaryVaultService>(Services.TemporaryVaultService);
+        this.documentValidationService = Resolve<DocumentValidationService>(Services.DocumentValidationService);
 
         this.registerEvent(this.eventService.on(Event.DiffClosed, () => this.onDiffClosed()));
     }
@@ -56,8 +59,6 @@ export class DiffService extends Component {
         try {
             this.temporaryVaultService.reset();
             this.temporaryVaultService.addAll(vaultChangeRequests);
-            
-            // TODO: continuity check - continuity service, integrate settings etc (see commented code below)
             
             if (this.settingsService.settings.freeEdit) {
                 vaultChangeRequests.forEach(request => request.status = DiffState.Accepted);
@@ -79,6 +80,8 @@ export class DiffService extends Component {
                 }
             }
 
+            // TODO: report back?
+
             return { results: results };
         } catch (error) {
             if (AbortService.isAbortError(error)) {
@@ -97,7 +100,7 @@ export class DiffService extends Component {
         void this.plugin.activateArtifactView(artifact, diffString, this.config);
     }
 
-    private processDiffRequest(vaultChanges: IVaultChange[], report?: IDocumentReport): Promise<void> {
+    private processDiffRequest(vaultChanges: IVaultChange[]): Promise<void> {
         const signal = this.abortService.signal();
 
         for (const vaultChange of vaultChanges) {
@@ -130,7 +133,7 @@ export class DiffService extends Component {
             };
     
             this.ongoingDiff = true;
-            void this.plugin.activateDiffView(report, this.config);
+            void this.plugin.activateDiffView(this.config);
             this.eventService.trigger(Event.DiffOpened);
         });
     }

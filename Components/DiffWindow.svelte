@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { Diff2HtmlUI, type Diff2HtmlUIConfig } from "diff2html/lib/ui/js/diff2html-ui-base";
-	import type { IDocumentReport } from "../DocumentValidation/IDocumentReport";
 	import { Resolve } from "Services/DependencyService";
 	import { Services } from "Services/Services";
 	import type { InputService } from "Services/InputService";
@@ -24,7 +23,6 @@
 	}
 
 	export let config: Diff2HtmlUIConfig;
-	export let report: IDocumentReport | undefined;
 
 	const temporaryVaultService: TemporaryVaultService = Resolve<TemporaryVaultService>(Services.TemporaryVaultService);
 	const eventService: EventService = Resolve<EventService>(Services.EventService);
@@ -41,7 +39,7 @@
 	let selectedItem: IVaultChange | undefined = vaultChanges[0];
 
 	let stateCounts = countStates();
-	$: issueCount = report?.issueCount() ?? 0;
+	$: issueCount = 0; // TODO: report here
 	$: selectedIndex = selectedItem ? vaultChanges.indexOf(selectedItem) : -1;
 	$: doneLabel = reviewDoneLabel(stateCounts[DiffState.None]);
 

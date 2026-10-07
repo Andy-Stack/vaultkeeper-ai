@@ -110,8 +110,14 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
             const choice = data.choices[0];
 
             // Handle text content
-            if (choice.delta.content) {
+            if (typeof choice.delta.content === "string") {
                 text = choice.delta.content;
+            } else if (Array.isArray(choice.delta.content)) {
+                // Thinking chunks are deliberately dropped for now; only the answer text is surfaced
+                text = choice.delta.content
+                    .filter((part): part is { type: "text"; text: string } => part.type === "text")
+                    .map(part => part.text)
+                    .join("");
             }
 
             // Handle tool call deltas

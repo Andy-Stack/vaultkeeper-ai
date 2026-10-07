@@ -84,6 +84,7 @@ export enum AIProviderModel {
     GPT_6_Astra = "gpt-6-astra",
 
     // Mistral models
+    MistralLarge = "mistral-large-4",
     MistralMedium = "mistral-medium-3-5",
     MistralSmall = "mistral-small-2603",
 
@@ -129,7 +130,7 @@ export const DEFAULT_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderModel> = {
     [AIProvider.Claude]:  AIProviderModel.ClaudeSonnet_5,
     [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_8_Flash,
     [AIProvider.OpenAI]:  AIProviderModel.GPT_5_6_Terra,
-    [AIProvider.Mistral]: AIProviderModel.MistralMedium,
+    [AIProvider.Mistral]: AIProviderModel.MistralLarge,
     [AIProvider.Local]: AIProviderModel.None
 }
 
@@ -137,6 +138,6 @@ export const DEFAULT_PLANNING_MODEL_BY_PROVIDER: Record<AIProvider, AIProviderMo
     [AIProvider.Claude]:  AIProviderModel.ClaudeOpus_5,
     [AIProvider.Gemini]:  AIProviderModel.GeminiFlash_3_8_Flash,
     [AIProvider.OpenAI]:  AIProviderModel.GPT_5_6_Sol,
-    [AIProvider.Mistral]: AIProviderModel.MistralMedium,
+    [AIProvider.Mistral]: AIProviderModel.MistralLarge,
     [AIProvider.Local]: AIProviderModel.None
 }

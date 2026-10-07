@@ -67,6 +67,7 @@ import { QuickActionsDefinitionsService } from "./QuickActions/QuickActionsDefin
 import { QuickActionsService } from "./QuickActions/QuickActionsService";
 import { DocumentValidationService } from "./DocumentValidationService";
 import { TemporaryVaultService } from "./TemporaryVaultService";
+import { WikilinkValidation } from "../DocumentValidation/Stages/WikilinkValidation";
 
 
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
@@ -84,14 +85,14 @@ export function RegisterDependencies() {
     RegisterSingleton<AbortService>(Services.AbortService, new AbortService());
     RegisterSingleton<HTMLService>(Services.HTMLService, new HTMLService());
     RegisterSingleton<SanitiserService>(Services.SanitiserService, new SanitiserService());
-    RegisterSingleton<TemporaryVaultService>(Services.TemporaryVaultService, new TemporaryVaultService());
-    RegisterSingleton<DiffService>(Services.DiffService, new DiffService());
     RegisterSingleton<PlanApprovalService>(Services.PlanApprovalService, new PlanApprovalService());
     RegisterSingleton<BottomSheetService>(Services.BottomSheetService, new BottomSheetService());
-    RegisterSingleton<DocumentValidationService>(Services.DocumentValidationService, new DocumentValidationService());
     RegisterSingleton<VaultService>(Services.VaultService, new VaultService());
     RegisterSingleton<VaultCacheService>(Services.VaultCacheService, new VaultCacheService());
     RegisterSingleton<FileSystemService>(Services.FileSystemService, new FileSystemService());
+    RegisterSingleton<TemporaryVaultService>(Services.TemporaryVaultService, new TemporaryVaultService());
+    RegisterSingleton<DocumentValidationService>(Services.DocumentValidationService, new DocumentValidationService());
+    RegisterSingleton<DiffService>(Services.DiffService, new DiffService());
     RegisterSingleton<SearchStateStore>(Services.SearchStateStore, new SearchStateStore());
     RegisterSingleton<ExecutionPlanStore>(Services.ExecutionPlanStore, new ExecutionPlanStore());
     RegisterSingleton<UserInputService>(Services.UserInputService, new UserInputService());
@@ -116,6 +117,7 @@ export function RegisterDependencies() {
 
     RegisterModals();
     RegisterAiProvider();
+    RegisterValidationStages();
 }
 
 export function RegisterAiProvider() {
@@ -156,4 +158,10 @@ export function RegisterAiProvider() {
 function RegisterModals() {
     RegisterTransient<ConversationHistoryModal>(Services.ConversationHistoryModal, () => new ConversationHistoryModal());
     RegisterTransient<AboutModal>(Services.AboutModal, () => new AboutModal())
+}
+
+function RegisterValidationStages() {
+    const documentValidationService = Resolve<DocumentValidationService>(Services.DocumentValidationService);
+
+    documentValidationService.stages.push(new WikilinkValidation());
 }

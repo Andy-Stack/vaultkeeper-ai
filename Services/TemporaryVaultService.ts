@@ -1,8 +1,4 @@
-import { TFile, type Vault } from "obsidian";
-import type { SanitiserService } from "./SanitiserService";
-import { Resolve } from "./DependencyService";
-import { Services } from "./Services";
-import type VaultkeeperAIPlugin from "main";
+import { TFile } from "obsidian";
 import type { FileEvent } from "Enums/FileEvent";
 import type { DiffState } from "Enums/DiffState";
 import type { IVaultChangeResponse } from "./VaultService";
@@ -26,18 +22,7 @@ export interface IVaultChangeRequest<T> extends IVaultChange {
 
 export class TemporaryVaultService {
 
-    private readonly plugin: VaultkeeperAIPlugin;
-    private readonly sanitiserService: SanitiserService;
-    private readonly vault: Vault;
-
     private vaultChanges: IVaultChange[] = [];
-
-    public constructor() {
-        this.plugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
-        this.sanitiserService = Resolve<SanitiserService>(Services.SanitiserService);
-        
-        this.vault = this.plugin.app.vault;
-    }
 
     public getVaultChanges(): IVaultChange[] {
         return this.vaultChanges;

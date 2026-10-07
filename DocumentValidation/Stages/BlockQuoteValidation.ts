@@ -1,18 +1,10 @@
-import { Resolve } from "Services/DependencyService";
 import type { IDocumentValidationResult } from "../IDocumentValidationResult";
 import type { IValidationStage } from "../IValidationStage";
-import type { TemporaryVaultService } from "Services/TemporaryVaultService";
-import { Services } from "Services/Services";
+import type { IVaultChange } from "Services/TemporaryVaultService";
 
 export class BlockQuoteValidation implements IValidationStage {
-    
-    private readonly temporaryVaultService: TemporaryVaultService;
 
-    public constructor(){
-        this.temporaryVaultService = Resolve<TemporaryVaultService>(Services.TemporaryVaultService);
-    }
-
-    validate(): IDocumentValidationResult {
+    validate(vaultChanges: IVaultChange[]): IDocumentValidationResult {
         throw new Error("Method not implemented.");
     }
     

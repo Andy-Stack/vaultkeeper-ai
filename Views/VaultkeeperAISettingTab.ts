@@ -590,6 +590,7 @@ export class VaultkeeperAISettingTab extends PluginSettingTab {
 				break;
 			case AIProvider.Mistral:
 				dropdown.addOptions({
+					[AIProviderModel.MistralLarge]: Copy.MistralLarge,
 					[AIProviderModel.MistralMedium]: Copy.MistralMedium,
 					[AIProviderModel.MistralSmall]: Copy.MistralSmall
 				});

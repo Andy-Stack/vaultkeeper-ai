@@ -502,6 +502,7 @@ describe('SettingsService', () => {
 
         it('should correctly identify Mistral models', () => {
             const mistralModels = [
+                AIProviderModel.MistralLarge,
                 AIProviderModel.MistralMedium,
                 AIProviderModel.MistralSmall
             ];

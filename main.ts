@@ -16,7 +16,6 @@ import type { AssetsService } from "Services/AssetsService";
 import { LegacyConversationMigration } from "Helpers/LegacyConversationMigration";
 import type { Artifact } from "Conversations/Artifact";
 import { ArtifactView, VIEW_TYPE_ARTIFACT } from "Views/ArtifactView";
-import type { IDocumentReport } from "./DocumentValidation/IDocumentReport";
 
 import "katex/dist/katex.min.css";
 import 'highlight.js/styles/monokai.min.css';
@@ -89,7 +88,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		}
 	}
 
-	public async activateDiffView(report: IDocumentReport | undefined, config: Diff2HtmlUIConfig) {
+	public async activateDiffView(config: Diff2HtmlUIConfig) {
 		const { workspace } = this.app;
 
 		const leaves = workspace.getLeavesOfType(VIEW_TYPE_DIFF);
@@ -98,7 +97,7 @@ export default class VaultkeeperAIPlugin extends Plugin {
 		await leaf?.setViewState({
 			type: VIEW_TYPE_DIFF,
 			active: true,
-			state: { report, config }
+			state: { config }
 		});
 
 		if (leaf != null) {

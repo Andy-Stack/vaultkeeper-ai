@@ -1,4 +1,4 @@
 export interface IDocumentValidationResult {
-    issueCount: number;
+    issueCount(): number;
     toString(): string;
 }

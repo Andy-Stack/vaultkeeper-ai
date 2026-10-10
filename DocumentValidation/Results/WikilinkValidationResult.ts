@@ -1,13 +1,12 @@
+import type { IBacklink } from "Helpers/WikilinkHelper";
 import type { IDocumentValidationResult } from "../IDocumentValidationResult";
 
 export class WikilinkValidationResult implements IDocumentValidationResult {
-    
-    public issueCount: number;
 
-    private issues: string[] = [];
+    public issues: IBacklink[] = [];
 
-    public constructor() {
-        this.issueCount = this.issues.length;
+    issueCount(): number {
+        return this.issues.length;
     }
     
     toString(): string {

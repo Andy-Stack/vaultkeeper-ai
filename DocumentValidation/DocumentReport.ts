@@ -10,7 +10,7 @@ export class DocumentReport implements IDocumentReport {
     }
 
     issueCount(): number {
-        return this.documentValidationResults.reduce((total, result) => total + result.issueCount, 0);
+        return this.documentValidationResults.reduce((total, result) => total + result.issueCount(), 0);
     }
 
     public toString(): string {

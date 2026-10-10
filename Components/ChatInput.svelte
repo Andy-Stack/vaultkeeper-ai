@@ -230,7 +230,7 @@
   })();
 
   $: if (submitButton) {
-    if (inputMode === InputMode.Question || inputMode === InputMode.Diff || inputMode === InputMode.PlanApproval) {
+    if (inputMode === InputMode.Question || inputMode === InputMode.PlanApproval) {
       setIcon(submitButton, userRequest.trim() === "" ? "square" : "send-horizontal");
     } else {
       setIcon(submitButton, isSubmitting ? "square" : "send-horizontal");
@@ -251,13 +251,12 @@
 
   $: inputPlaceholder = (() => {
     if (inputMode === InputMode.Question) return Copy.InputPlaceholderQuestion;
-    if (inputMode === InputMode.Diff) return Copy.InputPlaceholderDiff;
     if (inputMode === InputMode.PlanApproval) return Copy.InputPlaceholderPlanApproval;
     return Copy.InputPlaceholderNormal;
   })();
 
   $: submitDisabled = (() => {
-    if (inputMode === InputMode.Diff || inputMode === InputMode.Question || inputMode === InputMode.PlanApproval) {
+    if (inputMode === InputMode.Question || inputMode === InputMode.PlanApproval) {
       return false;
     }
     return !isSubmitting && userRequest.trim() === "";
@@ -266,9 +265,6 @@
   $: submitAriaLabel = (() => {
     if (inputMode === InputMode.Question) {
       return userRequest.trim() === "" ? Copy.ButtonCancel : Copy.ButtonSubmitAnswer;
-    }
-    if (inputMode === InputMode.Diff) {
-      return userRequest.trim() === "" ? Copy.ButtonCancel : Copy.ButtonMakeSuggestion;
     }
     if (inputMode === InputMode.PlanApproval) {
       return userRequest.trim() === "" ? Copy.ButtonCancel : Copy.ButtonMakeSuggestion;
@@ -290,14 +286,6 @@
     }
     const result = requestFromInput();
     onSubmit(result.request, result.formattedRequest);
-  }
-
-  function handleSuggestion() {
-    if (userRequest.trim() === "" || inputMode !== InputMode.Diff) {
-      return;
-    }
-    const suggestion = requestFromInput();
-    //diffService.onSuggest(suggestion.formattedRequest);
   }
 
   function handlePlanSuggestion() {
@@ -379,8 +367,6 @@
       e.preventDefault();
       if (inputMode === InputMode.Question) {
         handleAnswer();
-      } else if (inputMode === InputMode.Diff) {
-        handleSuggestion();
       } else if (inputMode === InputMode.PlanApproval) {
         handlePlanSuggestion();
       } else {
@@ -605,7 +591,7 @@
     <ChatAttachments bind:attachments={attachments}/>
   </div>
 
-  <div id="diff-controls-container" style:padding-top={(inputMode === InputMode.Diff || inputMode === InputMode.PlanApproval) ? "var(--size-4-2)" : 0}>
+  <div id="diff-controls-container" style:padding-top={(inputMode === InputMode.PlanApproval) ? "var(--size-4-2)" : 0}>
     <DiffControls diffOpen={inputMode === InputMode.Diff}/>
     <PlanApprovalControls planApprovalOpen={inputMode === InputMode.PlanApproval}/>
   </div>
@@ -695,8 +681,6 @@
     on:click={() => {
       if (inputMode === InputMode.Question) {
         userRequest.trim() === "" ? handleStop() : handleAnswer();
-      } else if (inputMode === InputMode.Diff) {
-        userRequest.trim() === "" ? handleStop() : handleSuggestion();
       } else if (inputMode === InputMode.PlanApproval) {
         userRequest.trim() === "" ? handleStop() : handlePlanSuggestion();
       } else {

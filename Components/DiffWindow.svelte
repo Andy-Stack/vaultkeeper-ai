@@ -4,7 +4,7 @@
 	import { Services } from "Services/Services";
 	import type { InputService } from "Services/InputService";
 	import type { IVaultChange, TemporaryVaultService } from "Services/TemporaryVaultService";
-	import { onDestroy } from "svelte";
+	import { onDestroy, onMount } from "svelte";
 	import { slide } from "svelte/transition";
 	import { DiffState } from "Enums/DiffState";
 	import type { EventService } from "Services/EventService";
@@ -16,6 +16,9 @@
 	import type { BottomSheetService, IBottomSheetHandle } from "Services/BottomSheetService";
 	import DiffChangeListSheet from "Components/DiffChangeListSheet.svelte";
 	import TruncatedPath from "Components/TruncatedPath.svelte";
+	import type { DocumentValidationService } from "Services/DocumentValidationService";
+	import type { IDocumentReport } from "../DocumentValidation/IDocumentReport";
+	import type { SettingsService } from "Services/SettingsService";
 
 	interface DiffRenderOptions {
 		vaultChange: IVaultChange | undefined;
@@ -24,13 +27,16 @@
 
 	export let config: Diff2HtmlUIConfig;
 
+	const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
 	const temporaryVaultService: TemporaryVaultService = Resolve<TemporaryVaultService>(Services.TemporaryVaultService);
+	const documentValidationService: DocumentValidationService = Resolve<DocumentValidationService>(Services.DocumentValidationService);
 	const eventService: EventService = Resolve<EventService>(Services.EventService);
 	const inputService: InputService = Resolve<InputService>(Services.InputService);
 	const bottomSheetService: BottomSheetService = Resolve<BottomSheetService>(Services.BottomSheetService);
 
 	const isPhone = Platform.isPhone;
 
+	let report: IDocumentReport | undefined;
 	let suggestionElement: HTMLDivElement | undefined;
 	let changeListSheet: IBottomSheetHandle | undefined;
 
@@ -39,11 +45,17 @@
 	let selectedItem: IVaultChange | undefined = vaultChanges[0];
 
 	let stateCounts = countStates();
-	$: issueCount = 0; // TODO: report here
+	$: issueCount = report?.issueCount() ?? 0;
 	$: selectedIndex = selectedItem ? vaultChanges.indexOf(selectedItem) : -1;
 	$: doneLabel = reviewDoneLabel(stateCounts[DiffState.None]);
 
-	// The sheet lives on document.body, so it would otherwise outlive this view
+	onMount(async () => {
+		if (settingsService.settings.enableContinuity) {
+			report = await documentValidationService.generateReport();
+			
+			// assign props here to display | todo, new agent code, move some to string tools, some to enum, new vault should use temporary?
+		}
+	});
 	onDestroy(() => changeListSheet?.close());
 
 	function countStates(): Record<DiffState, number> {
@@ -260,7 +272,7 @@
 <div id="diff-view-grid" class="mobile-navbar-clearance" class:diff-view-phone={isPhone}>
 	{#if issueCount > 0}
 		<div id="diff-view-banner">
-			{issueCount} continuity issues{isPhone ? "." : " found in this change."}
+			<span>{issueCount} continuity issues{isPhone ? "." : " found in this change."}</span>
 		</div>
 	{/if}
 	{#if isPhone}
@@ -511,7 +523,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.4em;
-		padding: 0 var(--size-4-2);
+		padding: var(--size-4-1) var(--size-4-2);
 		background-color: rgba(224,175,104,0.10);
 		border: 1px solid rgba(224,175,104,0.22);
 		color: var(--text-normal);

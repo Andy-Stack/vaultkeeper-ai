@@ -130,7 +130,6 @@ export enum Copy {
 
     // Chat Input Placeholders
     InputPlaceholderQuestion = "Provide an answer...",
-    InputPlaceholderDiff = "Make a suggestion...",
     InputPlaceholderPlanApproval = "Suggest a change to the plan...",
     InputPlaceholderNormal = "Type a message...",
 

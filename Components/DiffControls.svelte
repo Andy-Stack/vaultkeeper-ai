@@ -34,10 +34,12 @@
 <div id="diff-controls-wrapper" style:height="{height}px">
   <div id="diff-controls" bind:this={contentDiv}>
     {#if diffOpen}
-      <span>Proposed changes are waiting for your review.</span>
-      {#if Platform.isPhone}
-        <button class="diff-controls-link transparent-button" onclick={focusDiff}>Review changes</button>
-      {/if}
+      <div id="diff-controls-center">
+        <span id="diff-controls-label">Proposed changes are waiting for your review.</span>
+        {#if Platform.isPhone}
+          <button class="diff-controls-link transparent-button" onclick={focusDiff}>Review changes</button>
+        {/if}
+      </div>
     {/if}
   </div>
 </div>
@@ -53,10 +55,21 @@
     font-size: var(--font-smaller);
   }
 
+  #diff-controls-center {
+    display: flex;
+    flex-direction: column;
+    margin: auto;
+    padding-top: var(--size-4-2);
+  }
+
+  #diff-controls-label {
+    font-style: italic;
+    color: var(--text-muted);
+  }
+
   .diff-controls-link {
 		color: var(--color-accent-1);
 		text-decoration: underline;
-    margin-left: var(--size-4-2);
 		padding: 0;
 		cursor: pointer;
 	}

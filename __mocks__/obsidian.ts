@@ -115,6 +115,14 @@ export function normalizePath(path: string): string {
 	return path.replace(/\\/g, '/');
 }
 
+export function parseLinktext(linktext: string): { path: string; subpath: string } {
+	const subpathIndex = linktext.indexOf('#');
+	if (subpathIndex === -1) {
+		return { path: linktext, subpath: '' };
+	}
+	return { path: linktext.slice(0, subpathIndex), subpath: linktext.slice(subpathIndex) };
+}
+
 export function arrayBufferToBase64(buffer: ArrayBuffer): string {
 	return Buffer.from(buffer).toString('base64');
 }

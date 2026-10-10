@@ -68,6 +68,7 @@ import { QuickActionsService } from "./QuickActions/QuickActionsService";
 import { DocumentValidationService } from "./DocumentValidationService";
 import { TemporaryVaultService } from "./TemporaryVaultService";
 import { WikilinkValidation } from "../DocumentValidation/Stages/WikilinkValidation";
+import { BlockQuoteValidation } from "../DocumentValidation/Stages/BlockQuoteValidation";
 
 
 export async function RegisterPlugin(plugin: VaultkeeperAIPlugin) {
@@ -164,4 +165,5 @@ function RegisterValidationStages() {
     const documentValidationService = Resolve<DocumentValidationService>(Services.DocumentValidationService);
 
     documentValidationService.stages.push(new WikilinkValidation());
+    documentValidationService.stages.push(new BlockQuoteValidation());
 }

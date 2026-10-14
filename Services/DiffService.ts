@@ -59,7 +59,7 @@ export class DiffService extends Component {
         try {
             this.temporaryVaultService.reset();
             this.temporaryVaultService.addAll(vaultChangeRequests);
-            
+
             if (this.settingsService.settings.freeEdit) {
                 vaultChangeRequests.forEach(request => request.status = DiffState.Accepted);
             } else {
@@ -80,7 +80,9 @@ export class DiffService extends Component {
                 }
             }
 
-            // TODO: report back?
+            if (this.settingsService.settings.enableAgentContinuity) {
+                return { results: results, report: this.documentValidationService.documentReport }
+            }
 
             return { results: results };
         } catch (error) {

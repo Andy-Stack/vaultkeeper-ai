@@ -26,8 +26,8 @@ export class BlockQuoteValidation implements IValidationStage {
         // Unchanged notes can quote blocks whose text a modified note changes
         const targetPaths = this.temporaryVaultService.modifiedPaths();
 
-        for (const { link, lines } of await getLinksToCheck(this.plugin, this.temporaryVaultService, targetPaths)) {
-            const drift = await this.findDrift(link, lines);
+        for (const { link, lines, changePath } of await getLinksToCheck(this.plugin, this.temporaryVaultService, targetPaths)) {
+            const drift = await this.findDrift(link, lines, changePath);
             if (drift) {
                 result.issues.push(drift);
             }
@@ -36,7 +36,7 @@ export class BlockQuoteValidation implements IValidationStage {
         return result;
     }
 
-    private async findDrift(link: IBacklink, lines: string[]): Promise<IQuoteDrift | undefined> {
+    private async findDrift(link: IBacklink, lines: string[], changePath: string): Promise<IQuoteDrift | undefined> {
         // Embeds render the block's current text, so they can't drift
         if (link.isEmbed || !link.subpath.startsWith("#^")) {
             return undefined;
@@ -58,7 +58,7 @@ export class BlockQuoteValidation implements IValidationStage {
             return undefined;
         }
 
-        return { ...link, lineText: lines[link.line] ?? "", targetPath, quotedText, blockText };
+        return { ...link, lineText: lines[link.line] ?? "", targetPath, quotedText, blockText, changePath };
     }
 
 }

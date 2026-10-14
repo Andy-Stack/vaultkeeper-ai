@@ -81,10 +81,13 @@ describe('BlockQuoteValidation', () => {
 	it('flags unchanged notes when a modified note edits the quoted block', async () => {
 		const files = { 'Source.md': source, 'Hooks.md': '"trusts no one" [[Source#^trust]]' };
 
-		const result = await validate(files, [modifyChange('Source.md', source, 'The guild trusts everyone. ^trust')]);
+		const modified = modifyChange('Source.md', source, 'The guild trusts everyone. ^trust');
+
+		const result = await validate(files, [modified]);
 
 		expect(result.issues).toMatchObject([{ source: 'Hooks.md', quotedText: 'trusts no one', blockText: 'The guild trusts everyone.' }]);
 		expect(result.affectedFiles()).toEqual(['Hooks.md']);
+		expect(result.issuesFor(modified)).toHaveLength(1);
 	});
 
 	it('leaves missing notes, missing blocks, bare links and embeds to other checks', async () => {

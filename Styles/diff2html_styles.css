@@ -75,14 +75,14 @@
 .d2h-wrapper {
     container-type: size;
     height: 100%;
+    border-radius: var(--radius-s);
 }
 
 .d2h-wrapper .d2h-file-wrapper.d2h-file-wrapper {
     display: flex;
     flex-direction: column;
     height: 100%;
-    border-top: none;
-    border-radius: 0 0 var(--radius-s) var(--radius-s);
+    border: none;
 }
 
 .d2h-wrapper .d2h-file-header {

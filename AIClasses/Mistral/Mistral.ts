@@ -10,6 +10,7 @@ import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import type { ChatCompletionToolDefinition, ChatCompletionContentPart } from "AIClasses/ChatCompletions/ChatCompletionsTypes";
 import type { MistralFileService } from "./MistralFileService";
 import { replaceCopy } from 'Helpers/Helpers';
+import { StringTools } from "Helpers/StringTools";
 import { Copy } from "Enums/Copy";
 import { MistralAgent } from "./MistralAgent";
 import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponsePayload";
@@ -61,19 +62,25 @@ export class Mistral extends ChatCompletionsAIClass {
         const fileService = this.aiFileService as MistralFileService;
 
         for (const attachment of attachments) {
+            const mimeType = toMimeType(attachment.getMimeType());
+            const isPlainText = MimeTypeToFileTypes[mimeType].some(fileType => isTextFile(fileType));
+
+            // Inline text: Mistral routes every document_url through OCR, which fails for text files
+            if (isPlainText) {
+                const text = new TextDecoder().decode(StringTools.toBuffer(attachment.base64));
+                contentParts.push({
+                    type: "text",
+                    text: `${replaceCopy(Copy.AttachedFile, [attachment.fileName])}\n\n${text}`
+                });
+                continue;
+            }
+
             const fileID = attachment.getFileID(this.provider);
             if (!fileID) {
                 continue; // Skip - upload failed, error message added in extractContents()
             }
 
-            const mimeType = toMimeType(attachment.getMimeType());
-
-            let isPlainText = false;
-            if (MimeTypeToFileTypes[mimeType].some(fileType => isTextFile(fileType))) {
-                isPlainText = true;
-            }
-
-            if (!isPlainText && !this.isSupportedMimeType(mimeType)) {
+            if (!this.isSupportedMimeType(mimeType)) {
                 contentParts.push({
                     type: "text",
                     text: `User attempted to share a file with an unsupported mime type '${mimeType}': ${attachment.fileName}`
@@ -81,8 +88,7 @@ export class Mistral extends ChatCompletionsAIClass {
                 continue;
             }
 
-            // Documents and text files: use signed URL via document_url
-            if (isPlainText || mimeType === MimeType.APPLICATION_PDF) {
+            if (mimeType === MimeType.APPLICATION_PDF) {
                 const signedUrl = fileService.getSignedUrl(fileID);
                 if (signedUrl) {
                     contentParts.push(

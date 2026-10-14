@@ -1,13 +1,14 @@
 import { TFile } from "obsidian";
 import { dirname, join } from "path-browserify";
 import { FileEvent } from "Enums/FileEvent";
-import type { DiffState } from "Enums/DiffState";
+import { DiffState } from "Enums/DiffState";
 import type VaultkeeperAIPlugin from "main";
 import { getConfig } from "Helpers/ObsidianInternals";
 import { isNotePath } from "Helpers/MarkdownStructureHelper";
 import { Resolve } from "./DependencyService";
 import { Services } from "./Services";
 import type { IVaultChangeResponse, VaultService } from "./VaultService";
+import type { IValidationIssue } from "../DocumentValidation/IValidationIssue";
 
 export interface IVaultChange {
     oldPath?: string;
@@ -20,6 +21,8 @@ export interface IVaultChange {
     diffString?: string;
     suggestion?: string;
     status: DiffState;
+    continuityIssueCount?: number;
+    continuityIssues?: IValidationIssue[];
 }
 
 export interface IVaultChangeRequest<T> extends IVaultChange {
@@ -51,19 +54,22 @@ export class TemporaryVaultService {
     }
 
     public addAll(vaultChanges: IVaultChange[]) {
-        for (const vaultChange of vaultChanges) {
-            this.vaultChanges.push(vaultChange);
-            this.track(vaultChange);
+        this.vaultChanges.push(...vaultChanges);
+        this.retrack();
+    }
+
+    public retrack() {
+        this.clearTracked();
+        for (const vaultChange of this.vaultChanges) {
+            if (vaultChange.status === DiffState.None || vaultChange.status === DiffState.Accepted) {
+                this.track(vaultChange);
+            }
         }
     }
 
     public reset() {
         this.vaultChanges = [];
-        this.pendingPaths.clear();
-        this.pendingContent.clear();
-        this.movedPaths.clear();
-        this.deletedPaths.clear();
-        this.modifiedNotePaths.clear();
+        this.clearTracked();
         this.liveContent.clear();
     }
 
@@ -167,6 +173,14 @@ export class TemporaryVaultService {
         if (vaultChange.changeType !== FileEvent.Delete && newPath && isNotePath(newPath) && newContent !== undefined && !vaultChange.base64) {
             this.pendingContent.set(newPath, newContent);
         }
+    }
+
+    private clearTracked() {
+        this.pendingPaths.clear();
+        this.pendingContent.clear();
+        this.movedPaths.clear();
+        this.deletedPaths.clear();
+        this.modifiedNotePaths.clear();
     }
 
     private isRemoved(path: string): boolean {

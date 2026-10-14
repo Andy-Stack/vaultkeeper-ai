@@ -1,8 +1,11 @@
 import type { IBacklink } from "Helpers/WikilinkHelper";
 import { BrokenLinkReason } from "Enums/BrokenLinkReason";
+import type { IVaultChange } from "Services/TemporaryVaultService";
+import { isIssueForChange } from "Helpers/VaultChangeHelper";
 import type { IDocumentValidationResult } from "../IDocumentValidationResult";
+import type { IValidationIssue } from "../IValidationIssue";
 
-export interface IBrokenLink extends IBacklink {
+export interface IBrokenLink extends IBacklink, IValidationIssue {
     reason: BrokenLinkReason;
     lineText: string; // the full source line; column and original.length mark the link within it
 }
@@ -13,6 +16,10 @@ export class WikilinkValidationResult implements IDocumentValidationResult {
 
     public issueCount(): number {
         return this.issues.length;
+    }
+
+    public issuesFor(vaultChange: IVaultChange): IBrokenLink[] {
+        return this.issues.filter(issue => isIssueForChange(issue, vaultChange));
     }
 
     public brokenWikilinks(): IBrokenLink[] {

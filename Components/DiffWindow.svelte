@@ -17,8 +17,10 @@
 	import DiffChangeListSheet from "Components/DiffChangeListSheet.svelte";
 	import TruncatedPath from "Components/TruncatedPath.svelte";
 	import type { DocumentValidationService } from "Services/DocumentValidationService";
-	import type { IDocumentReport } from "../DocumentValidation/IDocumentReport";
 	import type { SettingsService } from "Services/SettingsService";
+	import type { IBrokenLink } from "../DocumentValidation/Results/WikilinkValidationResult";
+	import type { IQuoteDrift } from "../DocumentValidation/Results/BlockQuoteValidationResult";
+	import { BrokenLinkReason } from "Enums/BrokenLinkReason";
 
 	interface DiffRenderOptions {
 		vaultChange: IVaultChange | undefined;
@@ -36,26 +38,31 @@
 
 	const isPhone = Platform.isPhone;
 
-	let report: IDocumentReport | undefined;
 	let suggestionElement: HTMLDivElement | undefined;
 	let changeListSheet: IBottomSheetHandle | undefined;
+	let isContinuityExpanded = false;
 
 	let vaultChanges: IVaultChange[] = temporaryVaultService.getVaultChanges();
 
 	let selectedItem: IVaultChange | undefined = vaultChanges[0];
+	
+	$: continuityIssues = selectedItem?.continuityIssues ?? [];
+	$: brokenLinks = continuityIssues.filter((issue): issue is IBrokenLink => "reason" in issue);
+	$: brokenWikilinks = brokenLinks.filter(issue => issue.reason !== BrokenLinkReason.MissingBlock);
+	$: brokenBlockReferences = brokenLinks.filter(issue => issue.reason === BrokenLinkReason.MissingBlock);
+	$: quoteDrifts = continuityIssues.filter((issue): issue is IQuoteDrift => "quotedText" in issue);
 
 	let stateCounts = countStates();
-	$: issueCount = report?.issueCount() ?? 0;
+	$: issueCount = 0;
 	$: selectedIndex = selectedItem ? vaultChanges.indexOf(selectedItem) : -1;
 	$: doneLabel = reviewDoneLabel(stateCounts[DiffState.None]);
 
+	let latestValidationRun = 0;
+
 	onMount(async () => {
-		if (settingsService.settings.enableContinuity) {
-			report = await documentValidationService.generateReport();
-			
-			// assign props here to display | todo, new agent code, move some to string tools, some to enum, new vault should use temporary?
-		}
+		await validate();
 	});
+
 	onDestroy(() => changeListSheet?.close());
 
 	function countStates(): Record<DiffState, number> {
@@ -77,6 +84,36 @@
 		vaultChanges = [...vaultChanges];
 		selectedItem = selectedItem;
 		stateCounts = countStates();
+	}
+
+	async function validate() {
+		if (!settingsService.settings.enableContinuity) {
+			issueCount = 0;
+			vaultChanges.forEach(change => {
+				change.continuityIssueCount = undefined;
+				change.continuityIssues = undefined;
+			});
+			return;
+		}
+
+		const validationRun = ++latestValidationRun;
+		temporaryVaultService.retrack();
+		await documentValidationService.generateReport();
+
+		// A newer status change started another run while this one was awaiting, so its results are stale
+		if (validationRun !== latestValidationRun) {
+			return;
+		}
+
+		issueCount = documentValidationService.issueCount();
+		documentValidationService.assignContinuityIssuesToVaultChanges(vaultChanges);
+
+		refresh();
+	}
+
+	function refreshAndValidate() {
+		refresh();
+		void validate();
 	}
 
 	function draw(element: HTMLElement, options: DiffRenderOptions) {
@@ -188,7 +225,7 @@
 			selectedItem.status = DiffState.Suggestion;
 		}
 
-		refresh();
+		refreshAndValidate();
 	}
 
 	function removeSuggestion() {
@@ -206,7 +243,7 @@
 		const nextStatus = selectedItem.status === status ? DiffState.None : status;
 		removeSuggestion();
 		selectedItem.status = nextStatus;
-		refresh();
+		refreshAndValidate();
 	}
 
 	function handleReject() {
@@ -228,7 +265,7 @@
 			}
 		}
 
-		refresh();
+		refreshAndValidate();
 	}
 
 	function markVaultChange(vaultChange: IVaultChange | undefined, diffState: DiffState, shouldRefresh: boolean = false) {
@@ -241,7 +278,7 @@
 		}
 
 		if (shouldRefresh) {
-			refresh();
+			refreshAndValidate();
 		}
 	}
 
@@ -267,244 +304,340 @@
 
 		void changeListSheet.closed.then(() => changeListSheet = undefined);
 	}
+
+	function toggleContinuityExpander() {
+		isContinuityExpanded = !isContinuityExpanded;
+	}
+
+	function handleContinuityExpanderKeydown(event: KeyboardEvent) {
+		if (event.key === "Enter" || event.key === " ") {
+			event.preventDefault();
+			toggleContinuityExpander();
+		}
+	}
 </script>
 
 <div id="diff-view-grid" class="mobile-navbar-clearance" class:diff-view-phone={isPhone}>
 	{#if issueCount > 0}
-		<div id="diff-view-banner">
-			<span>{issueCount} continuity issues{isPhone ? "." : " found in this change."}</span>
+		<div id="diff-view-banner" transition:slide>
+			<span class="diff-view-continuity-alert-icon" use:setElementIcon={"triangle-alert"}></span>
+			<span>{issueCount} continuity issue{issueCount === 1 ? "" : "s"}{isPhone ? "." : " found in this change."}</span>
 		</div>
 	{/if}
 	{#if isPhone}
-	<div id="diff-view-navigator" class="diff-view-border">
-		<button
-			class="diff-view-navigator-step transparent-button"
-			aria-label="Previous change"
-			disabled={selectedIndex <= 0}
-			use:setElementIcon={"chevron-left"}
-			onclick={() => step(-1)}>
-		</button>
-		<button
-			id="diff-view-navigator-center"
-			class="transparent-button"
-			aria-label="Show all proposed changes"
-			onclick={openChangeList}>
-			<span id="diff-view-navigator-count">
-				{selectedIndex + 1} of {vaultChanges.length}
-				<span id="diff-view-navigator-chevron" use:setElementIcon={"chevron-down"}></span>
-			</span>
-			<span id="diff-view-navigator-name" class="diff-view-ellipsis-label">{selectedItem ? vaultChangeName(selectedItem) : "-"}</span>
-		</button>
-		<button
-			class="diff-view-navigator-step transparent-button"
-			aria-label="Next change"
-			disabled={selectedIndex >= vaultChanges.length - 1}
-			use:setElementIcon={"chevron-right"}
-			onclick={() => step(1)}>
-		</button>
-	</div>
-	{:else}
-	<div id="diff-view-panel" class="diff-view-border">
-		<div id="diff-view-panel-header">
-			<span id="diff-view-panel-header-title">Proposed changes</span>
-			<span id="diff-view-panel-header-count">{vaultChanges.length - stateCounts[DiffState.None]}/{vaultChanges.length}</span>
-		</div>
-		<div id="diff-view-panel-body">
-			{#each vaultChanges as vaultChange}
-				<div
-					class="diff-view-panel-body-item"
-					class:diff-view-panel-body-item-selected={vaultChange === selectedItem}
-					aria-label={vaultChange.newPath ?? vaultChange.file?.path ?? vaultChangeName(vaultChange)}
-					role="button"
-					tabindex="0"
-					onclick={() => select(vaultChange)}
-					onkeydown={(e) => e.key === "Enter" && select(vaultChange)}>
-					<span 
-						 class="diff-view-panel-body-item-ellipse diff-view-ellipse"
-						 aria-hidden="true"
-						 class:secondary={displayState(vaultChange) === DiffState.None}
-						 class:green={displayState(vaultChange) === DiffState.Accepted}
-						 class:red={displayState(vaultChange) === DiffState.Rejected}
-						 class:accent={displayState(vaultChange) === DiffState.Suggestion}>
-					 </span>
-					<span class="diff-view-panel-body-item-name diff-view-ellipsis-label">{vaultChangeName(vaultChange)}</span>
-					<span class="diff-view-panel-body-item-path diff-view-ellipsis-label">{vaultChangeFolder(vaultChange)}</span>
-					<div class="diff-view-panel-body-item-controls">
-						<button 
-							   class="diff-view-panel-body-item-control suggest" aria-label="Suggest changes"
-							   class:accent={vaultChange.status === DiffState.Suggestion}
-							   use:setElementIcon={"pencil"}
-							   onclick={(e) => { e.stopPropagation(); markVaultChange(vaultChange, DiffState.Suggestion, true); }}>
-						</button>
-						<button 
-							   class="diff-view-panel-body-item-control reject" aria-label="Reject"
-							   class:button-red={vaultChange.status === DiffState.Rejected}
-							   use:setElementIcon={"x"}
-							   onclick={(e) => { e.stopPropagation(); markVaultChange(vaultChange, DiffState.Rejected, true); }}>
-						</button>
-						<button
-							   class="diff-view-panel-body-item-control accept" aria-label="Accept"
-							   class:button-green={vaultChange.status === DiffState.Accepted}
-							   use:setElementIcon={"check"}
-							   onclick={(e) => { e.stopPropagation(); markVaultChange(vaultChange, DiffState.Accepted, true); }}>
-						</button>
-					</div>
-				</div>
-			{/each}
-		</div>
-		<div id="diff-view-panel-footer">
+		<div id="diff-view-navigator" class="diff-view-border">
 			<button
-				   class="diff-view-panel-link transparent-button"
-				   aria-label="Accept remaining"
-				   onclick={() => markRemaining(DiffState.Accepted)}>
-				   Accept remaining
-				</button>
-			<button
-				   class="diff-view-panel-link transparent-button"
-				   aria-label="Reject remaining"
-				   onclick={() => markRemaining(DiffState.Rejected)}>
-				   Reject remaining
-				</button>
-		</div>
-	</div>
-	{/if}
-	<div id="diff-view-preview">
-		{#if selectedItem}
-			{#if isPhone}
-			<div id="diff-view-preview-meta">
-				<span
-					 class="diff-view-ellipse"
-					 aria-hidden="true"
-					 class:secondary={displayState(selectedItem) === DiffState.None}
-					 class:green={displayState(selectedItem) === DiffState.Accepted}
-					 class:red={displayState(selectedItem) === DiffState.Rejected}
-					 class:accent={displayState(selectedItem) === DiffState.Suggestion}></span>
-				<span id="diff-view-preview-meta-path" class="diff-view-ellipsis-label">{vaultChangeFolder(selectedItem)}</span>
-			</div>
-			{:else}
-			<div id="diff-view-preview-header">
-				<span 
-					 id="diff-view-preview-header-ellipse" class="diff-view-ellipse"
-					 aria-hidden="true"
-					 class:secondary={displayState(selectedItem) === DiffState.None}
-					 class:green={displayState(selectedItem) === DiffState.Accepted}
-					 class:red={displayState(selectedItem) === DiffState.Rejected}
-					 class:accent={displayState(selectedItem) === DiffState.Suggestion}></span>
-				<span id="diff-view-preview-header-name" class="diff-view-ellipsis-label">{vaultChangeName(selectedItem)}</span>
-				<span id="diff-view-preview-header-path"><TruncatedPath path={vaultChangeFolder(selectedItem)} /></span>
-				<div id="diff-view-preview-header-controls">
-					<button 
-						id="diff-view-preview-header-control-suggest"
-						class:diff-view-preview-header-control-suggest-active={selectedItem.status === DiffState.Suggestion}
-						aria-label="Suggest changes"
-						onclick={toggleSuggestion}>
-						Suggest changes
-					</button>
-					<button 
-						   id="diff-view-preview-header-control-reject"
-						   class:button-red={selectedItem.status === DiffState.Rejected}
-						   aria-label="Reject"
-						   onclick={handleReject}>
-						   Reject
-						</button>
-					<button 
-						   id="diff-view-preview-header-control-accept"
-						   class:button-green={selectedItem.status === DiffState.Accepted}
-						   aria-label="Accept"
-						   onclick={handleAccept}>
-						   Accept
-						</button>
-				</div>
-			</div>
-			{/if}
-			{#if selectedItem.status === DiffState.Suggestion}
-				<div id="diff-view-preview-suggestion" transition:slide>
-					<div
-						id="suggestion-field"
-						use:suggestionField
-						contenteditable="plaintext-only"
-						oninput={handleInput}
-						oncopy={handleCopy}
-						onpaste={handlePaste}
-						data-placeholder="Suggest an alternative change..."
-						aria-label="Suggest an alternative change"
-						role="textbox"
-						aria-multiline="true"
-						tabindex="0">
-					</div>
-					<span id="diff-view-preview-suggestion-label">Sent to the agent when you apply</span>
-					<button 
-						id="diff-view-preview-suggestion-button" class="transparent-button"
-						aria-label="Remove suggestion"
-						onclick={toggleSuggestion}>
-						Remove suggestion
-					</button>
-				</div>
-			{/if}
-			{#if selectedItem.changeType === FileEvent.Rename}
-				<div id="diff-view-preview-move-file">
-					<span id="diff-view-preview-move-file-title">File will be moved</span>
-					<span id="diff-view-preview-move-file-description">File contents will remain identical, only the location will change</span>
-					<div id="diff-view-preview-move-file-paths">
-						<div id="diff-view-preview-move-file-old-path-container">
-							<span class="diff-view-preview-move-file-path-prefix">from:</span>
-							<span id="diff-view-preview-move-file-old-path"><TruncatedPath path={selectedItem.oldPath} /></span>
-						</div>
-						<div id="diff-view-preview-move-file-new-path-container">
-							<span class="diff-view-preview-move-file-path-prefix">to:</span>
-							<span id="diff-view-preview-move-file-new-path"><TruncatedPath path={selectedItem.newPath} /></span>
-						</div>
-					</div>
-				</div>
-			{:else}
-				<div class="d2h-wrapper" use:diffRenderAction={{ vaultChange: selectedItem, config }}></div>
-			{/if}
-		{/if}
-	</div>
-	<div id="diff-view-footer">
-		<span class="diff-view-ellipse green" aria-hidden="true"></span>
-		<span class="diff-view-footer-label">{stateCounts[DiffState.Accepted]} accepted</span>
-		<span class="diff-view-ellipse red" aria-hidden="true"></span>
-		<span class="diff-view-footer-label">{stateCounts[DiffState.Rejected]} rejected</span>
-		<span class="diff-view-ellipse accent" aria-hidden="true"></span>
-		<span class="diff-view-footer-label">{stateCounts[DiffState.Suggestion]} to revise</span>
-		{#if !isPhone}
-		<span class="diff-view-ellipse secondary" aria-hidden="true"></span>
-		<span class="diff-view-footer-label">{stateCounts[DiffState.None]} remaining</span>
-		{/if}
-		<button
-			   id="diff-view-footer-done"
-			   aria-label={doneLabel}
-			   class:diff-view-footer-done-active={stateCounts[DiffState.None] === 0}
-			   disabled={stateCounts[DiffState.None] > 0}
-			   onclick={handleDone}>
-			   {doneLabel}
+				class="diff-view-navigator-step transparent-button"
+				aria-label="Previous change"
+				disabled={selectedIndex <= 0}
+				use:setElementIcon={"chevron-left"}
+				onclick={() => step(-1)}>
 			</button>
-	</div>
+			<button
+				id="diff-view-navigator-center"
+				class="transparent-button"
+				aria-label="Show all proposed changes"
+				onclick={openChangeList}>
+				<span id="diff-view-navigator-count">
+					{selectedIndex + 1} of {vaultChanges.length}
+					<span id="diff-view-navigator-chevron" use:setElementIcon={"chevron-down"}></span>
+				</span>
+				<span id="diff-view-navigator-name" class="diff-view-ellipsis-label">{selectedItem ? vaultChangeName(selectedItem) : "-"}</span>
+			</button>
+			<button
+				class="diff-view-navigator-step transparent-button"
+				aria-label="Next change"
+				disabled={selectedIndex >= vaultChanges.length - 1}
+				use:setElementIcon={"chevron-right"}
+				onclick={() => step(1)}>
+			</button>
+		</div>
+	{:else}
+		<div id="diff-view-panel" class="diff-view-border">
+			<div id="diff-view-panel-header">
+				<span id="diff-view-panel-header-title">Proposed changes</span>
+				<span id="diff-view-panel-header-count">{vaultChanges.length - stateCounts[DiffState.None]}/{vaultChanges.length}</span>
+			</div>
+			<div id="diff-view-panel-body">
+				{#each vaultChanges as vaultChange}
+					<div
+						class="diff-view-panel-body-item"
+						class:diff-view-panel-body-item-selected={vaultChange === selectedItem}
+						aria-label={vaultChange.newPath ?? vaultChange.file?.path ?? vaultChangeName(vaultChange)}
+						role="button"
+						tabindex="0"
+						onclick={() => select(vaultChange)}
+						onkeydown={(e) => e.key === "Enter" && select(vaultChange)}>
+						<span 
+							class="diff-view-panel-body-item-ellipse diff-view-ellipse"
+							aria-hidden="true"
+							class:secondary={displayState(vaultChange) === DiffState.None}
+							class:green={displayState(vaultChange) === DiffState.Accepted}
+							class:red={displayState(vaultChange) === DiffState.Rejected}
+							class:accent={displayState(vaultChange) === DiffState.Suggestion}>
+						</span>
+						<span class="diff-view-panel-body-item-name diff-view-ellipsis-label">{vaultChangeName(vaultChange)}</span>
+						<span class="diff-view-panel-body-item-path diff-view-ellipsis-label">{vaultChangeFolder(vaultChange)}</span>
+						{#if (vaultChange.continuityIssueCount ?? 0) > 0}
+							<span 
+								class="diff-view-panel-body-item-alert diff-view-continuity-alert-icon"
+								use:setElementIcon={"triangle-alert"}
+								transition:slide={{ axis: 'x' }}></span>
+						{/if}
+						<div class="diff-view-panel-body-item-controls">
+							<button 
+								class="diff-view-panel-body-item-control suggest" aria-label="Suggest changes"
+								class:accent={vaultChange.status === DiffState.Suggestion}
+								use:setElementIcon={"pencil"}
+								onclick={(e) => { e.stopPropagation(); markVaultChange(vaultChange, DiffState.Suggestion, true); }}>
+							</button>
+							<button 
+								class="diff-view-panel-body-item-control reject" aria-label="Reject"
+								class:button-red={vaultChange.status === DiffState.Rejected}
+								use:setElementIcon={"x"}
+								onclick={(e) => { e.stopPropagation(); markVaultChange(vaultChange, DiffState.Rejected, true); }}>
+							</button>
+							<button
+								class="diff-view-panel-body-item-control accept" aria-label="Accept"
+								class:button-green={vaultChange.status === DiffState.Accepted}
+								use:setElementIcon={"check"}
+								onclick={(e) => { e.stopPropagation(); markVaultChange(vaultChange, DiffState.Accepted, true); }}>
+							</button>
+						</div>
+					</div>
+				{/each}
+			</div>
+			<div id="diff-view-panel-footer">
+				<button
+					class="diff-view-panel-link transparent-button"
+					aria-label="Accept remaining"
+					onclick={() => markRemaining(DiffState.Accepted)}>
+					Accept remaining
+					</button>
+				<button
+					class="diff-view-panel-link transparent-button"
+					aria-label="Reject remaining"
+					onclick={() => markRemaining(DiffState.Rejected)}>
+					Reject remaining
+					</button>
+			</div>
+		</div>
+	{/if}
+		<div id="diff-view-preview">
+			{#if selectedItem}
+				{#if isPhone}
+					<div id="diff-view-preview-meta">
+						<span
+							class="diff-view-ellipse"
+							aria-hidden="true"
+							class:secondary={displayState(selectedItem) === DiffState.None}
+							class:green={displayState(selectedItem) === DiffState.Accepted}
+							class:red={displayState(selectedItem) === DiffState.Rejected}
+							class:accent={displayState(selectedItem) === DiffState.Suggestion}></span>
+						<span id="diff-view-preview-meta-path" class="diff-view-ellipsis-label">{vaultChangeFolder(selectedItem)}</span>
+					</div>
+				{:else}
+					<div id="diff-view-preview-header">
+						<span 
+							id="diff-view-preview-header-ellipse" class="diff-view-ellipse"
+							aria-hidden="true"
+							class:secondary={displayState(selectedItem) === DiffState.None}
+							class:green={displayState(selectedItem) === DiffState.Accepted}
+							class:red={displayState(selectedItem) === DiffState.Rejected}
+							class:accent={displayState(selectedItem) === DiffState.Suggestion}></span>
+						<span id="diff-view-preview-header-name" class="diff-view-ellipsis-label">{vaultChangeName(selectedItem)}</span>
+						<span id="diff-view-preview-header-path"><TruncatedPath path={vaultChangeFolder(selectedItem)} /></span>
+						<div id="diff-view-preview-header-controls">
+							<button 
+								id="diff-view-preview-header-control-suggest"
+								class:diff-view-preview-header-control-suggest-active={selectedItem.status === DiffState.Suggestion}
+								aria-label="Suggest changes"
+								onclick={toggleSuggestion}>
+								Suggest changes
+							</button>
+							<button 
+								id="diff-view-preview-header-control-reject"
+								class:button-red={selectedItem.status === DiffState.Rejected}
+								aria-label="Reject"
+								onclick={handleReject}>
+								Reject
+								</button>
+							<button 
+								id="diff-view-preview-header-control-accept"
+								class:button-green={selectedItem.status === DiffState.Accepted}
+								aria-label="Accept"
+								onclick={handleAccept}>
+								Accept
+								</button>
+						</div>
+					</div>
+				{/if}
+				{#if selectedItem.status === DiffState.Suggestion}
+					<div id="diff-view-preview-suggestion" transition:slide>
+						<div
+							id="suggestion-field"
+							use:suggestionField
+							contenteditable="plaintext-only"
+							oninput={handleInput}
+							oncopy={handleCopy}
+							onpaste={handlePaste}
+							data-placeholder="Suggest an alternative change..."
+							aria-label="Suggest an alternative change"
+							role="textbox"
+							aria-multiline="true"
+							tabindex="0">
+						</div>
+						<span id="diff-view-preview-suggestion-label">Sent to the agent when you apply</span>
+						<button 
+							id="diff-view-preview-suggestion-button" class="transparent-button"
+							aria-label="Remove suggestion"
+							onclick={toggleSuggestion}>
+							Remove suggestion
+						</button>
+					</div>
+				{/if}
+				<div id="diff-view-preview-body">
+					{#if selectedItem.changeType === FileEvent.Rename}
+						<div id="diff-view-preview-move-file">
+							<span id="diff-view-preview-move-file-title">File will be moved</span>
+							<span id="diff-view-preview-move-file-description">File contents will remain identical, only the location will change</span>
+							<div id="diff-view-preview-move-file-paths">
+								<div id="diff-view-preview-move-file-old-path-container">
+									<span class="diff-view-preview-move-file-path-prefix">from:</span>
+									<span id="diff-view-preview-move-file-old-path"><TruncatedPath path={selectedItem.oldPath} /></span>
+								</div>
+								<div id="diff-view-preview-move-file-new-path-container">
+									<span class="diff-view-preview-move-file-path-prefix">to:</span>
+									<span id="diff-view-preview-move-file-new-path"><TruncatedPath path={selectedItem.newPath} /></span>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<div class="d2h-wrapper" use:diffRenderAction={{ vaultChange: selectedItem, config }}></div>
+					{/if}
+					{#if selectedItem.continuityIssues && (selectedItem.continuityIssueCount ?? 0) > 0}
+						<div id="diff-view-continuity" transition:slide>
+							<div
+								id="diff-view-continuity-expander-header"
+								onclick={toggleContinuityExpander}
+								onkeydown={handleContinuityExpanderKeydown}
+								role="button"
+								tabindex="0">
+								<span id="diff-view-continuity-expander-chevron" use:setElementIcon={isContinuityExpanded ? "chevron-down" : "chevron-right"}></span>
+								<span id="diff-view-continuity-expander-header-title">
+									<span class="diff-view-continuity-alert-icon" use:setElementIcon={"triangle-alert"}></span>
+									<span>{selectedItem.continuityIssueCount} continuity issue{selectedItem.continuityIssueCount === 1 ? "" : "s"}</span>
+								</span>
+								<span id="diff-view-continuity-expander-header-label">Informational</span>
+							</div>
+							{#if isContinuityExpanded}
+								<div id="diff-view-continuity-expander-body" transition:slide={{ duration: 250 }}>
+									{#snippet issueSource(source: string, line: number, detail: string)}
+										<div class="diff-view-continuity-issue-source">
+											<TruncatedPath path={source} />
+											<span class="diff-view-continuity-issue-detail">line {line + 1} · {detail}</span>
+										</div>
+									{/snippet}
+									{#snippet highlightedLine(lineText: string, column: number, original: string)}
+										<div class="diff-view-continuity-issue-line">
+											<span>{lineText.slice(0, column)}</span>
+											<span class="diff-view-continuity-issue-link">{original}</span>
+											<span>{lineText.slice(column + original.length)}</span>
+										</div>
+									{/snippet}
+									{#if brokenWikilinks.length > 0}
+										<div class="diff-view-continuity-section-header">
+											<span class="diff-view-continuity-section-title">BROKEN WIKILINKS ({brokenWikilinks.length})</span>
+											<span class="diff-view-continuity-section-description">Target note or heading no longer exists</span>
+										</div>
+										{#each brokenWikilinks as brokenWikilink}
+											<div class="diff-view-continuity-issue">
+												{@render issueSource(brokenWikilink.source, brokenWikilink.line, brokenWikilink.reason)}
+												{@render highlightedLine(brokenWikilink.lineText, brokenWikilink.column, brokenWikilink.original)}
+											</div>
+										{/each}
+									{/if}
+									{#if brokenBlockReferences.length > 0}
+										<div class="diff-view-continuity-section-header">
+											<span class="diff-view-continuity-section-title">BROKEN BLOCK REFERENCES ({brokenBlockReferences.length})</span>
+											<span class="diff-view-continuity-section-description">Referenced block removed or its ^id dropped</span>
+										</div>
+										{#each brokenBlockReferences as brokenBlockReference}
+											<div class="diff-view-continuity-issue">
+												{@render issueSource(brokenBlockReference.source, brokenBlockReference.line, brokenBlockReference.reason)}
+												{@render highlightedLine(brokenBlockReference.lineText, brokenBlockReference.column, brokenBlockReference.original)}
+											</div>
+										{/each}
+									{/if}
+									{#if quoteDrifts.length > 0}
+										<div class="diff-view-continuity-section-header">
+											<span class="diff-view-continuity-section-title">CHANGED BLOCK QUOTES ({quoteDrifts.length})</span>
+											<span class="diff-view-continuity-section-description">Quoted text no longer matches its block</span>
+										</div>
+										{#each quoteDrifts as quoteDrift}
+											<div class="diff-view-continuity-issue">
+												{@render issueSource(quoteDrift.source, quoteDrift.line, `quotes ${quoteDrift.targetPath}`)}
+												{@render highlightedLine(quoteDrift.lineText, quoteDrift.column, quoteDrift.original)}
+												<div class="diff-view-continuity-quote">
+													<span class="diff-view-continuity-quote-prefix">quoted:</span>
+													<span class="diff-view-continuity-quote-old">{quoteDrift.quotedText}</span>
+													<span class="diff-view-continuity-quote-prefix">now:</span>
+													<span class="diff-view-continuity-quote-new">{quoteDrift.blockText}</span>
+												</div>
+											</div>
+										{/each}
+									{/if}
+								</div>
+							{/if}
+						</div>
+					{/if}
+				</div>
+			{/if}
+		</div>
+		<div id="diff-view-footer">
+			<span class="diff-view-ellipse green" aria-hidden="true"></span>
+			<span class="diff-view-footer-label">{stateCounts[DiffState.Accepted]} accepted</span>
+			<span class="diff-view-ellipse red" aria-hidden="true"></span>
+			<span class="diff-view-footer-label">{stateCounts[DiffState.Rejected]} rejected</span>
+			<span class="diff-view-ellipse accent" aria-hidden="true"></span>
+			<span class="diff-view-footer-label">{stateCounts[DiffState.Suggestion]} to revise</span>
+			{#if !isPhone}
+				<span class="diff-view-ellipse secondary" aria-hidden="true"></span>
+				<span class="diff-view-footer-label">{stateCounts[DiffState.None]} remaining</span>
+			{/if}
+				<button
+					id="diff-view-footer-done"
+					aria-label={doneLabel}
+					class:diff-view-footer-done-active={stateCounts[DiffState.None] === 0}
+					disabled={stateCounts[DiffState.None] > 0}
+					onclick={handleDone}>
+					{doneLabel}
+					</button>
+		</div>
 	{#if isPhone && selectedItem}
-	<div id="diff-view-actions">
-		<button
-			id="diff-view-actions-suggest"
-			aria-label="Suggest changes"
-			class:diff-view-preview-header-control-suggest-active={selectedItem.status === DiffState.Suggestion}
-			use:setElementIcon={"pencil"}
-			onclick={toggleSuggestion}>
-		</button>
-		<button
-			class="diff-view-actions-button"
-			class:button-red={selectedItem.status === DiffState.Rejected}
-			aria-label="Reject"
-			onclick={handleReject}>
-			Reject
-		</button>
-		<button
-			class="diff-view-actions-button"
-			class:button-green={selectedItem.status === DiffState.Accepted}
-			aria-label="Accept"
-			onclick={handleAccept}>
-			Accept
-		</button>
-	</div>
+		<div id="diff-view-actions">
+			<button
+				id="diff-view-actions-suggest"
+				aria-label="Suggest changes"
+				class:diff-view-preview-header-control-suggest-active={selectedItem.status === DiffState.Suggestion}
+				use:setElementIcon={"pencil"}
+				onclick={toggleSuggestion}>
+			</button>
+			<button
+				class="diff-view-actions-button"
+				class:button-red={selectedItem.status === DiffState.Rejected}
+				aria-label="Reject"
+				onclick={handleReject}>
+				Reject
+			</button>
+			<button
+				class="diff-view-actions-button"
+				class:button-green={selectedItem.status === DiffState.Accepted}
+				aria-label="Accept"
+				onclick={handleAccept}>
+				Accept
+			</button>
+		</div>
 	{/if}
 </div>
 
@@ -529,6 +662,7 @@
 		color: var(--text-normal);
 		border-radius: var(--radius-s);
 		font-size: var(--font-smaller);
+		color: rgba(224, 175, 104);
 	}
 
 	#diff-view-panel {
@@ -570,7 +704,7 @@
 	.diff-view-panel-body-item {
 		display: grid;
 		grid-template-rows: auto auto;
-		grid-template-columns: auto 1fr auto;
+		grid-template-columns: auto 1fr auto auto;
 		column-gap: var(--size-4-3);
 		cursor: pointer;
 		border-radius: var(--radius-s);
@@ -614,9 +748,15 @@
 		color: var(--text-muted);
 	}
 
-	.diff-view-panel-body-item-controls {
+	.diff-view-panel-body-item-alert {
 		grid-row: 1 / 3;
 		grid-column: 3;
+		align-self: center;
+	}
+
+	.diff-view-panel-body-item-controls {
+		grid-row: 1 / 3;
+		grid-column: 4;
 		display: flex;
 		gap: var(--size-2-1);
 		margin-left: auto;
@@ -912,8 +1052,176 @@
 		min-width: 0;
 	}
 
-	#diff-view-preview .d2h-wrapper {
+	#diff-view-preview-body {
 		grid-row: 3;
+		display: grid;
+		grid-template-rows: 1fr auto;
+		border: solid;
+		border-top: none;
+		border-width: 1px;
+		border-color: var(--background-secondary-alt);
+		border-top-left-radius: 0;
+		border-top-right-radius: 0;
+		border-bottom-left-radius: var(--radius-s);
+		border-bottom-right-radius: var(--radius-s);
+	}
+
+	#diff-view-preview .d2h-wrapper {
+		grid-row: 1;
+	}
+
+	#diff-view-continuity {
+		grid-row: 2;
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		background-color: rgba(224,175,104,0.10);
+		border-top: 1px solid rgba(224,175,104,0.22);
+		border-bottom-left-radius: var(--radius-s);
+		border-bottom-right-radius: var(--radius-s);
+	}
+
+	#diff-view-continuity-expander-header {
+		display: flex;
+		align-items: center;
+		gap: var(--size-4-2);
+		padding: var(--size-4-2) var(--size-4-3);
+		font-size: var(--font-smaller);
+		cursor: pointer;
+	}
+
+	#diff-view-continuity-expander-chevron {
+		display: flex;
+		--icon-size: var(--icon-xs);
+		color: var(--text-muted);
+	}
+
+	.diff-view-continuity-alert-icon {
+		display: flex;
+		--icon-size: var(--icon-xs);
+		color: rgba(224, 175, 104);
+	}
+
+	#diff-view-continuity-expander-header-title {
+		display: flex;
+		align-items: center;
+		gap: var(--size-4-1);
+		color: rgba(224, 175, 104);
+		font-weight: var(--font-semibold);
+	}
+
+	#diff-view-continuity-expander-header-label {
+		margin-left: auto;
+		font-size: var(--font-smallest);
+		color: var(--text-muted);
+	}
+
+	#diff-view-continuity-expander-body {
+		max-height: 30vh;
+		overflow-y: auto;
+		border-top: 1px solid rgba(224,175,104,0.22);
+		background-color: var(--background-primary);
+		border-radius: var(--radius-s);
+	}
+
+	.diff-view-continuity-section-header {
+		position: sticky;
+		top: 0;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		column-gap: var(--size-4-3);
+		padding: var(--size-4-2) var(--size-4-3);
+		background-color: rgba(224, 175, 104, 0.22);
+	}
+
+	.diff-view-continuity-section-title {
+		font-size: var(--font-smallest);
+		font-weight: var(--font-bold);
+		letter-spacing: 0.05em;
+		color: rgba(200, 175, 135);
+	}
+
+	.diff-view-continuity-section-description {
+		margin-left: auto;
+		font-size: var(--font-smallest);
+		color: var(--text-muted);
+	}
+
+	.diff-view-continuity-issue {
+		display: flex;
+		flex-direction: column;
+		gap: var(--size-4-1);
+		padding: var(--size-4-2) var(--size-4-3);
+		border-top: 1px solid var(--background-modifier-border);
+		font-size: var(--font-smaller);
+	}
+
+	.diff-view-continuity-issue-source {
+		display: flex;
+		align-items: baseline;
+		gap: var(--size-4-2);
+		min-width: 0;
+		font-family: var(--font-monospace);
+		font-size: var(--font-smaller);
+	}
+
+	.diff-view-continuity-issue-source :global(.truncated-path-directory) {
+		color: var(--text-muted);
+	}
+
+	.diff-view-continuity-issue-source :global(.truncated-path-directory)::after {
+		content: "/";
+	}
+
+	.diff-view-continuity-issue-detail {
+		flex-shrink: 0;
+		font-family: var(--font-interface);
+		font-size: var(--font-smallest);
+		color: var(--text-muted);
+	}
+
+	.diff-view-continuity-issue-line {
+		font-family: var(--font-monospace);
+		font-size: var(--font-smaller);
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+
+	.diff-view-continuity-issue-link {
+		padding: 0 var(--size-2-1);
+		border-radius: var(--radius-s);
+		color: #aa4646;
+		background-color: rgba(var(--color-red-rgb), 0.12);
+		text-decoration: underline dashed;
+		text-underline-offset: 3px;
+	}
+
+	.diff-view-continuity-quote {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		column-gap: var(--size-4-2);
+		row-gap: var(--size-2-1);
+		margin-top: var(--size-2-2);
+		padding-left: var(--size-4-2);
+		border-left: 2px solid var(--background-modifier-border);
+		font-size: var(--font-smaller);
+	}
+
+	.diff-view-continuity-quote-prefix {
+		font-size: var(--font-smallest);
+		color: var(--text-muted);
+	}
+
+	.diff-view-continuity-quote-old {
+		color: var(--text-muted);
+		text-decoration: line-through;
+		overflow-wrap: anywhere;
+	}
+
+	.diff-view-continuity-quote-new {
+		color: var(--text-normal);
+		overflow-wrap: anywhere;
 	}
 
 	#diff-view-footer {
@@ -1035,6 +1343,10 @@
 	.diff-view-phone #diff-view-footer {
 		grid-row: 4;
 		grid-column: 1;
+	}
+
+	.diff-view-phone .diff-view-continuity-section-description {
+		display: none;
 	}
 
 	.diff-view-phone .diff-view-footer-label {

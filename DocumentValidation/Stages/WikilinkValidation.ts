@@ -25,10 +25,10 @@ export class WikilinkValidation implements IValidationStage {
         // Modified notes can lose headings and blocks that unchanged notes link to
         const targetPaths = [...this.temporaryVaultService.removedPaths(), ...this.temporaryVaultService.modifiedPaths()];
 
-        for (const { link, lines } of await getLinksToCheck(this.plugin, this.temporaryVaultService, targetPaths)) {
+        for (const { link, lines, changePath } of await getLinksToCheck(this.plugin, this.temporaryVaultService, targetPaths)) {
             const reason = await this.brokenReason(link);
             if (reason) {
-                result.issues.push({ ...link, reason, lineText: lines[link.line] ?? "" });
+                result.issues.push({ ...link, reason, lineText: lines[link.line] ?? "", changePath });
             }
         }
 

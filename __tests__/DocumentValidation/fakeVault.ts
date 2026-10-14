@@ -17,7 +17,7 @@ function makeFile(path: string): TFile {
 }
 
 // Registers a plugin, VaultService and TemporaryVaultService backed by an in-memory vault
-export function registerFakeVault(files: Record<string, string>, alwaysUpdateLinks = false): TemporaryVaultService {
+export function registerFakeVault(files: Record<string, string>, alwaysUpdateLinks = false, excludedPaths: string[] = []): TemporaryVaultService {
 	const filesByPath = new Map(Object.keys(files).map(path => [path, makeFile(path)]));
 
 	const getFirstLinkpathDest = (linkpath: string, sourcePath: string): TFile | null => {
@@ -35,25 +35,14 @@ export function registerFakeVault(files: Record<string, string>, alwaysUpdateLin
 	};
 
 	const resolvedLinks: Record<string, Record<string, number>> = {};
-	const fileCaches = new Map<string, unknown>();
 
 	for (const [sourcePath, content] of Object.entries(files)) {
 		if (!sourcePath.endsWith('.md')) {
 			continue;
 		}
-		const links = extractWikilinks(content);
-		const toReference = (link: typeof links[number]) => ({
-			link: link.linkpath + link.subpath,
-			original: link.original,
-			position: { start: { line: link.line, col: link.column } }
-		});
-		fileCaches.set(sourcePath, {
-			links: links.filter(link => !link.isEmbed).map(toReference),
-			embeds: links.filter(link => link.isEmbed).map(toReference)
-		});
 
 		resolvedLinks[sourcePath] = {};
-		for (const link of links) {
+		for (const link of extractWikilinks(content)) {
 			const destination = getFirstLinkpathDest(link.linkpath, sourcePath);
 			if (destination) {
 				resolvedLinks[sourcePath][destination.path] = (resolvedLinks[sourcePath][destination.path] ?? 0) + 1;
@@ -70,15 +59,17 @@ export function registerFakeVault(files: Record<string, string>, alwaysUpdateLin
 			},
 			metadataCache: {
 				resolvedLinks,
-				getFileCache: (file: TFile) => fileCaches.get(file.path) ?? null,
 				getFirstLinkpathDest
 			}
 		}
 	};
 
+	// Like the real VaultService, excluded files can't be found or read
 	const vaultService = {
-		getAbstractFileByPath: (path: string) => filesByPath.get(path) ?? null,
-		read: (file: TFile) => Promise.resolve({ content: files[file.path], nextIndex: undefined })
+		getAbstractFileByPath: (path: string) => excludedPaths.includes(path) ? null : filesByPath.get(path) ?? null,
+		read: (file: TFile) => Promise.resolve(excludedPaths.includes(file.path)
+			? new Error(`File does not exist: ${file.path}`)
+			: { content: files[file.path], nextIndex: undefined })
 	};
 
 	RegisterSingleton(Services.VaultkeeperAIPlugin, plugin);

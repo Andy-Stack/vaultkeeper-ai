@@ -1,4 +1,4 @@
-import { parseLinktext, TFile } from "obsidian";
+import { parseLinktext } from "obsidian";
 import type VaultkeeperAIPlugin from "main";
 import type { TemporaryVaultService } from "Services/TemporaryVaultService";
 import { maskCode, splitLines } from "./MarkdownStructureHelper";
@@ -21,6 +21,7 @@ export interface IBacklink extends IWikilink {
 export interface ILinkInContext {
     link: IBacklink;
     lines: string[]; // the source note's lines, as they will be once the changes are applied
+    changePath: string; // the changed note the link is in, or the changed target an unchanged note links to
 }
 
 export function parseWikilink(original: string): Pick<IWikilink, "linkpath" | "subpath" | "isEmbed"> {
@@ -44,41 +45,10 @@ export function extractWikilinks(content: string): IWikilink[] {
     return links;
 }
 
-export function getBacklinksWithLines(plugin: VaultkeeperAIPlugin, targetPath: string): IBacklink[] {
-    const { metadataCache, vault } = plugin.app;
-    const backlinks: IBacklink[] = [];
-
-    for (const [sourcePath, linkedPaths] of Object.entries(metadataCache.resolvedLinks)) {
-        if (!(targetPath in linkedPaths)) {
-            continue;
-        }
-
-        const sourceFile = vault.getAbstractFileByPath(sourcePath);
-        if (!(sourceFile instanceof TFile)) {
-            continue;
-        }
-
-        const fileCache = metadataCache.getFileCache(sourceFile);
-        if (!fileCache) {
-            continue;
-        }
-
-        const linkReferences = [...(fileCache.links ?? []), ...(fileCache.embeds ?? [])];
-        for (const linkReference of linkReferences) {
-            const parsedLink = parseWikilink(linkReference.original);
-            const linkedFile = metadataCache.getFirstLinkpathDest(parsedLink.linkpath, sourcePath);
-            if (linkedFile?.path === targetPath) {
-                backlinks.push({
-                    source: sourcePath,
-                    line: linkReference.position.start.line,
-                    column: linkReference.position.start.col,
-                    original: linkReference.original,
-                    ...parsedLink,
-                });
-            }
-        }
-    }
-    return backlinks;
+function linkingSourcePaths(plugin: VaultkeeperAIPlugin, targetPath: string): string[] {
+    return Object.entries(plugin.app.metadataCache.resolvedLinks)
+        .filter(([, linkedPaths]) => targetPath in linkedPaths)
+        .map(([sourcePath]) => sourcePath);
 }
 
 // Links in new, modified or moved notes, plus links from unchanged notes into the target paths.
@@ -89,17 +59,29 @@ export async function getLinksToCheck(plugin: VaultkeeperAIPlugin, temporaryVaul
     for (const note of temporaryVaultService.changedNotes()) {
         const lines = splitLines(note.content);
         for (const link of extractWikilinks(note.content)) {
-            linksToCheck.push({ link: { ...link, source: note.path }, lines });
+            linksToCheck.push({ link: { ...link, source: note.path }, lines, changePath: note.path });
         }
     }
 
+    // Unchanged notes are parsed the same way as changed ones, so frontmatter links are found in both
     for (const targetPath of targetPaths) {
-        for (const backlink of getBacklinksWithLines(plugin, targetPath)) {
-            if (temporaryVaultService.isChanged(backlink.source)) {
+        for (const sourcePath of linkingSourcePaths(plugin, targetPath)) {
+            if (temporaryVaultService.isChanged(sourcePath)) {
                 continue;
             }
-            const content = await temporaryVaultService.read(backlink.source);
-            linksToCheck.push({ link: backlink, lines: splitLines(content ?? "") });
+
+            // Excluded notes read as undefined, so their links are never reported
+            const content = await temporaryVaultService.read(sourcePath);
+            if (content === undefined) {
+                continue;
+            }
+
+            const lines = splitLines(content);
+            for (const link of extractWikilinks(content)) {
+                if (plugin.app.metadataCache.getFirstLinkpathDest(link.linkpath, sourcePath)?.path === targetPath) {
+                    linksToCheck.push({ link: { ...link, source: sourcePath }, lines, changePath: targetPath });
+                }
+            }
         }
     }
 

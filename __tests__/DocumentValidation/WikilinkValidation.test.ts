@@ -3,11 +3,13 @@ import { DeregisterAllServices } from '../../Services/DependencyService';
 import { WikilinkValidation } from '../../DocumentValidation/Stages/WikilinkValidation';
 import type { WikilinkValidationResult } from '../../DocumentValidation/Results/WikilinkValidationResult';
 import { BrokenLinkReason } from '../../Enums/BrokenLinkReason';
+import { DiffState } from '../../Enums/DiffState';
+import { DocumentReport } from '../../DocumentValidation/DocumentReport';
 import type { IVaultChange } from '../../Services/TemporaryVaultService';
 import { createChange, deleteChange, modifyChange, registerFakeVault, renameChange } from './fakeVault';
 
-async function validate(files: Record<string, string>, changes: IVaultChange[], alwaysUpdateLinks = false): Promise<WikilinkValidationResult> {
-	const temporaryVaultService = registerFakeVault(files, alwaysUpdateLinks);
+async function validate(files: Record<string, string>, changes: IVaultChange[], alwaysUpdateLinks = false, excludedPaths: string[] = []): Promise<WikilinkValidationResult> {
+	const temporaryVaultService = registerFakeVault(files, alwaysUpdateLinks, excludedPaths);
 	temporaryVaultService.addAll(changes);
 	return await new WikilinkValidation().validate() as WikilinkValidationResult;
 }
@@ -24,6 +26,29 @@ describe('WikilinkValidation', () => {
 
 		expect(result.issues).toHaveLength(1);
 		expect(result.issues[0]).toMatchObject({ source: 'Hooks.md', line: 0, column: 9, original: '[[Guild]]', reason: BrokenLinkReason.MissingFile, lineText: 'Meet the [[Guild]]' });
+	});
+
+	it('flags frontmatter links in unchanged and changed notes alike', async () => {
+		const frontmatter = '---\nrelated: "[[Guild]]"\n---\nBody';
+		const files = { 'Guild.md': 'Guild', 'Hooks.md': frontmatter, 'Lore.md': frontmatter };
+
+		const result = await validate(files, [
+			deleteChange('Guild.md', 'Guild'),
+			modifyChange('Lore.md', frontmatter, `${frontmatter} edited`)
+		]);
+
+		expect(result.issues.map(issue => [issue.source, issue.line, issue.lineText])).toEqual([
+			['Lore.md', 1, 'related: "[[Guild]]"'],
+			['Hooks.md', 1, 'related: "[[Guild]]"']
+		]);
+	});
+
+	it('does not report links from excluded notes', async () => {
+		const files = { 'Guild.md': 'Guild', 'Private/Diary.md': '[[Guild]]', 'Hooks.md': '[[Guild]]' };
+
+		const result = await validate(files, [deleteChange('Guild.md', 'Guild')], false, ['Private/Diary.md']);
+
+		expect(result.affectedFiles()).toEqual(['Hooks.md']);
 	});
 
 	it('flags a full path link to a moved file but not a link by name', async () => {
@@ -112,6 +137,37 @@ describe('WikilinkValidation', () => {
 			['[[Guild#^missing]]', BrokenLinkReason.MissingBlock],
 			['[[Guild#Rivals#Deeper]]', BrokenLinkReason.MissingHeading]
 		]);
+	});
+
+	it('assigns each issue to the change that causes it', async () => {
+		const files = { 'World/Guild.md': 'Guild', 'Old.md': 'Old', 'Hooks.md': '[[World/Guild]] [[Old]]' };
+		const created = createChange('Notes/New.md', '[[Missing]]');
+		const moved = renameChange('World/Guild.md', 'Factions/Guild.md', 'Guild');
+		const deleted = deleteChange('Old.md', 'Old');
+
+		const result = await validate(files, [created, moved, deleted]);
+
+		expect(result.issuesFor(created).map(issue => issue.original)).toEqual(['[[Missing]]']);
+		expect(result.issuesFor(moved).map(issue => issue.original)).toEqual(['[[World/Guild]]']);
+		expect(result.issuesFor(deleted).map(issue => issue.original)).toEqual(['[[Old]]']);
+		expect(new DocumentReport([result]).issueCountFor(moved)).toBe(1);
+	});
+
+	it('ignores rejected and to-revise changes once retracked', async () => {
+		const files = { 'Guild.md': 'Guild', 'Old.md': 'Old', 'Hooks.md': '[[Guild]] [[Old]]' };
+		const rejected = deleteChange('Guild.md', 'Guild');
+		const suggestion = deleteChange('Old.md', 'Old');
+		const accepted = createChange('Notes/New.md', '[[Missing]]');
+		const temporaryVaultService = registerFakeVault(files);
+		temporaryVaultService.addAll([rejected, suggestion, accepted]);
+
+		rejected.status = DiffState.Rejected;
+		suggestion.status = DiffState.Suggestion;
+		accepted.status = DiffState.Accepted;
+		temporaryVaultService.retrack();
+		const result = await new WikilinkValidation().validate() as WikilinkValidationResult;
+
+		expect(result.issues.map(issue => issue.original)).toEqual(['[[Missing]]']);
 	});
 
 	it('flags links from unchanged notes when a modified note drops a heading or block', async () => {

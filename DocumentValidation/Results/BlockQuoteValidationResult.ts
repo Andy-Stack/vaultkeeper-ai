@@ -1,7 +1,10 @@
 import type { IBacklink } from "Helpers/WikilinkHelper";
+import type { IVaultChange } from "Services/TemporaryVaultService";
+import { isIssueForChange } from "Helpers/VaultChangeHelper";
 import type { IDocumentValidationResult } from "../IDocumentValidationResult";
+import type { IValidationIssue } from "../IValidationIssue";
 
-export interface IQuoteDrift extends IBacklink {
+export interface IQuoteDrift extends IBacklink, IValidationIssue {
     lineText: string; // the full source line; column and original.length mark the link within it
     targetPath: string;
     quotedText: string;
@@ -14,6 +17,10 @@ export class BlockQuoteValidationResult implements IDocumentValidationResult {
 
     public issueCount(): number {
         return this.issues.length;
+    }
+
+    public issuesFor(vaultChange: IVaultChange): IQuoteDrift[] {
+        return this.issues.filter(issue => isIssueForChange(issue, vaultChange));
     }
 
     public affectedFiles(): string[] {

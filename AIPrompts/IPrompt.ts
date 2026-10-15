@@ -1,16 +1,40 @@
 import { Resolve } from "Services/DependencyService";
 import { Services } from "Services/Services";
-import { SystemInstruction } from "./SystemPrompt";
 import type { FileSystemService } from "Services/FileSystemService";
 import type { SettingsService } from "Services/SettingsService";
-import { PlanningPrompt } from "AIPrompts/PlanningPrompt";
-import { ExecutionPrompt } from "./ExecutionPrompt";
-import { OrchestrationPrompt } from "./OrchestrationPrompt";
+import {
+  PlanningInstruction,
+  PlanningInstructionMemoryUsage,
+  PlanningInstructionWebSearchEnabled,
+  PlanningInstructionWebSearchDisabled,
+  PlanningInstructionWebViewerEnabled,
+  PlanningInstructionWebViewerDisabled,
+  PlanningInstructionAgentContinuity
+} from "AIPrompts/PlanningPrompt";
+import { ExecutionInstruction, ExecutionInstructionAgentContinuity } from "./ExecutionPrompt";
+import {
+  OrchestrationInstruction,
+  OrchestrationInstructionMemoryUsage,
+  OrchestrationInstructionWebToolsDisabled,
+  OrchestrationInstructionAgentContinuity
+} from "./OrchestrationPrompt";
 import type { MemoriesService } from "Services/MemoriesService";
 import { replaceCopy } from 'Helpers/Helpers';
 import { Copy } from "Enums/Copy";
 import { ChatMode } from "Enums/ChatMode";
 import { AIProvider } from "Enums/ApiProvider";
+import {
+  SystemInstruction,
+  SystemInstructionReadOnlyMode,
+  SystemInstructionPlanningMode,
+  SystemInstructionMemory,
+  SystemInstructionMemoryUpdates,
+  SystemInstructionMemoryReadOnly,
+  SystemInstructionAgentContinuity,
+  SystemInstructionWebSearchEnabled,
+  SystemInstructionWebSearchDisabled,
+  SystemInstructionWebViewer
+} from "./SystemPrompt";
 
 export interface IPrompt {
   systemInstruction(): Promise<string>;
@@ -33,19 +57,21 @@ export class AIPrompt implements IPrompt {
   }
 
   public async systemInstruction(): Promise<string> {
-    return this.buildPrompt(SystemInstruction);
+    return this.buildPrompt(SystemInstruction + this.buildSettingInstructions());
   }
 
   public async orchestrationInstruction(): Promise<string> {
-    return this.buildPrompt(OrchestrationPrompt);
+    return this.buildPrompt(OrchestrationInstruction + this.buildOrchestrationSettingInstructions());
   }
 
   public async planningInstruction(): Promise<string> {
-    return this.buildPrompt(PlanningPrompt);
+    return this.buildPrompt(PlanningInstruction + this.buildPlanningSettingInstructions());
   }
 
   public executionInstruction(): string {
-    return ExecutionPrompt;
+    return this.settingsService.settings.enableAgentContinuity
+      ? ExecutionInstruction + ExecutionInstructionAgentContinuity
+      : ExecutionInstruction;
   }
 
   private async buildPrompt(basePrompt: string): Promise<string> {
@@ -61,6 +87,76 @@ export class AIPrompt implements IPrompt {
     prompt = prompt + this.buildActiveDirectives();
 
     return prompt;
+  }
+
+  private buildSettingInstructions(): string {
+    const settings = this.settingsService.settings;
+    const instructions: string[] = [];
+
+    if (settings.chatMode === ChatMode.ReadOnly) {
+      instructions.push(SystemInstructionReadOnlyMode);
+    } else if (settings.chatMode === ChatMode.Planning) {
+      instructions.push(SystemInstructionPlanningMode);
+    }
+
+    if (settings.enableMemories) {
+      instructions.push(SystemInstructionMemory);
+      instructions.push(settings.allowUpdatingMemories ? SystemInstructionMemoryUpdates : SystemInstructionMemoryReadOnly);
+    }
+
+    if (settings.enableAgentContinuity && settings.chatMode !== ChatMode.ReadOnly) {
+      instructions.push(SystemInstructionAgentContinuity);
+    }
+
+    instructions.push(this.isWebSearchEnabled() ? SystemInstructionWebSearchEnabled : SystemInstructionWebSearchDisabled);
+
+    if (settings.enableWebViewer) {
+      instructions.push(SystemInstructionWebViewer);
+    }
+
+    return instructions.join("");
+  }
+
+  private buildPlanningSettingInstructions(): string {
+    const settings = this.settingsService.settings;
+    const instructions: string[] = [];
+
+    if (settings.enableMemories) {
+      instructions.push(SystemInstructionMemory, PlanningInstructionMemoryUsage);
+    }
+
+    instructions.push(this.isWebSearchEnabled() ? PlanningInstructionWebSearchEnabled : PlanningInstructionWebSearchDisabled);
+    instructions.push(settings.enableWebViewer ? PlanningInstructionWebViewerEnabled : PlanningInstructionWebViewerDisabled);
+
+    if (settings.enableAgentContinuity) {
+      instructions.push(PlanningInstructionAgentContinuity);
+    }
+
+    return instructions.join("");
+  }
+
+  private buildOrchestrationSettingInstructions(): string {
+    const settings = this.settingsService.settings;
+    const instructions: string[] = [];
+
+    if (settings.enableMemories) {
+      instructions.push(SystemInstructionMemory, OrchestrationInstructionMemoryUsage);
+    }
+
+    if (!this.isWebSearchEnabled() || !settings.enableWebViewer) {
+      instructions.push(OrchestrationInstructionWebToolsDisabled);
+    }
+
+    if (settings.enableAgentContinuity) {
+      instructions.push(OrchestrationInstructionAgentContinuity);
+    }
+
+    return instructions.join("");
+  }
+
+  private isWebSearchEnabled(): boolean {
+    const settings = this.settingsService.settings;
+    return settings.enableWebSearch && settings.provider !== AIProvider.Local;
   }
 
   private buildActiveDirectives(): string {
@@ -86,7 +182,11 @@ export class AIPrompt implements IPrompt {
       ? Copy.DirectiveWebViewerEnabled
       : Copy.DirectiveWebViewerDisabled;
 
-    const directives = [chatModeDirective, memoriesDirective, webSearchDirective, webViewerDirective].join("\n");
+    const agentContinuityDirective = s.enableAgentContinuity
+      ? Copy.DirectiveAgentContinuityEnabled
+      : Copy.DirectiveAgentContinuityDisabled;
+
+    const directives = [chatModeDirective, memoriesDirective, webSearchDirective, webViewerDirective, agentContinuityDirective].join("\n");
     return replaceCopy(Copy.ActiveCapabilitiesHeader, [directives]);
   }
 

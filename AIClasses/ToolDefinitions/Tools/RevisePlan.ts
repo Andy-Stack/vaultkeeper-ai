@@ -16,12 +16,15 @@ Call this when:
 - Execution revealed more (or less) work than the remaining steps account for
 - The remaining steps are based on assumptions that no longer hold
 - Steps need to be inserted, removed, or reordered
+- Required files or folders don't exist as expected
+- The user gives new information that changes the goal
 
 Do NOT call this when:
 - Only the current step's instruction or context needs a minor fix and remaining steps are unaffected (revise the current step instead)
 - The current step doesn't need to be completed to continue the plan (skip the step instead)
 - The remaining plan is still valid and nothing needs to change (complete the step instead)
 - The goal cannot be achieved at all (cancel the plan instead)
+- For minor adjustments, retries, formatting issues or small scope clarifications within a step
 
 Write every step that still needs to happen, in order. Include complete context in each step so the execution agent has what it needs without searching.`,
   parameters: {

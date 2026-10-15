@@ -5,7 +5,9 @@ export const UpdateMemories: IAIToolDefinition = {
     name: AITool.UpdateMemories,
     description: `Adds or removes entries in the persistent memory file that is injected at the start of every session.
   Memory persists across all conversations and gives you continuity across sessions — use it to retain anything that would change how you organise, write, or manage the vault in the future.
-  
+
+  This replaces the entire memory content; it is a clean write, not an append. Read the current memory first (it is injected at session start; fetch it if it isn't in your context), then write back everything worth keeping plus your change.
+
   Call this function:
   - When the user confirms a vault organisation preference (e.g. folder structure, naming conventions, where certain note types live)
   - When the user establishes a note-taking or writing style preference (e.g. heading structure, tag taxonomy, frontmatter fields they always use)

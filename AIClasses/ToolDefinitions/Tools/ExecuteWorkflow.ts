@@ -33,7 +33,7 @@ Do NOT use this function:
       },
       context: {
         type: "string",
-        description: "Optional additional context to inform planning and execution. Include any constraints, preferences, relevant file paths, or domain knowledge that would help produce a better result. Examples: 'User prefers daily notes in YYYY-MM-DD format', 'Focus only on notes created in the last month', 'Preserve existing wiki-link structure and tag conventions'"
+        description: "Optional additional context to inform planning and execution. Include relevant vault state, user preferences, constraints, file paths, or domain knowledge that would help produce a better result, plus any unknowns that need exploring before committing to an approach. Examples: 'User prefers daily notes in YYYY-MM-DD format', 'Focus only on notes created in the last month', 'Preserve existing wiki-link structure and tag conventions'"
       },
       user_message: {
         type: "string",

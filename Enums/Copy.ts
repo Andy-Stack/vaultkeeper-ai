@@ -165,7 +165,6 @@ export enum Copy {
 ### Next Actions
 - Create your own simplified plan
 - Follow your own simplified plan`,
-    ContinuePlanExecution = "Tools and context restored. You may continue working on the current step.",
     ExecuteStep = `## YOUR TASK
 Perform ONLY this task, then signal task completion:
 > {action}
@@ -219,7 +218,9 @@ The following context explains why you are doing the task. It is NOT an instruct
     DirectiveWebSearchEnabled = "- **Web Search**: ENABLED — you should always prefer to call the web search tool to retrieve current information from the web",
     DirectiveWebSearchDisabled = "- **Web Search**: DISABLED — the web search tool is unavailable; if the user requests it, inform them it is currently turned off in settings",
     DirectiveWebViewerEnabled = "- **Web Viewer**: ENABLED — you may call the web viewer tool to read the content of the page currently open in the Obsidian web viewer; call it proactively when the user asks about a web page",
-    DirectiveWebViewerDisabled = "- **Web Viewer**: DISABLED — the web viewer tool is unavailable; if the user requests it, inform them it is currently turned off in settings",
+    DirectiveAgentContinuityEnabled = "- **Continuity Checks**: ENABLED — vault changes return a continuity report; the user has consented to you fixing its issues without asking, so resolve them, then tell the user which fixes you made and which issues you couldn't fix",
+    DirectiveAgentContinuityDisabled = "- **Continuity Checks**: DISABLED — vault changes don't return a continuity report; if the user asks about checking their changes for broken links or similar issues, tell them it can be turned on with \"Enable agent continuity resolution\" in settings",
+    DirectiveWebViewerDisabled ="- **Web Viewer**: DISABLED — the web viewer tool is unavailable; if the user requests it, inform them it is currently turned off in settings",
 
     MaxExecutionDepthReached = "Exceeded maximum plan execution attempts - consult with the user on how to continue.",
 

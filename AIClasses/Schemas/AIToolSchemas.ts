@@ -127,10 +127,6 @@ export const RevisePlanArgsSchema = z.object({
 	user_message: z.string().optional()
 });
 
-export const ContinuePlanExecutionArgsSchema = z.object({
-	confirm_continuation: z.boolean()
-});
-
 export const CancelPlanArgsSchema = z.object({
 	context: z.string()
 });
@@ -171,7 +167,6 @@ export type GetWebViewerContentArgs = z.infer<typeof GetWebViewerContentArgsSche
 export type ExecuteWorkflowArgs = z.infer<typeof ExecuteWorkflowArgsSchema>;
 export type AskUserQuestionPlanningArgs = z.infer<typeof AskUserQuestionPlanningArgsSchema>;
 export type AskUserQuestionExecutionArgs = z.infer<typeof AskUserQuestionExecutionArgsSchema>;
-export type ContinuePlanExecutionArgs = z.infer<typeof ContinuePlanExecutionArgsSchema>;
 export type CancelPlanArgs = z.infer<typeof CancelPlanArgsSchema>;
 export type CompleteTaskArgs = z.infer<typeof CompleteTaskArgsSchema>;
 export type CompleteStepArgs = z.infer<typeof CompleteStepArgsSchema>;

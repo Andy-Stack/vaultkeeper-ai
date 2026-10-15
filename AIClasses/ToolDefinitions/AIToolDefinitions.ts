@@ -24,6 +24,7 @@ import { DeleteVaultFolder } from "./Tools/DeleteVaultFolder";
 import { MoveVaultFolder } from "./Tools/MoveVaultFolder";
 import { ChatMode, chatModeAllowsEdits } from "Enums/ChatMode";
 import type { AITool } from "Enums/AITool";
+import { AskUserQuestionExecution } from "./Tools/AskUserQuestionExecution";
 
 export abstract class AIToolDefinitions {
 
@@ -90,7 +91,7 @@ export abstract class AIToolDefinitions {
     }
 
     public static planningAgentDefinitions(memories: boolean, webViewer: boolean): IAIToolDefinition[] {
-        let actions = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, AskUserQuestionPlanning, SubmitPlan];
+        let actions = [SearchVaultFiles, ReadVaultFiles, ListVaultFiles, AskUserQuestionPlanning, SubmitPlan, CancelPlan];
 
         if (webViewer) {
             actions = actions.concat([GetWebViewerContent]);
@@ -104,7 +105,7 @@ export abstract class AIToolDefinitions {
     }
 
     public static executionAgentDefinitions(): IAIToolDefinition[] {
-        return [...this.agentDefinitions(ChatMode.Edit, false, false, false), CompleteTask];
+        return [...this.agentDefinitions(ChatMode.Edit, false, false, false), AskUserQuestionExecution, CompleteTask];
     }
 
     public static requiresEditModeEnabled(definition: AITool): boolean {

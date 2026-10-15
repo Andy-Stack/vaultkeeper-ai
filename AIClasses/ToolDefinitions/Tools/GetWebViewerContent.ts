@@ -5,6 +5,8 @@ export const GetWebViewerContent: IAIToolDefinition = {
     name: AITool.GetWebViewerContent,
     description: `Retrieves the text content from a currently open Web Viewer tab in Obsidian.
 
+This is not general web browsing and cannot fetch arbitrary URLs. When the user asks about a web page or its contents, call this immediately rather than asking for a URL. Calling it is always safe: if no page is open, the tool says so.
+
 For "text" format, results are capped and tracked using a cursor. If the page content was capped, the response includes a nextIndex - pass it back as "index" on a follow-up call to continue reading from where it left off (the earlier content is not lost, but later content would be if you don't resume). A missing/undefined nextIndex means the page's text was fully returned and there is nothing more to read. The "index" parameter is ignored for "screenshot" format, since a screenshot is always returned in full.
 
 Call this function:

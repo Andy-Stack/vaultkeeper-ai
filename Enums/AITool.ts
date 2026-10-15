@@ -24,7 +24,6 @@ export enum AITool {
     SkipStep = "skip_step",
     ReviseStep = "revise_step",
     RevisePlan = "revise_plan",
-    ContinuePlanExecution = "continue_plan_execution",
     CompletePlan = "complete_plan",
     CancelPlan = "cancel_plan",
     AskUserQuestionPlanning = "ask_user_question_planning",
@@ -72,7 +71,6 @@ export function isDestructiveAITool(aiTool: AITool): boolean {
         case AITool.SkipStep:
         case AITool.ReviseStep:
         case AITool.RevisePlan:
-        case AITool.ContinuePlanExecution:
         case AITool.CompletePlan:
         case AITool.CancelPlan:
         case AITool.AskUserQuestionPlanning:

@@ -62,6 +62,7 @@ export class DiffService extends Component {
 
             if (this.settingsService.settings.freeEdit) {
                 vaultChangeRequests.forEach(request => request.status = DiffState.Accepted);
+                await this.documentValidationService.generateReport();
             } else {
                 await this.processDiffRequest(vaultChangeRequests);
             }
@@ -155,49 +156,3 @@ export class DiffService extends Component {
     }
 
 }
-
-// private async proposeChange<T>(oldFileName: string, newFileName: string, oldContent: string, newContent: string,
-//     options: IVaultOptions, performChange: () => Promise<T>): Promise<IVaultChangeResponse<T>> {
-//         try {
-//             if (!options.requiresConfirmation) {
-//                 return { result: await performChange() };
-//             }
-
-//             const report = this.settingsService.settings.enableContinuity 
-//                 ? this.documentValidationService.generateReport()
-//                 : undefined;
-
-//             if (this.settingsService.settings.freeEdit) {
-//                 if (this.settingsService.settings.enableAgentContinuity) {
-//                     return { result: await performChange(), report: report };
-//                 } else {
-//                     return { result: await performChange() };
-//                 }
-//             }
-
-//             const result = !options.requiresConfirmation ? { accepted: true } :
-//                 await this.diffService.requestDiff(oldFileName, newFileName, oldContent, newContent, report);
-
-//             if (result.accepted) {
-//                 if (this.settingsService.settings.enableAgentContinuity) {
-//                     return { result: await performChange(), report: report };
-//                 } else {
-//                     return { result: await performChange() };
-//                 }
-//             }
-
-//             let response = AIToolResponse.UserRejectionMessage;
-//             if (result.suggestion) {
-//                 response = `${AIToolResponse.UserSuggestionMessage}\n${result.suggestion}`;
-//             }
-//             return { error: Exception.new(response), report: report };
-//         } catch (error) {
-//             if (AbortService.isAbortError(error)) {
-//                 throw error;
-//             }
-//             this.eventService.trigger(Event.DiffClosed);
-//             Exception.log(error);
-
-//             return { error: Exception.new(error) };
-//         }
-// }

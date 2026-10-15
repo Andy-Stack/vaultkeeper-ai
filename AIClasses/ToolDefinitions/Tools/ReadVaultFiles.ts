@@ -9,7 +9,9 @@ export const ReadVaultFiles: IAIToolDefinition = {
 and PDFs. When users ask about image or PDF files, USE THIS FUNCTION to
 read them—do not claim you cannot see images.**
 
-Supports text files (.md, .txt, etc.), images (.png, .jpg, .jpeg, etc), and PDFs (.pdf).
+Supports text files (.md, .txt, etc.), images (.png, .jpg, .jpeg, etc), PDFs (.pdf), and Office/ODF documents (.docx, .odt, .xlsx, etc).
+
+Binary files are not returned as text in this function's result. The result is a short confirmation, and the file's actual content arrives as an attachment in the message immediately after it, introduced by a text block naming the file. Documents (.docx, .odt, .xlsx, etc.) arrive as plain text; PDFs and images arrive as native attachments. Don't call this function again for the same file to "get the real content"; re-reading returns the same attachment.
 
 Call this function:
 - When you need to access existing file content to answer questions
@@ -18,6 +20,7 @@ Call this function:
 - When comparing content or gathering related context across multiple files
 - When analyzing information across several documents
 - When users ask about images or PDFs (this function allows you to see them)
+- When a search turns up images or PDFs relevant to the request - read them rather than just noting that they exist
 
 Do NOT use this function:
 - When you need to search for files by content - search instead

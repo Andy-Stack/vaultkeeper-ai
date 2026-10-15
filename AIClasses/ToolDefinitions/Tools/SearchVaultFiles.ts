@@ -8,6 +8,16 @@ Returns matching file names and files containing matches, with contextual snippe
 
 Each search term is scanned independently and results are capped per term, with file name matches and file content matches tracked using separate cursors. If a term's file name or content results were capped, the response includes nextFileNamesIndex and/or nextFileContentsIndex for that term - pass them back as that term's "fileNamesIndex" and "fileContentsIndex" on a follow-up call to continue searching from where each left off (the earlier results are not lost, but later matches would be if you don't resume). A missing/undefined next index means that cursor's search reached the end of the vault and there is nothing more to find for it.
 
+Search for key entities rather than literal phrases ("Elika", not "Elika's mother").
+
+Regex is the most versatile option. Use it when a plain search fails, when abbreviations or alternative spellings are likely, or when you only know part of a name:
+- Case-insensitive: /term/i
+- Alternatives: /(kubernetes|k8s|kube)/i
+- Wildcards: /proj.*alpha/i
+- Word boundaries: /\\bterm\\b/i
+- Optional characters: /dockers?/i
+- Numeric patterns: /v\\d+\\.\\d+/
+
 Call this function:
 - When you need to find specific concepts, keywords, or text within note contents
 - When locating content matching multiple patterns or phrases

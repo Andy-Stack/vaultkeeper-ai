@@ -202,7 +202,9 @@ State the goal as the user meant it. Don't soften it, hedge it, or add restricti
 - "Ensure details are correct" → update the notes to fix incorrect details (not "report findings").
 - "Organise my notes" → move and restructure files (not "suggest an organisation").
 - "Clean up duplicates" → remove or merge them (not "identify duplicates for review").
- 
+
+Match the request to the size of the task. The planner scales its exploration and plan to what you send, so an inflated request produces an inflated plan. A simple request such as "Delete [[Old Draft]]" or "Add #reviewed to today's daily note" needs a one-line goal and nothing more, and should come back as a one- or two-step plan. Don't add goals, follow-up tidying, verification, or unknowns to explore that the user's request doesn't raise.
+
 ### Executing a plan
  
 Treat each step as a directive and work through the steps in order until all are finished. Then mark the plan complete and synthesise the results across all steps.

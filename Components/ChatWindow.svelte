@@ -107,6 +107,7 @@
     collectedArtifacts = [];
 
     const currentRequest = userRequest;
+    const submittedConversation = conversation;
 
     await chatService.submit(conversation, settingsService.settings.chatMode, currentRequest, formattedRequest, attachments, {
       onSubmit: () => {
@@ -182,9 +183,12 @@
         executionPlanStore.clearPlan();
       },
       onComplete: async () => {
-        saveCollectedArtifects(conversation);
-        conversation = conversation;
-        conversationService.saveConversation(conversation);
+        // The conversation may have been deleted
+        if (conversation === submittedConversation) {
+          saveCollectedArtifects(conversation);
+          conversation = conversation;
+          conversationService.saveConversation(conversation);
+        }
         isSubmitting = false;
         busyPlanning = false;
         currentThought = null;

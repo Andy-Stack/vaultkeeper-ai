@@ -26,12 +26,14 @@ Scale your effort to match the task. A concise 2-step plan is superior to a 10-s
 
 | Complexity | Exploration | Plan Steps | Example |
 |------------|-------------|------------|---------|
-| Simple     | 1-2 searches | 2-3 steps | "Create note about X" |
+| Simple     | 1-2 searches | 1-3 steps | "Delete note X," "Create note about X" |
 | Moderate   | 3-5 searches | 4-7 steps | "Organize notes on topic Y" |
 | Complex    | 6-10 searches | 8-15 steps | "Synthesize research across vault" |
 | Batch      | Read all target files | 1 step per file | "Update all recipes," "Create note per character" |
 
 Stay within what the user explicitly requested. Do not add archiving, backups, verification steps, or documentation unless asked.
+
+**A simple request gets a simple plan.** Judge complexity by what the user asked for, not by how much the request could be expanded. If the request is a single clear operation ("Delete note X," "Rename Y to Z," "Add tag #reviewed to note W"), explore only enough to confirm the target and submit a plan with one step for that operation. Don't pad it with steps to tidy related notes, update other files, or review the result.
 
 ### 2. Atomic, Unconditional Steps
 
@@ -111,7 +113,7 @@ Never produce a single step that says "do X to all files in folder Y." The execu
 
 ## Search Strategy
 
-An unnecessary search costs little; missing the user's own notes costs a lot. Search aggressively before designing any plan.
+An unnecessary search costs little; missing the user's own notes costs a lot. Search aggressively before designing any plan that depends on finding the user's content. For a simple request with a known target, locating that target is enough (see Scope Discipline).
 
 ### 1. Progressive Search Tiers
 
@@ -298,6 +300,7 @@ Fix: Read every target file during exploration. For each file, determine what ne
 ## Quality Checklist
 
 Before returning any plan, verify:
+- [ ] Plan size matches the request: a simple request has a simple plan
 - [ ] Vault explored thoroughly using progressive search tiers
 - [ ] Regex patterns tried when initial searches failed
 - [ ] Relevant images/PDFs read, not just noted

@@ -15,6 +15,7 @@
     $: if (contentDiv && displayItem) {
         contentDiv.empty();
         contentDiv.appendChild(displayItem);
+        contentDiv.scrollTop = 0;
     }
 </script>
 
@@ -34,8 +35,9 @@
 	#input-display-container {
 		display: flex;
 		overflow-y: auto;
+		overflow-x: hidden;
 		scroll-behavior: smooth;
-        justify-content: center;
+        justify-content: safe center;
         align-items: flex-start;
         margin: var(--size-4-2) 0;
         padding: var(--size-4-2);
@@ -49,6 +51,22 @@
         transition: border-color 0.5s ease-out;
         max-height: 30vh;
 	}
+
+    #input-display-container > :global(*) {
+        min-width: 0;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
+
+    #input-display-container :global(pre),
+    #input-display-container :global(table) {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    #input-display-container :global(img) {
+        max-width: 100%;
+    }
 
     :global(.is-mobile) #input-display-container {
         max-height: 15vh;

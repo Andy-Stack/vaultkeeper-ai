@@ -492,11 +492,11 @@
 
     const dataTransfer = e instanceof ClipboardEvent ? e.clipboardData : e.dataTransfer;
 
-    const files = await inputService.getFilesFromDataTransfer(dataTransfer);
+    const files = isSubmitting ? [] : await inputService.getFilesFromDataTransfer(dataTransfer);
     let plainText = inputService.getTextFromDataTransfer(dataTransfer);
 
     // If the user pastes more than X characters then create an attachment
-    if (plainText.trim().length >= 1000) {
+    if (!isSubmitting && plainText.trim().length >= 1000) {
       files.push(new Attachment(
         `${StringTools.deriveFileName(plainText)}.${FileType.TEXT}`,
         MimeType.TEXT_PLAIN,
@@ -520,7 +520,7 @@
     e.preventDefault();
     e.stopPropagation();
     if (e.dataTransfer) {
-      e.dataTransfer.dropEffect = "copy";
+      e.dataTransfer.dropEffect = isSubmitting ? "none" : "copy";
       e.dataTransfer.effectAllowed = "copy";
     }
   }

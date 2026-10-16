@@ -24,10 +24,7 @@
   }
 
   async function focusDiff() {
-    const leaf = workSpaceService.getLeavesOfType(VIEW_TYPE_DIFF)[0];
-    if (leaf) {
-      await workSpaceService.getWorkSpace().revealLeaf(leaf);
-    }
+    await workSpaceService.revealLeafOfType(VIEW_TYPE_DIFF);
   }
 </script>
 

@@ -11,12 +11,11 @@
 	import type { InputService } from "Services/InputService";
 	import UserInstruction from "./UserInstruction.svelte";
   import ChatModeSelector from "./ChatModeSelector.svelte";
-	import DiffControls from "./DiffControls.svelte";
-	import PlanApprovalControls from "./PlanApprovalControls.svelte";
+	import DiffControls from "./InputDisplayDiff.svelte";
+	import PlanApprovalControls from "./InputDisplayPlan.svelte";
 	import type { EventService } from "Services/EventService";
 	import { Event } from "Enums/Event";
 	import type { DiffService } from "Services/DiffService";
-	import type { PlanApprovalService } from "Services/PlanApprovalService";
 	import { Attachment } from "Conversations/Attachment";
 	import ChatAttachments from "./ChatAttachments.svelte";
 	import InputDisplay from "./InputDisplay.svelte";
@@ -46,7 +45,6 @@
   const userInputService: UserInputService = Resolve<UserInputService>(Services.UserInputService);
   const searchStateStore: SearchStateStore = Resolve<SearchStateStore>(Services.SearchStateStore);
   const diffService: DiffService = Resolve<DiffService>(Services.DiffService);
-  const planApprovalService: PlanApprovalService = Resolve<PlanApprovalService>(Services.PlanApprovalService);
   const eventService: EventService = Resolve<EventService>(Services.EventService);
   const aiPrompt: IPrompt = Resolve<IPrompt>(Services.IPrompt);
 
@@ -70,6 +68,9 @@
   let freeEdit: boolean = settingsService.settings.freeEdit;
   let chatMode: ChatMode = settingsService.settings.chatMode;
   let inputMode: InputMode = InputMode.Normal;
+  let planApprovalOpen: boolean = false;
+  let diffOpen: boolean = false;
+
   let questionResolver: ((answer: string) => void) | null = null;
 
   let webSearchActive: boolean = settingsService.settings.enableWebSearch;
@@ -79,10 +80,10 @@
   let countdownIntervalId: ReturnType<typeof setInterval> | null = null;
   let countdownSecondsRemaining: number = 0;
 
-  const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { inputMode = InputMode.Diff; focusInput(); });
-  const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { inputMode = InputMode.Normal; focusInput(); });
-  const planApprovalOpenedRef: EventRef = eventService.on(Event.PlanApprovalOpened, () => { inputMode = InputMode.PlanApproval; focusInput(); });
-  const planApprovalClosedRef: EventRef = eventService.on(Event.PlanApprovalClosed, () => { inputMode = InputMode.Normal; focusInput(); });
+  const diffOpenedRef: EventRef = eventService.on(Event.DiffOpened, () => { diffOpen = true; focusInput(); });
+  const diffClosedRef: EventRef = eventService.on(Event.DiffClosed, () => { diffOpen = false; focusInput(); });
+  const planApprovalOpenedRef: EventRef = eventService.on(Event.PlanApprovalOpened, () => { planApprovalOpen = true; focusInput(); });
+  const planApprovalClosedRef: EventRef = eventService.on(Event.PlanApprovalClosed, () => { planApprovalOpen = false; focusInput(); });
   const rateLimitCountdownRef: EventRef = eventService.on(Event.RateLimitCountdown, (delayMs: number) => { startCountdown(delayMs); });
 
   const settingsSubscription: object = settingsService.subscribeToSettingsChanged(changed => {
@@ -230,7 +231,7 @@
   })();
 
   $: if (submitButton) {
-    if (inputMode === InputMode.Question || inputMode === InputMode.PlanApproval) {
+    if (inputMode === InputMode.Question) {
       setIcon(submitButton, userRequest.trim() === "" ? "square" : "send-horizontal");
     } else {
       setIcon(submitButton, isSubmitting ? "square" : "send-horizontal");
@@ -251,12 +252,11 @@
 
   $: inputPlaceholder = (() => {
     if (inputMode === InputMode.Question) return Copy.InputPlaceholderQuestion;
-    if (inputMode === InputMode.PlanApproval) return Copy.InputPlaceholderPlanApproval;
     return Copy.InputPlaceholderNormal;
   })();
 
   $: submitDisabled = (() => {
-    if (inputMode === InputMode.Question || inputMode === InputMode.PlanApproval) {
+    if (inputMode === InputMode.Question) {
       return false;
     }
     return !isSubmitting && userRequest.trim() === "";
@@ -265,9 +265,6 @@
   $: submitAriaLabel = (() => {
     if (inputMode === InputMode.Question) {
       return userRequest.trim() === "" ? Copy.ButtonCancel : Copy.ButtonSubmitAnswer;
-    }
-    if (inputMode === InputMode.PlanApproval) {
-      return userRequest.trim() === "" ? Copy.ButtonCancel : Copy.ButtonMakeSuggestion;
     }
     return isSubmitting ? Copy.ButtonCancel : Copy.ButtonSendMessage;
   })();
@@ -286,14 +283,6 @@
     }
     const result = requestFromInput();
     onSubmit(result.request, result.formattedRequest);
-  }
-
-  function handlePlanSuggestion() {
-    if (userRequest.trim() === "" || inputMode !== InputMode.PlanApproval) {
-      return;
-    }
-    const suggestion = requestFromInput();
-    planApprovalService.onSuggest(suggestion.formattedRequest);
   }
 
   function handleAnswer() {
@@ -367,8 +356,6 @@
       e.preventDefault();
       if (inputMode === InputMode.Question) {
         handleAnswer();
-      } else if (inputMode === InputMode.PlanApproval) {
-        handlePlanSuggestion();
       } else {
         handleSubmit();
       }
@@ -591,9 +578,9 @@
     <ChatAttachments bind:attachments={attachments}/>
   </div>
 
-  <div id="diff-controls-container" style:padding-top={(inputMode === InputMode.PlanApproval) ? "var(--size-4-2)" : 0}>
-    <DiffControls diffOpen={inputMode === InputMode.Diff}/>
-    <PlanApprovalControls planApprovalOpen={inputMode === InputMode.PlanApproval}/>
+  <div id="diff-controls-container">
+    <DiffControls diffOpen={diffOpen}/>
+    <PlanApprovalControls planApprovalOpen={planApprovalOpen}/>
   </div>
 
   <div id="input-search-results-container" style:padding-top={$searchState.results.length > 0 ? "var(--size-4-2)" : 0}>
@@ -681,8 +668,6 @@
     on:click={() => {
       if (inputMode === InputMode.Question) {
         userRequest.trim() === "" ? handleStop() : handleAnswer();
-      } else if (inputMode === InputMode.PlanApproval) {
-        userRequest.trim() === "" ? handleStop() : handlePlanSuggestion();
       } else {
         isSubmitting ? handleStop() : handleSubmit();
       }

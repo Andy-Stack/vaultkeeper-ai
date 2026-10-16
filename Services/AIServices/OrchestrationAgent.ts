@@ -20,6 +20,7 @@ import { AIToolResponsePayload } from "AIClasses/ToolDefinitions/AIToolResponseP
 import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
 import type { ExecutionPlan } from "Types/ExecutionPlan";
 import type { AIToolCall } from "AIClasses/AIToolCall";
+import type { Attachment } from "Conversations/Attachment";
 
 export class OrchestrationAgent extends BaseAgent {
 
@@ -27,13 +28,21 @@ export class OrchestrationAgent extends BaseAgent {
 
     private orchestrationDepth: number = 0;
 
-    public async runPlannedWorkflow(planRequest: ExecuteWorkflowArgs, callbacks: IChatServiceCallbacks): Promise<AIToolResponsePayload> {
+    public async runPlannedWorkflow(planRequest: ExecuteWorkflowArgs, attachments: Attachment[], callbacks: IChatServiceCallbacks): Promise<AIToolResponsePayload> {
         this.debugService?.log("OrchestrationAgent", `Starting planned workflow: ${planRequest.goal}`);
         const planningConversation: Conversation = new Conversation();
         planningConversation.contents.push(new ConversationContent({
             role: Role.User,
             content: this.preparePlanRequest(planRequest)
         }));
+
+        if (attachments.length > 0) {
+            planningConversation.contents.push(new ConversationContent({
+                role: Role.User,
+                attachments: attachments,
+                shouldDisplayContent: false
+            }));
+        }
 
         const planningAgent = new PlanningAgent();
         planningAgent.resolveAIProvider();

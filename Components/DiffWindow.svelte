@@ -21,6 +21,8 @@
 	import type { IBrokenLink } from "../DocumentValidation/Results/WikilinkValidationResult";
 	import type { IQuoteDrift } from "../DocumentValidation/Results/BlockQuoteValidationResult";
 	import { BrokenLinkReason } from "Enums/BrokenLinkReason";
+	import type { WorkSpaceService } from "Services/WorkSpaceService";
+	import { VIEW_TYPE_MAIN } from "Views/MainView";
 
 	interface DiffRenderOptions {
 		vaultChange: IVaultChange | undefined;
@@ -35,6 +37,7 @@
 	const eventService: EventService = Resolve<EventService>(Services.EventService);
 	const inputService: InputService = Resolve<InputService>(Services.InputService);
 	const bottomSheetService: BottomSheetService = Resolve<BottomSheetService>(Services.BottomSheetService);
+	const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
 
 	const isPhone = Platform.isPhone;
 
@@ -282,10 +285,16 @@
 		}
 	}
 
-	function handleDone() {
+	async function handleDone() {
 		if (stateCounts[DiffState.None] > 0) {
 			return;
 		}
+
+		// Must run before the diff leaf detaches, otherwise Obsidian refocuses the editor and collapses the drawer
+		if (isPhone) {
+			await workSpaceService.revealLeafOfType(VIEW_TYPE_MAIN);
+		}
+
 		eventService.trigger(Event.DiffClosed);
 	}
 

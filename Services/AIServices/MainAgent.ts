@@ -57,7 +57,8 @@ export class MainAgent extends BaseAgent {
                     this.debugService?.log("MainAgent", "Spawning OrchestrationAgent for planned workflow");
                     const orchestrationAgent = new OrchestrationAgent();
                     orchestrationAgent.resolveAIProvider();
-                    const workflowResult = await orchestrationAgent.runPlannedWorkflow(parseResult.data, callbacks);
+                    const workflowResult = await orchestrationAgent.runPlannedWorkflow(
+                        parseResult.data, conversation.contents.map(c => c.attachments).flat(), callbacks);
                     this.debugService?.log("MainAgent", "OrchestrationAgent workflow completed");
 
                     // The orchestration agents share the AI provider, so restore the main agent's configuration

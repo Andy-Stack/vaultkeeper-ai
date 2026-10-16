@@ -1,15 +1,11 @@
 import { Event } from "Enums/Event";
-import { Copy } from "Enums/Copy";
 import { ItemView, WorkspaceLeaf, Platform, type ViewStateResult } from "obsidian";
 import { mount, unmount } from "svelte";
 import { Resolve } from "Services/DependencyService";
 import type { EventService } from "Services/EventService";
-import type { PlanApprovalService } from "Services/PlanApprovalService";
 import { Services } from "Services/Services";
-import { VIEW_TYPE_MAIN, type MainView } from "./MainView";
 import PlanApprovalWindow from "Components/PlanApprovalWindow.svelte";
 import type { ExecutionPlan } from "Types/ExecutionPlan";
-import { tick } from "svelte";
 
 export const VIEW_TYPE_PLAN_APPROVAL = 'vaultkeeper-ai-plan-approval-view';
 
@@ -20,7 +16,6 @@ interface PlanApprovalViewState {
 export class PlanApprovalView extends ItemView {
 
     private readonly eventService: EventService;
-    private readonly planApprovalService: PlanApprovalService;
 
     private plan: ExecutionPlan | undefined;
 
@@ -32,7 +27,6 @@ export class PlanApprovalView extends ItemView {
         super(leaf);
 
         this.eventService = Resolve<EventService>(Services.EventService);
-        this.planApprovalService = Resolve<PlanApprovalService>(Services.PlanApprovalService);
 
         this.registerEvent(this.eventService.on(Event.PlanApprovalClosed, () => {
             this.leaf.detach();
@@ -92,10 +86,6 @@ export class PlanApprovalView extends ItemView {
                 plan: this.plan
             }
         });
-
-        if (Platform.isMobile) {
-            this.mobileControlsContainer = this.createMobileButtons();
-        }
     }
 
     private resetContainer(): HTMLElement {
@@ -118,60 +108,6 @@ export class PlanApprovalView extends ItemView {
         }
 
         return container;
-    }
-
-    private createMobileButtons(): HTMLElement {
-        const container = this.contentEl.createDiv({ cls: 'plan-approval-mobile-controls' });
-
-        const approveButton = container.createEl('button', {
-            cls: 'plan-approval-mobile-button plan-approval-mobile-approve',
-            text: Copy.ButtonApprove
-        });
-        approveButton.setAttribute('aria-label', Copy.ButtonApprove);
-
-        const discussButton = container.createEl('button', {
-            cls: 'plan-approval-mobile-button plan-approval-mobile-discuss',
-            text: Copy.ButtonDiscuss
-        });
-        discussButton.setAttribute('aria-label', Copy.ButtonDiscuss);
-
-        const rejectButton = container.createEl('button', {
-            cls: 'plan-approval-mobile-button plan-approval-mobile-reject',
-            text: Copy.ButtonReject
-        });
-        rejectButton.setAttribute('aria-label', Copy.ButtonReject);
-
-        this.registerDomEvent(approveButton, 'click', async () => {
-            this.planApprovalService.onApprove();
-            await this.refocusMainView();
-        });
-
-        this.registerDomEvent(discussButton, 'click', async () => {
-            await this.refocusMainView(true);
-        });
-
-        this.registerDomEvent(rejectButton, 'click', async () => {
-            this.planApprovalService.onReject();
-            await this.refocusMainView();
-        });
-
-        return container;
-    }
-
-    private async refocusMainView(focusChatInput: boolean = false): Promise<void> {
-        await tick().then(async () => {
-            const { workspace } = this.app;
-            const leaves = workspace.getLeavesOfType(VIEW_TYPE_MAIN);
-
-            if (leaves.length > 0) {
-                await workspace.revealLeaf(leaves[0]);
-                workspace.setActiveLeaf(leaves[0], { focus: true });
-
-                if (focusChatInput) {
-                    (leaves[0].view as MainView).input?.focusInput(true);
-                }
-            }
-        });
     }
 
 }

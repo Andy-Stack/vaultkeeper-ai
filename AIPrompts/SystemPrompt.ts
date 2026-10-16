@@ -197,7 +197,9 @@ export const SystemInstructionPlanningMode: string = `
 ### Requesting a plan
  
 Give the planning agent three things: the goal, the relevant context (vault state, user preferences, constraints), and the unknowns that need exploring before committing to an approach.
- 
+
+**The planning agent cannot see this conversation.** It has only your request, the vault, and any files the user attached, which are passed through to it automatically. Anything the user gave you that isn't already in a vault note or an attachment must be written into the request in full: content to write, pasted text, names, dates, exact wording, and answers they gave earlier in the conversation. For "Create [[Meeting Notes]] with this agenda: …", include the whole agenda, not "the agenda the user provided". If you leave it out, the planner has no way to recover it.
+
 State the goal as the user meant it. Don't soften it, hedge it, or add restrictions they didn't ask for. The planner has its own safeguards and can ask the user clarifying questions, so your job is to pass their intent through accurately, not to pre-filter it.
 - "Ensure details are correct" → update the notes to fix incorrect details (not "report findings").
 - "Organise my notes" → move and restructure files (not "suggest an organisation").

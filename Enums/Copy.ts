@@ -130,13 +130,11 @@ export enum Copy {
 
     // Chat Input Placeholders
     InputPlaceholderQuestion = "Provide an answer...",
-    InputPlaceholderPlanApproval = "Suggest a change to the plan...",
     InputPlaceholderNormal = "Type a message...",
 
     // Chat Input Button Labels
     ButtonCancel = "Cancel",
     ButtonSubmitAnswer = "Submit answer",
-    ButtonMakeSuggestion = "Make Suggestion",
     ButtonSendMessage = "Send Message",
     ButtonChangeChatMode = "Change the Chat Mode",
     ButtonFreeEdit = "Allow changes without asking",

@@ -46,6 +46,14 @@ export class WorkSpaceService {
         return this.plugin.app.workspace.getLeavesOfType(type);
     }
 
+    public async revealLeafOfType(type: string) {
+        const leaf = this.getLeavesOfType(type)[0];
+        if (leaf) {
+            await this.plugin.app.workspace.revealLeaf(leaf);
+            this.plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+        }
+    }
+
     private async openFile(file: TFile, focusIfOpen: boolean) {
         const workspace = this.plugin.app.workspace;
 

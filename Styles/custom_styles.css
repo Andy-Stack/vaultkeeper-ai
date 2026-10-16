@@ -93,6 +93,10 @@ body:not(.is-tablet) .workspace-drawer.mod-right {
   overflow: hidden;
 }
 
+.workspace-leaf-content[data-type="vaultkeeper-ai-plan-approval-view"] .plan-approval-wrapper {
+  height: 100%;
+}
+
 /* ============================== */
 /* Artifact View Customization */
 /* ============================== */

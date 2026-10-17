@@ -1,41 +1,86 @@
 <script lang="ts">
   import { setElementIcon } from "Helpers/ElementHelper";
   import type { ConversationContent } from "Conversations/ConversationContent";
+	import { Notice } from "obsidian";
 
   export let message: ConversationContent;
 
   $: content = message.getDisplayContent();
+
+  let isScrolledToTop = true;
+  let isScrolledToBottom = true;
+
+  async function copyMessage() {
+    if (message.content) {
+      await navigator.clipboard.writeText(message.content);
+      new Notice("Copied to clipboard");
+    }
+  }
+
+  function updateScrollFade(element: HTMLElement) {
+    const { scrollTop, scrollHeight, clientHeight } = element;
+    isScrolledToTop = scrollTop < 1;
+    isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 1;
+  }
+
+  function messageTextScrollAction(element: HTMLElement) {
+    updateScrollFade(element);
+    const handleScroll = () => updateScrollFade(element);
+    element.addEventListener("scroll", handleScroll);
+    return {
+      destroy() {
+        element.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }
 </script>
 
-<div class="message-container user">
-  <div class="message-bubble user">
-    <div class="message-text-user-container" contenteditable="false">
-      <div class="message-text-user">
-        {@html content}
-      </div>
-    </div>
-    {#if message.references.length > 0}
-      <hr class="message-attachment-break"/>
-      <div class="message-attachments-container">
-        {#each message.references as reference}
-          <div class="message-attachmanet" aria-label="{reference.fileName}">
-            <div
-              class="message-attachment-icon"
-              use:setElementIcon={reference.getIconName()}
-            ></div>
-            <div class="message-attachment-info">
-              <div class="message-attachment-name">{reference.fileName}</div>
-              <div class="message-attachment-size">{reference.size}MB</div>
-            </div>
+<div class="user-message">
+  <div class="user-message-container">
+    <div class="user-message-bubble">
+      <div class="message-text-user-wrapper">
+        <div class="message-text-user-container" contenteditable="false" use:messageTextScrollAction>
+          <div class="message-text-user">
+            {@html content}
           </div>
-        {/each}
+        </div>
+        <div class="message-text-fade top" class:hidden={isScrolledToTop}></div>
+        <div class="message-text-fade bottom" class:hidden={isScrolledToBottom}></div>
       </div>
-    {/if}
+      {#if message.references.length > 0}
+        <hr class="message-attachment-break"/>
+        <div class="message-attachments-container">
+          {#each message.references as reference}
+            <div class="message-attachmanet" aria-label="{reference.fileName}">
+              <div
+                class="message-attachment-icon"
+                use:setElementIcon={reference.getIconName()}
+              ></div>
+              <div class="message-attachment-info">
+                <div class="message-attachment-name">{reference.fileName}</div>
+                <div class="message-attachment-size">{reference.size}MB</div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+      <button
+        class="user-message-copy clickable-icon"
+        aria-label="Copy message"
+        use:setElementIcon={"copy"}
+        on:click={copyMessage}
+      ></button>
+    </div>
   </div>
 </div>
 
 <style>
-  .message-container {
+  .user-message {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .user-message-container {
     display: flex;
     text-align: left;
     margin: 0;
@@ -54,7 +99,8 @@
     }
   }
 
-  .message-bubble {
+  .user-message-bubble {
+    position: relative;
     word-wrap: break-word;
     max-width: 70%;
     border: var(--border-width) solid var(--background-modifier-border);
@@ -72,6 +118,34 @@
 
   .message-text-user-container::-webkit-scrollbar {
     display: none;
+  }
+
+  .message-text-user-wrapper {
+    position: relative;
+  }
+
+  .message-text-fade {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: var(--size-4-8);
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s ease-out;
+  }
+
+  .message-text-fade.top {
+    top: 0;
+    background-image: linear-gradient(to top, transparent, var(--background-secondary));
+  }
+
+  .message-text-fade.bottom {
+    bottom: 0;
+    background-image: linear-gradient(to bottom, transparent, var(--background-secondary));
+  }
+
+  .message-text-fade.hidden {
+    opacity: 0;
   }
 
   .message-attachment-break {
@@ -130,5 +204,17 @@
     padding: 0;
     font-size: var(--font-smallest);
     color: var(--text-muted);
+  }
+
+  .user-message-copy {
+    position: absolute;
+    bottom: var(--size-4-1);
+    right: var(--size-4-1);
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+
+  .user-message-bubble:hover .user-message-copy {
+    opacity: 1;
   }
 </style>

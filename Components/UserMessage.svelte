@@ -109,7 +109,7 @@
   }
 
   .message-text-user-container {
-    max-height: 15vh;
+    max-height: 20vh;
     overflow: scroll;
     padding-top: var(--size-4-2);
     padding-bottom: var(--size-4-2);

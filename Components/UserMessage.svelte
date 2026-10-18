@@ -78,6 +78,7 @@
   .user-message {
     display: flex;
     flex-direction: column;
+    margin-bottom: var(--size-4-2);
   }
 
   .user-message-container {

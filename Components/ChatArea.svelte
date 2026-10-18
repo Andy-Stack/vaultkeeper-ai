@@ -1,5 +1,7 @@
 <script lang="ts">
 	import ThoughtIndicator from "./ThoughtIndicator.svelte";
+	import ThoughtSteps, { type ThoughtStep } from "./ThoughtSteps.svelte";
+	import { describeMessageSteps } from "Helpers/ToolCallThoughtHelper";
 	import StreamingIndicator from "./StreamingIndicator.svelte";
 	import UserMessage from "./UserMessage.svelte";
 	import AssistantMessage from "./AssistantMessage.svelte";
@@ -12,7 +14,6 @@
 	import GraphAnimation from "./GraphAnimation.svelte";
 
   export let messages: ConversationContent[] = [];
-  export let currentThought: string | null = null;
   export let isSubmitting: boolean = false;
   export let chatContainer: HTMLDivElement;
 
@@ -75,6 +76,20 @@
     return turns;
   }
 
+  // Messages are re-rendered on every streaming chunk, so avoid re-parsing stored tool calls each time
+  const messageStepsCache = new WeakMap<ConversationContent, string[]>();
+
+  function turnSteps(turn: Turn): ThoughtStep[] {
+    return turn.messages.flatMap(message => {
+      const messageSteps = messageStepsCache.get(message) ?? describeMessageSteps(message);
+      // Tool calls are only stored once the message has finished streaming
+      if (message.toolCalls) {
+        messageStepsCache.set(message, messageSteps);
+      }
+      return messageSteps.map(thought => ({ thought, isComplete: true }));
+    });
+  }
+
   function getGreetingByTime(): string {
     const hour = new Date().getHours();
 
@@ -109,7 +124,7 @@
     {#each turns as turn, turnIndex (turn.id)}
       {@const isLatestTurn = turnIndex === turns.length - 1}
       <div class="message-group" class:latest={isLatestTurn}>
-        {#each turn.messages as message (message.id)}
+        {#each turn.messages as message, messageIndex (message.id)}
           {@const content = message.getDisplayContent()}
           {#if message.shouldDisplayContent && content.trim() !== ""}
             {#if message.role === Role.User}
@@ -118,10 +133,18 @@
               <AssistantMessage {message} {isSubmitting} />
             {/if}
           {/if}
+
+          <!-- Steps sit at the top of the turn so they stay put as the reply streams in below them -->
+          {#if messageIndex === 0}
+            {#if isLatestTurn && isSubmitting}
+              <ThoughtIndicator/>
+            {:else}
+              <ThoughtSteps steps={turnSteps(turn)}/>
+            {/if}
+          {/if}
         {/each}
 
         {#if isLatestTurn}
-          <ThoughtIndicator thought={currentThought}/>
           {#if isSubmitting}
             <div transition:fade={{ duration: 300 }}>
               <StreamingIndicator/>
@@ -222,7 +245,6 @@
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    gap: var(--size-4-2);
   }
 
   .message-group.latest {

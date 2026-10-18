@@ -4,5 +4,6 @@ export enum Event {
     PlanApprovalOpened = "planApprovalOpened",
     PlanApprovalClosed = "planApprovalClosed",
     RateLimitCountdown = "rateLimitCountdown",
+    ToolCallStarted = "toolCallStarted",
     ThoughtUpdate = "thoughtUpdate"
 }

@@ -113,7 +113,7 @@ export function describeToolCall(toolCall: AIToolCall): string | undefined {
         // Only seen when rebuilding past steps, the workflow's own steps are shown live by its sub-agents
         case AITool.ExecuteWorkflow: {
             const parseResult = ExecuteWorkflowArgsSchema.safeParse(toolCall.arguments);
-            return parseResult.success ? `Ran workflow '${parseResult.data.goal}'` : undefined;
+            return parseResult.success ? `Ran workflow '${parseResult.data.title}'` : undefined;
         }
 
         // Return undefined for tools that shouldn't be shown to the user as a step

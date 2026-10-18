@@ -3,19 +3,77 @@
 	import ThoughtSteps, { type ThoughtStep } from "./ThoughtSteps.svelte";
 	import { describeMessageSteps } from "Helpers/ToolCallThoughtHelper";
 	import StreamingIndicator from "./StreamingIndicator.svelte";
+	import StreamingLabel from "./StreamingLabel.svelte";
 	import UserMessage from "./UserMessage.svelte";
 	import AssistantMessage from "./AssistantMessage.svelte";
 	import { Greeting } from "Enums/Greeting";
 	import { Role } from "Enums/Role";
   import type { ConversationContent } from "Conversations/ConversationContent";
-	import { tick } from "svelte";
-	import { setIcon } from "obsidian";
-	import { fade } from "svelte/transition";
+	import { onDestroy, tick } from "svelte";
+	import { setIcon, type EventRef } from "obsidian";
+	import { fade, slide } from "svelte/transition";
 	import GraphAnimation from "./GraphAnimation.svelte";
+	import { EventService } from "Services/EventService";
+	import { Resolve } from "Services/DependencyService";
+	import { Services } from "Services/Services";
+	import { Event } from "Enums/Event";
+	import { AITool } from "Enums/AITool";
+	import { SettingsService } from "Services/SettingsService";
 
   export let messages: ConversationContent[] = [];
   export let isSubmitting: boolean = false;
   export let chatContainer: HTMLDivElement;
+
+  const eventService: EventService = Resolve<EventService>(Services.EventService);
+  const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
+
+  let isIdle = false;
+
+  const toolCallStartedRef: EventRef = eventService.on(Event.ToolCallStarted, (toolName: AITool) => {
+    switch (toolName) {
+        case AITool.ReadMemories:
+        case AITool.UpdateMemories:
+        case AITool.ListVaultFiles:
+        case AITool.SearchVaultFiles:
+        case AITool.ReadVaultFiles:
+        case AITool.GetWebViewerContent:
+        case AITool.CreateVaultFolder:
+        case AITool.ExecuteWorkflow:
+        case AITool.RequestWebSearch:
+        case AITool.CompleteTask:
+        case AITool.CompleteStep:
+        case AITool.SkipStep:
+        case AITool.ReviseStep:
+        case AITool.RevisePlan:
+        case AITool.CompletePlan:
+        case AITool.CancelPlan:
+          isIdle = false;
+          break;
+
+        case AITool.WriteVaultFile:
+        case AITool.PatchVaultFile:
+        case AITool.DeleteVaultFiles:
+        case AITool.MoveVaultFiles:
+        case AITool.DeleteVaultFolder:
+        case AITool.MoveVaultFolder:
+          // Not idle if free edit is enabled
+          isIdle = !settingsService.settings.freeEdit;
+          break;
+
+        case AITool.SubmitPlan:
+        case AITool.AskUserQuestionPlanning:
+        case AITool.AskUserQuestionExecution:
+          isIdle = true;
+          break;
+
+        case AITool.Unknown:
+          isIdle = false;
+    }
+  });
+
+  onDestroy(() => {
+    eventService.offref(toolCallStartedRef);
+  });
 
   export function resetChatArea() {
     chatContainer.scroll({ top: 0, behavior: "instant" });
@@ -146,8 +204,9 @@
 
         {#if isLatestTurn}
           {#if isSubmitting}
-            <div transition:fade={{ duration: 300 }}>
-              <StreamingIndicator/>
+            <div class="streaming-status" transition:slide>
+              <StreamingIndicator isIdle={isIdle}/>
+              <StreamingLabel isIdle={isIdle}/>
             </div>
           {/if}
         {/if}
@@ -185,6 +244,13 @@
 </div>
 
 <style>
+  .streaming-status {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-3);
+    margin-top: var(--size-4-1);
+  }
+
   .scroll-to-bottom-container {
     background-color: color-mix(in srgb, var(--background-primary) 70%, transparent);
     border-radius: var(--radius-l);

@@ -27,6 +27,10 @@ Do NOT use this function:
   parameters: {
     type: "object",
     properties: {
+      title: {
+        type: "string",
+        description: "A short, human-readable label for the workflow. Use a concise present-participle phrase of 2-6 words in sentence case with no trailing punctuation. Examples: 'Summarizing machine learning notes', 'Reorganizing project notes', 'Compiling quantum computing reference'"
+      },
       goal: {
         type: "string",
         description: "The high-level goal to be planned and executed. Should clearly describe the desired end state or outcome. The workflow system will determine the specific steps needed to achieve this. Examples: 'Create a comprehensive summary of all machine learning notes', 'Reorganize project notes by topic and update all internal links', 'Research and compile information about quantum computing from the vault into a new reference document'"

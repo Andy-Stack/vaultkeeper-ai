@@ -2,6 +2,7 @@
   import { setElementIcon } from "Helpers/ElementHelper";
   import type { ConversationContent } from "Conversations/ConversationContent";
 	import { Notice } from "obsidian";
+  import { slide } from "svelte/transition";
 
   export let message: ConversationContent;
 
@@ -9,12 +10,15 @@
 
   let isScrolledToTop = true;
   let isScrolledToBottom = true;
+  let isHovered = false;
+  let hasFocus = false;
 
   async function copyMessage() {
     if (message.content) {
       await navigator.clipboard.writeText(message.content);
       new Notice("Copied to clipboard");
     }
+    (document.activeElement as HTMLElement | null)?.blur();
   }
 
   function updateScrollFade(element: HTMLElement) {
@@ -37,7 +41,16 @@
 
 <div class="user-message">
   <div class="user-message-container">
-    <div class="user-message-bubble" tabindex="-1">
+    <!-- focusin lets a tap on mobile reveal the copy button -->
+    <div
+      class="user-message-bubble"
+      tabindex="-1"
+      role="group"
+      on:mouseenter={() => isHovered = true}
+      on:mouseleave={() => isHovered = false}
+      on:focusin={() => hasFocus = true}
+      on:focusout={() => hasFocus = false}
+    >
       <div class="message-text-user-wrapper">
         <div class="message-text-user-container" contenteditable="false" use:messageTextScrollAction>
           <div class="message-text-user">
@@ -47,6 +60,15 @@
         <div class="message-text-fade top" class:hidden={isScrolledToTop}></div>
         <div class="message-text-fade bottom" class:hidden={isScrolledToBottom}></div>
       </div>
+      {#if isHovered || hasFocus}
+        <button
+          class="user-message-copy"
+          aria-label="Copy message"
+          use:setElementIcon={"copy"}
+          on:click={copyMessage}
+          transition:slide
+        ></button>
+      {/if}
       {#if message.references.length > 0}
         <hr class="message-attachment-break"/>
         <div class="message-attachments-container">
@@ -64,12 +86,6 @@
           {/each}
         </div>
       {/if}
-      <button
-        class="user-message-copy"
-        aria-label="Copy message"
-        use:setElementIcon={"copy"}
-        on:click={copyMessage}
-      ></button>
     </div>
   </div>
 </div>
@@ -208,22 +224,12 @@
   }
 
   .user-message-copy {
-    position: absolute;
-    bottom: var(--size-4-1);
-    right: var(--size-4-1);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease-out;
+    display: flex;
+    margin-left: auto;
+    margin-bottom: var(--size-4-2);
   }
 
   .user-message-bubble:focus {
     outline: none;
-  }
-
-  /* focus-within lets a tap on mobile reveal the button */
-  .user-message-bubble:hover .user-message-copy,
-  .user-message-bubble:focus-within .user-message-copy {
-    opacity: 1;
-    pointer-events: auto;
   }
 </style>

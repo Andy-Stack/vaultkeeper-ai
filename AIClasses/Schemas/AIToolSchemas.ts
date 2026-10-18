@@ -69,6 +69,7 @@ export const GetWebViewerContentArgsSchema = z.object({
 });
 
 export const ExecuteWorkflowArgsSchema = z.object({
+	title: z.string(),
 	goal: z.string(),
 	context: z.string().optional()
 });

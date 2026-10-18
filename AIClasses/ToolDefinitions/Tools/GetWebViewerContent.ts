@@ -29,12 +29,8 @@ Call this function:
             index: {
                 type: "integer",
                 description: "Only used for \"text\" format. Where to resume reading the page's text. Omit or use 0 to start from the beginning. If the previous call's response included a nextIndex, pass that value back to continue reading from where it left off - otherwise content already seen may be repeated and later content may be missed. Ignored for \"screenshot\" format."
-            },
-            user_message: {
-                type: "string",
-                description: "A short message to be displayed to the user explaining what you're reading and why. Example: 'Reading the open page to summarise its key points'"
             }
         },
-        required: ["format", "user_message"]
+        required: ["format"]
     }
 }

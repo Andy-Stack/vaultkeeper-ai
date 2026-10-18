@@ -62,12 +62,8 @@ WARNING: The patch will fail if:
 - Whitespace/indentation doesn't match exactly
 - Any match is ambiguous (appears multiple times) and replace_all is not true
 - Line breaks are missing or incorrect`
-            },
-            user_message: {
-                type: "string",
-                description: "A short message to be displayed to the user explaining what you're writing and why (e.g., 'Updating project plan with new tasks')"
             }
         },
-        required: ["file_path", "edits", "user_message"]
+        required: ["file_path", "edits"]
     }
 }

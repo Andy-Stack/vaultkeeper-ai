@@ -37,7 +37,7 @@
 
 <div class="user-message">
   <div class="user-message-container">
-    <div class="user-message-bubble">
+    <div class="user-message-bubble" tabindex="-1">
       <div class="message-text-user-wrapper">
         <div class="message-text-user-container" contenteditable="false" use:messageTextScrollAction>
           <div class="message-text-user">
@@ -65,7 +65,7 @@
         </div>
       {/if}
       <button
-        class="user-message-copy clickable-icon"
+        class="user-message-copy"
         aria-label="Copy message"
         use:setElementIcon={"copy"}
         on:click={copyMessage}
@@ -211,10 +211,18 @@
     bottom: var(--size-4-1);
     right: var(--size-4-1);
     opacity: 0;
+    pointer-events: none;
     transition: opacity 0.2s ease-out;
   }
 
-  .user-message-bubble:hover .user-message-copy {
+  .user-message-bubble:focus {
+    outline: none;
+  }
+
+  /* focus-within lets a tap on mobile reveal the button */
+  .user-message-bubble:hover .user-message-copy,
+  .user-message-bubble:focus-within .user-message-copy {
     opacity: 1;
+    pointer-events: auto;
   }
 </style>

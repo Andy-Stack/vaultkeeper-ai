@@ -19,11 +19,11 @@ Do NOT call this when:
   parameters: {
     type: "object",
     properties: {
-      user_message: {
+      reason: {
         type: "string",
-        description: "A short message to be displayed to the user explaining why the step is being skipped. Example: 'Skipping step as requested by user' or 'Skipping non critical step'"
+        description: "Why the step is being skipped. This is recorded in the plan history so later orchestration decisions can account for it."
       }
     },
-    required: ["user_message"]
+    required: ["reason"]
   }
 };

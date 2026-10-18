@@ -19,12 +19,7 @@ export const ReadMemories: IAIToolDefinition = {
   - Repeatedly within the same session unless memory may have been updated mid-session`,
     parameters: {
         type: "object",
-        properties: {
-            user_message: {
-                type: "string",
-                description: "A short message to be displayed to the user explaining that you are accessing memories. Example: 'Checking memories...' or 'Remembering user preference...'"
-            }
-        },
-        required: ["user_message"]
+        properties: {},
+        required: []
     }
 }

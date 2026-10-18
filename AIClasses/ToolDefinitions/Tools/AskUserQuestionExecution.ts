@@ -25,12 +25,8 @@ Prefer asking over reporting ambiguity: If you would otherwise report an outcome
       question: {
         type: "string",
         description: "The question to ask the user. Structure your question with: (1) What you discovered, (2) Why it matters, (3) Clear options if applicable. Use markdown formatting for readability e.g. emphasis, lists, code snippets, or file paths to make the question easier to read. Example: 'I was instructed to update `projects/active.md`, but the file doesn't exist.\n\n**Options:**\n1. Create the file with the intended content\n2. Skip this step (the file may have been moved or renamed)\n3. Search for a similar file that might be the intended target\n\nHow should I proceed?'"
-      },
-      user_message: {
-        type: "string",
-        description: "A short message to be displayed to the user explaining what action you are taking. Examples: 'Requesting guidance on conflict resolution', 'Confirming before deleting duplicate notes', 'Asking about unexpected file format'"
       }
     },
-    required: ["question", "user_message"]
+    required: ["question"]
   }
 };

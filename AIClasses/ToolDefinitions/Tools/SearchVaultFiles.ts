@@ -43,12 +43,8 @@ Do NOT use this function:
           },
           required: ["search_term"]
         }
-      },
-      user_message: {
-        type: "string",
-        description: "A short message to be displayed to the user explaining what is being searched for. Example: 'Searching for notes about project meetings' or 'Finding files containing todo items'"
       }
     },
-    required: ["search_terms", "user_message"]
+    required: ["search_terms"]
   }
 }

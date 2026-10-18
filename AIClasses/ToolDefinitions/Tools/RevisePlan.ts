@@ -51,12 +51,8 @@ Write every step that still needs to happen, in order. Include complete context 
           },
           required: ["description", "instruction"]
         }
-      },
-      user_message: {
-        type: "string",
-        description: "A short message to be displayed to the user explaining why the plan is being revised. Example: 'Revising plan to include updating newly found notes in 'Recipes' folder'"
       }
     },
-    required: ["steps", "user_message"]
+    required: ["steps"]
   }
 };

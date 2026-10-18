@@ -25,16 +25,12 @@ Do NOT use this function:
                 type: "string",
                 description: "The full path to the folder to delete within the vault. All contents, including subfolders and files, will be permanently removed. Example: 'projects/2024/notes'"
             },
-            user_message: {
-                type: "string",
-                description: "A short message to be displayed to the user explaining what folder is being deleted and why. Example: 'Deleting the 2024 projects folder as it is no longer needed'"
-            },
             confirm_deletion: {
                 type: "boolean",
                 description: "Safety flag that must be explicitly set to true to confirm the deletion is intentional. This prevents accidental removal of entire folder structures.",
                 default: false
             }
         },
-        required: ["path", "user_message", "confirm_deletion"]
+        required: ["path", "confirm_deletion"]
     }
 }

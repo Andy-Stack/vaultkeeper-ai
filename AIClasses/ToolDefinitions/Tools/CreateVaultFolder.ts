@@ -20,12 +20,8 @@ Do NOT use this function:
             path: {
                 type: "string",
                 description: "The full path to the folder to create within the vault. Intermediate parent folders will be created automatically if they do not exist. Example: 'projects/2024/notes'"
-            },
-            user_message: {
-                type: "string",
-                description: "A short message to be displayed to the user explaining what folder you're creating and why. Example: 'Creating a new Projects folder to organise your notes'"
             }
         },
-        required: ["path", "user_message"]
+        required: ["path"]
     }
 }

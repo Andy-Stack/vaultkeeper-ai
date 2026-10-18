@@ -23,7 +23,6 @@ import type { Artifact } from "Conversations/Artifact";
 export interface IChatServiceCallbacks {
 	onSubmit: () => void;
 	onStreamingUpdate: () => void;
-	onThoughtUpdate: (thought: string | null) => void;
 	onToolCallStarted: (toolName: string) => void;
 	onArtifactProduced: (artifact: Artifact) => void;
 	onPlanningStarted: () => void;
@@ -127,7 +126,6 @@ export class ChatService {
 			}
 		} finally {
 			this.eventService.trigger(Event.DiffClosed);
-			callbacks.onThoughtUpdate(null);
 			callbacks.onComplete();
 			if (this.semaphoreHeld) {
 				this.semaphoreHeld = false;

@@ -8,22 +8,19 @@ export const SearchVaultFilesArgsSchema = z.object({
 		search_term: z.string(), 
 		fileNamesIndex: z.number().optional(),
 		fileContentsIndex: z.number().optional()
-	})),
-	user_message: z.string()
+	}))
 });
 
 export const ReadVaultFilesArgsSchema = z.object({
 	files: z.array(z.object({
 		file_path: z.string(),
 		index: z.number().optional()
-	})),
-	user_message: z.string()
+	}))
 });
 
 export const WriteVaultFileArgsSchema = z.object({
 	file_path: z.string(),
-	content: z.string(),
-	user_message: z.string()
+	content: z.string()
 });
 
 export const PatchVaultFileArgsSchema = z.object({
@@ -32,67 +29,56 @@ export const PatchVaultFileArgsSchema = z.object({
 		old_content: z.string(),
 		new_content: z.string(),
 		replace_all: z.boolean().optional()
-	})),
-	user_message: z.string()
+	}))
 });
 
 export const DeleteVaultFilesArgsSchema = z.object({
 	file_paths: z.array(z.string()),
-	user_message: z.string(),
 	confirm_deletion: z.boolean()
 });
 
 export const MoveVaultFilesArgsSchema = z.object({
 	source_paths: z.array(z.string()),
-	destination_paths: z.array(z.string()),
-	user_message: z.string()
+	destination_paths: z.array(z.string())
 });
 
 export const CreateVaultFolderArgsSchema = z.object({
-	path: z.string(),
-	user_message: z.string()
+	path: z.string()
 });
 
 export const DeleteVaultFolderArgsSchema = z.object({
 	path: z.string(),
-	user_message: z.string(),
 	confirm_deletion: z.boolean()
 });
 
 export const MoveVaultFolderArgsSchema = z.object({
 	source_path: z.string(),
-	destination_path: z.string(),
-	user_message: z.string()
+	destination_path: z.string()
 });
 
 export const ListVaultFilesArgsSchema = z.object({
 	path: z.string(),
 	recursive: z.boolean(),
-	index: z.number().optional(),
-	user_message: z.string()
+	index: z.number().optional()
 });
 
 export const GetWebViewerContentArgsSchema = z.object({
 	url_hint: z.string().optional(),
 	format: z.enum(["text", "screenshot"]),
-	index: z.number().optional(),
-	user_message: z.string()
+	index: z.number().optional()
 });
 
 export const ExecuteWorkflowArgsSchema = z.object({
 	goal: z.string(),
-	context: z.string().optional(),
-	user_message: z.string()
+	context: z.string().optional()
 });
 
 export const AskUserQuestionPlanningArgsSchema = z.object({
-	question: z.string(),
-	user_message: z.string()
+	question: z.string()
 });
 
 export const AskUserQuestionExecutionArgsSchema = z.object({
-	question: z.string(),
-	user_message: z.string()
+	question: z.string()
 });
 
 export const CompleteTaskArgsSchema = z.object({
@@ -107,15 +93,13 @@ export const CompleteStepArgsSchema = z.object({
 });
 
 export const SkipStepArgsSchema = z.object({
-	reason: z.string(),
-	user_message: z.string().optional()
+	reason: z.string()
 });
 
 export const ReviseStepArgsSchema = z.object({
 	revised_description: z.string(),
 	revised_instruction: z.string(),
-	revised_context: z.string().optional(),
-	user_message: z.string()
+	revised_context: z.string().optional()
 });
 
 export const RevisePlanArgsSchema = z.object({
@@ -123,8 +107,7 @@ export const RevisePlanArgsSchema = z.object({
 		description: z.string(),
 		instruction: z.string(),
 		context: z.string().optional()
-	})),
-	user_message: z.string().optional()
+	}))
 });
 
 export const CancelPlanArgsSchema = z.object({
@@ -143,13 +126,10 @@ export const CompletePlanArgsSchema = z.object({
 	confirm_completion: z.boolean()
 });
 
-export const ReadMemoriesArgsSchema = z.object({
-	user_message: z.string()
-});
+export const ReadMemoriesArgsSchema = z.object({});
 
 export const UpdateMemoriesArgsSchema = z.object({
-	content: z.string(),
-	user_message: z.string()
+	content: z.string()
 });
 
 // Infer TypeScript types from schemas

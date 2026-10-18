@@ -42,7 +42,6 @@ export class QuickAgent extends BaseAgent {
         return {
             onSubmit: () => {},
             onStreamingUpdate: () => {},
-            onThoughtUpdate: () => {},
             onToolCallStarted: () => {},
             onArtifactProduced: () => {},
             onPlanningStarted: () => {},

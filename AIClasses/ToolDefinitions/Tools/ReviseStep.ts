@@ -32,12 +32,8 @@ Detailed instructions for executing this step. Should be specific enough to guid
         type: "string",
         description: `Replacement context for the step. Include any information the execution agent was missing, such as file paths, content from prior steps, or findings from your own searches.
 Optional supporting context for this step. May include extracts from vault notes, relevant information gathered during planning, or other contextual details that will help execute this step effectively.`
-      },
-      user_message: {
-        type: "string",
-        description: "A short message to be displayed to the user explaining the update/revision. Example: 'Revising plan step to include requested updates' or 'Updating plan step to include extra notes'"
       }
     },
-    required: ["revised_description", "revised_instruction", "user_message"]
+    required: ["revised_description", "revised_instruction"]
   }
 };

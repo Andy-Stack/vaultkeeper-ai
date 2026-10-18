@@ -23,12 +23,8 @@ Do NOT use this function:
             content: {
                 type: "string",
                 description: "The complete content to write to the file. This will replace any existing content."
-            },
-            user_message: {
-                type: "string",
-                description: "A short message to be displayed to the user explaining what you're writing and why. Example: 'Creating your daily note for today'"
             }
         },
-        required: ["file_path", "content", "user_message"]
+        required: ["file_path", "content"]
     }
 }

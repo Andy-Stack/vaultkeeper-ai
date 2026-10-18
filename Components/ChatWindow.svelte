@@ -3,7 +3,7 @@
   import { Services } from "Services/Services";
   import ChatArea from "./ChatArea.svelte";
   import ChatInput from "./ChatInput.svelte";
-	import { tick, onMount } from "svelte";
+	import { tick, onMount, onDestroy } from "svelte";
   import { conversationStore } from "../Stores/ConversationStore";
   import { Conversation } from "Conversations/Conversation";
 	import type VaultkeeperAIPlugin from "main";
@@ -18,13 +18,15 @@
 	import ChatPlanArea from "./ChatPlanArea.svelte";
 	import type { ExecutionPlanStore } from "Stores/ExecutionPlanStore";
 	import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
-	import { AITool, fromString } from "Enums/AITool";
 	import { AIProvider } from "Enums/ApiProvider";
 	import type { PlanApprovalService } from "Services/PlanApprovalService";
 	import { Artifact } from "Conversations/Artifact";
 	import { ConversationContent } from "Conversations/ConversationContent";
 	import { Role } from "Enums/Role";
 	import { ArtifactAction } from "Enums/ArtifactAction";
+	import { EventService } from "Services/EventService";
+	import type { EventRef } from "obsidian";
+	import { Event } from "Enums/Event";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);
@@ -34,6 +36,7 @@
   const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
   const conversationService: ConversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
   const streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
+  const eventService: EventService = Resolve<EventService>(Services.EventService);
   const abortService: AbortService = Resolve<AbortService>(Services.AbortService);
 
   let collectedArtifacts: Artifact[] = [];
@@ -51,6 +54,8 @@
 
   let currentThought: string | null = null;
 
+  const thoughtUpdateRef: EventRef = eventService.on(Event.ThoughtUpdate, (thought?: string) => currentThought = thought ?? "");
+
   export function focusInput(force: boolean = false) {
     chatInput?.focusInput(force);
   }
@@ -63,6 +68,10 @@
     if (chatContainer) {
       plugin.registerDomEvent(chatContainer, 'click', handleLinkClick);
     }
+  });
+
+  onDestroy(() => {
+    eventService.offref(thoughtUpdateRef);
   });
 
   async function handleLinkClick(evt: MouseEvent) {
@@ -119,26 +128,8 @@
         conversation = conversation;
         chatArea.updateChatAreaLayout();
       },
-      onThoughtUpdate: (thought) => {
-        if (thought !== Copy.AIThoughtMessage) {
-          currentThought = thought;
-        } else if (currentThought !== null) {
-          // we are in-between thoughts so use generic copy
-          currentThought = thought;
-        }
-      },
-      onToolCallStarted: (toolName: string) => {
-        const tool = fromString(toolName);
-        switch(tool) {
-          case AITool.WriteVaultFile:
-          case AITool.PatchVaultFile:
-            currentThought = Copy.AIThoughtGeneratingNote;
-            break;
-          case AITool.AskUserQuestionPlanning:
-          case AITool.AskUserQuestionExecution:
-            currentThought = Copy.AIThoughtPreparingQuery;
-            break;
-        }
+      onToolCallStarted: (_: string) => {
+        currentThought = Copy.AIThoughtMessage;
       },
       onArtifactProduced: (artifact: Artifact) => {
       if (artifact.action === ArtifactAction.Move && artifact.previousPath) {

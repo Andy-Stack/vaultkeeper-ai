@@ -21,7 +21,7 @@ import { StringTools } from "Helpers/StringTools";
 import { AIToolDefinitions } from "AIClasses/ToolDefinitions/AIToolDefinitions";
 import { chatModeAllowsEdits } from "Enums/ChatMode";
 import { Artifact } from "Conversations/Artifact";
-import { basename, extname } from "path-browserify";
+import { basename, dirname, extname } from "path-browserify";
 import { ArtifactAction } from "Enums/ArtifactAction";
 import type { IVaultChangeResponse, IVaultOptions } from "Services/VaultService";
 import type { IVaultChangeRequest } from "Services/TemporaryVaultService";
@@ -44,6 +44,8 @@ import {
     DeleteVaultFolderArgsSchema,
     MoveVaultFolderArgsSchema
 } from "AIClasses/Schemas/AIToolSchemas";
+import { EventService } from "Services/EventService";
+import { Event } from "Enums/Event";
 
 interface IPendingChangeRequest {
     toolCall: AIToolCall;
@@ -66,6 +68,7 @@ export class AIToolService {
     private readonly webViewerService: WebViewerService;
     private readonly abortService: AbortService;
     private readonly sanitiserService: SanitiserService;
+    private readonly eventService: EventService;
 
     // Updates are only allowed after memories were read in an earlier turn, a read in the same batch hasn't been seen by the agent yet
     private lastToolReadMemories: boolean = false;
@@ -79,6 +82,7 @@ export class AIToolService {
         this.webViewerService = Resolve<WebViewerService>(Services.WebViewerService);
         this.abortService = Resolve<AbortService>(Services.AbortService);
         this.sanitiserService = Resolve<SanitiserService>(Services.SanitiserService);
+        this.eventService = Resolve<EventService>(Services.EventService);
     }
 
     public async performAITool(toolCalls: AIToolCall[]): Promise<AIToolResponse[]> {
@@ -132,6 +136,7 @@ export class AIToolService {
             }
         } finally {
             this.lastToolReadMemories = this.memoriesReadThisTurn;
+            this.eventService.trigger(Event.ThoughtUpdate);
         }
 
         // Respond in the order the agent made the calls
@@ -307,6 +312,7 @@ export class AIToolService {
     }
 
     private async readMemories(): Promise<AIToolResponsePayload> {
+        this.eventService.trigger(Event.ThoughtUpdate, "Read memories");
         if (!this.settingsService.settings.enableMemories) {
             return new AIToolResponsePayload({ error: Copy.MemoriesDisabledError });
         }
@@ -315,6 +321,7 @@ export class AIToolService {
     }
 
     private async updateMemories(content: string): Promise<AIToolResponsePayload> {
+        this.eventService.trigger(Event.ThoughtUpdate, "Update memories");
         if (!this.settingsService.settings.allowUpdatingMemories) {
             return new AIToolResponsePayload({ error: Copy.MemoriesUpdatingDisabledError });
         }
@@ -323,10 +330,12 @@ export class AIToolService {
             return new AIToolResponsePayload({ error: Copy.UpdateMemoriesWithoutReadError });
         }
 
-        return new AIToolResponsePayload({ result: await this.memoriesService.updateMemories(content) });
+        const result = await this.memoriesService.updateMemories(content);
+        return new AIToolResponsePayload({ result: result });
     }
 
     private async listVaultFiles(path: string, recursive: boolean, index: number | undefined): Promise<AIToolResponsePayload> {
+        this.eventService.trigger(Event.ThoughtUpdate, `List files in '${path}'`);
         const options: IVaultOptions = { primaryIndex: index, recursive: recursive };
         const contents: { results: TAbstractFile[], nextIndex: number | undefined } = await this.fileSystemService.listDirectoryContents(path, options);
         return new AIToolResponsePayload({
@@ -339,6 +348,7 @@ export class AIToolService {
     }
 
     private async searchVaultFiles(searchTerms: { search_term: string, fileNamesIndex?: number, fileContentsIndex?: number }[]): Promise<AIToolResponsePayload> {
+        this.eventService.trigger(Event.ThoughtUpdate, `Search vault for ${searchTerms.map(term => `'${term.search_term}'`).join(", ")}`);
         const results: { searchTerm: string, fileNameMatches: string[], fileContentMatches: object[],
             nextFileNamesIndex: number | undefined, nextFileContentsIndex: number | undefined }[] = [];
 
@@ -368,6 +378,7 @@ export class AIToolService {
     }
 
     private async readVaultFiles(files: { file_path: string, index?: number }[]): Promise<AIToolResponsePayload> {
+        this.eventService.trigger(Event.ThoughtUpdate, `Read ${StringTools.pluralise("file", files.length)} ${files.map(file => `'${basename(file.file_path)}'`).join(", ")}`);
         const contextSizeLimit = this.settingsService.settings.contextSizeLimit;
         const chunkSize = files.length > 0 ? Math.floor(contextSizeLimit / files.length) : contextSizeLimit;
 
@@ -426,6 +437,7 @@ export class AIToolService {
     }
 
     private async getWebViewerContent(format: "text" | "screenshot", urlHint?: string, index: number = 0): Promise<AIToolResponsePayload> {
+        this.eventService.trigger(Event.ThoughtUpdate, `Get web viewer content as ${format}`);
         if (format === "screenshot") {
             const screenshot = await this.webViewerService.takeScreenshot(urlHint, true);
 
@@ -452,6 +464,7 @@ export class AIToolService {
     }
 
     private async createVaultFolder(path: string): Promise<AIToolResponsePayload> {
+        this.eventService.trigger(Event.ThoughtUpdate, `Create folder '${basename(path)}' at '${dirname(path)}'`);
         const result = await this.fileSystemService.createFolder(path);
         if (result instanceof Error) {
             return new AIToolResponsePayload({ path: path, success: false, error: result.message });
@@ -460,6 +473,7 @@ export class AIToolService {
     }
 
     private async writeVaultFile(filePath: string, content: string): Promise<PendingChanges> {
+        this.eventService.trigger(Event.ThoughtUpdate, `Write file '${basename(filePath)}' at '${dirname(filePath)}'`);
         const file = this.fileSystemService.getFile(filePath);
     
         let oldContent: string | undefined;
@@ -488,6 +502,7 @@ export class AIToolService {
     
 
     private async patchVaultFile(filePath: string, edits: { old_content: string; new_content: string; replace_all?: boolean | undefined; }[]): Promise<PendingChanges> {
+        this.eventService.trigger(Event.ThoughtUpdate, `Patch file '${basename(filePath)}' at '${dirname(filePath)}'`);
         const file = this.fileSystemService.getFile(filePath);
 
         if (isBinaryFile(pathExtname(filePath))) {
@@ -526,6 +541,7 @@ export class AIToolService {
     }
 
     private async deleteVaultFiles(filePaths: string[], confirmation: boolean): Promise<PendingChanges> {
+        this.eventService.trigger(Event.ThoughtUpdate, `Delete ${StringTools.pluralise("file", filePaths.length)} ${filePaths.map(filePath => `'${basename(filePath)}'`).join(", ")}`);
         if (!confirmation) {
             return this.failedChanges({ error: "Confirmation was false, no action taken" });
         }
@@ -574,11 +590,18 @@ export class AIToolService {
     
 
     private async moveVaultFiles(sourcePaths: string[], destinationPaths: string[]): Promise<PendingChanges> {
-        if (sourcePaths.length !== destinationPaths.length) {
-            return this.failedChanges({ error: "Source paths array length does not equal destination paths array length" });
-        }
+        const length = Math.max(sourcePaths.length, destinationPaths.length);
 
-        const moves = sourcePaths.map((source, index) => ({ source: source, destination: destinationPaths[index] }));
+        const moves = Array.from({ length }, (_, index) => ({
+            source: sourcePaths[index] ?? "",
+            destination: destinationPaths[index] ?? "",
+        }));
+
+        const renameCount = moves.filter(move => this.isRename(move.source, move.destination)).length;
+        const action = renameCount === moves.length ? "Rename" : renameCount === 0 ? "Move" : "Move / Rename";
+        const descriptions = moves.map(move => this.describeMove(move.source, move.destination));
+        this.eventService.trigger(Event.ThoughtUpdate, `${action} ${StringTools.pluralise("file", moves.length)} ${descriptions.join(", ")}`);
+
         return await this.createMoveRequests(moves);
     }
 
@@ -635,6 +658,7 @@ export class AIToolService {
     }
 
     private async deleteVaultFolder(path: string, confirmation: boolean): Promise<PendingChanges> {
+        this.eventService.trigger(Event.ThoughtUpdate, `Delete folder '${basename(path)}' at '${dirname(path)}'`);
         if (!confirmation) {
             return this.failedChanges({ error: "Confirmation was false, no action taken" });
         }
@@ -672,6 +696,9 @@ export class AIToolService {
     }
 
     private async moveVaultFolder(sourcePath: string, destinationPath: string): Promise<PendingChanges> {
+        const action = this.isRename(sourcePath, destinationPath) ? "Rename" : "Move";
+        this.eventService.trigger(Event.ThoughtUpdate, `${action} folder ${this.describeMove(sourcePath, destinationPath)}`);
+        
         // Paths are mapped by prefix below, so they must match the form Obsidian uses for file paths
         sourcePath = this.sanitiserService.sanitize(sourcePath);
         destinationPath = this.sanitiserService.sanitize(destinationPath);
@@ -823,5 +850,19 @@ export class AIToolService {
             case FileEvent.Rename:
                 return ArtifactAction.Move;
         }
+    }
+
+    private isRename(sourcePath: string, destinationPath: string): boolean {
+        return dirname(sourcePath) === dirname(destinationPath);
+    }
+
+    private describeMove(sourcePath: string, destinationPath: string): string {
+        if (this.isRename(sourcePath, destinationPath)) {
+            return `'${basename(sourcePath)}' to '${basename(destinationPath)}'`;
+        }
+        if (basename(sourcePath) === basename(destinationPath)) {
+            return `'${basename(sourcePath)}' to '${dirname(destinationPath)}'`;
+        }
+        return `'${basename(sourcePath)}' to '${destinationPath}'`;
     }
 }

@@ -30,12 +30,8 @@ Do NOT use this function:
                     type: "string"
                 },
                 description: "Array of destination file paths (including filenames). Must be the same length as source_paths, with each destination corresponding to the source at the same index. Supports renaming by providing a different filename. Example: ['new-folder/note.md'] or ['folder/renamed-note.md']. Ensure parent directories exist.",
-            },
-            user_message: {
-                type: "string",
-                description: "A short message to be displayed to the user explaining why these files are being moved. Examples: 'Moving your daily notes to the archive folder' (organizing), 'Renaming project files to match new naming convention' (renaming), or 'Consolidating research notes into one location' (reorganizing)."
             }
         },
-        required: ["source_paths", "destination_paths", "user_message"]
+        required: ["source_paths", "destination_paths"]
     }
 }

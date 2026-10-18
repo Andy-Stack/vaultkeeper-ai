@@ -74,8 +74,6 @@ export abstract class BaseAgent {
                     await this.saveConversation(agentType, conversation);
                     return;
                 }
-            } else {
-                callbacks.onThoughtUpdate(Copy.AIThoughtMessage);
             }
 
             response = await this.streamRequestResponse(agentType, this.ensureCorrectConversationStructure(conversation), callbacks);
@@ -95,10 +93,6 @@ export abstract class BaseAgent {
         isAgentTool: (toolCall: AIToolCall) => boolean,
         resolveAgentTool: (toolCall: AIToolCall) => Promise<AIToolResponse>
     ): Promise<AIToolResponse[]> {
-        for (const toolCall of toolCalls) {
-            this.updateThought(toolCall, callbacks);
-        }
-
         const responses = new Map<AIToolCall, AIToolResponse>();
 
         const batchToolCalls = toolCalls.filter(toolCall => !isAgentTool(toolCall));
@@ -128,13 +122,6 @@ export abstract class BaseAgent {
             }
             return textResponse;
         });
-    }
-
-    protected updateThought(toolCall: AIToolCall | null, callbacks: IChatServiceCallbacks) {
-        const userMessage = toolCall?.arguments.user_message;
-        if (userMessage && typeof userMessage === "string") {
-            callbacks.onThoughtUpdate(userMessage);
-        }
     }
 
     protected setDebugColor() {
@@ -200,11 +187,7 @@ export abstract class BaseAgent {
 
             if (chunk.content) {
                 accumulatedContent += chunk.content;
-
                 conversationContent.content = accumulatedContent;
-                if (accumulatedContent.trim() !== "" && agentType == AgentType.Main) {
-                    callbacks.onThoughtUpdate(null);
-                }
             }
 
             if (chunk.isComplete) {

@@ -23,6 +23,7 @@
 	import { BrokenLinkReason } from "Enums/BrokenLinkReason";
 	import type { WorkSpaceService } from "Services/WorkSpaceService";
 	import { VIEW_TYPE_MAIN } from "Views/MainView";
+	import { StringTools } from "Helpers/StringTools";
 
 	interface DiffRenderOptions {
 		vaultChange: IVaultChange | undefined;
@@ -330,7 +331,7 @@
 	{#if issueCount > 0}
 		<div id="diff-view-banner" transition:slide>
 			<span class="diff-view-continuity-alert-icon" use:setElementIcon={"triangle-alert"}></span>
-			<span>{issueCount} continuity issue{issueCount === 1 ? "" : "s"}{isPhone ? "." : " found in this change."}</span>
+			<span>{issueCount} continuity {StringTools.pluralise("issue", issueCount)}{isPhone ? "." : " found in this change."}</span>
 		</div>
 	{/if}
 	{#if isPhone}
@@ -535,7 +536,7 @@
 								<span id="diff-view-continuity-expander-chevron" use:setElementIcon={isContinuityExpanded ? "chevron-down" : "chevron-right"}></span>
 								<span id="diff-view-continuity-expander-header-title">
 									<span class="diff-view-continuity-alert-icon" use:setElementIcon={"triangle-alert"}></span>
-									<span>{selectedItem.continuityIssueCount} continuity issue{selectedItem.continuityIssueCount === 1 ? "" : "s"}</span>
+									<span>{selectedItem.continuityIssueCount} continuity {StringTools.pluralise("issue", selectedItem.continuityIssueCount ?? 0)}</span>
 								</span>
 								<span id="diff-view-continuity-expander-header-label">Informational</span>
 							</div>

@@ -68,6 +68,10 @@ export abstract class StringTools {
         return (lastSpace > 0 ? truncated.slice(0, lastSpace) : truncated).trim();
     }
 
+    public static pluralise(word: string, count: number): string {
+        return count === 1 ? word : `${word}s`;
+    }
+
     public static toBase64(text: string): string {
         const bytes = new TextEncoder().encode(text);
         let binary = "";

@@ -35,12 +35,8 @@ Examples:
 - "Project notes always include a 'status' frontmatter property with values: active | paused | complete."
 - "The #area tag is used for ongoing responsibilities; #project is for time-bounded work."
 - "2026-03-15: Replaced the weekly review template with one at /Templates/Weekly-Review-v2.md."`,
-            },
-            user_message: {
-                type: "string",
-                description: "A short message to be displayed to the user explaining that persistent memory is being updated. Example: 'Updating memories...' or 'Committing user preference...'"
             }
         },
-        required: ["content", "user_message"]
+        required: ["content"]
     }
 }

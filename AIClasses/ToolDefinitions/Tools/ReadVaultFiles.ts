@@ -45,12 +45,8 @@ Do NOT use this function:
           required: ["file_path"] 
         },
         description: "Array of full paths to files within the vault. Can contain a single file path ['folder/note.md'] or multiple paths ['folder/note1.md', 'folder/note2.pdf']. Each path must be exact and point to an existing file.",
-      },
-      user_message: {
-        type: "string",
-        description: "A short message to be displayed to the user explaining why you're reading these file(s). Examples: 'Reading your daily note to check tasks' (single file) or 'Reading your project notes to compile a summary' (multiple files)"
       }
     },
-    required: ["files", "user_message"]
+    required: ["files"]
   }
 }

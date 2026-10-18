@@ -3,5 +3,6 @@ export enum Event {
     DiffClosed = "diffClosed",
     PlanApprovalOpened = "planApprovalOpened",
     PlanApprovalClosed = "planApprovalClosed",
-    RateLimitCountdown = "rateLimitCountdown"
+    RateLimitCountdown = "rateLimitCountdown",
+    ThoughtUpdate = "thoughtUpdate"
 }

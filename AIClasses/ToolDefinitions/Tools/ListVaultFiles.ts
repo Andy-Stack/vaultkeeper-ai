@@ -32,12 +32,8 @@ Do NOT use this function:
         index: {
           type: "integer",
           description: "Where to resume this listing. Omit or use 0 to start from the beginning. If the previous call's response included a nextIndex, pass that value back to continue listing from where it left off - otherwise results already seen may be repeated and later entries may be missed. A missing/undefined nextIndex in the response means the listing reached the end and there is nothing more to find."
-        },
-        user_message: {
-          type: "string",
-          description: "A short message to be displayed to the user explaining what directory is being listed. Example: 'Browsing vault structure' or 'Listing files in Daily Notes folder'"
         }
       },
-      required: ["path", "recursive", "user_message"]
+      required: ["path", "recursive"]
     }
   }

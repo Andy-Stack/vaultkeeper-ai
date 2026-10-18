@@ -108,8 +108,6 @@ export enum Copy {
     SettingEnableToolbarActionsDesc = "Show a quick actions button in the editor toolbar (mobile friendly).",
 
     AIThoughtMessage = "Thinking...",
-    AIThoughtGeneratingNote = "Generating note contents...",
-    AIThoughtPreparingQuery = "Preparing user query...",
     PlanningInProgress = "Planning in progress...",
 
     // Rate Limit Countdown

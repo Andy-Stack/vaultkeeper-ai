@@ -33,7 +33,7 @@ describe('SettingsService', () => {
             settingsService = new SettingsService({});
 
             expect(settingsService.settings.firstTimeStart).toBe(true);
-            expect(settingsService.settings.model).toBe(AIProviderModel.ClaudeSonnet_5);
+            expect(settingsService.settings.model).toBe(AIProviderModel.ClaudeSonnet_5_5);
             expect(settingsService.settings.apiKeys).toEqual({
                 claude: '',
                 openai: '',
@@ -74,7 +74,7 @@ describe('SettingsService', () => {
         it('should handle partially loaded settings and fill missing properties with defaults', () => {
             const loadedSettings: Partial<IVaultkeeperAISettings> = {
                 provider: AIProvider.OpenAI,
-                model: AIProviderModel.GPT_5_6_Terra,
+                model: AIProviderModel.GPT_6_1_Sol,
                 apiKeys: {
                     claude: '',
                     openai: 'partial-key',
@@ -85,7 +85,7 @@ describe('SettingsService', () => {
             settingsService = new SettingsService(loadedSettings as IVaultkeeperAISettings);
 
             expect(settingsService.settings.firstTimeStart).toBe(true); // Default
-            expect(settingsService.settings.model).toBe(AIProviderModel.GPT_5_6_Terra); // Loaded
+            expect(settingsService.settings.model).toBe(AIProviderModel.GPT_6_1_Sol); // Loaded
             expect(settingsService.settings.apiKeys.openai).toBe('partial-key'); // Loaded
             expect(settingsService.settings.exclusions).toEqual([]); // Default
             expect(settingsService.settings.userInstruction).toBe(''); // Default
@@ -178,7 +178,7 @@ describe('SettingsService', () => {
         beforeEach(() => {
             const loadedSettings = makeTestSettings({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeSonnet_5,
+                model: AIProviderModel.ClaudeSonnet_5_5,
                 apiKeys: {
                     claude: 'claude-api-key',
                     openai: 'openai-api-key',
@@ -226,7 +226,7 @@ describe('SettingsService', () => {
         it('should return Claude key when current model is Claude', () => {
             const loadedSettings = makeTestSettings({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeSonnet_5,
+                model: AIProviderModel.ClaudeSonnet_5_5,
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
@@ -242,7 +242,7 @@ describe('SettingsService', () => {
         it('should return OpenAI key when current model is GPT', () => {
             const loadedSettings = makeTestSettings({
                 provider: AIProvider.OpenAI,
-                model: AIProviderModel.GPT_5_6_Luna,
+                model: AIProviderModel.GPT_6_Luna,
                 apiKeys: {
                     claude: 'claude-key',
                     openai: 'openai-key',
@@ -275,7 +275,7 @@ describe('SettingsService', () => {
             // Test with various Claude models
             settingsService = new SettingsService({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeOpus_5,
+                model: AIProviderModel.ClaudeOpus_5_5,
                 apiKeys: { claude: 'opus-key', openai: '', gemini: '', mistral: '', local: '' }
             });
             expect(settingsService.getApiKeyForCurrentProvider()).toBe('opus-key');
@@ -291,7 +291,7 @@ describe('SettingsService', () => {
             // Test with various GPT models
             settingsService = new SettingsService({
                 provider: AIProvider.OpenAI,
-                model: AIProviderModel.GPT_5_6_Terra,
+                model: AIProviderModel.GPT_6_1_Sol,
                 apiKeys: { claude: '', openai: 'gpt5-key', gemini: '', mistral: '', local: '' }
             });
             expect(settingsService.getApiKeyForCurrentProvider()).toBe('gpt5-key');
@@ -342,7 +342,7 @@ describe('SettingsService', () => {
         beforeEach(() => {
             const loadedSettings = makeTestSettings({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeSonnet_5
+                model: AIProviderModel.ClaudeSonnet_5_5
             });
             settingsService = new SettingsService(loadedSettings);
         });
@@ -402,7 +402,7 @@ describe('SettingsService', () => {
         beforeEach(() => {
             const loadedSettings = makeTestSettings({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeSonnet_5,
+                model: AIProviderModel.ClaudeSonnet_5_5,
                 apiKeys: {
                     claude: 'test-key',
                     openai: '',
@@ -447,10 +447,10 @@ describe('SettingsService', () => {
     describe('Provider Detection from Model Names', () => {
         it('should correctly identify Claude models', () => {
             const claudeModels = [
-                AIProviderModel.ClaudeSonnet_5,
-                AIProviderModel.ClaudeSonnet_5,
-                AIProviderModel.ClaudeOpus_5,
-                AIProviderModel.ClaudeHaiku_4_5
+                AIProviderModel.ClaudeSonnet_5_5,
+                AIProviderModel.ClaudeSonnet_5_5,
+                AIProviderModel.ClaudeOpus_5_5,
+                AIProviderModel.ClaudeHaiku_5_5
             ];
 
             claudeModels.forEach(model => {
@@ -466,7 +466,7 @@ describe('SettingsService', () => {
 
         it('should correctly identify Gemini models', () => {
             const geminiModels = [
-                AIProviderModel.GeminiFlash_3_1_Lite,
+                AIProviderModel.GeminiArgon_4,
                 AIProviderModel.GeminiFlash_3_8_Flash,
                 AIProviderModel.GeminiPro_3_1_Preview
             ];
@@ -484,9 +484,8 @@ describe('SettingsService', () => {
 
         it('should correctly identify OpenAI models', () => {
             const openaiModels = [
-                AIProviderModel.GPT_5_6_Sol,
-                AIProviderModel.GPT_5_6_Terra,
-                AIProviderModel.GPT_5_6_Luna
+                AIProviderModel.GPT_6_1_Sol,
+                AIProviderModel.GPT_6_Luna
             ];
 
             openaiModels.forEach(model => {
@@ -550,7 +549,7 @@ describe('SettingsService', () => {
             // e.g. provider stayed OpenAI but the persisted model string now belongs to another provider's namespace
             settingsService = new SettingsService({
                 provider: AIProvider.OpenAI,
-                model: AIProviderModel.ClaudeSonnet_5,
+                model: AIProviderModel.ClaudeSonnet_5_5,
                 apiKeys: { claude: '', openai: 'test-openai', gemini: '', mistral: '', local: '' }
             } as Partial<IVaultkeeperAISettings>);
 
@@ -570,9 +569,9 @@ describe('SettingsService', () => {
                 provider: AIProvider.Claude,
                 cachedModelSettings: {
                     [AIProvider.Claude]: {
-                        model: AIProviderModel.ClaudeSonnet_5,
-                        planningModel: AIProviderModel.ClaudeOpus_5,
-                        quickActionModel: AIProviderModel.ClaudeHaiku_4_5
+                        model: AIProviderModel.ClaudeSonnet_5_5,
+                        planningModel: AIProviderModel.ClaudeOpus_5_5,
+                        quickActionModel: AIProviderModel.ClaudeHaiku_5_5
                     },
                     [AIProvider.OpenAI]: {
                         model: 'gpt-5.5-2026-04-23' as AIProviderModel,
@@ -599,27 +598,27 @@ describe('SettingsService', () => {
 
             // The stale cache entry only gets repaired once OpenAI becomes the active provider
             // (ensureValidModels only touches cachedModelSettings[settings.provider]).
-            expect(settingsService.settings.cachedModelSettings[AIProvider.Claude].model).toBe(AIProviderModel.ClaudeSonnet_5);
+            expect(settingsService.settings.cachedModelSettings[AIProvider.Claude].model).toBe(AIProviderModel.ClaudeSonnet_5_5);
         });
 
         it('should not touch a model string that is still a valid enum member for the provider', () => {
             settingsService = new SettingsService({
                 provider: AIProvider.Claude,
-                model: AIProviderModel.ClaudeOpus_5,
-                planningModel: AIProviderModel.ClaudeOpus_5,
-                quickActionModel: AIProviderModel.ClaudeHaiku_4_5
+                model: AIProviderModel.ClaudeOpus_5_5,
+                planningModel: AIProviderModel.ClaudeOpus_5_5,
+                quickActionModel: AIProviderModel.ClaudeHaiku_5_5
             } as Partial<IVaultkeeperAISettings>);
 
-            expect(settingsService.settings.model).toBe(AIProviderModel.ClaudeOpus_5);
-            expect(settingsService.settings.planningModel).toBe(AIProviderModel.ClaudeOpus_5);
-            expect(settingsService.settings.quickActionModel).toBe(AIProviderModel.ClaudeHaiku_4_5);
+            expect(settingsService.settings.model).toBe(AIProviderModel.ClaudeOpus_5_5);
+            expect(settingsService.settings.planningModel).toBe(AIProviderModel.ClaudeOpus_5_5);
+            expect(settingsService.settings.quickActionModel).toBe(AIProviderModel.ClaudeHaiku_5_5);
         });
     });
 
     describe('Settings Immutability and Reference', () => {
         it('should maintain reference to settings object', () => {
             settingsService = new SettingsService({
-                model: AIProviderModel.ClaudeSonnet_5,
+                model: AIProviderModel.ClaudeSonnet_5_5,
                 apiKeys: { claude: 'key', openai: '', gemini: '', mistral: '', local: '' }
             });
 
@@ -632,7 +631,7 @@ describe('SettingsService', () => {
 
         it('should allow modification of settings properties via updateSettings', async () => {
             settingsService = new SettingsService({
-                model: AIProviderModel.ClaudeSonnet_5,
+                model: AIProviderModel.ClaudeSonnet_5_5,
                 apiKeys: { claude: '', openai: '', gemini: '', mistral: '', local: '' },
                 exclusions: []
             });

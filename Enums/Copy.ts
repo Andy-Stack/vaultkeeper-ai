@@ -7,18 +7,17 @@ export enum Copy {
 
     // Model Display Names
     ClaudeFable_5_1 = "Claude Fable 5.1",
-    ClaudeSonnet_5 = "Claude Sonnet 5",
-    ClaudeOpus_5 = "Claude Opus 5",
-    ClaudeHaiku_4_5 = "Claude Haiku 4.5",
+    ClaudeSonnet_5_5 = "Claude Sonnet 5.5",
+    ClaudeOpus_5_5 = "Claude Opus 5.5",
+    ClaudeHaiku_5_5 = "Claude Haiku 5.5",
 
-    GeminiFlash_3_1_Lite = "Gemini 3.1 Flash-Lite",
+    GeminiArgon_4 = "Gemini 4 Argon",
     GeminiFlash_3_5_Lite = "Gemini 3.5 Flash-Lite",
     GeminiFlash_3_8_Flash = "Gemini 3.8 Flash",
     GeminiPro_3_1_Preview = "Gemini 3.1 Pro Preview",
 
-    GPT_5_6_Sol = "GPT-5.6 Sol",
-    GPT_5_6_Terra = "GPT-5.6 Terra",
-    GPT_5_6_Luna = "GPT-5.6 Luna",
+    GPT_6_1_Sol = "GPT-6.1 Sol",
+    GPT_6_Luna = "GPT-6 Luna",
     GPT_6_Astra = "GPT-6 Astra",
 
     MistralLarge = "Mistral Large 4",

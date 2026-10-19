@@ -119,10 +119,10 @@ let resolvedHandler: any;
 // These are set based on observed performance with some headroom for slower machines
 const PERFORMANCE_THRESHOLDS = {
 	initialCache: {
-		'1000': 20,    // Observed: 2-3ms, threshold: 20ms
-		'5000': 40,    // Observed: 5-6ms, threshold: 40ms
-		'10000': 100,   // Observed: 8-16ms, threshold: 100ms
-		'20000': 150   // Observed: 18-29ms, threshold: 150ms
+		'1000': 40,    // Observed: 2-3ms, threshold: 40ms
+		'5000': 80,    // Observed: 5-6ms, threshold: 80ms
+		'10000': 250,   // Observed: 8-16ms (up to ~130ms under load), threshold: 250ms
+		'20000': 400   // Observed: 18-29ms (up to ~180ms under load), threshold: 400ms
 	},
 	fuzzySearch: {
 		simple: 20,    // Observed: < 10ms, threshold: 20ms

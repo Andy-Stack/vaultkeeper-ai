@@ -37,7 +37,6 @@ describe('Multi-Agent Integration Tests', () => {
 	const createMockCallbacks = () => ({
 		onSubmit: vi.fn(),
 		onStreamingUpdate: vi.fn(),
-		onThoughtUpdate: vi.fn(),
 		onToolCallStarted: vi.fn(),
 		onArtifactProduced: vi.fn(),
 		onPlanningStarted: vi.fn(),
@@ -47,8 +46,7 @@ describe('Multi-Agent Integration Tests', () => {
 		onPlanUpdate: vi.fn(),
 		onPlanStepUpdate: vi.fn(),
 		onPlanReset: vi.fn(),
-		onComplete: vi.fn(),
-		onCancel: vi.fn()
+		onComplete: vi.fn()
 	});
 
 	beforeEach(() => {
@@ -64,9 +62,9 @@ describe('Multi-Agent Integration Tests', () => {
 
 		// Mock AIToolService
 		mockAIToolService = {
-			performAITool: vi.fn().mockResolvedValue(
+			performAITool: vi.fn().mockResolvedValue([
 				new AIToolResponse(AITool.SearchVaultFiles, new AIToolResponsePayload({ results: ['file1.md', 'file2.md'] }), 'test-tool-id')
-			)
+			])
 		};
 		RegisterSingleton(Services.AIToolService, mockAIToolService);
 
@@ -133,7 +131,7 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Plan',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.SubmitPlan,
 						{
 							steps: [
@@ -144,7 +142,7 @@ describe('Multi-Agent Integration Tests', () => {
 							]
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -175,14 +173,14 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Done',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Task completed'
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -206,14 +204,14 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Failed',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: false,
 							description: 'Task failed'
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -238,7 +236,7 @@ describe('Multi-Agent Integration Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Done',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
@@ -246,7 +244,7 @@ describe('Multi-Agent Integration Tests', () => {
 							context: 'Used previous result'
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -374,20 +372,20 @@ describe('Multi-Agent Integration Tests', () => {
 					searchCalled = true;
 					yield {
 						content: 'Searching',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SearchVaultFiles,
 							{
 								search_terms: ['test'],
 								user_message: 'Searching'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Plan',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -398,7 +396,7 @@ describe('Multi-Agent Integration Tests', () => {
 								]
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -425,27 +423,27 @@ describe('Multi-Agent Integration Tests', () => {
 				if (toolCallCount === 1) {
 					yield {
 						content: 'Searching',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SearchVaultFiles,
 							{
 								search_terms: ['test'],
 								user_message: 'Searching'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Found and processed files'
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}

@@ -139,7 +139,7 @@ describe('Claude', () => {
 
             expect(result.content).toBe('Hello world');
             expect(result.isComplete).toBe(false);
-            expect(result.toolCall).toBeUndefined();
+            expect(result.toolCalls).toBeUndefined();
         });
 
         it('should detect tool_use start in content_block_start', () => {
@@ -192,10 +192,10 @@ describe('Claude', () => {
                 type: 'content_block_stop'
             }));
 
-            expect(result.toolCall).toBeDefined();
-            expect(result.toolCall?.name).toBe('search_vault_files');
-            expect(result.toolCall?.arguments).toEqual({ query: 'test' });
-            expect(result.toolCall?.toolId).toBe('tool_123');
+            expect(result.toolCalls).toBeDefined();
+            expect(result.toolCalls?.[0].name).toBe('search_vault_files');
+            expect(result.toolCalls?.[0].arguments).toEqual({ query: 'test' });
+            expect(result.toolCalls?.[0].toolId).toBe('tool_123');
         });
 
         it('should handle content_block_stop and finalize function call', () => {
@@ -210,10 +210,10 @@ describe('Claude', () => {
 
             const result = (claude as any).parseStreamChunk(chunk);
 
-            expect(result.toolCall).toBeDefined();
-            expect(result.toolCall?.name).toBe('search_vault_files');
-            expect(result.toolCall?.arguments).toEqual({ param: 'value' });
-            expect(result.toolCall?.toolId).toBe('func_456');
+            expect(result.toolCalls).toBeDefined();
+            expect(result.toolCalls?.[0].name).toBe('search_vault_files');
+            expect(result.toolCalls?.[0].arguments).toEqual({ param: 'value' });
+            expect(result.toolCalls?.[0].toolId).toBe('func_456');
 
             // Should reset accumulation
             expect((claude as any).accumulatedFunctionName).toBeNull();
@@ -269,7 +269,7 @@ describe('Claude', () => {
 
             const result = (claude as any).parseStreamChunk(chunk);
 
-            expect(result.toolCall).toBeUndefined();
+            expect(result.toolCalls).toBeUndefined();
             expect(exceptionSpy).toHaveBeenCalled();
 
             exceptionSpy.mockRestore();
@@ -309,13 +309,13 @@ describe('Claude', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: false
             });
@@ -337,13 +337,13 @@ describe('Claude', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call_123'
             });
 
@@ -379,7 +379,7 @@ describe('Claude', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: 'invalid json {',
+                toolCalls: 'invalid json {',
                 timestamp: new Date(),
                 shouldDisplayContent: false
             });
@@ -402,13 +402,13 @@ describe('Claude', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_invalid',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call_invalid'
             });
 
@@ -441,9 +441,10 @@ describe('Claude', () => {
 
             const result = await (claude as any).extractContents(contents);
 
-            expect(result).toHaveLength(2);
+            // Consecutive same-role messages are merged into one
+            expect(result).toHaveLength(1);
             expect(result[0].content[0].text).toBe('Hello');
-            expect(result[1].content[0].text).toBe('World');
+            expect(result[0].content[1].text).toBe('World');
         });
 
         it('should handle mixed content with text and function call', async () => {
@@ -451,13 +452,13 @@ describe('Claude', () => {
                 role: Role.Assistant,
                 content: 'Let me search for that',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_456',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: false
             });
@@ -475,13 +476,13 @@ describe('Claude', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                         // No ID field
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: false
             });
@@ -507,13 +508,13 @@ describe('Claude', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: '',  // Empty ID
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: false
             });
@@ -539,13 +540,13 @@ describe('Claude', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_legacy',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call_legacy'
             });
 
@@ -585,13 +586,13 @@ describe('Claude', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_empty',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call_empty'
             });
 
@@ -634,13 +635,13 @@ describe('Claude', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_orphaned',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
+                    }]),
                     timestamp: new Date(),
                     shouldDisplayContent: false
                 }),
@@ -649,10 +650,10 @@ describe('Claude', () => {
 
             const result = await (claude as any).extractContents(contents);
 
-            // Should only have 2 messages (orphaned function call excluded)
-            expect(result).toHaveLength(2);
+            // Orphaned function call excluded, leaving two user messages merged into one
+            expect(result).toHaveLength(1);
             expect(result[0].content[0].text).toBe('Search for files');
-            expect(result[1].content[0].text).toBe('What about this?');
+            expect(result[0].content[1].text).toBe('What about this?');
         });
 
         it('should include function call when it has a corresponding response', async () => {
@@ -663,13 +664,13 @@ describe('Claude', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_123',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
+                    }]),
                     timestamp: new Date(),
                     shouldDisplayContent: false
                 }),
@@ -686,7 +687,8 @@ describe('Claude', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent
+                        functionResponse: responseContent,
+                        toolId: 'call_123'
                     });
                 })()
             ];
@@ -707,13 +709,13 @@ describe('Claude', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_latest',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
+                    }]),
                     timestamp: new Date(),
                     shouldDisplayContent: false
                 })
@@ -735,13 +737,13 @@ describe('Claude', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_orphan1',
                             name: 'search_vault_files',
                             args: { query: 'test1' }
                         }
-                    }),
+                    }]),
                     timestamp: new Date(),
                     shouldDisplayContent: false
                 }),
@@ -751,13 +753,13 @@ describe('Claude', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_orphan2',
                             name: 'read_file',
                             args: { path: 'test.md' }
                         }
-                    }),
+                    }]),
                     timestamp: new Date(),
                     shouldDisplayContent: false
                 }),
@@ -766,11 +768,11 @@ describe('Claude', () => {
 
             const result = await (claude as any).extractContents(contents);
 
-            // Should only have the 3 user messages (both orphaned calls excluded)
-            expect(result).toHaveLength(3);
+            // Both orphaned calls excluded, leaving three user messages merged into one
+            expect(result).toHaveLength(1);
             expect(result[0].content[0].text).toBe('First message');
-            expect(result[1].content[0].text).toBe('Second message');
-            expect(result[2].content[0].text).toBe('Third message');
+            expect(result[0].content[1].text).toBe('Second message');
+            expect(result[0].content[2].text).toBe('Third message');
         });
 
         it('should handle attachments with images correctly', async () => {

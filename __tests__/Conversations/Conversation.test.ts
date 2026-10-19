@@ -64,7 +64,7 @@ describe('Conversation', () => {
 						role: 'user',
 						content: 'Hello',
 						promptContent: '',
-						toolCall: '',
+						toolCalls: '',
 						timestamp: '2024-01-01T00:00:00.000Z',
 						isToolCall: false,
 						isToolCallResponse: false,
@@ -194,7 +194,7 @@ describe('Conversation', () => {
 						role: 'user',
 						content: 'Hello',
 						promptContent: '',
-						toolCall: '',
+						toolCalls: '',
 						timestamp: '2024-01-01T00:00:00.000Z',
 						isToolCall: false,
 						isToolCallResponse: false,
@@ -276,9 +276,9 @@ describe('Conversation', () => {
 			conversation.contents.push(content);
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
-			mostRecent.toolCall = 'readFile';
+			mostRecent.toolCalls = 'readFile';
 
-			expect(conversation.contents[0].toolCall).toBe('readFile');
+			expect(conversation.contents[0].toolCalls).toBe('readFile');
 		});
 
 		it('should mark most recent content as function call', () => {
@@ -287,9 +287,9 @@ describe('Conversation', () => {
 			conversation.contents.push(content);
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
-			mostRecent.toolCall = 'readFile';
+			mostRecent.toolCalls = 'readFile';
 
-			expect(conversation.contents[0].toolCall).toBe('readFile');
+			expect(conversation.contents[0].toolCalls).toBe('readFile');
 		});
 
 		it('should only update the last content when multiple contents exist', () => {
@@ -299,11 +299,11 @@ describe('Conversation', () => {
 			conversation.contents.push(new ConversationContent({ role: Role.Assistant }));
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
-			mostRecent.toolCall = 'searchFiles';
+			mostRecent.toolCalls = 'searchFiles';
 
-			expect(conversation.contents[0].toolCall).toBeUndefined();
-			expect(conversation.contents[1].toolCall).toBeUndefined();
-			expect(conversation.contents[2].toolCall).toBe('searchFiles');
+			expect(conversation.contents[0].toolCalls).toBeUndefined();
+			expect(conversation.contents[1].toolCalls).toBeUndefined();
+			expect(conversation.contents[2].toolCalls).toBe('searchFiles');
 		});
 
 		it('should do nothing when contents array is empty', () => {
@@ -313,7 +313,7 @@ describe('Conversation', () => {
 			expect(() => {
 				const mostRecent = conversation.contents[conversation.contents.length - 1];
 				if (mostRecent) {
-					mostRecent.toolCall = 'test';
+					mostRecent.toolCalls = 'test';
 				}
 			}).not.toThrow();
 			expect(conversation.contents).toHaveLength(0);
@@ -324,20 +324,20 @@ describe('Conversation', () => {
 			conversation.contents.push(new ConversationContent({ role: Role.Assistant }));
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
-			mostRecent.toolCall = '';
+			mostRecent.toolCalls = '';
 
-			expect(conversation.contents[0].toolCall).toBe('');
+			expect(conversation.contents[0].toolCalls).toBe('');
 		});
 
 		it('should overwrite existing function call', () => {
 			const conversation = new Conversation();
-			const content = new ConversationContent({ role: Role.Assistant, toolCall: 'oldFunction' });
+			const content = new ConversationContent({ role: Role.Assistant, toolCalls: 'oldFunction' });
 			conversation.contents.push(content);
 
 			const mostRecent = conversation.contents[conversation.contents.length - 1];
-			mostRecent.toolCall = 'newFunction';
+			mostRecent.toolCalls = 'newFunction';
 
-			expect(conversation.contents[0].toolCall).toBe('newFunction');
+			expect(conversation.contents[0].toolCalls).toBe('newFunction');
 		});
 	});
 
@@ -359,14 +359,14 @@ describe('Conversation', () => {
 			mostRecent.content = 'Hi there, how can I help you?';
 
 			// Assistant makes a function call
-			mostRecent.toolCall = 'readFile';
+			mostRecent.toolCalls = 'readFile';
 
 			expect(conversation.contents).toHaveLength(2);
 			expect(conversation.contents[0].role).toBe(Role.User);
 			expect(conversation.contents[0].content).toBe('Hello');
 			expect(conversation.contents[1].role).toBe(Role.Assistant);
 			expect(conversation.contents[1].content).toBe('Hi there, how can I help you?');
-			expect(conversation.contents[1].toolCall).toBe('readFile');
+			expect(conversation.contents[1].toolCalls).toBe('readFile');
 		});
 
 		it('should maintain conversation metadata', () => {

@@ -31,7 +31,6 @@ describe('AIControllerService - Integration Tests', () => {
 	const callbacks = {
 		onSubmit: vi.fn(),
 		onStreamingUpdate: vi.fn(),
-		onThoughtUpdate: vi.fn(),
 		onToolCallStarted: vi.fn(),
 		onArtifactProduced: vi.fn(),
 		onPlanningStarted: vi.fn(),
@@ -41,8 +40,7 @@ describe('AIControllerService - Integration Tests', () => {
 		onPlanUpdate: vi.fn(),
 		onPlanStepUpdate: vi.fn(),
 		onPlanReset: vi.fn(),
-		onComplete: vi.fn(),
-		onCancel: vi.fn()
+		onComplete: vi.fn()
 	};
 
 	beforeEach(() => {
@@ -56,9 +54,9 @@ describe('AIControllerService - Integration Tests', () => {
 
 		// Mock AIToolService
 		mockAIToolService = {
-			performAITool: vi.fn().mockResolvedValue(
+			performAITool: vi.fn().mockResolvedValue([
 				new AIToolResponse(AITool.SearchVaultFiles, new AIToolResponsePayload({ results: [] }), 'test-tool-id')
-			)
+			])
 		};
 		RegisterSingleton(Services.AIToolService, mockAIToolService);
 
@@ -158,11 +156,11 @@ describe('AIControllerService - Integration Tests', () => {
 					// First call returns a function call
 					yield {
 						content: 'Let me search',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SearchVaultFiles,
 							{ search_terms: ['test'], user_message: 'Searching' },
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
@@ -179,32 +177,19 @@ describe('AIControllerService - Integration Tests', () => {
 			expect(callCount).toBe(2);
 		});
 
-		it('should update thought callback with user_message from function call', async () => {
+		it('should notify the tool call started callback when a tool call begins streaming', async () => {
 			const conversation = new Conversation();
 			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Search' }));
 
-			let callCount = 0;
 			mockAI.streamRequest.mockImplementation(async function* () {
-				callCount++;
-				if (callCount === 1) {
-					yield {
-						content: '',
-						toolCall: new AIToolCall(
-							AITool.SearchVaultFiles,
-							{ search_terms: ['notes'], user_message: 'Searching for notes' },
-							'tool-1'
-						),
-						isComplete: true
-					};
-				} else {
-					yield { content: 'Done', isComplete: true };
-				}
+				yield { content: '', toolCallStarted: AITool.SearchVaultFiles, isComplete: false };
+				yield { content: 'Done', isComplete: true };
 			});
 
 			service.resolveAIProvider();
 			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
 
-			expect(callbacks.onThoughtUpdate).toHaveBeenCalledWith('Searching for notes');
+			expect(callbacks.onToolCallStarted).toHaveBeenCalledWith(AITool.SearchVaultFiles);
 		});
 
 		it('should handle streaming errors gracefully', async () => {
@@ -261,11 +246,11 @@ describe('AIControllerService - Integration Tests', () => {
 				if (callCount === 1) {
 					yield {
 						content: '',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SearchVaultFiles,
 							{ search_terms: ['test'], user_message: 'Searching' },
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {

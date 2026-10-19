@@ -130,7 +130,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						})
 					])
 				}),
-				{ allowAccessToPluginRoot: true, requiresConfirmation: false }
+				{ allowAccessToPluginRoot: true }
 			);
 		});
 
@@ -183,7 +183,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 				new ConversationContent({
 					role: Role.Assistant,
 					content: 'Function call',
-					toolCall: JSON.stringify(toolCall),
+					toolCalls: JSON.stringify([toolCall]),
 					timestamp: new Date('2024-01-01T10:02:00Z'),
 					toolId: 'tool_123'
 				})
@@ -197,7 +197,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(toolCallContent).toMatchObject({
 				role: Role.Assistant,
 				content: 'Function call',
-				toolCall: JSON.stringify(toolCall),
+				toolCalls: JSON.stringify([toolCall]),
 				timestamp: '2024-01-01T10:02:00.000Z',
 				toolId: 'tool_123'
 			});
@@ -305,7 +305,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			expect(result).toBeUndefined(); // void = success
 			expect(mockFileSystemService.deleteFile).toHaveBeenCalledWith(
 				'Vaultkeeper AI/Conversations/To Delete.json',
-				{ allowAccessToPluginRoot: true, requiresConfirmation: false }
+				{ allowAccessToPluginRoot: true }
 			);
 			expect(service.getCurrentConversationPath()).toBeNull();
 		});
@@ -369,7 +369,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 							role: Role.User,
 							content: 'Message 1',
 							promptContent: '',
-							toolCall: '',
+							toolCalls: '',
 							timestamp: '2024-01-01T10:00:00.000Z',
 							isToolCall: false,
 							isToolCallResponse: false,
@@ -386,7 +386,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 							role: Role.User,
 							content: 'Message 2',
 							promptContent: '',
-							toolCall: '',
+							toolCalls: '',
 							timestamp: '2024-01-02T10:00:00.000Z',
 							isToolCall: false,
 							isToolCallResponse: false,
@@ -419,7 +419,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						role: Role.User,
 						content: 'Hello',
 						promptContent: '',
-						toolCall: '',
+						toolCalls: '',
 						timestamp: '2024-01-01T10:00:00.000Z',
 						isToolCall: false,
 						isToolCallResponse: false,
@@ -429,7 +429,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						role: Role.Assistant,
 						content: 'Hi!',
 						promptContent: '',
-						toolCall: '',
+						toolCalls: '',
 						timestamp: '2024-01-01T10:01:00.000Z',
 						isToolCall: false,
 						isToolCallResponse: false,
@@ -499,7 +499,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 					{
 						role: Role.Assistant,
 						content: 'Calling function',
-						toolCall: JSON.stringify({ name: 'test_func', arguments: {} }),
+						toolCalls: JSON.stringify([{ name: 'test_func', arguments: {} }]),
 						timestamp: '2024-01-01T10:00:00.000Z',
 						toolId: 'tool_1',
 						attachments: [],
@@ -519,11 +519,11 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 
 			const conversations = await service.getAllConversations();
 
-			expect(conversations[0].contents[0].toolCall).toBeDefined();
-			expect(JSON.parse(conversations[0].contents[0].toolCall!)).toEqual({
+			expect(conversations[0].contents[0].toolCalls).toBeDefined();
+			expect(JSON.parse(conversations[0].contents[0].toolCalls!)).toEqual([{
 				name: 'test_func',
 				arguments: {}
-			});
+			}]);
 			expect(conversations[0].contents[1].functionResponse).toBeDefined();
 		});
 	});
@@ -725,7 +725,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 				expect(mockFileSystemService.deleteFile).toHaveBeenCalledTimes(1);
 				expect(mockFileSystemService.deleteFile).toHaveBeenCalledWith(
 					'Vaultkeeper AI/Conversations/Artifacts/orphaned.bin',
-					{ allowAccessToPluginRoot: true, requiresConfirmation: false }
+					{ allowAccessToPluginRoot: true }
 				);
 			});
 
@@ -935,7 +935,7 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 				new ConversationContent({
 					role: Role.Assistant,
 					content: 'Function',
-					toolCall: JSON.stringify({ name: 'test', arguments: { arg: 'val' } }),
+					toolCalls: JSON.stringify([{ name: 'test', arguments: { arg: 'val' } }]),
 					timestamp: new Date('2024-01-01T10:05:00Z'),
 					toolId: 'tool_xyz'
 				}),
@@ -965,11 +965,11 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 			// Verify all data preserved
 			expect(reconstructed.title).toBe(original.title);
 			expect(reconstructed.contents).toHaveLength(4);
-			expect(reconstructed.contents[2].toolCall).toBeDefined();
-			expect(JSON.parse(reconstructed.contents[2].toolCall!)).toEqual({
+			expect(reconstructed.contents[2].toolCalls).toBeDefined();
+			expect(JSON.parse(reconstructed.contents[2].toolCalls!)).toEqual([{
 				name: 'test',
 				arguments: { arg: 'val' }
-			});
+			}]);
 			expect(reconstructed.contents[3].functionResponse).toBeDefined();
 		});
 	});

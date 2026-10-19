@@ -8,7 +8,7 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { AbortService } from '../../Services/AbortService';
 import { AIProvider } from '../../Enums/ApiProvider';
-import { parseToolCall, parseFunctionResponse } from '../../Helpers/ResponseHelper';
+import { parseToolCalls, parseFunctionResponse } from '../../Helpers/ResponseHelper';
 
 /**
  * BaseAIClass Shared Method Tests
@@ -82,99 +82,99 @@ describe('BaseAIClass Shared Methods', () => {
         DeregisterAllServices();
     });
 
-    describe('parseToolCall', () => {
+    describe('parseToolCalls', () => {
         it('should parse Claude-style function call (with id)', () => {
-            const claudeCall = JSON.stringify({
+            const claudeCall = JSON.stringify([{
                 toolCall: {
                     id: 'toolu_123',
                     name: 'search_vault_files',
                     args: { query: 'test' }
                 }
-            });
+            }]);
 
-            const result = parseToolCall(claudeCall);
+            const result = parseToolCalls(claudeCall);
 
             expect(result).toBeDefined();
-            expect(result!.toolCall.id).toBe('toolu_123');
-            expect(result!.toolCall.name).toBe('search_vault_files');
-            expect(result!.toolCall.args).toEqual({ query: 'test' });
+            expect(result![0].toolCall.id).toBe('toolu_123');
+            expect(result![0].toolCall.name).toBe('search_vault_files');
+            expect(result![0].toolCall.args).toEqual({ query: 'test' });
         });
 
         it('should parse OpenAI-style function call (with id)', () => {
-            const openaiCall = JSON.stringify({
+            const openaiCall = JSON.stringify([{
                 toolCall: {
                     id: 'call_abc',
                     name: 'read_file',
                     args: { path: 'note.md' }
                 }
-            });
+            }]);
 
-            const result = parseToolCall(openaiCall);
+            const result = parseToolCalls(openaiCall);
 
             expect(result).toBeDefined();
-            expect(result!.toolCall.id).toBe('call_abc');
-            expect(result!.toolCall.name).toBe('read_file');
-            expect(result!.toolCall.args).toEqual({ path: 'note.md' });
+            expect(result![0].toolCall.id).toBe('call_abc');
+            expect(result![0].toolCall.name).toBe('read_file');
+            expect(result![0].toolCall.args).toEqual({ path: 'note.md' });
         });
 
         it('should parse Gemini-style function call (no id)', () => {
-            const geminiCall = JSON.stringify({
+            const geminiCall = JSON.stringify([{
                 toolCall: {
                     name: 'search_vault_files',
                     args: { query: 'gemini test' }
                 }
-            });
+            }]);
 
-            const result = parseToolCall(geminiCall);
+            const result = parseToolCalls(geminiCall);
 
             expect(result).toBeDefined();
-            expect(result!.toolCall.name).toBe('search_vault_files');
-            expect(result!.toolCall.args).toEqual({ query: 'gemini test' });
+            expect(result![0].toolCall.name).toBe('search_vault_files');
+            expect(result![0].toolCall.args).toEqual({ query: 'gemini test' });
             // ID may be undefined for Gemini
-            expect(result!.toolCall.id).toBeUndefined();
+            expect(result![0].toolCall.id).toBeUndefined();
         });
 
         it('should handle invalid JSON gracefully', () => {
             const invalidJson = 'not valid json {';
 
-            const result = parseToolCall(invalidJson);
+            const result = parseToolCalls(invalidJson);
 
             expect(result).toBeNull();
         });
 
         it('should handle missing required fields', () => {
             // Missing 'name' field
-            const missingName = JSON.stringify({
+            const missingName = JSON.stringify([{
                 toolCall: {
                     id: 'test-id',
                     args: { query: 'test' }
                 }
-            });
+            }]);
 
-            const result = parseToolCall(missingName);
+            const result = parseToolCalls(missingName);
 
             // Should still parse, but may have undefined name
             expect(result).toBeDefined();
-            expect(result!.toolCall.id).toBe('test-id');
+            expect(result![0].toolCall.id).toBe('test-id');
         });
 
         it('should handle empty args object', () => {
-            const emptyArgs = JSON.stringify({
+            const emptyArgs = JSON.stringify([{
                 toolCall: {
                     id: 'test-id',
                     name: 'list_files',
                     args: {}
                 }
-            });
+            }]);
 
-            const result = parseToolCall(emptyArgs);
+            const result = parseToolCalls(emptyArgs);
 
             expect(result).toBeDefined();
-            expect(result!.toolCall.args).toEqual({});
+            expect(result![0].toolCall.args).toEqual({});
         });
 
         it('should handle complex nested args', () => {
-            const complexArgs = JSON.stringify({
+            const complexArgs = JSON.stringify([{
                 toolCall: {
                     id: 'test-id',
                     name: 'search',
@@ -186,13 +186,13 @@ describe('BaseAIClass Shared Methods', () => {
                         options: { limit: 10, sort: 'date' }
                     }
                 }
-            });
+            }]);
 
-            const result = parseToolCall(complexArgs);
+            const result = parseToolCalls(complexArgs);
 
             expect(result).toBeDefined();
-            expect((result!.toolCall.args as any).filters.tags).toHaveLength(2);
-            expect((result!.toolCall.args as any).options.limit).toBe(10);
+            expect((result![0].toolCall.args as any).filters.tags).toHaveLength(2);
+            expect((result![0].toolCall.args as any).options.limit).toBe(10);
         });
     });
 
@@ -301,13 +301,13 @@ describe('BaseAIClass Shared Methods', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'toolu_orphan',
                             name: 'search',
                             args: {}
                         }
-                    }),
+                    }]),
                     toolId: 'toolu_orphan'
                 }),
 
@@ -331,13 +331,13 @@ describe('BaseAIClass Shared Methods', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_recent',
                             name: 'search',
                             args: {}
                         }
-                    }),
+                    }]),
                     toolId: 'call_recent'
                 })
             ];
@@ -346,7 +346,7 @@ describe('BaseAIClass Shared Methods', () => {
 
             // Most recent call should be included
             expect(result).toHaveLength(2);
-            expect(result[1].toolCall).toBeDefined();
+            expect(result[1].toolCalls).toBeDefined();
         });
 
         it('should handle function call with response correctly', () => {
@@ -358,13 +358,13 @@ describe('BaseAIClass Shared Methods', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_with_response',
                             name: 'search',
                             args: { query: 'test' }
                         }
-                    }),
+                    }]),
                     toolId: 'call_with_response'
                 }),
 
@@ -398,9 +398,9 @@ describe('BaseAIClass Shared Methods', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: { id: 'orphan1', name: 'search', args: {} }
-                    }),
+                    }]),
                     toolId: 'orphan1'
                 }),
 
@@ -411,9 +411,9 @@ describe('BaseAIClass Shared Methods', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: { id: 'complete1', name: 'read', args: {} }
-                    }),
+                    }]),
                     toolId: 'complete1'
                 }),
 
@@ -439,7 +439,7 @@ describe('BaseAIClass Shared Methods', () => {
             expect(result).toHaveLength(5);
             expect(result[0].content).toBe('Start');
             expect(result[1].content).toBe('Middle');
-            expect(result[2].toolCall).toBeDefined();
+            expect(result[2].toolCalls).toBeDefined();
             expect(result[3].functionResponse).toBeDefined();
             expect(result[4].content).toBe('End');
         });
@@ -447,20 +447,20 @@ describe('BaseAIClass Shared Methods', () => {
 
     describe('Cross-Provider Consistency', () => {
         it('should parse same function call JSON consistently across providers', () => {
-            const sharedToolCall = JSON.stringify({
+            const sharedToolCall = JSON.stringify([{
                 toolCall: {
                     id: 'shared-123',
                     name: 'search_vault_files',
                     args: { query: 'consistent test' }
                 }
-            });
+            }]);
 
-            const result = parseToolCall(sharedToolCall);
+            const result = parseToolCalls(sharedToolCall);
 
             // All providers should parse to the same structure using the shared helper
             expect(result).toBeDefined();
-            expect(result!.toolCall.name).toBe('search_vault_files');
-            expect(result!.toolCall.args).toEqual({ query: 'consistent test' });
+            expect(result![0].toolCall.name).toBe('search_vault_files');
+            expect(result![0].toolCall.args).toEqual({ query: 'consistent test' });
         });
 
         it('should filter conversations consistently across providers', () => {

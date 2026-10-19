@@ -100,13 +100,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_abc123',  // AIToolCall.toConversationString() includes id in JSON
                         name: 'search_vault_files',
                         args: { query: 'meeting notes' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_abc123'
@@ -128,13 +128,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_xyz789',  // AIToolCall.toConversationString() includes id in JSON
                         name: 'read_file',
                         args: { path: 'project.md' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_xyz789'
@@ -154,13 +154,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_cross1',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call_cross1'
             });
 
@@ -197,23 +197,22 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
+                        thoughtSignature: 'geminiThoughtSignature==',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
-                shouldDisplayContent: true,
-                thoughtSignature: 'geminiThoughtSignature=='
+                shouldDisplayContent: true
             });
 
-            // Verify the signature is stored in ConversationContent
-            expect(geminiToolCall.thoughtSignature).toBe('geminiThoughtSignature==');
-
+            // Verify the signature is stored inside the stored tool call
             // When this conversation is sent to Claude/OpenAI, they'll see the function call
             // but ignore the thoughtSignature field (which is fine)
-            const toolCallData = JSON.parse(geminiToolCall.toolCall!);
+            const [toolCallData] = JSON.parse(geminiToolCall.toolCalls!);
+            expect(toolCallData.toolCall.thoughtSignature).toBe('geminiThoughtSignature==');
             expect(toolCallData.toolCall.name).toBe('search_vault_files');
             expect(toolCallData.toolCall.args).toEqual({ query: 'test' });
         });
@@ -231,13 +230,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'call_claude_123',  // AIToolCall.toConversationString() includes id
                                 name: 'search_vault_files',
                                 args: { query: 'project' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_claude_123'
@@ -275,16 +274,14 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
-                            toolCall: {
+                toolCalls: JSON.stringify([{
+                            toolCall: { thoughtSignature: 'geminiSignature123==',
                                 name: 'read_file',
                                 args: { path: 'project.md' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
-                shouldDisplayContent: true,
-                thoughtSignature: 'geminiSignature123==',
-                toolId: 'gemini-response-1'
+                shouldDisplayContent: true
             });
                     return content;
                 })(),
@@ -302,8 +299,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent,
-                        toolId: 'gemini-response-1'
+                        functionResponse: responseContent
                     });
                     return content;
                 })()
@@ -340,13 +336,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'call_openai_456',  // AIToolCall.toConversationString() includes id
                                 name: 'list_files',
                                 args: {}
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_openai_456'
@@ -394,13 +390,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'call-1',  // AIToolCall.toConversationString() includes id
                                 name: 'func1',
                                 args: { a: 1 }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call-1'
@@ -430,13 +426,11 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
-                            toolCall: { name: 'func2', args: { b: 2 } }
-                        }),
+                toolCalls: JSON.stringify([{
+                            toolCall: { thoughtSignature: 'sig2==', name: 'func2', args: { b: 2 } }
+                        }]),
                 timestamp: new Date(),
-                shouldDisplayContent: true,
-                thoughtSignature: 'sig2==',
-                toolId: 'resp-2'
+                shouldDisplayContent: true
             });
                     return content;
                 })(),
@@ -450,8 +444,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent,
-                        toolId: 'resp-2'
+                        functionResponse: responseContent
                     });
                     return content;
                 })(),
@@ -461,8 +454,8 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
 
             const result = await (gemini as any).extractContents(conversation);
 
-            // All content should be present
-            expect(result.length).toBe(7);
+            // All content should be present, with the consecutive model messages merged
+            expect(result.length).toBe(6);
 
             // First function call should be legacy format
             expect(result[1].parts[0]).toHaveProperty('text');
@@ -474,13 +467,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(result[2].parts[0].text).toContain('<!-- Historical tool result');
             expect(result[2].parts[0].text).toContain('"name": "func1"');
 
-            // Second function call should have proper format
-            expect(result[4].parts[0]).toHaveProperty('functionCall');
-            expect(result[4].parts[0]).toHaveProperty('thoughtSignature');
-            expect(result[4].parts[0].thoughtSignature).toBe('sig2==');
+            // Second function call (merged after 'Response 1') should have proper format
+            expect(result[3].parts[1]).toHaveProperty('functionCall');
+            expect(result[3].parts[1]).toHaveProperty('thoughtSignature');
+            expect(result[3].parts[1].thoughtSignature).toBe('sig2==');
 
             // Second response should have proper format
-            expect(result[5].parts[0]).toHaveProperty('functionResponse');
+            expect(result[4].parts[0]).toHaveProperty('functionResponse');
         });
     });
 
@@ -491,13 +484,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'toolu_abc123',  // Claude's tool_use ID
                         name: 'search_vault_files',
                         args: { query: 'meeting notes' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'toolu_abc123'
@@ -546,13 +539,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_xyz789',  // OpenAI's call_id
                         name: 'read_file',
                         args: { path: 'project.md' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_xyz789'
@@ -607,13 +600,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'toolu_1',
                                 name: 'search_vault_files',
                                 args: { query: 'test' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'toolu_1'
@@ -649,13 +642,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'call_2',
                                 name: 'read_file',
                                 args: { path: 'file1.md' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_2'
@@ -706,13 +699,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: '',  // Empty string
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: ''
@@ -737,13 +730,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: '   ',  // Whitespace only
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: '   '
@@ -766,13 +759,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: 'Let me read that file for you',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_openai_123',
                         name: 'read_file',
                         args: { path: 'notes.md' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_openai_123'
@@ -800,13 +793,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_abc',
                         name: 'search_vault_files',
                         args: { query: 'project notes' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_abc'
@@ -829,13 +822,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call_123'
             });
 
@@ -877,16 +870,15 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
+                        thoughtSignature: 'gemini_signature_123==',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
-                shouldDisplayContent: true,
-                thoughtSignature: 'gemini_signature_123==',
-                toolId: 'gemini_tool_1'
+                shouldDisplayContent: true
             });
 
             const geminiResponse = (() => {
@@ -901,8 +893,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     role: Role.User,
                     content: responseContent,
                     displayContent: responseContent,
-                    functionResponse: responseContent,
-                    toolId: 'gemini_tool_1'
+                    functionResponse: responseContent
                 });
                 return content;
             })();
@@ -940,13 +931,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'call_xyz',
                                 name: 'search_vault_files',
                                 args: { query: 'test' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_xyz'
@@ -1007,13 +998,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'toolu_1',
                                 name: 'search_vault_files',
                                 args: { query: 'notes' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'toolu_1'
@@ -1045,13 +1036,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'call_2',
                                 name: 'read_file',
                                 args: { path: 'note1.md' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_2'
@@ -1110,16 +1101,14 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
-                            toolCall: {
+                toolCalls: JSON.stringify([{
+                            toolCall: { thoughtSignature: 'gemini_signature_1==',
                                 name: 'search_vault_files',
                                 args: { query: 'project' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
-                shouldDisplayContent: true,
-                thoughtSignature: 'gemini_signature_1==',
-                toolId: 'resp_1'
+                shouldDisplayContent: true
             });
                     return content;
                 })(),
@@ -1133,8 +1122,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent,
-                        toolId: 'resp_1'
+                        functionResponse: responseContent
                     });
                     return content;
                 })(),
@@ -1148,13 +1136,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'toolu_2',
                                 name: 'read_file',
                                 args: { path: 'project.md' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'toolu_2'
@@ -1186,13 +1174,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'call_3',
                                 name: 'write_file',
                                 args: { path: 'summary.md', content: 'Summary here' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_3'
@@ -1248,13 +1236,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'toolu_round',
                                 name: 'search_vault_files',
                                 args: { query: 'test', limit: 5 }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'toolu_round'
@@ -1317,13 +1305,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'call_round',
                                 name: 'search_vault_files',
                                 args: { query: 'openai test' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_round'
@@ -1379,13 +1367,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: 'Searching...',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'toolu_step1',
                                 name: 'search_vault_files',
                                 args: { query: 'workflow' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'toolu_step1'
@@ -1416,13 +1404,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: 'Reading file...',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'call_step2',
                                 name: 'read_file',
                                 args: { path: 'workflow.md' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call_step2'
@@ -1453,16 +1441,14 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
-                            toolCall: {
+                toolCalls: JSON.stringify([{
+                            toolCall: { thoughtSignature: 'gemini_step3_signature==',
                                 name: 'list_files',
                                 args: { path: '/' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
-                shouldDisplayContent: true,
-                thoughtSignature: 'gemini_step3_signature==',
-                toolId: 'resp_step3'
+                shouldDisplayContent: true
             });
                     return content;
                 })(),
@@ -1476,8 +1462,7 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.User,
                         content: responseContent,
                         displayContent: responseContent,
-                        functionResponse: responseContent,
-                        toolId: 'resp_step3'
+                        functionResponse: responseContent
                     });
                     return content;
                 })(),
@@ -1527,12 +1512,11 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
-                    toolCall: { name: 'test_func', args: {} }  // No id = native Gemini
-                }),
+                toolCalls: JSON.stringify([{
+                    toolCall: { thoughtSignature: '', name: 'test_func', args: {} }  // No id = native Gemini
+                }]),
                 timestamp: new Date(),
-                shouldDisplayContent: true,
-                thoughtSignature: ''
+                shouldDisplayContent: true
             });
 
             const result = await (gemini as any).extractContents([content]);
@@ -1548,12 +1532,11 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
-                    toolCall: { name: 'test_func', args: {} }  // No id = native Gemini
-                }),
+                toolCalls: JSON.stringify([{
+                    toolCall: { thoughtSignature: '   ', name: 'test_func', args: {} }  // No id = native Gemini
+                }]),
                 timestamp: new Date(),
-                shouldDisplayContent: true,
-                thoughtSignature: '   '
+                shouldDisplayContent: true
             });
 
             const result = await (gemini as any).extractContents([content]);
@@ -1573,13 +1556,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.Assistant,
                         content: '',
                         displayContent: '',
-                        toolCall: JSON.stringify({
+                        toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'toolu_123',  // id field indicates Claude/OpenAI origin
                                 name: 'func1',
                                 args: {}
                             }
-                        }),
+                        }]),
                         timestamp: new Date(),
                         shouldDisplayContent: true,
                         toolId: 'toolu_123'  // toolId must be set for filtering to work
@@ -1622,17 +1605,17 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
+                        thoughtSignature: 'signature==',
                         id: 'tool-123',  // ID in the JSON indicates cross-provider origin
                         name: 'test_func',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'tool-123',  // toolId metadata (matches JSON id)
-                thoughtSignature: 'signature=='  // Also has thoughtSignature (unusual edge case)
             });
 
             // Gemini should use legacy text format because id is present (cross-provider)
@@ -1669,9 +1652,9 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: { name: 'test_func', args: { query: 'test' } }  // No id field!
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'tool-123'
@@ -1700,13 +1683,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: 'call-123',
                                 name: 'search_vault_files',
                                 args: { query: 'test' }
                             }
-                        }),
+                        }]),
                 timestamp: new Date(),
                 shouldDisplayContent: true,
                 toolId: 'call-123'
@@ -1751,13 +1734,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'toolu_01EWDB2npEv6uLdEkkt56xxp',  // Claude-style ID with underscores, wrong length
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'toolu_01EWDB2npEv6uLdEkkt56xxp'
             });
 
@@ -1783,13 +1766,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'abc123xyz',  // Valid Mistral ID format
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
+                    }]),
                     toolId: 'abc123xyz'
                 });
 
@@ -1812,13 +1795,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'def456ghi',  // Valid Mistral ID format
                             name: 'read_file',
                             args: { path: 'test.md' }
                         }
-                    }),
+                    }]),
                     toolId: 'def456ghi'
                 });
 
@@ -1841,13 +1824,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'ghi789jkl',  // Valid Mistral ID format
                             name: 'search_vault_files',
                             args: { query: 'project' }
                         }
-                    }),
+                    }]),
                     toolId: 'ghi789jkl'
                 });
 
@@ -1870,13 +1853,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_openai_123',  // OpenAI-style ID
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
+                    }]),
                     toolId: 'call_openai_123'
                 });
 
@@ -1897,13 +1880,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'toolu_claude_123',  // Claude-style ID
                             name: 'read_file',
                             args: { path: 'document.md' }
                         }
-                    }),
+                    }]),
                     toolId: 'toolu_claude_123'
                 });
 
@@ -1924,14 +1907,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
+                            thoughtSignature: 'gemini_signature_123==',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
-                    thoughtSignature: 'gemini_signature_123==',
-                    toolId: 'gemini_tool_1'
+                    }])
                 });
 
                 const mistral = new Mistral();
@@ -1956,13 +1938,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.Assistant,
                         content: '',
                         displayContent: '',
-                        toolCall: JSON.stringify({
+                        toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: validId,
                                 name: 'search_vault_files',
                                 args: { query: 'test' }
                             }
-                        }),
+                        }]),
                         toolId: validId
                     });
 
@@ -1985,13 +1967,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.Assistant,
                         content: '',
                         displayContent: '',
-                        toolCall: JSON.stringify({
+                        toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: invalidId,
                                 name: 'search_vault_files',
                                 args: { query: 'test' }
                             }
-                        }),
+                        }]),
                         toolId: invalidId
                     });
 
@@ -2014,13 +1996,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                         role: Role.Assistant,
                         content: '',
                         displayContent: '',
-                        toolCall: JSON.stringify({
+                        toolCalls: JSON.stringify([{
                             toolCall: {
                                 id: invalidId,
                                 name: 'search_vault_files',
                                 args: { query: 'test' }
                             }
-                        }),
+                        }]),
                         toolId: invalidId
                     });
 
@@ -2046,13 +2028,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                             role: Role.Assistant,
                             content: '',
                             displayContent: '',
-                            toolCall: JSON.stringify({
+                            toolCalls: JSON.stringify([{
                                 toolCall: {
                                     id: 'mistral12',  // Valid Mistral ID
                                     name: 'search_vault_files',
                                     args: { query: 'project' }
                                 }
-                            }),
+                            }]),
                             toolId: 'mistral12'
                         });
                         return content;
@@ -2082,13 +2064,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                             role: Role.Assistant,
                             content: '',
                             displayContent: '',
-                            toolCall: JSON.stringify({
+                            toolCalls: JSON.stringify([{
                                 toolCall: {
                                     id: 'toolu_claude_1',
                                     name: 'read_file',
                                     args: { path: 'project.md' }
                                 }
-                            }),
+                            }]),
                             toolId: 'toolu_claude_1'
                         });
                         return content;
@@ -2118,13 +2100,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                             role: Role.Assistant,
                             content: '',
                             displayContent: '',
-                            toolCall: JSON.stringify({
+                            toolCalls: JSON.stringify([{
                                 toolCall: {
                                     id: 'call_openai_1',
                                     name: 'write_file',
                                     args: { path: 'summary.md', content: 'Summary' }
                                 }
-                            }),
+                            }]),
                             toolId: 'call_openai_1'
                         });
                         return content;
@@ -2169,13 +2151,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'resp12345',  // Valid Mistral ID
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
+                    }]),
                     toolId: 'resp12345'
                 });
 
@@ -2221,13 +2203,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                             role: Role.Assistant,
                             content: '',
                             displayContent: '',
-                            toolCall: JSON.stringify({
+                            toolCalls: JSON.stringify([{
                                 toolCall: {
                                     id: 'mistral12',  // Valid Mistral ID
                                     name: 'search_vault_files',
                                     args: { query: 'test' }
                                 }
-                            }),
+                            }]),
                             toolId: 'mistral12'
                         });
                         return content;
@@ -2277,13 +2259,13 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
                             role: Role.Assistant,
                             content: '',
                             displayContent: '',
-                            toolCall: JSON.stringify({
+                            toolCalls: JSON.stringify([{
                                 toolCall: {
                                     id: 'abc123def',  // Valid Mistral ID
                                     name: 'read_file',
                                     args: { path: 'test.md' }
                                 }
-                            }),
+                            }]),
                             toolId: 'abc123def'
                         });
                         return content;

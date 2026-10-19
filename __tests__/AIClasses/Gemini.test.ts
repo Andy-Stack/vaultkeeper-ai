@@ -156,8 +156,30 @@ describe('Gemini', () => {
 
             (gemini as any).parseStreamChunk(chunk);
 
-            expect((gemini as any).accumulatedFunctionName).toBe('search_vault_files');
-            expect((gemini as any).accumulatedFunctionArgs).toEqual({ query: 'test' });
+            expect((gemini as any).accumulatedToolCalls).toEqual([
+                { name: 'search_vault_files', args: { query: 'test' } }
+            ]);
+        });
+
+        it('should accumulate parallel function calls from separate parts in order', () => {
+            const chunk = JSON.stringify({
+                candidates: [{
+                    content: {
+                        parts: [
+                            { functionCall: { name: 'search_vault_files', args: { query: 'a' } } },
+                            { functionCall: { name: 'read_vault_files', args: { paths: ['b.md'] } } }
+                        ]
+                    }
+                }]
+            });
+
+            const result = (gemini as any).parseStreamChunk(chunk);
+
+            expect((gemini as any).accumulatedToolCalls).toEqual([
+                { name: 'search_vault_files', args: { query: 'a' } },
+                { name: 'read_vault_files', args: { paths: ['b.md'] } }
+            ]);
+            expect(result.toolCallStarted).toBe('search_vault_files');
         });
 
         it('should emit toolCallStarted on the first chunk revealing the function name, and not again for subsequent chunks', () => {
@@ -183,7 +205,6 @@ describe('Gemini', () => {
                     content: {
                         parts: [{
                             functionCall: {
-                                name: 'search_vault_files',
                                 args: { limit: 10 }
                             }
                         }]
@@ -213,9 +234,9 @@ describe('Gemini', () => {
 
             (gemini as any).parseStreamChunk(chunk);
 
-            expect((gemini as any).accumulatedFunctionName).toBe('search_vault_files');
-            expect((gemini as any).accumulatedFunctionArgs).toEqual({ query: 'test' });
-            expect((gemini as any).accumulatedThoughtSignature).toBe(signature);
+            expect((gemini as any).accumulatedToolCalls).toEqual([
+                { name: 'search_vault_files', args: { query: 'test' }, thoughtSignature: signature }
+            ]);
         });
 
         it('should not set thoughtSignature when not present in part', () => {
@@ -234,7 +255,7 @@ describe('Gemini', () => {
 
             (gemini as any).parseStreamChunk(chunk);
 
-            expect((gemini as any).accumulatedThoughtSignature).toBeNull();
+            expect((gemini as any).accumulatedToolCalls[0].thoughtSignature).toBeUndefined();
         });
 
         it('should merge function arguments incrementally (object spread)', () => {
@@ -269,16 +290,14 @@ describe('Gemini', () => {
                 }]
             }));
 
-            expect((gemini as any).accumulatedFunctionArgs).toEqual({
-                param1: 'value1',
-                param2: 'value2'
-            });
+            expect((gemini as any).accumulatedToolCalls).toEqual([
+                { name: 'search_vault_files', args: { param1: 'value1', param2: 'value2' } }
+            ]);
         });
 
         it('should finalize function call on completion', () => {
             // Setup accumulated state
-            (gemini as any).accumulatedFunctionName = 'search_vault_files';
-            (gemini as any).accumulatedFunctionArgs = { query: 'test' };
+            (gemini as any).accumulatedToolCalls = [{ name: 'search_vault_files', args: { query: 'test' } }];
 
             const chunk = JSON.stringify({
                 candidates: [{
@@ -290,17 +309,17 @@ describe('Gemini', () => {
 
             expect(result.isComplete).toBe(true);
             expect(result.shouldContinue).toBe(true);
-            expect(result.toolCall).toBeDefined();
-            expect(result.toolCall?.name).toBe('search_vault_files');
-            expect(result.toolCall?.arguments).toEqual({ query: 'test' });
+            expect(result.toolCalls).toBeDefined();
+            expect(result.toolCalls?.[0].name).toBe('search_vault_files');
+            expect(result.toolCalls?.[0].arguments).toEqual({ query: 'test' });
         });
 
         it('should finalize function call with thoughtSignature on completion', () => {
             const signature = 'finalSignature==';
             // Setup accumulated state
-            (gemini as any).accumulatedFunctionName = 'search_vault_files';
-            (gemini as any).accumulatedFunctionArgs = { query: 'test' };
-            (gemini as any).accumulatedThoughtSignature = signature;
+            (gemini as any).accumulatedToolCalls = [
+                { name: 'search_vault_files', args: { query: 'test' }, thoughtSignature: signature }
+            ];
 
             const chunk = JSON.stringify({
                 candidates: [{
@@ -312,17 +331,15 @@ describe('Gemini', () => {
 
             expect(result.isComplete).toBe(true);
             expect(result.shouldContinue).toBe(true);
-            expect(result.toolCall).toBeDefined();
-            expect(result.toolCall?.name).toBe('search_vault_files');
-            expect(result.toolCall?.arguments).toEqual({ query: 'test' });
-            expect(result.toolCall?.thoughtSignature).toBe(signature);
+            expect(result.toolCalls).toBeDefined();
+            expect(result.toolCalls?.[0].name).toBe('search_vault_files');
+            expect(result.toolCalls?.[0].arguments).toEqual({ query: 'test' });
+            expect(result.toolCalls?.[0].thoughtSignature).toBe(signature);
         });
 
         it('should finalize function call without thoughtSignature when not accumulated', () => {
             // Setup accumulated state without signature
-            (gemini as any).accumulatedFunctionName = 'search_vault_files';
-            (gemini as any).accumulatedFunctionArgs = { query: 'test' };
-            (gemini as any).accumulatedThoughtSignature = null;
+            (gemini as any).accumulatedToolCalls = [{ name: 'search_vault_files', args: { query: 'test' } }];
 
             const chunk = JSON.stringify({
                 candidates: [{
@@ -332,8 +349,8 @@ describe('Gemini', () => {
 
             const result = (gemini as any).parseStreamChunk(chunk);
 
-            expect(result.toolCall).toBeDefined();
-            expect(result.toolCall?.thoughtSignature).toBeUndefined();
+            expect(result.toolCalls).toBeDefined();
+            expect(result.toolCalls?.[0].thoughtSignature).toBeUndefined();
         });
 
         it('should detect completion with STOP finish reason', () => {
@@ -427,8 +444,8 @@ describe('Gemini', () => {
         });
 
         it('should toggle to google_search after request_web_search is called', async () => {
-            // Set accumulated function name to trigger web search mode
-            (gemini as any).accumulatedFunctionName = 'request_web_search';
+            // An accumulated request_web_search call triggers web search mode
+            (gemini as any).accumulatedToolCalls = [{ name: 'request_web_search', args: {} }];
 
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'What is the weather today?' }));
@@ -499,15 +516,15 @@ describe('Gemini', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
+                        thoughtSignature: 'geminiSignatureFromAPI==',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
-                shouldDisplayContent: false,
-                thoughtSignature: 'geminiSignatureFromAPI=='  // Has signature from Gemini
+                shouldDisplayContent: false
             });
 
             const result = await (gemini as any).extractContents([toolCallContent]);
@@ -530,15 +547,15 @@ describe('Gemini', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
+                        thoughtSignature: signature,
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
-                shouldDisplayContent: false,
-                thoughtSignature: signature
+                shouldDisplayContent: false
             });
 
             const result = await (gemini as any).extractContents([toolCallContent]);
@@ -560,13 +577,13 @@ describe('Gemini', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'toolu_01234567',  // toolId indicates this came from Claude/OpenAI
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: false
                 // No thoughtSignature (came from Claude/OpenAI)
@@ -589,13 +606,13 @@ describe('Gemini', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         // No id field - this is a native Gemini function call
                         name: 'read_file',
                         args: { path: 'note.md' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: false
                 // No thoughtSignature (normal Gemini call without extended thinking)
@@ -615,13 +632,13 @@ describe('Gemini', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call-123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call-123'
             });
 
@@ -658,13 +675,13 @@ describe('Gemini', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_legacy1',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call_legacy1'
             });
 
@@ -699,13 +716,13 @@ describe('Gemini', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_legacy2',
                         name: 'read_file',
                         args: { path: 'test.md' }
                     }
-                }),
+                }]),
                 toolId: 'call_legacy2'
             });
 
@@ -741,7 +758,7 @@ describe('Gemini', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: 'invalid json {',
+                toolCalls: 'invalid json {',
                 timestamp: new Date(),
                 shouldDisplayContent: false
             });
@@ -764,13 +781,13 @@ describe('Gemini', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_invalid',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call_invalid'
             });
 
@@ -802,9 +819,10 @@ describe('Gemini', () => {
 
             const result = await (gemini as any).extractContents(contents);
 
-            expect(result).toHaveLength(2);
+            // Consecutive same-role messages are merged into one
+            expect(result).toHaveLength(1);
             expect(result[0].parts[0].text).toBe('Hello');
-            expect(result[1].parts[0].text).toBe('World');
+            expect(result[0].parts[1].text).toBe('World');
         });
 
         it('should exclude orphaned function calls without responses', async () => {
@@ -815,12 +833,12 @@ describe('Gemini', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
+                    }]),
                     timestamp: new Date(),
                     shouldDisplayContent: false
                 }),
@@ -829,10 +847,10 @@ describe('Gemini', () => {
 
             const result = await (gemini as any).extractContents(contents);
 
-            // Should only have 2 messages (orphaned function call excluded)
-            expect(result).toHaveLength(2);
+            // Orphaned function call excluded, leaving two user messages merged into one
+            expect(result).toHaveLength(1);
             expect(result[0].parts[0].text).toBe('Search for files');
-            expect(result[1].parts[0].text).toBe('What about this?');
+            expect(result[0].parts[1].text).toBe('What about this?');
         });
 
         it('should include function call when it has a corresponding response', async () => {
@@ -843,15 +861,15 @@ describe('Gemini', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
+                            thoughtSignature: 'signature123==',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
+                    }]),
                     timestamp: new Date(),
-                    shouldDisplayContent: false,
-                    thoughtSignature: 'signature123=='  // Has signature
+                    shouldDisplayContent: false
                 }),
                 // Corresponding function response
                 (() => {
@@ -887,15 +905,15 @@ describe('Gemini', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
+                            thoughtSignature: 'latestCallSignature==',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
+                    }]),
                     timestamp: new Date(),
-                    shouldDisplayContent: false,
-                    thoughtSignature: 'latestCallSignature=='
+                    shouldDisplayContent: false
                 })
             ];
 
@@ -920,12 +938,12 @@ describe('Gemini', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             name: 'search_vault_files',
                             args: { query: 'test1' }
                         }
-                    }),
+                    }]),
                     timestamp: new Date(),
                     shouldDisplayContent: false
                 }),
@@ -935,12 +953,12 @@ describe('Gemini', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             name: 'read_file',
                             args: { path: 'test.md' }
                         }
-                    }),
+                    }]),
                     timestamp: new Date(),
                     shouldDisplayContent: false
                 }),
@@ -949,11 +967,11 @@ describe('Gemini', () => {
 
             const result = await (gemini as any).extractContents(contents);
 
-            // Should only have the 3 user messages (both orphaned calls excluded)
-            expect(result).toHaveLength(3);
+            // Both orphaned calls excluded, leaving three user messages merged into one
+            expect(result).toHaveLength(1);
             expect(result[0].parts[0].text).toBe('First message');
-            expect(result[1].parts[0].text).toBe('Second message');
-            expect(result[2].parts[0].text).toBe('Third message');
+            expect(result[0].parts[1].text).toBe('Second message');
+            expect(result[0].parts[2].text).toBe('Third message');
         });
 
     });
@@ -1162,9 +1180,7 @@ describe('Gemini', () => {
 
         it('should reset accumulation state at start of streamRequest', async () => {
             // Set some accumulated state
-            (gemini as any).accumulatedFunctionName = 'old_func';
-            (gemini as any).accumulatedFunctionArgs = { old: 'args' };
-            (gemini as any).accumulatedThoughtSignature = 'oldSignature';
+            (gemini as any).accumulatedToolCalls = [{ name: 'old_func', args: { old: 'args' }, thoughtSignature: 'oldSignature' }];
 
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test' }));
@@ -1177,9 +1193,7 @@ describe('Gemini', () => {
             await generator.next();
 
             // State should be reset (after checking web search mode)
-            expect((gemini as any).accumulatedFunctionName).toBeNull();
-            expect((gemini as any).accumulatedFunctionArgs).toEqual({});
-            expect((gemini as any).accumulatedThoughtSignature).toBeNull();
+            expect((gemini as any).accumulatedToolCalls).toEqual([]);
         });
     });
 

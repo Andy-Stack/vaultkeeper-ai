@@ -428,7 +428,7 @@ describe('StreamingService', () => {
 				return {
 					content: data.content || '',
 					isComplete: data.done || false,
-					toolCall: data.toolCall
+					toolCalls: data.toolCall ? [data.toolCall] : undefined
 				};
 			};
 
@@ -441,7 +441,7 @@ describe('StreamingService', () => {
 				results.push(chunk);
 			}
 
-			expect(results[0].toolCall).toEqual({ name: 'test_func', args: {} });
+			expect(results[0].toolCalls).toEqual([{ name: 'test_func', args: {} }]);
 		});
 	});
 

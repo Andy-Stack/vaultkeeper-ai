@@ -4,45 +4,95 @@ import { AbortService } from '../../Services/AbortService';
 import { DeregisterAllServices, RegisterSingleton } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { Event } from '../../Enums/Event';
-import type VaultkeeperAIPlugin from '../../main';
-import type { EventService } from '../../Services/EventService';
+import { DiffState } from '../../Enums/DiffState';
+import { FileEvent } from '../../Enums/FileEvent';
+import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
+import { Artifact } from '../../Conversations/Artifact';
+import { ArtifactAction } from '../../Enums/ArtifactAction';
+import type { IVaultChangeRequest } from '../../Services/TemporaryVaultService';
 
 describe('DiffService', () => {
 	let service: DiffService;
 	let mockPlugin: any;
 	let mockEventService: any;
+	let mockSettingsService: any;
+	let mockTemporaryVaultService: any;
+	let mockDocumentValidationService: any;
 	let abortService: AbortService;
-	let mockEventListeners: Map<Event, Function[]>;
+	let eventListeners: Map<Event, Function[]>;
+
+	function makeRequest(overrides: Partial<IVaultChangeRequest<string>> = {}): IVaultChangeRequest<string> {
+		return {
+			oldPath: 'folder/old.md',
+			newPath: 'folder/new.md',
+			oldContent: 'old content',
+			newContent: 'new content',
+			changeType: FileEvent.Modify,
+			status: DiffState.None,
+			changeAction: vi.fn().mockResolvedValue({ result: 'applied' }),
+			...overrides
+		};
+	}
+
+	// Simulates the user finishing their review: the diff view sets each status then closes
+	function finishReview(statuses: DiffState[], requests: IVaultChangeRequest<string>[], suggestions: Record<number, string> = {}) {
+		requests.forEach((request, index) => {
+			request.status = statuses[index];
+			request.suggestion = suggestions[index];
+		});
+		mockEventService.trigger(Event.DiffClosed);
+	}
+
+	async function waitForDiffToOpen() {
+		await vi.waitFor(() => expect(mockPlugin.activateDiffView).toHaveBeenCalled());
+	}
 
 	beforeEach(() => {
 		DeregisterAllServices();
 
-		mockEventListeners = new Map();
+		eventListeners = new Map();
 
 		mockPlugin = {
-			activateDiffView: vi.fn().mockResolvedValue(undefined)
+			activateDiffView: vi.fn().mockResolvedValue(undefined),
+			activateArtifactView: vi.fn().mockResolvedValue(undefined)
 		};
 
 		mockEventService = {
 			trigger: vi.fn((event: Event, data?: unknown) => {
-				const listeners = mockEventListeners.get(event) || [];
-				listeners.forEach(listener => listener(data));
+				(eventListeners.get(event) ?? []).forEach(listener => listener(data));
 			}),
 			on: vi.fn((event: Event, callback: Function) => {
-				if (!mockEventListeners.has(event)) {
-					mockEventListeners.set(event, []);
+				if (!eventListeners.has(event)) {
+					eventListeners.set(event, []);
 				}
-				mockEventListeners.get(event)!.push(callback);
+				eventListeners.get(event)!.push(callback);
 				return { listener: callback };
 			}),
 			off: vi.fn()
 		};
 
+		mockSettingsService = {
+			settings: { freeEdit: false, enableAgentContinuity: false }
+		};
+
+		mockTemporaryVaultService = {
+			reset: vi.fn(),
+			addAll: vi.fn()
+		};
+
+		mockDocumentValidationService = {
+			generateReport: vi.fn().mockResolvedValue(undefined),
+			documentReport: undefined
+		};
+
 		abortService = new AbortService();
 
-		RegisterSingleton<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin, mockPlugin);
-		RegisterSingleton<EventService>(Services.EventService, mockEventService);
-		RegisterSingleton<AbortService>(Services.AbortService, abortService);
+		RegisterSingleton(Services.VaultkeeperAIPlugin, mockPlugin);
+		RegisterSingleton(Services.EventService, mockEventService);
+		RegisterSingleton(Services.AbortService, abortService);
+		RegisterSingleton(Services.SettingsService, mockSettingsService);
+		RegisterSingleton(Services.TemporaryVaultService, mockTemporaryVaultService);
+		RegisterSingleton(Services.DocumentValidationService, mockDocumentValidationService);
 
 		service = new DiffService();
 	});
@@ -52,779 +102,381 @@ describe('DiffService', () => {
 		vi.restoreAllMocks();
 	});
 
-	describe('Constructor & Initialization', () => {
-		it('should initialize with all required dependencies', () => {
-			expect(service).toBeDefined();
-			expect(service).toBeInstanceOf(DiffService);
-		});
-
-		it('should register DiffClosed event listener', () => {
+	describe('constructor', () => {
+		it('should register a DiffClosed event listener', () => {
 			expect(mockEventService.on).toHaveBeenCalledWith(Event.DiffClosed, expect.any(Function));
 		});
 
-		it('should initialize with ongoingDiff as false', () => {
+		it('should start with no ongoing diff', () => {
 			expect((service as any).ongoingDiff).toBe(false);
-		});
-
-		it('should initialize with no diffResolve callback', () => {
 			expect((service as any).diffResolve).toBeUndefined();
 		});
 	});
 
-	describe('requestDiff - Promise Resolution Paths', () => {
-		it('should create diff string and activate diff view', async () => {
-			const diffPromise = service.requestDiff('old.md', 'new.md', 'old content', 'new content');
+	describe('proposeChanges - review flow', () => {
+		it('should reset the temporary vault and track the requested changes', async () => {
+			const requests = [makeRequest()];
 
-			await new Promise(resolve => setTimeout(resolve, 10));
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Accepted], requests);
+			await pending;
 
-			expect(mockPlugin.activateDiffView).toHaveBeenCalledWith(
-				expect.stringContaining('old.md'),
-				expect.objectContaining({
-					outputFormat: 'line-by-line',
-					highlight: false
-				})
-			);
-
-			service.onAccept();
-			await diffPromise;
+			expect(mockTemporaryVaultService.reset).toHaveBeenCalledTimes(1);
+			expect(mockTemporaryVaultService.addAll).toHaveBeenCalledWith(requests);
+			expect(mockTemporaryVaultService.reset.mock.invocationCallOrder[0])
+				.toBeLessThan(mockTemporaryVaultService.addAll.mock.invocationCallOrder[0]);
 		});
 
-		it('should trigger DiffOpened event', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'a', 'b');
+		it('should open the diff view with the diff configuration and trigger DiffOpened', async () => {
+			const requests = [makeRequest()];
 
-			await new Promise(resolve => setTimeout(resolve, 10));
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
 
+			expect(mockPlugin.activateDiffView).toHaveBeenCalledWith(expect.objectContaining({
+				outputFormat: 'line-by-line',
+				highlight: false,
+				matching: 'words',
+				drawFileList: false
+			}));
 			expect(mockEventService.trigger).toHaveBeenCalledWith(Event.DiffOpened);
-
-			service.onAccept();
-			await diffPromise;
-		});
-
-		it('should set ongoingDiff to true', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'a', 'b');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
 			expect((service as any).ongoingDiff).toBe(true);
 
-			service.onAccept();
-			await diffPromise;
+			finishReview([DiffState.Accepted], requests);
+			await pending;
 		});
 
-		it('should resolve with accepted:true on onAccept()', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
+		it('should assign a diff string to every change using file basenames', async () => {
+			const requests = [
+				makeRequest({ oldPath: 'a/b/first.md', newPath: 'a/b/first.md', oldContent: 'one', newContent: 'two' }),
+				makeRequest({ oldPath: 'c/second.md', newPath: 'c/renamed.md', oldContent: 'same', newContent: 'same' })
+			];
 
-			await new Promise(resolve => setTimeout(resolve, 10));
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
 
-			service.onAccept();
+			expect(requests[0].diffString).toContain('--- first.md');
+			expect(requests[0].diffString).toContain('+++ first.md');
+			expect(requests[0].diffString).toContain('-one');
+			expect(requests[0].diffString).toContain('+two');
+			expect(requests[1].diffString).toContain('--- second.md');
+			expect(requests[1].diffString).toContain('+++ renamed.md');
 
-			const result = await diffPromise;
-			expect(result).toEqual({ accepted: true });
+			finishReview([DiffState.Rejected, DiffState.Rejected], requests);
+			await pending;
 		});
 
-		it('should resolve with accepted:false on onReject()', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
+		it('should diff against /dev/null for created and deleted files', async () => {
+			const created = makeRequest({ oldPath: undefined, oldContent: undefined, newPath: 'new.md', newContent: 'hello', changeType: FileEvent.Create });
+			const deleted = makeRequest({ oldPath: 'gone.md', oldContent: 'bye', newPath: undefined, newContent: undefined, changeType: FileEvent.Delete });
 
-			await new Promise(resolve => setTimeout(resolve, 10));
+			const pending = service.proposeChanges([created, deleted]);
+			await waitForDiffToOpen();
 
-			service.onReject();
+			expect(created.diffString).toContain('--- /dev/null');
+			expect(created.diffString).toContain('+hello');
+			expect(deleted.diffString).toContain('+++ /dev/null');
+			expect(deleted.diffString).toContain('-bye');
 
-			const result = await diffPromise;
-			expect(result).toEqual({ accepted: false });
+			finishReview([DiffState.Rejected, DiffState.Rejected], [created, deleted]);
+			await pending;
 		});
 
-		it('should resolve with suggestion on onSuggest()', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
+		it('should apply accepted changes and return their results', async () => {
+			const requests = [makeRequest(), makeRequest()];
 
-			await new Promise(resolve => setTimeout(resolve, 10));
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Accepted, DiffState.Accepted], requests);
+			const { results } = await pending;
 
-			service.onSuggest('Please add comments');
-
-			const result = await diffPromise;
-			expect(result).toEqual({ accepted: false, suggestion: 'Please add comments' });
+			expect(requests[0].changeAction).toHaveBeenCalledTimes(1);
+			expect(requests[1].changeAction).toHaveBeenCalledTimes(1);
+			expect(results).toEqual([{ result: 'applied' }, { result: 'applied' }]);
 		});
 
-		it('should reject if abort signal already aborted', async () => {
-			abortService.abort('Already aborted');
+		it('should not apply rejected changes and report the rejection', async () => {
+			const requests = [makeRequest()];
 
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Rejected], requests);
+			const { results } = await pending;
 
-			await expect(diffPromise).rejects.toThrow();
+			expect(requests[0].changeAction).not.toHaveBeenCalled();
+			expect(results[0].error?.message).toBe(AIToolResponse.UserRejectionMessage);
 		});
 
-		it('should reject when aborted during pending diff', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
+		it('should treat changes the user never reviewed as rejected', async () => {
+			const requests = [makeRequest()];
 
-			await new Promise(resolve => setTimeout(resolve, 10));
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
+			finishReview([DiffState.None], requests);
+			const { results } = await pending;
 
-			abortService.abort('Aborted during diff');
-
-			await expect(diffPromise).rejects.toThrow();
+			expect(requests[0].changeAction).not.toHaveBeenCalled();
+			expect(results[0].error?.message).toBe(AIToolResponse.UserRejectionMessage);
 		});
 
-		it('should clean up abort listener on accept', async () => {
-			const signal = abortService.signal();
-			const removeListenerSpy = vi.spyOn(signal, 'removeEventListener');
+		it('should return the user suggestion instead of applying the change', async () => {
+			const requests = [makeRequest()];
 
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Suggestion], requests, { 0: '  use a heading instead  ' });
+			const { results } = await pending;
 
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onAccept();
-			await diffPromise;
-
-			expect(removeListenerSpy).toHaveBeenCalled();
+			expect(requests[0].changeAction).not.toHaveBeenCalled();
+			expect(results[0].error?.message).toBe(`${AIToolResponse.UserSuggestionMessage}\nuse a heading instead`);
 		});
 
-		it('should clean up abort listener on reject', async () => {
-			const signal = abortService.signal();
-			const removeListenerSpy = vi.spyOn(signal, 'removeEventListener');
+		it.each([undefined, '', '   '])('should report an empty suggestion when the feedback is %j', async (suggestion) => {
+			const requests = [makeRequest()];
 
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Suggestion], requests, { 0: suggestion as string });
+			const { results } = await pending;
 
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onReject();
-			await diffPromise;
-
-			expect(removeListenerSpy).toHaveBeenCalled();
+			expect(results[0].error?.message).toBe(AIToolResponse.UserEmptySuggestionMessage);
 		});
 
-		it('should clean up abort listener on suggest', async () => {
-			const signal = abortService.signal();
-			const removeListenerSpy = vi.spyOn(signal, 'removeEventListener');
+		it('should return results in request order for mixed decisions', async () => {
+			const requests = [makeRequest(), makeRequest(), makeRequest()];
 
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Rejected, DiffState.Accepted, DiffState.Suggestion], requests, { 2: 'tweak it' });
+			const { results } = await pending;
 
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onSuggest('suggestion');
-			await diffPromise;
-
-			expect(removeListenerSpy).toHaveBeenCalled();
+			expect(results).toHaveLength(3);
+			expect(results[0].error?.message).toBe(AIToolResponse.UserRejectionMessage);
+			expect(results[1]).toEqual({ result: 'applied' });
+			expect(results[2].error?.message).toContain('tweak it');
+			expect(requests[0].changeAction).not.toHaveBeenCalled();
+			expect(requests[1].changeAction).toHaveBeenCalledTimes(1);
+			expect(requests[2].changeAction).not.toHaveBeenCalled();
 		});
 
-		it('should handle concurrent requestDiff calls', async () => {
-			const diff1Promise = service.requestDiff('a.md', 'b.md', 'old1', 'new1');
+		it('should surface an error response from an accepted change without failing the others', async () => {
+			const failure = new Error('disk full');
+			const requests = [
+				makeRequest({ changeAction: vi.fn().mockResolvedValue({ error: failure }) }),
+				makeRequest()
+			];
 
-			await new Promise(resolve => setTimeout(resolve, 10));
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Accepted, DiffState.Accepted], requests);
+			const { results } = await pending;
 
-			// Start second diff (may override first)
-			const diff2Promise = service.requestDiff('c.md', 'd.md', 'old2', 'new2');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onAccept();
-
-			// Second diff should resolve
-			const result2 = await diff2Promise;
-			expect(result2).toEqual({ accepted: true });
-
-			// First diff callback was overridden, so it won't resolve the same way
-			// This documents current behavior
-		});
-	});
-
-	describe('onAccept()', () => {
-		it('should call diffResolve with accepted:true', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onAccept();
-
-			const result = await diffPromise;
-			expect(result).toEqual({ accepted: true });
+			expect(results[0].error).toBe(failure);
+			expect(results[1]).toEqual({ result: 'applied' });
 		});
 
-		it('should call finishDiff()', async () => {
-			const finishDiffSpy = vi.spyOn(service as any, 'finishDiff');
+		it('should clear the ongoing diff state once the review closes', async () => {
+			const requests = [makeRequest()];
 
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onAccept();
-			await diffPromise;
-
-			expect(finishDiffSpy).toHaveBeenCalled();
-		});
-
-		it('should be safe to call when no pending diff', () => {
-			expect(() => service.onAccept()).not.toThrow();
-		});
-
-		it('should be safe to call multiple times', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onAccept();
-			await diffPromise;
-
-			expect(() => service.onAccept()).not.toThrow();
-		});
-
-		it('should set ongoingDiff to false', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			expect((service as any).ongoingDiff).toBe(true);
-
-			service.onAccept();
-			await diffPromise;
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Accepted], requests);
+			await pending;
 
 			expect((service as any).ongoingDiff).toBe(false);
-		});
-	});
-
-	describe('onReject()', () => {
-		it('should call diffResolve with accepted:false', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onReject();
-
-			const result = await diffPromise;
-			expect(result).toEqual({ accepted: false });
-		});
-
-		it('should call finishDiff()', async () => {
-			const finishDiffSpy = vi.spyOn(service as any, 'finishDiff');
-
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onReject();
-			await diffPromise;
-
-			expect(finishDiffSpy).toHaveBeenCalled();
-		});
-
-		it('should be safe to call when no pending diff', () => {
-			expect(() => service.onReject()).not.toThrow();
-		});
-
-		it('should be safe to call multiple times', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onReject();
-			await diffPromise;
-
-			expect(() => service.onReject()).not.toThrow();
-		});
-
-		it('should clear diffResolve callback', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			expect((service as any).diffResolve).toBeDefined();
-
-			service.onReject();
-			await diffPromise;
-
-			expect((service as any).diffResolve).toBeUndefined();
-		});
-	});
-
-	describe('onSuggest()', () => {
-		it('should call diffResolve with suggestion', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onSuggest('Add error handling');
-
-			const result = await diffPromise;
-			expect(result).toEqual({ accepted: false, suggestion: 'Add error handling' });
-		});
-
-		it('should call finishDiff()', async () => {
-			const finishDiffSpy = vi.spyOn(service as any, 'finishDiff');
-
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onSuggest('text');
-			await diffPromise;
-
-			expect(finishDiffSpy).toHaveBeenCalled();
-		});
-
-		it('should handle empty suggestion string', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onSuggest('');
-
-			const result = await diffPromise;
-			expect(result).toEqual({ accepted: false, suggestion: '' });
-		});
-
-		it('should handle very long suggestion', async () => {
-			const longSuggestion = 'X'.repeat(10000);
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onSuggest(longSuggestion);
-
-			const result = await diffPromise;
-			expect(result).toEqual({ accepted: false, suggestion: longSuggestion });
-		});
-
-		it('should be safe when no pending diff', () => {
-			expect(() => service.onSuggest('test')).not.toThrow();
-		});
-
-		it('should handle special characters in suggestion', async () => {
-			const specialSuggestion = 'Line 1\nLine 2\t"quoted"';
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onSuggest(specialSuggestion);
-
-			const result = await diffPromise;
-			expect(result.suggestion).toBe(specialSuggestion);
-		});
-	});
-
-	describe('cancelPendingDiff - Event Handling', () => {
-		it('should resolve with accepted:false when diff is ongoing', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			// Trigger DiffClosed event
-			const listeners = mockEventListeners.get(Event.DiffClosed) || [];
-			listeners.forEach(listener => listener());
-
-			const result = await diffPromise;
-			expect(result).toEqual({ accepted: false });
-		});
-
-		it('should call finishDiff() when ongoing', async () => {
-			const finishDiffSpy = vi.spyOn(service as any, 'finishDiff');
-
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			const listeners = mockEventListeners.get(Event.DiffClosed) || [];
-			listeners.forEach(listener => listener());
-
-			await diffPromise;
-
-			expect(finishDiffSpy).toHaveBeenCalled();
-		});
-
-		it('should do nothing when no ongoing diff', () => {
-			const finishDiffSpy = vi.spyOn(service as any, 'finishDiff');
-
-			const listeners = mockEventListeners.get(Event.DiffClosed) || [];
-			listeners.forEach(listener => listener());
-
-			expect(finishDiffSpy).not.toHaveBeenCalled();
-		});
-
-		it('should be called via registered event listener', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			expect(mockEventListeners.has(Event.DiffClosed)).toBe(true);
-
-			mockEventService.trigger(Event.DiffClosed);
-
-			const result = await diffPromise;
-			expect(result).toEqual({ accepted: false });
-		});
-
-		it('should handle race with onAccept', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onAccept();
-
-			// Try to trigger cancel after accept
-			const listeners = mockEventListeners.get(Event.DiffClosed) || [];
-			listeners.forEach(listener => listener());
-
-			const result = await diffPromise;
-			expect(result).toEqual({ accepted: true });
-		});
-
-		it('should handle multiple DiffClosed events', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			mockEventService.trigger(Event.DiffClosed);
-			mockEventService.trigger(Event.DiffClosed);
-
-			const result = await diffPromise;
-			expect(result).toEqual({ accepted: false });
-		});
-	});
-
-	describe('createDiffString - Private Method', () => {
-		const getCreateDiffString = () => (service as any).createDiffString.bind(service);
-
-		it('should return a string', () => {
-			const createDiffString = getCreateDiffString();
-			const result = createDiffString('a.md', 'b.md', 'old', 'new');
-
-			expect(typeof result).toBe('string');
-		});
-
-		it('should handle identical content', () => {
-			const createDiffString = getCreateDiffString();
-			const result = createDiffString('file.md', 'file.md', 'same', 'same');
-
-			expect(typeof result).toBe('string');
-		});
-
-		it('should handle empty old content', () => {
-			const createDiffString = getCreateDiffString();
-			const result = createDiffString('a.md', 'b.md', '', 'new content');
-
-			expect(result).toContain('new content');
-		});
-
-		it('should handle empty new content', () => {
-			const createDiffString = getCreateDiffString();
-			const result = createDiffString('a.md', 'b.md', 'old content', '');
-
-			expect(result).toContain('old content');
-		});
-
-		it('should handle both empty', () => {
-			const createDiffString = getCreateDiffString();
-			const result = createDiffString('a.md', 'b.md', '', '');
-
-			expect(typeof result).toBe('string');
-		});
-
-		it('should handle multiline content', () => {
-			const createDiffString = getCreateDiffString();
-			const result = createDiffString('a.md', 'b.md', 'line1\nline2\nline3', 'line1\nMODIFIED\nline3');
-
-			expect(result).toContain('MODIFIED');
-		});
-
-		it('should handle special characters in content', () => {
-			const createDiffString = getCreateDiffString();
-			const specialContent = 'Content with "quotes" and \\backslashes\\ and \u2713 unicode';
-
-			expect(() => createDiffString('a.md', 'b.md', specialContent, 'new')).not.toThrow();
-		});
-
-		it('should create valid diff format', () => {
-			const createDiffString = getCreateDiffString();
-			const result = createDiffString('old.md', 'new.md', 'old content', 'new content');
-
-			expect(result).toContain('---');
-			expect(result).toContain('+++');
-			expect(result).toContain('@@');
-		});
-	});
-
-	describe('finishDiff - Private Method', () => {
-		const getFinishDiff = () => (service as any).finishDiff.bind(service);
-
-		it('should set ongoingDiff to false', () => {
-			(service as any).ongoingDiff = true;
-
-			const finishDiff = getFinishDiff();
-			finishDiff();
-
-			expect((service as any).ongoingDiff).toBe(false);
-		});
-
-		it('should clear diffResolve callback', () => {
-			(service as any).diffResolve = vi.fn();
-
-			const finishDiff = getFinishDiff();
-			finishDiff();
-
 			expect((service as any).diffResolve).toBeUndefined();
 		});
 
-		it('should trigger DiffClosed event', () => {
-			const finishDiff = getFinishDiff();
-			finishDiff();
+		it('should not generate a validation report in review mode', async () => {
+			const requests = [makeRequest()];
+
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Accepted], requests);
+			await pending;
+
+			expect(mockDocumentValidationService.generateReport).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('proposeChanges - free edit', () => {
+		beforeEach(() => {
+			mockSettingsService.settings.freeEdit = true;
+		});
+
+		it('should accept every change without opening the diff view', async () => {
+			const requests = [makeRequest(), makeRequest()];
+
+			const { results } = await service.proposeChanges(requests);
+
+			expect(mockPlugin.activateDiffView).not.toHaveBeenCalled();
+			expect(requests.every(request => request.status === DiffState.Accepted)).toBe(true);
+			expect(requests[0].changeAction).toHaveBeenCalledTimes(1);
+			expect(requests[1].changeAction).toHaveBeenCalledTimes(1);
+			expect(results).toEqual([{ result: 'applied' }, { result: 'applied' }]);
+		});
+
+		it('should generate a validation report', async () => {
+			await service.proposeChanges([makeRequest()]);
+
+			expect(mockDocumentValidationService.generateReport).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	describe('proposeChanges - agent continuity', () => {
+		it('should include the document report when agent continuity is enabled', async () => {
+			mockSettingsService.settings.freeEdit = true;
+			mockSettingsService.settings.enableAgentContinuity = true;
+			const report = { issueCount: () => 2 };
+			mockDocumentValidationService.documentReport = report;
+
+			const response = await service.proposeChanges([makeRequest()]);
+
+			expect(response.report).toBe(report);
+			expect(response.results).toEqual([{ result: 'applied' }]);
+		});
+
+		it('should omit the report when agent continuity is disabled', async () => {
+			mockSettingsService.settings.freeEdit = true;
+			mockDocumentValidationService.documentReport = { issueCount: () => 2 };
+
+			const response = await service.proposeChanges([makeRequest()]);
+
+			expect(response).not.toHaveProperty('report');
+		});
+	});
+
+	describe('proposeChanges - aborting', () => {
+		it('should reject without opening the view when already aborted', async () => {
+			abortService.abort();
+
+			await expect(service.proposeChanges([makeRequest()])).rejects.toMatchObject({ name: 'AbortError' });
+
+			expect(mockPlugin.activateDiffView).not.toHaveBeenCalled();
+		});
+
+		it('should reject, close the view and reset state when aborted during a review', async () => {
+			const request = makeRequest();
+
+			const pending = service.proposeChanges([request]);
+			await waitForDiffToOpen();
+			abortService.abort();
+
+			await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+			expect(mockEventService.trigger).toHaveBeenCalledWith(Event.DiffClosed);
+			expect((service as any).ongoingDiff).toBe(false);
+			expect((service as any).diffResolve).toBeUndefined();
+			expect(request.changeAction).not.toHaveBeenCalled();
+		});
+
+		it('should stop listening for aborts once the review is finished', async () => {
+			const requests = [makeRequest()];
+			const removeListener = vi.spyOn(abortService.signal(), 'removeEventListener');
+
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Accepted], requests);
+			await pending;
+
+			expect(removeListener).toHaveBeenCalledWith('abort', expect.any(Function));
+		});
+	});
+
+	describe('proposeChanges - errors', () => {
+		it('should return an error for every request when setup fails', async () => {
+			mockTemporaryVaultService.addAll.mockImplementation(() => { throw new Error('tracking failed'); });
+			const requests = [makeRequest(), makeRequest()];
+
+			const { results } = await service.proposeChanges(requests);
+
+			expect(results).toHaveLength(2);
+			expect(results[0].error?.message).toBe('tracking failed');
+			expect(results[1].error?.message).toBe('tracking failed');
+			expect(requests[0].changeAction).not.toHaveBeenCalled();
+		});
+
+		it('should close the diff view when setup fails', async () => {
+			mockTemporaryVaultService.addAll.mockImplementation(() => { throw new Error('tracking failed'); });
+
+			await service.proposeChanges([makeRequest()]);
 
 			expect(mockEventService.trigger).toHaveBeenCalledWith(Event.DiffClosed);
 		});
 
-		it('should be safe to call multiple times', () => {
-			const finishDiff = getFinishDiff();
+		it('should return an error when applying an accepted change throws', async () => {
+			mockSettingsService.settings.freeEdit = true;
+			const requests = [makeRequest({ changeAction: vi.fn().mockRejectedValue(new Error('write failed')) })];
 
-			expect(() => {
-				finishDiff();
-				finishDiff();
-				finishDiff();
-			}).not.toThrow();
-		});
+			const { results } = await service.proposeChanges(requests);
 
-		it('should complete all cleanup operations in order', () => {
-			(service as any).ongoingDiff = true;
-			(service as any).diffResolve = vi.fn();
-
-			const finishDiff = getFinishDiff();
-			finishDiff();
-
-			expect((service as any).ongoingDiff).toBe(false);
-			expect((service as any).diffResolve).toBeUndefined();
-			expect(mockEventService.trigger).toHaveBeenCalledWith(Event.DiffClosed);
+			expect(results[0].error?.message).toBe('write failed');
 		});
 	});
 
-	describe('Diff Configuration', () => {
-		it('should create config with correct output format', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			const configArg = mockPlugin.activateDiffView.mock.calls[0][1];
-			expect(configArg.outputFormat).toBe('line-by-line');
-
-			service.onAccept();
-			await diffPromise;
-		});
-
-		it('should disable highlighting in config', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			const configArg = mockPlugin.activateDiffView.mock.calls[0][1];
-			expect(configArg.highlight).toBe(false);
-
-			service.onAccept();
-			await diffPromise;
-		});
-
-		it('should set matching to words', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			const configArg = mockPlugin.activateDiffView.mock.calls[0][1];
-			expect(configArg.matching).toBe('words');
-
-			service.onAccept();
-			await diffPromise;
-		});
-
-		it('should use auto color scheme', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			const configArg = mockPlugin.activateDiffView.mock.calls[0][1];
-			expect(configArg.colorScheme).toBe('auto');
-
-			service.onAccept();
-			await diffPromise;
-		});
-	});
-
-	describe('Integration & State Management', () => {
-		it('full lifecycle - request, accept', async () => {
-			expect((service as any).ongoingDiff).toBe(false);
-
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			expect((service as any).ongoingDiff).toBe(true);
-			expect(mockEventService.trigger).toHaveBeenCalledWith(Event.DiffOpened);
-
-			service.onAccept();
-
-			const result = await diffPromise;
-
-			expect(result).toEqual({ accepted: true });
-			expect((service as any).ongoingDiff).toBe(false);
-			expect((service as any).diffResolve).toBeUndefined();
-		});
-
-		it('full lifecycle - request, reject', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onReject();
-
-			const result = await diffPromise;
-
-			expect(result).toEqual({ accepted: false });
+	describe('DiffClosed handling', () => {
+		it('should ignore DiffClosed when no diff is ongoing', () => {
+			expect(() => mockEventService.trigger(Event.DiffClosed)).not.toThrow();
 			expect((service as any).ongoingDiff).toBe(false);
 		});
 
-		it('full lifecycle - request, suggest', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
+		it('should tolerate repeated DiffClosed events', async () => {
+			const requests = [makeRequest()];
 
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onSuggest('Add more tests');
-
-			const result = await diffPromise;
-
-			expect(result).toEqual({ accepted: false, suggestion: 'Add more tests' });
-			expect((service as any).ongoingDiff).toBe(false);
-		});
-
-		it('full lifecycle - request, abort', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			abortService.abort('User cancelled');
-
-			await expect(diffPromise).rejects.toThrow();
-		});
-
-		it('full lifecycle - request, cancel via event', async () => {
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
+			const pending = service.proposeChanges(requests);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Accepted], requests);
+			mockEventService.trigger(Event.DiffClosed);
 			mockEventService.trigger(Event.DiffClosed);
 
-			const result = await diffPromise;
-
-			expect(result).toEqual({ accepted: false });
-			expect((service as any).ongoingDiff).toBe(false);
-		});
-
-		it('sequential diffs - accept first, start second', async () => {
-			const diff1Promise = service.requestDiff('a.md', 'b.md', 'old1', 'new1');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onAccept();
-
-			const result1 = await diff1Promise;
-			expect(result1).toEqual({ accepted: true });
-
-			// Start second diff
-			const diff2Promise = service.requestDiff('c.md', 'd.md', 'old2', 'new2');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			service.onReject();
-
-			const result2 = await diff2Promise;
-			expect(result2).toEqual({ accepted: false });
-		});
-
-		it('should clean up Component event listeners on unload', () => {
-			// DiffService extends Component which handles cleanup
-			// Verify service was created with event registration
-			expect(mockEventService.on).toHaveBeenCalledWith(Event.DiffClosed, expect.any(Function));
-		});
-
-		it('state consistency after various operation sequences', async () => {
-			// Request
-			const diff1 = service.requestDiff('a', 'b', 'old', 'new');
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			// Cancel
-			mockEventService.trigger(Event.DiffClosed);
-			await diff1;
-
-			expect((service as any).ongoingDiff).toBe(false);
-
-			// Request again
-			const diff2 = service.requestDiff('c', 'd', 'old2', 'new2');
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			// Accept
-			service.onAccept();
-			await diff2;
-
-			expect((service as any).ongoingDiff).toBe(false);
-			expect((service as any).diffResolve).toBeUndefined();
+			const { results } = await pending;
+			expect(results).toEqual([{ result: 'applied' }]);
 		});
 	});
 
-	describe('Error Handling & Edge Cases', () => {
-		it('should handle activateDiffView rejection', async () => {
-			mockPlugin.activateDiffView.mockRejectedValue(new Error('View error'));
+	describe('sequential reviews', () => {
+		it('should support a second review after the first has finished', async () => {
+			const first = [makeRequest()];
+			const firstPending = service.proposeChanges(first);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Accepted], first);
+			await firstPending;
 
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
+			mockPlugin.activateDiffView.mockClear();
 
-			await new Promise(resolve => setTimeout(resolve, 10));
+			const second = [makeRequest()];
+			const secondPending = service.proposeChanges(second);
+			await waitForDiffToOpen();
+			finishReview([DiffState.Rejected], second);
+			const { results } = await secondPending;
 
-			// Promise creation succeeds, error happens in background
-			expect((service as any).ongoingDiff).toBe(true);
-
-			service.onAccept();
-			await diffPromise;
+			expect(mockTemporaryVaultService.reset).toHaveBeenCalledTimes(2);
+			expect(results[0].error?.message).toBe(AIToolResponse.UserRejectionMessage);
 		});
+	});
 
-		it('should handle very large diff content', () => {
-			const largeContent = 'X'.repeat(100000);
+	describe('showArtifactDiff', () => {
+		it('should open the artifact view with a full-context diff and the diff configuration', () => {
+			const artifact = new Artifact('notes/todo.md', 'text/markdown', ArtifactAction.Modify, 'before', 'after');
 
-			expect(() => {
-				service.requestDiff('a.md', 'b.md', largeContent, 'Y'.repeat(100000));
-			}).not.toThrow();
-		});
+			service.showArtifactDiff(artifact);
 
-		it('should handle diff request with same filenames', async () => {
-			const diffPromise = service.requestDiff('same.md', 'same.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			expect(mockPlugin.activateDiffView).toHaveBeenCalled();
-
-			service.onAccept();
-			await diffPromise;
-		});
-
-		it('should handle abort during diff view activation', async () => {
-			mockPlugin.activateDiffView.mockImplementation(() =>
-				new Promise(resolve => setTimeout(resolve, 100))
+			expect(mockPlugin.activateArtifactView).toHaveBeenCalledWith(
+				artifact,
+				expect.stringContaining('--- notes/todo.md'),
+				expect.objectContaining({ outputFormat: 'line-by-line' })
 			);
-
-			const diffPromise = service.requestDiff('a.md', 'b.md', 'old', 'new');
-
-			await new Promise(resolve => setTimeout(resolve, 10));
-
-			abortService.abort('Abort during activation');
-
-			await expect(diffPromise).rejects.toThrow();
+			const diffString = mockPlugin.activateArtifactView.mock.calls[0][1] as string;
+			expect(diffString).toContain('-before');
+			expect(diffString).toContain('+after');
 		});
 
-		it('should handle null content by throwing error', () => {
-			const createDiffString = (service as any).createDiffString.bind(service);
+		it('should not open the diff review view', () => {
+			const artifact = new Artifact('a.md', 'text/markdown', ArtifactAction.Modify, 'x', 'y');
 
-			// The underlying diff library does not handle null/undefined - it throws
-			expect(() => {
-				createDiffString('a.md', 'b.md', null, undefined);
-			}).toThrow();
-		});
+			service.showArtifactDiff(artifact);
 
-		it('should handle missing dependencies error', () => {
-			DeregisterAllServices();
-
-			// Attempting to create service without dependencies should fail
-			expect(() => new DiffService()).toThrow();
+			expect(mockPlugin.activateDiffView).not.toHaveBeenCalled();
 		});
 	});
-
-	// Note: applyPatch tests removed as the DiffService no longer uses diff patches.
-	// The VaultService.patch method now uses direct string match and replace instead.
 });

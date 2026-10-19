@@ -64,6 +64,7 @@ const mockPlugin = {
 		vault: mockVault,
 		fileManager: mockFileManager
 	},
+	manifest: { version: '1.0.0' },
 	saveData: vi.fn().mockResolvedValue(undefined),
 	registerEvent: vi.fn()
 };
@@ -341,14 +342,22 @@ describe('VaultService - Integration Tests', () => {
 			const result = await vaultService.create('note.md', 'content');
 
 			expect(mockVault.create).toHaveBeenCalledWith('note.md', 'content');
-			expect(result).toBe(mockFile);
+			expect(result).toEqual({ result: mockFile });
 		});
 
 		it('should return error when trying to create file in excluded path', async () => {
 			const result = await vaultService.create('Vaultkeeper AI/test.md', 'content', { allowAccessToPluginRoot: false });
 
-			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toContain('Failed to create file, permission denied');
+			expect(result.result).toBeUndefined();
+			expect(result.error?.message).toContain('Failed to create file, permission denied');
+			expect(mockVault.create).not.toHaveBeenCalled();
+		});
+
+		it('should return error when creating an unsupported binary file', async () => {
+			const result = await vaultService.create('image.png', 'content');
+
+			expect(result.error?.message).toBe('Creating png files is not supported');
+			expect(mockVault.create).not.toHaveBeenCalled();
 		});
 
 		it('should create parent directories if they do not exist', async () => {
@@ -384,16 +393,27 @@ describe('VaultService - Integration Tests', () => {
 			const mockFile = createMockFile('note.md');
 			mockVault.process.mockResolvedValue(undefined);
 
-			await vaultService.modify(mockFile, 'new content');
+			const result = await vaultService.modify(mockFile, 'new content');
 
 			expect(mockVault.process).toHaveBeenCalledWith(mockFile, expect.any(Function));
+			expect(result).toEqual({ result: mockFile });
 		});
 
 		it('should not modify file when file is excluded', async () => {
 			const mockFile = createMockFile('Vaultkeeper AI/test.md');
 
-			await vaultService.modify(mockFile, 'new content', { allowAccessToPluginRoot: false });
+			const result = await vaultService.modify(mockFile, 'new content', { allowAccessToPluginRoot: false });
 
+			expect(mockVault.process).not.toHaveBeenCalled();
+			expect(result.error?.message).toContain('File does not exist');
+		});
+
+		it('should return error when modifying an unsupported binary file', async () => {
+			const mockFile = createMockFile('image.png');
+
+			const result = await vaultService.modify(mockFile, 'new content');
+
+			expect(result.error?.message).toBe('Modifying png files is not supported');
 			expect(mockVault.process).not.toHaveBeenCalled();
 		});
 
@@ -412,189 +432,6 @@ describe('VaultService - Integration Tests', () => {
 		});
 	});
 
-	describe('patch', () => {
-		it('should apply patch successfully when file is not excluded', async () => {
-			const mockFile = createMockFile('note.md');
-			const oldContent = ['old content'];
-			const newContent = ['new content'];
-			const currentContent = '# Title\nold content\nmore lines';
-
-			mockVault.read.mockResolvedValue(currentContent);
-			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
-			mockVault.process.mockResolvedValue(undefined);
-
-			const result = await vaultService.patch(mockFile, oldContent, newContent);
-
-			expect(mockVault.read).toHaveBeenCalledWith(mockFile);
-			expect(mockDiffService.requestDiff).toHaveBeenCalled();
-			expect(mockVault.process).toHaveBeenCalled();
-			expect(result).toBe(mockFile);
-		});
-
-		it('should return error when file is excluded', async () => {
-			const mockFile = createMockFile('Vaultkeeper AI/test.md');
-			const oldContent = ['old'];
-			const newContent = ['new'];
-
-			const result = await vaultService.patch(mockFile, oldContent, newContent, { allowAccessToPluginRoot: false });
-
-			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toContain('File does not exist');
-			expect(mockVault.process).not.toHaveBeenCalled();
-		});
-
-		it('should return error when old content is not found in file', async () => {
-			const mockFile = createMockFile('note.md');
-			const oldContent = ['old'];
-			const newContent = ['new'];
-			const currentContent = '# Different content';
-
-			mockVault.read.mockResolvedValue(currentContent);
-
-			const result = await vaultService.patch(mockFile, oldContent, newContent);
-
-			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toContain('Content to replace was not found in the file');
-			expect(mockVault.process).not.toHaveBeenCalled();
-		});
-
-		it('should allow patching excluded files when allowAccessToPluginRoot is true', async () => {
-			const mockFile = createMockFile('Vaultkeeper AI/config.md');
-			const oldContent = ['setting=old'];
-			const newContent = ['setting=new'];
-			const currentContent = 'setting=old';
-
-			mockVault.read.mockResolvedValue(currentContent);
-			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
-			mockVault.process.mockResolvedValue(undefined);
-
-			const result = await vaultService.patch(mockFile, oldContent, newContent, { allowAccessToPluginRoot: true });
-
-			expect(mockVault.read).toHaveBeenCalledWith(mockFile);
-			expect(result).toBe(mockFile);
-		});
-
-		it('should request diff confirmation when requiresConfirmation is true', async () => {
-			const mockFile = createMockFile('note.md');
-			const oldContent = ['old'];
-			const newContent = ['new'];
-			const currentContent = 'old';
-			const updatedContent = 'new';
-
-			mockVault.read.mockResolvedValue(currentContent);
-			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
-			mockVault.process.mockResolvedValue(undefined);
-
-			await vaultService.patch(mockFile, oldContent, newContent, { allowAccessToPluginRoot: false, requiresConfirmation: true });
-
-			expect(mockDiffService.requestDiff).toHaveBeenCalledWith(
-				mockFile.name,
-				mockFile.name,
-				currentContent,
-				updatedContent
-			);
-		});
-
-		it('should replace only the first occurrence of old content', async () => {
-			const mockFile = createMockFile('document.md');
-			const oldContent = ['duplicate text'];
-			const newContent = ['replaced text'];
-			const currentContent = 'duplicate text\nSome content\nduplicate text';
-			const expectedContent = 'replaced text\nSome content\nduplicate text';
-
-			mockVault.read.mockResolvedValue(currentContent);
-			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
-
-			let processCallback: any;
-			mockVault.process.mockImplementation((_file, fn) => {
-				processCallback = fn;
-				return Promise.resolve();
-			});
-
-			await vaultService.patch(mockFile, oldContent, newContent);
-
-			expect(processCallback()).toBe(expectedContent);
-		});
-
-		it('should call vault.process with function that returns updated content', async () => {
-			const mockFile = createMockFile('note.md');
-			const oldContent = ['old'];
-			const newContent = ['new'];
-			const updatedContent = 'new';
-			let processCallback: any;
-
-			mockVault.read.mockResolvedValue('old');
-			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
-			mockVault.process.mockImplementation((file, fn) => {
-				processCallback = fn;
-				return Promise.resolve();
-			});
-
-			await vaultService.patch(mockFile, oldContent, newContent);
-
-			expect(processCallback()).toBe(updatedContent);
-		});
-
-		it('should fall back to whitespace-flexible matching when exact match fails', async () => {
-			const mockFile = createMockFile('note.md');
-			const oldContent = ['  if (x) {\n    return true;\n  }'];
-			const newContent = ['  if (x) {\n    return false;\n  }'];
-			const currentContent = '    if (x) {\n        return true;\n    }';
-
-			mockVault.read.mockResolvedValue(currentContent);
-			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
-
-			let processCallback: any;
-			mockVault.process.mockImplementation((_file, fn) => {
-				processCallback = fn;
-				return Promise.resolve();
-			});
-
-			const result = await vaultService.patch(mockFile, oldContent, newContent);
-
-			expect(result).toBe(mockFile);
-			expect(processCallback()).toBe('  if (x) {\n    return false;\n  }');
-		});
-
-		it('should prefer exact match over whitespace-flexible match', async () => {
-			const mockFile = createMockFile('note.md');
-			const oldContent = ['hello world'];
-			const newContent = ['goodbye world'];
-			const currentContent = 'hello world';
-
-			mockVault.read.mockResolvedValue(currentContent);
-			mockDiffService.requestDiff.mockResolvedValue({ accepted: true });
-
-			let processCallback: any;
-			mockVault.process.mockImplementation((_file, fn) => {
-				processCallback = fn;
-				return Promise.resolve();
-			});
-
-			await vaultService.patch(mockFile, oldContent, newContent);
-
-			expect(processCallback()).toBe('goodbye world');
-		});
-
-		it('should skip confirmation when requiresConfirmation is false', async () => {
-			const mockFile = createMockFile('note.md');
-			const oldContent = ['old'];
-			const newContent = ['new'];
-
-			mockVault.read.mockResolvedValue('old');
-			mockVault.process.mockResolvedValue(undefined);
-
-			// Clear previous calls
-			mockDiffService.requestDiff.mockClear();
-
-			await vaultService.patch(mockFile, oldContent, newContent, { allowAccessToPluginRoot: false, requiresConfirmation: false });
-
-			// When requiresConfirmation is false, requestDiff should not be called
-			// because proposeChange should skip the diff step
-			expect(mockVault.process).toHaveBeenCalled();
-		});
-	});
-
 	describe('delete', () => {
 		it('should delete file successfully when not excluded', async () => {
 			const mockFile = createMockFile('note.md');
@@ -602,8 +439,34 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.delete(mockFile);
 
-			expect(result).toBeUndefined(); // void = success
+			expect(result).toEqual({ result: mockFile });
 			expect(mockFileManager.trashFile).toHaveBeenCalledWith(mockFile);
+		});
+
+		it('should delete a folder successfully when not excluded', async () => {
+			const mockFolder = createMockFolder('folder');
+			mockFileManager.trashFile.mockResolvedValue(undefined);
+
+			const result = await vaultService.delete(mockFolder);
+
+			expect(result).toEqual({ result: mockFolder });
+			expect(mockFileManager.trashFile).toHaveBeenCalledWith(mockFolder);
+		});
+
+		it('should return error when the object is not a vault file or folder', async () => {
+			const result = await vaultService.delete({ path: 'note.md' });
+
+			expect(result.error?.message).toBe('Object was not of type TAbstractFile');
+			expect(mockFileManager.trashFile).not.toHaveBeenCalled();
+		});
+
+		it('should not delete an excluded folder and return a protected error', async () => {
+			const mockFolder = createMockFolder('Vaultkeeper AI/Conversations');
+
+			const result = await vaultService.delete(mockFolder, { allowAccessToPluginRoot: false });
+
+			expect(result.error?.message).toContain('Deletion failed. The folder or its contents may be protected');
+			expect(mockFileManager.trashFile).not.toHaveBeenCalled();
 		});
 
 		it('should not delete file and return error when excluded', async () => {
@@ -611,8 +474,7 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.delete(mockFile, { allowAccessToPluginRoot: false });
 
-			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toContain('File does not exist');
+			expect(result.error?.message).toContain('File does not exist');
 			expect(mockFileManager.trashFile).not.toHaveBeenCalled();
 		});
 
@@ -629,20 +491,19 @@ describe('VaultService - Integration Tests', () => {
 			const mockFile = createMockFile('note.md');
 			mockFileManager.trashFile.mockRejectedValue(new Error('Deletion failed'));
 
-			const result = await vaultService.delete(mockFile);
+			const result = await vaultService.delete(createMockFolder('folder'));
 
-			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toBe('Deletion failed');
+			expect(result.error?.message).toBe('Deletion failed');
 		});
 
 		it('should handle non-Error objects in catch block', async () => {
 			const mockFile = createMockFile('note.md');
 			mockFileManager.trashFile.mockRejectedValue('string error');
 
-			const result = await vaultService.delete(mockFile);
+			const result = await vaultService.delete(createMockFolder('folder'));
 
-			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toBe('string error');
+			expect(result.error).toBeInstanceOf(Error);
+			expect(result.error?.message).toBe('string error');
 		});
 	});
 
@@ -654,15 +515,23 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.move('source.md', 'dest.md');
 
-			expect(result).toBeUndefined(); // void = success
+			expect(result.error).toBeUndefined();
 			expect(mockFileManager.renameFile).toHaveBeenCalledWith(mockFile, 'dest.md');
 		});
 
 		it('should return error when source file is excluded', async () => {
 			const result = await vaultService.move('Vaultkeeper AI/test.md', 'dest.md', { allowAccessToPluginRoot: false });
 
-			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toContain('Move failed as source does not exist');
+			expect(result.error?.message).toContain('Operation failed. The source path may be protected');
+			expect(mockFileManager.renameFile).not.toHaveBeenCalled();
+		});
+
+		it('should return error when destination is excluded', async () => {
+			mockVault.getAbstractFileByPath.mockReturnValue(createMockFile('source.md'));
+
+			const result = await vaultService.move('source.md', 'Vaultkeeper AI/dest.md', { allowAccessToPluginRoot: false });
+
+			expect(result.error?.message).toContain('Operation failed. The destination path may be protected');
 			expect(mockFileManager.renameFile).not.toHaveBeenCalled();
 		});
 
@@ -671,8 +540,7 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.move('nonexistent.md', 'dest.md');
 
-			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toContain('Move failed as source does not exist');
+			expect(result.error?.message).toContain('Move failed as source does not exist');
 			expect(mockFileManager.renameFile).not.toHaveBeenCalled();
 		});
 
@@ -697,8 +565,7 @@ describe('VaultService - Integration Tests', () => {
 
 			const result = await vaultService.move('source.md', 'dest.md');
 
-			expect(result).toBeInstanceOf(Error);
-			expect((result as Error).message).toBe('Move failed');
+			expect(result.error?.message).toBe('Move failed');
 		});
 	});
 

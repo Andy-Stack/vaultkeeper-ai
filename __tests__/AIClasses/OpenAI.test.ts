@@ -167,10 +167,10 @@ describe('OpenAI', () => {
 
             expect(result.isComplete).toBe(false);
             expect(result.shouldContinue).toBe(true);
-            expect(result.toolCall).toBeDefined();
-            expect(result.toolCall?.name).toBe('search_vault_files');
-            expect(result.toolCall?.arguments).toEqual({ query: 'test' });
-            expect(result.toolCall?.toolId).toBe('call_123');
+            expect(result.toolCalls).toBeDefined();
+            expect(result.toolCalls?.[0].name).toBe('search_vault_files');
+            expect(result.toolCalls?.[0].arguments).toEqual({ query: 'test' });
+            expect(result.toolCalls?.[0].toolId).toBe('call_123');
         });
 
         it('should handle response.done event', () => {
@@ -271,7 +271,7 @@ describe('OpenAI', () => {
 
             const result = (openai as any).parseStreamChunk(chunk);
 
-            expect(result.toolCall).toBeUndefined();
+            expect(result.toolCalls).toBeUndefined();
             expect(exceptionSpy).toHaveBeenCalled();
         });
 
@@ -298,7 +298,7 @@ describe('OpenAI', () => {
 
             expect(result.content).toBe('');
             expect(result.isComplete).toBe(false);
-            expect(result.toolCall).toBeUndefined();
+            expect(result.toolCalls).toBeUndefined();
         });
 
         it('should handle response.refusal.delta events', () => {
@@ -377,13 +377,13 @@ describe('OpenAI', () => {
             const toolCallContent = new ConversationContent({
                 role: Role.Assistant,
                 content: 'Let me search',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                })
+                }])
             });
             conversation.contents.push(toolCallContent);
 
@@ -422,13 +422,13 @@ describe('OpenAI', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call_123'
             });
             conversation.contents.push(toolCallContent);
@@ -472,7 +472,7 @@ describe('OpenAI', () => {
             const conversation = new Conversation();
             const invalidContent = new ConversationContent({
                 role: Role.Assistant,
-                toolCall: 'invalid json {'
+                toolCalls: 'invalid json {'
             });
             conversation.contents.push(invalidContent);
 
@@ -501,13 +501,13 @@ describe('OpenAI', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_invalid',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call_invalid'
             });
             conversation.contents.push(toolCallContent);
@@ -562,13 +562,13 @@ describe('OpenAI', () => {
             // Function call without response (orphaned)
             const orphanedCall = new ConversationContent({
                 role: Role.Assistant,
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_orphaned',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                })
+                }])
             });
             conversation.contents.push(orphanedCall);
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'What about this?' }));
@@ -595,13 +595,13 @@ describe('OpenAI', () => {
             // Function call with response (not orphaned)
             const toolCall = new ConversationContent({
                 role: Role.Assistant,
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_123',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                })
+                }])
             });
             conversation.contents.push(toolCall);
             // Corresponding function response
@@ -614,7 +614,8 @@ describe('OpenAI', () => {
             });
             const functionResponse = new ConversationContent({
                 role: Role.User,
-                functionResponse: responseContent
+                functionResponse: responseContent,
+                toolId: 'call_123'
             });
             conversation.contents.push(functionResponse);
 
@@ -653,13 +654,13 @@ describe('OpenAI', () => {
             // Function call as most recent item (should be included)
             const latestCall = new ConversationContent({
                 role: Role.Assistant,
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_latest',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                })
+                }])
             });
             conversation.contents.push(latestCall);
 
@@ -693,26 +694,26 @@ describe('OpenAI', () => {
             // Orphaned function call #1
             const orphan1 = new ConversationContent({
                 role: Role.Assistant,
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_orphan1',
                         name: 'search_vault_files',
                         args: { query: 'test1' }
                     }
-                })
+                }])
             });
             conversation.contents.push(orphan1);
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Second message' }));
             // Orphaned function call #2
             const orphan2 = new ConversationContent({
                 role: Role.Assistant,
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_orphan2',
                         name: 'read_file',
                         args: { path: 'test.md' }
                     }
-                })
+                }])
             });
             conversation.contents.push(orphan2);
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Third message' }));
@@ -740,13 +741,13 @@ describe('OpenAI', () => {
                 const toolCallContent = new ConversationContent({
                     role: Role.Assistant,
                     content: 'I will search for that.',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_123',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    })
+                    }])
                 });
                 conversation.contents.push(toolCallContent);
 
@@ -773,13 +774,13 @@ describe('OpenAI', () => {
                 const conversation = new Conversation();
                 const toolCallContent = new ConversationContent({
                     role: Role.Assistant,
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_123',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    })
+                    }])
                 });
                 conversation.contents.push(toolCallContent);
 
@@ -810,13 +811,13 @@ describe('OpenAI', () => {
                     role: Role.Assistant,
                     content: '',
                     displayContent: '',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_123',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    }),
+                    }]),
                     toolId: 'call_123'
                 });
                 conversation.contents.push(toolCallContent);
@@ -864,18 +865,19 @@ describe('OpenAI', () => {
                 // First function call
                 conversation.contents.push(new ConversationContent({
                     role: Role.Assistant,
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_1',
                             name: 'search_vault_files',
                             args: { query: 'test' }
                         }
-                    })
+                    }])
                 }));
 
                 // First response
                 const response1 = new ConversationContent({
                     role: Role.User,
+                    toolId: 'call_1',
                     functionResponse: JSON.stringify({
                         id: 'call_1',
                         functionResponse: { name: 'search_vault_files', response: ['file1.txt'] }
@@ -887,18 +889,19 @@ describe('OpenAI', () => {
                 conversation.contents.push(new ConversationContent({
                     role: Role.Assistant,
                     content: 'Let me read that file',
-                    toolCall: JSON.stringify({
+                    toolCalls: JSON.stringify([{
                         toolCall: {
                             id: 'call_2',
                             name: 'read_file',
                             args: { path: 'file1.txt' }
                         }
-                    })
+                    }])
                 }));
 
                 // Second response
                 const response2 = new ConversationContent({
                     role: Role.User,
+                    toolId: 'call_2',
                     functionResponse: JSON.stringify({
                         id: 'call_2',
                         functionResponse: { name: 'read_file', response: 'file content' }

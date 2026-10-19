@@ -226,10 +226,10 @@ describe('Mistral', () => {
             const result = (mistral as any).parseStreamChunk(chunk2);
             expect(result.isComplete).toBe(true);
             expect(result.shouldContinue).toBe(true);
-            expect(result.toolCall).toBeDefined();
-            expect(result.toolCall?.name).toBe('search_vault_files');
-            expect(result.toolCall?.arguments).toEqual({ query: 'test' });
-            expect(result.toolCall?.toolId).toBe('call_123');
+            expect(result.toolCalls).toBeDefined();
+            expect(result.toolCalls?.[0].name).toBe('search_vault_files');
+            expect(result.toolCalls?.[0].arguments).toEqual({ query: 'test' });
+            expect(result.toolCalls?.[0].toolId).toBe('call_123');
         });
 
         it('should handle invalid JSON in tool call arguments gracefully', () => {
@@ -263,7 +263,7 @@ describe('Mistral', () => {
             });
 
             const result = (mistral as any).parseStreamChunk(chunk2);
-            expect(result.toolCall).toBeUndefined();
+            expect(result.toolCalls).toEqual([]);
             expect(exceptionSpy).toHaveBeenCalled();
 
             exceptionSpy.mockRestore();
@@ -336,13 +336,13 @@ describe('Mistral', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'abc123456',  // Valid Mistral ID: 9 alphanumeric chars
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: false
             });
@@ -366,13 +366,13 @@ describe('Mistral', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         name: 'search_vault_files',
                         args: { query: 'test' }
                         // No ID field
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: false
             });
@@ -391,13 +391,13 @@ describe('Mistral', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'abc123456',  // Valid Mistral ID: 9 alphanumeric chars
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'abc123456'
             });
 
@@ -428,13 +428,13 @@ describe('Mistral', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_legacy',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call_legacy'
             });
 
@@ -467,7 +467,7 @@ describe('Mistral', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: 'invalid json {',
+                toolCalls: 'invalid json {',
                 timestamp: new Date(),
                 shouldDisplayContent: false
             });
@@ -489,13 +489,13 @@ describe('Mistral', () => {
                 role: Role.Assistant,
                 content: '',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'call_invalid',
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 toolId: 'call_invalid'
             });
 
@@ -536,13 +536,13 @@ describe('Mistral', () => {
                 role: Role.Assistant,
                 content: 'Let me search for that',
                 displayContent: '',
-                toolCall: JSON.stringify({
+                toolCalls: JSON.stringify([{
                     toolCall: {
                         id: 'def456789',  // Valid Mistral ID: 9 alphanumeric chars
                         name: 'search_vault_files',
                         args: { query: 'test' }
                     }
-                }),
+                }]),
                 timestamp: new Date(),
                 shouldDisplayContent: false
             });

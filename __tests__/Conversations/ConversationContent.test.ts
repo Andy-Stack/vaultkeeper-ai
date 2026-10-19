@@ -10,7 +10,7 @@ describe('ConversationContent', () => {
 				role: Role.User,
 				content: 'Hello',
 				displayContent: 'Hello Display',
-				toolCall: 'toolCall',
+				toolCalls: 'toolCalls',
 				functionResponse: 'functionResponse',
 				timestamp,
 				attachments: [],
@@ -21,40 +21,12 @@ describe('ConversationContent', () => {
 			expect(content.role).toBe(Role.User);
 			expect(content.content).toBe('Hello');
 			expect(content.displayContent).toBe('Hello Display');
-			expect(content.toolCall).toBe('toolCall');
+			expect(content.toolCalls).toBe('toolCalls');
 			expect(content.functionResponse).toBe('functionResponse');
 			expect(content.timestamp).toBe(timestamp);
 			expect(content.attachments).toEqual([]);
 			expect(content.shouldDisplayContent).toBe(true);
 			expect(content.toolId).toBe('tool-123');
-		});
-
-		it('should create content with all parameters including thoughtSignature', () => {
-			const timestamp = new Date('2024-01-01T00:00:00.000Z');
-			const signature = 'base64EncodedSignature==';
-			const content = new ConversationContent({
-				role: Role.User,
-				content: 'Hello',
-				displayContent: 'Hello Display',
-				toolCall: 'toolCall',
-				functionResponse: 'functionResponse',
-				timestamp,
-				attachments: [],
-				shouldDisplayContent: true,
-				toolId: 'tool-123',
-				thoughtSignature: signature
-			});
-
-			expect(content.role).toBe(Role.User);
-			expect(content.content).toBe('Hello');
-			expect(content.displayContent).toBe('Hello Display');
-			expect(content.toolCall).toBe('toolCall');
-			expect(content.functionResponse).toBe('functionResponse');
-			expect(content.timestamp).toBe(timestamp);
-			expect(content.attachments).toEqual([]);
-			expect(content.shouldDisplayContent).toBe(true);
-			expect(content.toolId).toBe('tool-123');
-			expect(content.thoughtSignature).toBe(signature);
 		});
 
 		it('should use default values when optional parameters are omitted', () => {
@@ -63,13 +35,12 @@ describe('ConversationContent', () => {
 			expect(content.role).toBe(Role.Assistant);
 			expect(content.content).toBeUndefined();
 			expect(content.displayContent).toBeUndefined();
-			expect(content.toolCall).toBeUndefined();
+			expect(content.toolCalls).toBeUndefined();
 			expect(content.functionResponse).toBeUndefined();
 			expect(content.timestamp).toBeInstanceOf(Date);
 			expect(content.attachments).toEqual([]);
 			expect(content.shouldDisplayContent).toBe(true);
 			expect(content.toolId).toBeUndefined();
-			expect(content.thoughtSignature).toBeUndefined();
 		});
 
 		it('should use current date as default timestamp', () => {
@@ -85,13 +56,13 @@ describe('ConversationContent', () => {
 			const content = new ConversationContent({
 				role: Role.User,
 				content: 'Hello',
-				toolCall: 'someFunction'
+				toolCalls: 'someFunction'
 			});
 
 			expect(content.role).toBe(Role.User);
 			expect(content.content).toBe('Hello');
 			expect(content.displayContent).toBeUndefined();
-			expect(content.toolCall).toBe('someFunction');
+			expect(content.toolCalls).toBe('someFunction');
 			expect(content.functionResponse).toBeUndefined();
 			expect(content.timestamp).toBeInstanceOf(Date);
 			expect(content.attachments).toEqual([]);
@@ -106,7 +77,7 @@ describe('ConversationContent', () => {
 
 			expect(content.role).toBe(Role.User);
 			expect(content.content).toBe('What is the weather?');
-			expect(content.toolCall).toBeUndefined();
+			expect(content.toolCalls).toBeUndefined();
 			expect(content.functionResponse).toBeUndefined();
 		});
 
@@ -123,13 +94,13 @@ describe('ConversationContent', () => {
 		it('should create function call content', () => {
 			const content = new ConversationContent({
 				role: Role.Assistant,
-				toolCall: 'readFile',
+				toolCalls: 'readFile',
 				timestamp: new Date(),
 				toolId: 'call-1'
 			});
 
 			expect(content.role).toBe(Role.Assistant);
-			expect(content.toolCall).toBe('readFile');
+			expect(content.toolCalls).toBe('readFile');
 			expect(content.functionResponse).toBeUndefined();
 			expect(content.toolId).toBe('call-1');
 		});
@@ -146,7 +117,7 @@ describe('ConversationContent', () => {
 			expect(content.role).toBe(Role.User);
 			expect(content.content).toBe('File contents here');
 			expect(content.functionResponse).toBe('File contents here');
-			expect(content.toolCall).toBeUndefined();
+			expect(content.toolCalls).toBeUndefined();
 			expect(content.toolId).toBe('call-1');
 		});
 
@@ -213,7 +184,7 @@ describe('ConversationContent', () => {
 				timestamp: '2024-01-01T00:00:00.000Z',
 				content: 'Hello',
 				displayContent: 'Hello Display',
-				toolCall: '',
+				toolCalls: '',
 				functionResponse: '',
 				attachments: [],
 				shouldDisplayContent: true
@@ -235,31 +206,8 @@ describe('ConversationContent', () => {
 			const validData = {
 				role: 'assistant',
 				timestamp: '2024-01-01T00:00:00.000Z',
-				toolCall: 'readFile',
+				toolCalls: 'readFile',
 				toolId: 'tool-123'
-			};
-
-			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
-		});
-
-		it('should return true for valid data with thoughtSignature', () => {
-			const validData = {
-				role: 'assistant',
-				timestamp: '2024-01-01T00:00:00.000Z',
-				toolCall: 'readFile',
-				thoughtSignature: 'base64Signature=='
-			};
-
-			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
-		});
-
-		it('should return true for valid data with both toolId and thoughtSignature', () => {
-			const validData = {
-				role: 'assistant',
-				timestamp: '2024-01-01T00:00:00.000Z',
-				toolCall: 'readFile',
-				toolId: 'tool-123',
-				thoughtSignature: 'base64Signature=='
 			};
 
 			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
@@ -345,11 +293,11 @@ describe('ConversationContent', () => {
 			expect(ConversationContent.isConversationContentData(invalidData)).toBe(false);
 		});
 
-		it('should return false when toolCall is not a string', () => {
+		it('should return false when toolCalls is not a string', () => {
 			const invalidData = {
 				role: 'user',
 				timestamp: '2024-01-01T00:00:00.000Z',
-				toolCall: null
+				toolCalls: null
 			};
 
 			expect(ConversationContent.isConversationContentData(invalidData)).toBe(false);
@@ -385,16 +333,6 @@ describe('ConversationContent', () => {
 			expect(ConversationContent.isConversationContentData(invalidData)).toBe(false);
 		});
 
-		it('should return false when thoughtSignature is not a string', () => {
-			const invalidData = {
-				role: 'user',
-				timestamp: '2024-01-01T00:00:00.000Z',
-				thoughtSignature: 123
-			};
-
-			expect(ConversationContent.isConversationContentData(invalidData)).toBe(false);
-		});
-
 		it('should return false when errorType is not a string', () => {
 			const invalidData = {
 				role: 'user',
@@ -411,7 +349,7 @@ describe('ConversationContent', () => {
 				timestamp: '',
 				content: '',
 				displayContent: '',
-				toolCall: '',
+				toolCalls: '',
 				functionResponse: ''
 			};
 
@@ -441,11 +379,11 @@ describe('ConversationContent', () => {
 			expect(content.displayContent).toBe('modified');
 		});
 
-		it('should allow toolCall to be modified', () => {
+		it('should allow toolCalls to be modified', () => {
 			const content = new ConversationContent({ role: Role.Assistant });
-			content.toolCall = 'readFile';
+			content.toolCalls = 'readFile';
 
-			expect(content.toolCall).toBe('readFile');
+			expect(content.toolCalls).toBe('readFile');
 		});
 
 		it('should allow functionResponse to be modified', () => {
@@ -483,13 +421,6 @@ describe('ConversationContent', () => {
 			content.toolId = 'tool-456';
 
 			expect(content.toolId).toBe('tool-456');
-		});
-
-		it('should allow thoughtSignature to be modified', () => {
-			const content = new ConversationContent({ role: Role.Assistant });
-			content.thoughtSignature = 'newSignature==';
-
-			expect(content.thoughtSignature).toBe('newSignature==');
 		});
 
 		it('should allow errorType to be modified', () => {

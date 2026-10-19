@@ -30,7 +30,6 @@ describe('PlanningAgent - Unit Tests', () => {
 	const createMockCallbacks = () => ({
 		onSubmit: vi.fn(),
 		onStreamingUpdate: vi.fn(),
-		onThoughtUpdate: vi.fn(),
 		onToolCallStarted: vi.fn(),
 		onArtifactProduced: vi.fn(),
 		onPlanningStarted: vi.fn(),
@@ -40,8 +39,7 @@ describe('PlanningAgent - Unit Tests', () => {
 		onPlanUpdate: vi.fn(),
 		onPlanStepUpdate: vi.fn(),
 		onPlanReset: vi.fn(),
-		onComplete: vi.fn(),
-		onCancel: vi.fn()
+		onComplete: vi.fn()
 	});
 
 	beforeEach(() => {
@@ -55,9 +53,9 @@ describe('PlanningAgent - Unit Tests', () => {
 
 		// Mock AIToolService
 		mockAIToolService = {
-			performAITool: vi.fn().mockResolvedValue(
+			performAITool: vi.fn().mockResolvedValue([
 				new AIToolResponse(AITool.SearchVaultFiles, new AIToolResponsePayload({ results: [] }), 'test-tool-id')
-			)
+			])
 		};
 		RegisterSingleton(Services.AIToolService, mockAIToolService);
 
@@ -97,7 +95,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Creating plan',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.SubmitPlan,
 						{
 							steps: [
@@ -117,7 +115,7 @@ describe('PlanningAgent - Unit Tests', () => {
 							user_message: 'Plan created'
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -143,7 +141,7 @@ describe('PlanningAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Plan',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.SubmitPlan,
 						{
 							steps: [
@@ -154,7 +152,7 @@ describe('PlanningAgent - Unit Tests', () => {
 							]
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -184,7 +182,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Invalid: missing required fields
 					yield {
 						content: 'Invalid plan',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -195,14 +193,14 @@ describe('PlanningAgent - Unit Tests', () => {
 								]
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					// Valid plan
 					yield {
 						content: 'Valid plan',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -213,7 +211,7 @@ describe('PlanningAgent - Unit Tests', () => {
 								]
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -248,7 +246,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Submit plan on retry
 					yield {
 						content: 'Plan ready',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -259,7 +257,7 @@ describe('PlanningAgent - Unit Tests', () => {
 								]
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -292,21 +290,21 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Ask user question
 					yield {
 						content: 'Question',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.AskUserQuestionPlanning,
 							{
 								question: 'What topic should I search for?',
 								user_message: 'Asking user for clarification'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					// Submit plan with user's answer incorporated
 					yield {
 						content: 'Plan with answer',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -317,7 +315,7 @@ describe('PlanningAgent - Unit Tests', () => {
 								]
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -350,33 +348,33 @@ describe('PlanningAgent - Unit Tests', () => {
 				if (toolCallCount === 1) {
 					yield {
 						content: 'Q1',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.AskUserQuestionPlanning,
 							{
 								question: 'What file type?',
 								user_message: 'Asking about file type'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else if (toolCallCount === 2) {
 					yield {
 						content: 'Q2',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.AskUserQuestionPlanning,
 							{
 								question: 'Which folder?',
 								user_message: 'Asking about folder'
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Plan',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -387,7 +385,7 @@ describe('PlanningAgent - Unit Tests', () => {
 								]
 							},
 							'tool-3'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -416,21 +414,21 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Invalid: missing question
 					yield {
 						content: 'Invalid',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.AskUserQuestionPlanning,
 							{
 								// Missing question field
 								user_message: 'Message'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					// Valid plan
 					yield {
 						content: 'Plan',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -441,7 +439,7 @@ describe('PlanningAgent - Unit Tests', () => {
 								]
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -470,20 +468,20 @@ describe('PlanningAgent - Unit Tests', () => {
 					searchCalled = true;
 					yield {
 						content: 'Searching',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SearchVaultFiles,
 							{
 								search_terms: ['test'],
 								user_message: 'Searching'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Plan',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -494,7 +492,7 @@ describe('PlanningAgent - Unit Tests', () => {
 								]
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -522,20 +520,20 @@ describe('PlanningAgent - Unit Tests', () => {
 					readCalled = true;
 					yield {
 						content: 'Reading',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.ReadVaultFiles,
 							{
 								file_paths: ['test.md'],
 								user_message: 'Reading'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Plan',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -546,7 +544,7 @@ describe('PlanningAgent - Unit Tests', () => {
 								]
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -575,21 +573,21 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Try to write file (not allowed in planning)
 					yield {
 						content: 'Writing',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.WriteVaultFile,
 							{
 								file_path: 'test.md',
 								content: 'content'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					// Submit valid plan
 					yield {
 						content: 'Plan',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -600,7 +598,7 @@ describe('PlanningAgent - Unit Tests', () => {
 								]
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -611,7 +609,7 @@ describe('PlanningAgent - Unit Tests', () => {
 
 			// WriteVaultFile should be denied, not executed
 			expect(mockAIToolService.performAITool).not.toHaveBeenCalledWith(
-				expect.objectContaining({ name: AITool.WriteVaultFile })
+				[expect.objectContaining({ name: AITool.WriteVaultFile })]
 			);
 			expect(result).toBeDefined();
 			expect(attemptCount).toBeGreaterThan(1);
@@ -633,20 +631,20 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Try to complete task (execution agent tool)
 					yield {
 						content: 'Completing',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Done'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Plan',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -657,7 +655,7 @@ describe('PlanningAgent - Unit Tests', () => {
 								]
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -685,19 +683,19 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Try to complete step (orchestration agent tool)
 					yield {
 						content: 'Completing',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteStep,
 							{
 								confirm_completion: true
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Plan',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -708,7 +706,7 @@ describe('PlanningAgent - Unit Tests', () => {
 								]
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -770,7 +768,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					// Submit plan on third attempt (just before max depth)
 					yield {
 						content: 'Plan',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SubmitPlan,
 							{
 								steps: [
@@ -781,7 +779,7 @@ describe('PlanningAgent - Unit Tests', () => {
 								]
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -808,13 +806,13 @@ describe('PlanningAgent - Unit Tests', () => {
 				// Empty plan is valid according to schema
 				yield {
 					content: 'Empty plan',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.SubmitPlan,
 						{
 							steps: []
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -857,7 +855,7 @@ describe('PlanningAgent - Unit Tests', () => {
 					if (hasRetryMessage) {
 						yield {
 							content: 'Plan',
-							toolCall: new AIToolCall(
+							toolCalls: [new AIToolCall(
 								AITool.SubmitPlan,
 								{
 									steps: [
@@ -868,7 +866,7 @@ describe('PlanningAgent - Unit Tests', () => {
 									]
 								},
 								'tool-1'
-							),
+							)],
 							isComplete: true
 						};
 					}

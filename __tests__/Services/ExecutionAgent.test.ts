@@ -30,7 +30,6 @@ describe('ExecutionAgent - Unit Tests', () => {
 	const createMockCallbacks = () => ({
 		onSubmit: vi.fn(),
 		onStreamingUpdate: vi.fn(),
-		onThoughtUpdate: vi.fn(),
 		onToolCallStarted: vi.fn(),
 		onArtifactProduced: vi.fn(),
 		onPlanningStarted: vi.fn(),
@@ -40,8 +39,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 		onPlanUpdate: vi.fn(),
 		onPlanStepUpdate: vi.fn(),
 		onPlanReset: vi.fn(),
-		onComplete: vi.fn(),
-		onCancel: vi.fn()
+		onComplete: vi.fn()
 	});
 
 	beforeEach(() => {
@@ -55,9 +53,9 @@ describe('ExecutionAgent - Unit Tests', () => {
 
 		// Mock AIToolService
 		mockAIToolService = {
-			performAITool: vi.fn().mockResolvedValue(
+			performAITool: vi.fn().mockResolvedValue([
 				new AIToolResponse(AITool.SearchVaultFiles, new AIToolResponsePayload({ results: [] }), 'test-tool-id')
-			)
+			])
 		};
 		RegisterSingleton(Services.AIToolService, mockAIToolService);
 
@@ -96,14 +94,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Task completed',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Found 10 markdown files'
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -126,7 +124,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Task completed',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
@@ -134,7 +132,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 							context: 'File names: note1.md, note2.md, note3.md, note4.md, note5.md'
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -163,14 +161,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Done',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Completed'
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -201,14 +199,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Task failed',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: false,
 							description: 'No temporary files found'
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -231,7 +229,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Failed',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: false,
@@ -239,7 +237,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 							context: 'The target directory is read-only'
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -270,28 +268,28 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Call search function
 					yield {
 						content: 'Searching',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SearchVaultFiles,
 							{
 								search_terms: ['#important'],
 								user_message: 'Searching for tagged files'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					// Complete task
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Found 3 files with #important tag'
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -319,27 +317,27 @@ describe('ExecutionAgent - Unit Tests', () => {
 				if (toolCallCount === 1) {
 					yield {
 						content: 'Reading',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.ReadVaultFiles,
 							{
 								file_paths: ['note.md'],
 								user_message: 'Reading file'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'File read successfully'
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -366,7 +364,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 				if (toolCallCount === 1) {
 					yield {
 						content: 'Writing',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.WriteVaultFile,
 							{
 								file_path: 'new-note.md',
@@ -374,20 +372,20 @@ describe('ExecutionAgent - Unit Tests', () => {
 								user_message: 'Creating file'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'File created successfully'
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -408,15 +406,15 @@ describe('ExecutionAgent - Unit Tests', () => {
 			};
 
 			const artifact = new Artifact('new-note.md', 'text/markdown', ArtifactAction.Create, '', '# New Note\n\nContent here');
-			mockAIToolService.performAITool.mockResolvedValueOnce(
+			mockAIToolService.performAITool.mockResolvedValueOnce([
 				new AIToolResponse(
 					AITool.WriteVaultFile,
 					new AIToolResponsePayload({ success: true }, [artifact]),
 					'tool-1'
 				)
-			).mockResolvedValueOnce(
+			]).mockResolvedValueOnce([
 				new AIToolResponse(AITool.CompleteTask, new AIToolResponsePayload({ success: true }), 'tool-2')
-			);
+			]);
 
 			let toolCallCount = 0;
 
@@ -425,7 +423,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 				if (toolCallCount === 1) {
 					yield {
 						content: 'Writing',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.WriteVaultFile,
 							{
 								file_path: 'new-note.md',
@@ -433,20 +431,20 @@ describe('ExecutionAgent - Unit Tests', () => {
 								user_message: 'Creating file'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'File created successfully'
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -473,27 +471,27 @@ describe('ExecutionAgent - Unit Tests', () => {
 				if (toolCallCount === 1) {
 					yield {
 						content: 'Searching',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SearchVaultFiles,
 							{
 								search_terms: ['#important'],
 								user_message: 'Searching for tagged files'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Found 3 files with #important tag'
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -519,33 +517,33 @@ describe('ExecutionAgent - Unit Tests', () => {
 				if (toolCallCount === 1) {
 					yield {
 						content: 'Searching',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.SearchVaultFiles,
 							{
 								search_terms: ['TODO'],
 								user_message: 'Searching'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else if (toolCallCount === 2) {
 					yield {
 						content: 'Reading',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.ReadVaultFiles,
 							{
 								file_paths: ['found.md'],
 								user_message: 'Reading'
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				} else if (toolCallCount === 3) {
 					yield {
 						content: 'Writing',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.PatchVaultFile,
 							{
 								file_path: 'found.md',
@@ -553,20 +551,20 @@ describe('ExecutionAgent - Unit Tests', () => {
 								user_message: 'Updating'
 							},
 							'tool-3'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Updated 1 file'
 							},
 							'tool-4'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -602,14 +600,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Complete on retry
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Completed'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -643,14 +641,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Complete on third attempt
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Finally completed'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -690,14 +688,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 				} else {
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Completed'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -756,14 +754,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Complete on third attempt (max depth)
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Barely made it'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -796,14 +794,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 
 				yield {
 					content: 'Done',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Processed files from context'
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -826,14 +824,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 			mockAI.streamRequest.mockImplementation(async function* () {
 				yield {
 					content: 'Done',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Task completed without context'
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -863,14 +861,14 @@ describe('ExecutionAgent - Unit Tests', () => {
 
 				yield {
 					content: 'Done',
-					toolCall: new AIToolCall(
+					toolCalls: [new AIToolCall(
 						AITool.CompleteTask,
 						{
 							success: true,
 							description: 'Processed all files'
 						},
 						'tool-1'
-					),
+					)],
 					isComplete: true
 				};
 			});
@@ -899,28 +897,28 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Invalid: missing description
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true
 								// Missing description field
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					// Valid completion
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Valid completion'
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -948,28 +946,28 @@ describe('ExecutionAgent - Unit Tests', () => {
 					// Invalid: success is not boolean
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: 'yes',
 								description: 'Done'
 							},
 							'tool-1'
-						),
+						)],
 						isComplete: true
 					};
 				} else {
 					// Valid
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
+						toolCalls: [new AIToolCall(
 							AITool.CompleteTask,
 							{
 								success: true,
 								description: 'Done properly'
 							},
 							'tool-2'
-						),
+						)],
 						isComplete: true
 					};
 				}
@@ -983,42 +981,28 @@ describe('ExecutionAgent - Unit Tests', () => {
 		});
 	});
 
-	describe('Thought updates', () => {
-		it('should update thought callback during function calls', async () => {
+	describe('Tool call notifications', () => {
+		it('should notify the tool call started callback when a tool call begins streaming', async () => {
 			const callbacks = createMockCallbacks();
 			const step: ExecutionStep = {
 				description: 'Task',
 				instruction: 'Do task with updates'
 			};
 
-			let toolCallCount = 0;
-
+			let streamCount = 0;
 			mockAI.streamRequest.mockImplementation(async function* () {
-				toolCallCount++;
-				if (toolCallCount === 1) {
+				streamCount++;
+				if (streamCount === 1) {
+					yield { content: '', toolCallStarted: AITool.SearchVaultFiles, isComplete: false };
 					yield {
 						content: 'Searching',
-						toolCall: new AIToolCall(
-							AITool.SearchVaultFiles,
-							{
-								search_terms: ['test'],
-								user_message: 'Searching for files'
-							},
-							'tool-1'
-						),
+						toolCalls: [new AIToolCall(AITool.SearchVaultFiles, { search_terms: ['test'] }, 'tool-1')],
 						isComplete: true
 					};
 				} else {
 					yield {
 						content: 'Done',
-						toolCall: new AIToolCall(
-							AITool.CompleteTask,
-							{
-								success: true,
-								description: 'Completed'
-							},
-							'tool-2'
-						),
+						toolCalls: [new AIToolCall(AITool.CompleteTask, { success: true, description: 'Completed' }, 'tool-2')],
 						isComplete: true
 					};
 				}
@@ -1027,7 +1011,7 @@ describe('ExecutionAgent - Unit Tests', () => {
 			service.resolveAIProvider();
 			await service.runExecutionAgent(step, callbacks);
 
-			expect(callbacks.onThoughtUpdate).toHaveBeenCalledWith('Searching for files');
+			expect(callbacks.onToolCallStarted).toHaveBeenCalledWith(AITool.SearchVaultFiles);
 		});
 	});
 });

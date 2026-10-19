@@ -36,9 +36,9 @@ describe('OrchestrationAgent - Unit Tests', () => {
 
 		// Mock AIToolService
 		mockAIToolService = {
-			performAITool: vi.fn().mockResolvedValue(
+			performAITool: vi.fn().mockResolvedValue([
 				new AIToolResponse(AITool.SearchVaultFiles, new AIToolResponsePayload({ results: [] }), 'test-tool-id')
-			)
+			])
 		};
 		RegisterSingleton(Services.AIToolService, mockAIToolService);
 
@@ -99,15 +99,13 @@ describe('OrchestrationAgent - Unit Tests', () => {
 			const callbacks = {
 				onSubmit: vi.fn(),
 				onStreamingUpdate: vi.fn(),
-				onThoughtUpdate: vi.fn(),
 				onPlanningStarted: vi.fn(),
 				onPlanningFinished: vi.fn(),
 				onUserQuestion: vi.fn(),
 				onPlanUpdate: vi.fn(),
 				onPlanStepUpdate: vi.fn(),
 				onPlanReset: vi.fn(),
-				onComplete: vi.fn(),
-				onCancel: vi.fn()
+				onComplete: vi.fn()
 			};
 
 			// Note: runPlannedWorkflow spawns new agents internally which get

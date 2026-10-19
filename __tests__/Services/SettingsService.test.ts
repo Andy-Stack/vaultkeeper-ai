@@ -18,6 +18,7 @@ describe('SettingsService', () => {
     beforeEach(() => {
         // Mock VaultkeeperAIPlugin
         mockPlugin = {
+            manifest: { version: '1.0.0' },
             saveData: vi.fn().mockResolvedValue(undefined)
         };
         RegisterSingleton(Services.VaultkeeperAIPlugin, mockPlugin);
@@ -162,8 +163,8 @@ describe('SettingsService', () => {
             settingsService = new SettingsService({});
 
             expect(settingsService.settings.cachedModelSettings[AIProvider.Mistral]).toEqual({
-                model: AIProviderModel.MistralMedium,
-                planningModel: AIProviderModel.MistralMedium,
+                model: AIProviderModel.MistralLarge,
+                planningModel: AIProviderModel.MistralLarge,
                 quickActionModel: AIProviderModel.MistralSmall
             });
             expect(settingsService.settings.cachedModelSettings[AIProvider.Local]).toEqual({

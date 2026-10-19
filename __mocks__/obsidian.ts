@@ -86,29 +86,21 @@ export class Notice {
 	hide() {}
 }
 
-export class TFile {
+export class TAbstractFile {
 	path: string = '';
 	name: string = '';
+	parent: TFolder | null = null;
+	vault: unknown;
+}
+
+export class TFile extends TAbstractFile {
 	basename: string = '';
 	extension: string = '';
 	stat: { ctime: number; mtime: number; size: number } = { ctime: Date.now(), mtime: Date.now(), size: 0 };
-	parent: unknown = null;
-	vault: unknown;
 }
 
-export class TFolder {
-	path: string = '';
-	name: string = '';
-	children: unknown[] = [];
-	parent: unknown = null;
-	vault: unknown;
-}
-
-export interface TAbstractFile {
-	vault: unknown;
-	path: string;
-	name: string;
-	parent: TFolder | null;
+export class TFolder extends TAbstractFile {
+	children: TAbstractFile[] = [];
 }
 
 export function normalizePath(path: string): string {

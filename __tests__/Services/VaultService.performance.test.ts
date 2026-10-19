@@ -47,6 +47,7 @@ const mockPlugin = {
 		vault: mockVault,
 		fileManager: mockFileManager
 	},
+	manifest: { version: '1.0.0' },
 	saveData: vi.fn().mockResolvedValue(undefined)
 } as unknown as VaultkeeperAIPlugin;
 

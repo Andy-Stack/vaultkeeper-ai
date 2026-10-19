@@ -88,6 +88,7 @@ const mockPlugin = {
 			onLayoutReady: (callback: () => void) => callback()
 		}
 	},
+	manifest: { version: '1.0.0' },
 	saveData: vi.fn().mockResolvedValue(undefined),
 	registerEvent: vi.fn()
 } as unknown as VaultkeeperAIPlugin;

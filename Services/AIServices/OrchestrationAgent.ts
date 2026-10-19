@@ -190,11 +190,13 @@ export class OrchestrationAgent extends BaseAgent {
         }
 
         this.debugService?.log("OrchestrationAgent", "Planned workflow completed - requesting summary");
+        callbacks.onPlanStepUpdate(executionPlan.executionSteps.length);
         planningConversation.contents.push(new ConversationContent({
             role: Role.User,
             content: Copy.RequestPlanSummary
         }));
         const orchestrationSummary = await this.requestAgentResponse(AgentType.Orchestration, planningConversation, callbacks);
+        callbacks.onPlanStepUpdate(executionPlan.executionSteps.length + 1);
 
         return new AIToolResponsePayload({ planExecutionSummary: orchestrationSummary });
     }

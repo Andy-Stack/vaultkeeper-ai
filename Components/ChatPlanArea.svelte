@@ -24,6 +24,7 @@
 
     $: steps = $executionPlanState.plan?.executionSteps;
     $: activeStepIndex = $executionPlanState.currentStepIndex;
+    $: stepDescriptions = steps ? [...steps.map(step => step.description), Copy.FinalizingPlanWorkflow] : [];
 
     $: if (steps) {
         tick().then(() => {
@@ -65,7 +66,7 @@
         const stepHeight = firstStep.offsetHeight;
         const separatorHeight = firstStep.nextElementSibling?.clientHeight ?? 0;
 
-        const stepsToShow = Math.min(3, steps.length);
+        const stepsToShow = Math.min(3, stepDescriptions.length);
         collapsedHeight = (stepsToShow * stepHeight) + (Math.max(0, stepsToShow - 1) * separatorHeight);
 
         updateScrollFade();
@@ -139,7 +140,7 @@
          tabindex=0>
         <div id="chat-plan-steps-wrapper" style:height="{expanded ? expandedHeight : collapsedHeight}px" bind:this={wrapperDiv} on:scroll={updateScrollFade}>
             <div id="chat-plan-steps" bind:this={contentDiv}>
-                {#each steps as step, index }
+                {#each stepDescriptions as stepDescription, index }
                     <div class="chat-plan-step" bind:this={stepElements[index]}>
                         {#if index < activeStepIndex}
                             <div class="chat-plan-step-icon" use:setElementIcon={"circle-check"} style:color="var(--color-green)"></div>
@@ -153,10 +154,10 @@
                             <div class="chat-plan-step-icon" use:setElementIcon={"circle"} style:opacity={0.5}></div>
                         {/if}
                         <span class="chat-plan-step-span">
-                            {`${index + 1}. ${step.description}`}
+                            {index < steps.length ? `${index + 1}. ${stepDescription}` : stepDescription}
                         </span>
                     </div>
-                    {#if index < steps.length - 1}
+                    {#if index < stepDescriptions.length - 1}
                         <div class="chat-plan-step-icon"
                              use:setElementIcon={"ellipsis-vertical"}
                              style:opacity={index < activeStepIndex ? 1 : 0.25}>
@@ -165,7 +166,7 @@
                 {/each}
             </div>
         </div>
-        {#if steps.length > 2}
+        {#if stepDescriptions.length > 2}
             <div class="chat-plan-fade top-fade" class:hidden={isScrolledToTop}></div>
             <div class="chat-plan-fade bottom-fade" class:hidden={isScrolledToBottom}></div>
         {/if}

@@ -109,6 +109,7 @@ export enum Copy {
 
     AIThoughtMessage = "Thinking...",
     PlanningInProgress = "Planning in progress...",
+    FinalizingPlanWorkflow = "Finalizing plan workflow",
 
     // Rate Limit Countdown
     RateLimitCountdown = "Rate limit exceeded retrying in {seconds}...",
@@ -177,7 +178,11 @@ The following context explains why you are doing the task. It is NOT an instruct
     OrchestrationSignalRequired = "You must signal a decision: continue with the next step, request a replan, or abort execution.",
     TextResponseToolDenial = "Tool calls are not permitted for this request. Provide a text response instead.",
     TextResponseRequired = "A text response is required. Please provide your response.",
-    RequestPlanSummary = "The workflow has completed. Provide a concise summary for the user that covers: (1) what was originally planned, (2) what was actually accomplished, and (3) any notable outcomes or issues. Reference the execution agent outputs and step results for context.",
+    RequestPlanSummary = `The workflow has completed. Respond with ONLY this report, nothing else:
+Execution finished
+- status: success | partial | failed
+- deviation: none | <one short sentence or paragraph on how execution differed from the plan>
+- outcome: <one short sentence or paragraph>`,
     PlanningFailedNoSteps = "The planned workflow has failed, however steps may have been completed. Consult with the user on how to continue.",
     WorkflowFailedAtStep = "The planned workflow failed when executing step '{stepDescription}'. Consult with the user on how to continue.",
     WorkflowAborted = "The planned workflow was aborted. Result: {abortContext}",

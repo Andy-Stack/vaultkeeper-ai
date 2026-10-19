@@ -13,8 +13,11 @@
   const DOT_COUNT = 3;
   const TRANSITION_DURATION_MS = 700;
   const MAX_FRAME_SECONDS = 0.05;
-  const MIN_ACTIVE_SWAP_MS = 3000;
-  const MAX_ACTIVE_SWAP_MS = 10000;
+  const MIN_ACTIVE_SWAP_MS = 2000;
+  const MAX_ACTIVE_SWAP_MS = 7000;
+  const TUMBLE_STEP_SECONDS = 0.6;
+  const TUMBLE_STEP_RADIANS = (Math.PI * 2) / DOT_COUNT;
+  const TUMBLE_RING_RADIUS = 16;
 
   // Each animation's centre x is chosen so its widest leftmost dot edge sits at x = 28, the viewBox's left edge
   const dotBounce: Animation = {
@@ -35,6 +38,20 @@
     }
   };
 
+  const tumble: Animation = {
+    shapeDot: (dotIndex, time) => {
+      const stepProgress = time / TUMBLE_STEP_SECONDS;
+      const completedSteps = Math.floor(stepProgress);
+      const easedStep = completedSteps + easeInOutCubic(stepProgress - completedSteps);
+      const angle = -Math.PI / 2 + (easedStep + dotIndex) * TUMBLE_STEP_RADIANS;
+      return {
+        x: 69 + Math.cos(angle) * TUMBLE_RING_RADIUS,
+        y: 100 + Math.sin(angle) * TUMBLE_RING_RADIUS,
+        radius: 9
+      };
+    }
+  };
+
   const breathe: Animation = {
     shapeDot: (dotIndex, time) => ({
       x: 64 + (dotIndex - 1) * 26,
@@ -42,6 +59,8 @@
       radius: 6 + 4 * (0.5 + 0.5 * Math.sin(time * 1.6))
     })
   };
+
+  const activeAnimations = [dotBounce, beadSplit, tumble];
 
   let currentAnimation: Animation = dotBounce;
   let dots: DotShape[] = shapeAllDots(currentAnimation, 0);
@@ -69,7 +88,8 @@
   function scheduleActiveSwap() {
     const delay = MIN_ACTIVE_SWAP_MS + Math.random() * (MAX_ACTIVE_SWAP_MS - MIN_ACTIVE_SWAP_MS);
     activeSwapTimeout = setTimeout(() => {
-      switchAnimation(currentAnimation === dotBounce ? beadSplit : dotBounce);
+      const otherAnimations = activeAnimations.filter(animation => animation !== currentAnimation);
+      switchAnimation(otherAnimations[Math.floor(Math.random() * otherAnimations.length)]);
       scheduleActiveSwap();
     }, delay);
   }

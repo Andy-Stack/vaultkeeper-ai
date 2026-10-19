@@ -65,6 +65,25 @@
   function handleConversationClick(itemId: string, event: UIEvent) {
     onSelect(itemId);
   }
+
+  let contentElement: HTMLDivElement | undefined = $state();
+  let isScrolledToTop = $state(true);
+  let isScrolledToBottom = $state(true);
+
+  function updateScrollFade() {
+    if (!contentElement) {
+      return;
+    }
+    const { scrollTop, scrollHeight, clientHeight } = contentElement;
+    isScrolledToTop = scrollTop < 1;
+    isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 1;
+  }
+
+  $effect(() => {
+    filteredItems;
+    loading;
+    updateScrollFade();
+  });
 </script>
 
 <div class="conversation-history-modal-container">
@@ -96,50 +115,54 @@
       ></button>
     </div>
   </div>
-  <div class="conversation-history-modal-content">
-    {#if loading}
-      <div class="history-loading-state" in:fade={{ duration: 200 }}>
-        <Spinner />
-      </div>
-    {:else if filteredItems.length === 0}
-      <p class="history-empty-state" in:fade={{ duration: 200 }}>
-        {Copy.NoConversationsFound}
-      </p>
-    {:else}
-      <div class="history-list-modal-list" transition:fade={{ duration: 200 }}>
-        <span class="history-list-modal-date history-list-modal-header">Date</span>
-        <span class="history-list-modal-separator history-list-modal-header">|</span>
-        <span class="history-list-modal-title history-list-modal-header">Title</span>
-        <input
-          type="checkbox"
-          class="history-list-modal-checkbox"
-          onchange={(event) => toggleAll(event.currentTarget.checked)}
-        />
-        {#each filteredItems as item (item.id)}
-          <span class="history-list-modal-date history-list-modal-clickable"
-            onclick={(e) => handleConversationClick(item.id, e)}
-            onkeydown={(e) => e.key === 'Enter' && handleConversationClick(item.id, e)}
-            role="button"
-            tabindex="0">{item.date}</span>
-          <span class="history-list-modal-separator history-list-modal-clickable"
-            onclick={(e) => handleConversationClick(item.id, e)}
-            onkeydown={(e) => e.key === 'Enter' && handleConversationClick(item.id, e)}
-            role="button"
-            tabindex="0">|</span>
-          <span class="history-list-modal-title history-list-modal-clickable"
-            onclick={(e) => handleConversationClick(item.id, e)}
-            onkeydown={(e) => e.key === 'Enter' && handleConversationClick(item.id, e)}
-            role="button"
-            tabindex="0">{item.title}</span>
+  <div class="conversation-history-modal-content-wrapper">
+    <div class="conversation-history-modal-content" bind:this={contentElement} onscroll={updateScrollFade}>
+      {#if loading}
+        <div class="history-loading-state" in:fade={{ duration: 200 }}>
+          <Spinner />
+        </div>
+      {:else if filteredItems.length === 0}
+        <p class="history-empty-state" in:fade={{ duration: 200 }}>
+          {Copy.NoConversationsFound}
+        </p>
+      {:else}
+        <div class="history-list-modal-list" transition:fade={{ duration: 200 }}>
+          <span class="history-list-modal-date history-list-modal-header">Date</span>
+          <span class="history-list-modal-separator history-list-modal-header">|</span>
+          <span class="history-list-modal-title history-list-modal-header">Title</span>
           <input
             type="checkbox"
             class="history-list-modal-checkbox"
-            checked={selectedItems.has(item.id)}
-            onchange={() => toggleSelection(item.id)}
+            onchange={(event) => toggleAll(event.currentTarget.checked)}
           />
-        {/each}
-      </div>
-    {/if}
+          {#each filteredItems as item (item.id)}
+            <span class="history-list-modal-date history-list-modal-clickable"
+              onclick={(e) => handleConversationClick(item.id, e)}
+              onkeydown={(e) => e.key === 'Enter' && handleConversationClick(item.id, e)}
+              role="button"
+              tabindex="0">{item.date}</span>
+            <span class="history-list-modal-separator history-list-modal-clickable"
+              onclick={(e) => handleConversationClick(item.id, e)}
+              onkeydown={(e) => e.key === 'Enter' && handleConversationClick(item.id, e)}
+              role="button"
+              tabindex="0">|</span>
+            <span class="history-list-modal-title history-list-modal-clickable"
+              onclick={(e) => handleConversationClick(item.id, e)}
+              onkeydown={(e) => e.key === 'Enter' && handleConversationClick(item.id, e)}
+              role="button"
+              tabindex="0">{item.title}</span>
+            <input
+              type="checkbox"
+              class="history-list-modal-checkbox"
+              checked={selectedItems.has(item.id)}
+              onchange={() => toggleSelection(item.id)}
+            />
+          {/each}
+        </div>
+      {/if}
+    </div>
+    <div class="history-fade top" class:hidden={isScrolledToTop}></div>
+    <div class="history-fade bottom" class:hidden={isScrolledToBottom}></div>
   </div>
 </div>
 
@@ -155,7 +178,6 @@
   .conversation-history-modal-top-bar {
     grid-row: 1;
     grid-column: 2;
-    height: var(--size-4-16);
     display: grid;
     grid-template-rows: var(--size-4-2) 1fr var(--size-4-2);
     grid-template-columns: 1fr;
@@ -171,11 +193,44 @@
     border-radius: var(--radius-m);
   }
 
-  .conversation-history-modal-content {
+  .conversation-history-modal-content-wrapper {
     grid-row: 2;
     grid-column: 2;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .conversation-history-modal-content {
+    flex: 1;
+    min-height: 0;
     overflow: scroll;
     scroll-behavior: smooth;
+  }
+
+  .history-fade {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: var(--size-4-8);
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s ease-out;
+  }
+
+  .history-fade.top {
+    top: 0;
+    background-image: linear-gradient(to top, transparent, var(--modal-background));
+  }
+
+  .history-fade.bottom {
+    bottom: 0;
+    background-image: linear-gradient(to bottom, transparent, var(--modal-background));
+  }
+
+  .history-fade.hidden {
+    opacity: 0;
   }
 
   .conversation-history-modal-content::-webkit-scrollbar {

@@ -122,15 +122,19 @@ export class AIToolService {
             if (destructiveToolCalls.length > 0) {
                 await this.abortService.abortableOperation(async () => {
                     const pendingChangeRequests: IPendingChangeRequest[] = [];
+                    const pathsPendingDeletion = new Set<string>();
 
                     for (const toolCall of destructiveToolCalls) {
                         this.triggerThought(toolCall);
-                        const pending = await this.buildDestructiveAITool(toolCall);
+                        const pending = await this.buildDestructiveAITool(toolCall, pathsPendingDeletion);
                         if (pending instanceof AIToolResponse) {
                             responses.set(toolCall, pending);
-                        } else {
-                            pendingChangeRequests.push(pending);
+                            continue;
                         }
+                        pendingChangeRequests.push(pending);
+                        pending.changeRequests
+                            .filter(changeRequest => changeRequest.changeType === FileEvent.Delete && changeRequest.file)
+                            .forEach(changeRequest => pathsPendingDeletion.add(changeRequest.file!.path));
                     }
 
                     const trackedResponses = await this.asTrackedAction(pendingChangeRequests, signal);
@@ -155,11 +159,15 @@ export class AIToolService {
 
     private sortToolCalls(toolCalls: AIToolCall[]): { destructiveToolCalls: AIToolCall[], nonDestructiveToolCalls: AIToolCall[] } {
         const destructive: AIToolCall[] = [];
+        const folderDeletions: AIToolCall[] = [];
         const nonDestructive: AIToolCall[] = [];
 
         for (const toolCall of toolCalls) {
             if (toolCall.name === AITool.CreateVaultFolder) {
                 nonDestructive.push(toolCall);
+            }
+            else if (toolCall.name === AITool.DeleteVaultFolder) {
+                folderDeletions.push(toolCall);
             }
             else if (isDestructiveAITool(toolCall.name)) {
                 destructive.push(toolCall);
@@ -168,7 +176,8 @@ export class AIToolService {
             }
         }
 
-        return { destructiveToolCalls: destructive, nonDestructiveToolCalls: nonDestructive };
+        // Explicit file deletions are built first so they own their files, a folder deletion then skips them rather than listing them twice
+        return { destructiveToolCalls: [...destructive, ...folderDeletions], nonDestructiveToolCalls: nonDestructive };
     }
 
     public async performNonDestructiveAITool(toolCall: AIToolCall): Promise<AIToolResponse> {
@@ -259,7 +268,7 @@ export class AIToolService {
         );
     }
 
-    private async buildDestructiveAITool(toolCall: AIToolCall): Promise<IPendingChangeRequest | AIToolResponse> {
+    private async buildDestructiveAITool(toolCall: AIToolCall, pathsPendingDeletion: Set<string>): Promise<IPendingChangeRequest | AIToolResponse> {
         if (toolCall.name === AITool.WriteVaultFile) {
             const parseResult = WriteVaultFileArgsSchema.safeParse(toolCall.arguments);
             if (!parseResult.success) {
@@ -297,7 +306,7 @@ export class AIToolService {
             if (!parseResult.success) {
                 return this.invalidArgumentsResponse(toolCall, parseResult.error.message);
             }
-            return { toolCall, ...await this.deleteVaultFolder(parseResult.data.path, parseResult.data.confirm_deletion) };
+            return { toolCall, ...await this.deleteVaultFolder(parseResult.data.path, parseResult.data.confirm_deletion, pathsPendingDeletion) };
         }
 
         if (toolCall.name === AITool.MoveVaultFolder) {
@@ -650,7 +659,7 @@ export class AIToolService {
         return { changeRequests, failures };
     }
 
-    private async deleteVaultFolder(path: string, confirmation: boolean): Promise<PendingChanges> {
+    private async deleteVaultFolder(path: string, confirmation: boolean, pathsPendingDeletion: Set<string>): Promise<PendingChanges> {
         if (!confirmation) {
             return this.failedChanges({ error: "Confirmation was false, no action taken" });
         }
@@ -666,7 +675,10 @@ export class AIToolService {
             return this.failedChanges({ path: path, success: false, error: protectedError });
         }
 
-        const files = await this.fileSystemService.listFilesInDirectory(path, { recursive: true });
+        // Skip files that another tool call in this batch is already deleting, so they only appear once in the diff and
+        // report their result on that call. If the user rejects one of them, the post action finds it and fails the folder
+        const files = (await this.fileSystemService.listFilesInDirectory(path, { recursive: true }))
+            .filter(file => !pathsPendingDeletion.has(file.path));
         const { changeRequests, failures } = await this.createDeleteRequests(files.map(file => file.path));
 
         const postAction = async (): Promise<Record<string, unknown>> => {

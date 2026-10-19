@@ -336,54 +336,18 @@
   }
 
   .artifact-action-create {
-    background-color: color-mix(
-        in srgb,
-        var(--color-green) 25%,
-        black 20%
-    );
-    color: color-mix(
-        in srgb,
-        var(--color-green) 100%,
-        white 10%
-    );
+    color: var(--color-green);
   }
 
   .artifact-action-modify {
-    background-color: color-mix(
-        in srgb,
-        var(--color-blue) 25%,
-        black 20%
-    );
-    color: color-mix(
-        in srgb,
-        var(--color-blue) 100%,
-        white 10%
-    );
+    color: var(--color-blue);
   }
 
   .artifact-action-delete {
-    background-color: color-mix(
-        in srgb,
-        var(--color-red) 25%,
-        black 20%
-    );
-    color: color-mix(
-        in srgb,
-        var(--color-red) 100%,
-        white 10%
-    );
+    color: var(--color-red);
   }
 
   .artifact-action-move {
-    background-color: color-mix(
-        in srgb,
-        var(--color-cyan) 25%,
-        black 20%
-    );
-    color: color-mix(
-        in srgb,
-        var(--color-cyan) 100%,
-        white 10%
-    );
+    color: var(--color-cyan);
   }
 </style>

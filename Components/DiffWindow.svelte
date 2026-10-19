@@ -47,6 +47,7 @@
 	let isContinuityExpanded = false;
 
 	let vaultChanges: IVaultChange[] = temporaryVaultService.getVaultChanges();
+	let enableAgentContinuity = settingsService.settings.enableAgentContinuity;
 
 	let selectedItem: IVaultChange | undefined = vaultChanges[0];
 	
@@ -63,11 +64,22 @@
 
 	let latestValidationRun = 0;
 
+	const settingsSubscription: object = settingsService.subscribeToSettingsChanged(changed => {
+		if (changed.includes("enableContinuity") || changed.includes("enableAgentContinuity")) {
+			console.log("SWAP")
+			enableAgentContinuity = settingsService.settings.enableAgentContinuity;
+			refreshAndValidate();
+		}
+	});
+
 	onMount(async () => {
 		await validate();
 	});
 
-	onDestroy(() => changeListSheet?.close());
+	onDestroy(() => {
+		changeListSheet?.close();
+		settingsService.unsubscribe(settingsSubscription);
+	});
 
 	function countStates(): Record<DiffState, number> {
 		const counts: Record<DiffState, number> = {
@@ -92,11 +104,13 @@
 
 	async function validate() {
 		if (!settingsService.settings.enableContinuity) {
+			latestValidationRun++;
 			issueCount = 0;
 			vaultChanges.forEach(change => {
 				change.continuityIssueCount = undefined;
 				change.continuityIssues = undefined;
 			});
+			refresh();
 			return;
 		}
 
@@ -136,9 +150,17 @@
 	}
 
 	function diffRenderAction(element: HTMLElement, options: DiffRenderOptions) {
+		let drawnChange = options.vaultChange;
+		let drawnDiffString = options.vaultChange?.diffString;
 		draw(element, options);
 		return {
+			// Every refresh() reassigns selectedItem, so skip redrawing (and re-scrolling) an unchanged diff
 			update(newOptions: DiffRenderOptions) {
+				if (newOptions.vaultChange === drawnChange && newOptions.vaultChange?.diffString === drawnDiffString) {
+					return;
+				}
+				drawnChange = newOptions.vaultChange;
+				drawnDiffString = newOptions.vaultChange?.diffString;
 				draw(element, newOptions);
 			}
 		};
@@ -331,7 +353,11 @@
 	{#if issueCount > 0}
 		<div id="diff-view-banner" transition:slide>
 			<span class="diff-view-continuity-alert-icon" use:setElementIcon={"triangle-alert"}></span>
-			<span>{issueCount} continuity {StringTools.pluralise("issue", issueCount)}{isPhone ? "." : " found in this change."}</span>
+			<span id="diff-view-banner-label">{issueCount} continuity {StringTools.pluralise("issue", issueCount)}{isPhone ? "." : " found in this change."}</span>
+			<div id="diff-view-banner-setting">
+			<span id="diff-view-banner-setting-ellipse" class="diff-view-ellipse"></span>
+				<span id="diff-view-banner-setting-label">Auto-resolve {enableAgentContinuity ? "on" : "off"}</span>
+			</div>
 		</div>
 	{/if}
 	{#if isPhone}
@@ -675,6 +701,32 @@
 		color: rgba(224, 175, 104);
 	}
 
+	#diff-view-banner-label {
+		line-height: 1;
+	}
+
+	#diff-view-banner-setting {
+		display: flex;
+		gap: var(--size-4-2);
+		margin-left: auto;
+		border: solid;
+		border-width: 1px;
+		border-color: color-mix(in srgb, var(--color-accent) 90%, var(--background-primary));
+		border-radius: var(--radius-l);
+		padding: var(--size-2-1) var(--size-4-2);
+		background-color: color-mix(in srgb, var(--color-accent) 15%, var(--background-primary));
+	}
+
+	#diff-view-banner-setting-ellipse {
+		background-color: var(--color-accent-1);
+	}
+
+	#diff-view-banner-setting-label {
+		color: var(--color-accent-1);
+		font-size: var(--font-smallest);
+		line-height: 1;
+	}
+
 	#diff-view-panel {
 		grid-row: 2;
 		grid-column: 1;
@@ -923,8 +975,8 @@
 	#suggestion-field {
 		grid-row: 1;
 		grid-column: 1 / 3;
-		min-height: 5vh;
-    	max-height: 10vh;
+		min-height: round(5vh, 1px);
+		max-height: round(10vh, 1px);
 		border-radius: var(--radius-m);
 		font-weight: var(--input-font-weight);
 		border-width: var(--input-border-width);

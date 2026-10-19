@@ -71,8 +71,11 @@
     }
   });
 
+  const thoughtUpdateRef: EventRef = eventService.on(Event.ThoughtUpdate, (thought?: string) => isIdle = thought !== undefined);
+
   onDestroy(() => {
     eventService.offref(toolCallStartedRef);
+    eventService.offref(thoughtUpdateRef);
   });
 
   export function resetChatArea() {
@@ -248,7 +251,7 @@
     display: flex;
     align-items: center;
     gap: var(--size-4-3);
-    margin-top: var(--size-4-1);
+    margin-top: var(--size-4-3);
   }
 
   .scroll-to-bottom-container {

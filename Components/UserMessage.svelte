@@ -46,8 +46,8 @@
       class="user-message-bubble"
       tabindex="-1"
       role="group"
-      on:mouseenter={() => isHovered = true}
-      on:mouseleave={() => isHovered = false}
+      on:pointerenter={(event) => isHovered = event.pointerType === "mouse"}
+      on:pointerleave={() => isHovered = false}
       on:focusin={() => hasFocus = true}
       on:focusout={() => hasFocus = false}
     >
@@ -61,10 +61,12 @@
         <div class="message-text-fade bottom" class:hidden={isScrolledToBottom}></div>
       </div>
       {#if isHovered || hasFocus}
+        <!-- preventDefault on mousedown keeps focus on the bubble so the button isn't removed before click fires on mobile -->
         <button
           class="user-message-copy"
           aria-label="Copy message"
           use:setElementIcon={"copy"}
+          on:mousedown|preventDefault
           on:click={copyMessage}
           transition:slide
         ></button>

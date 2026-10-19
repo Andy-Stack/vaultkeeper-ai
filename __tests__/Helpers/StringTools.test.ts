@@ -196,4 +196,20 @@ describe('StringTools', () => {
 			expect(first).not.toBe(second);
 		});
 	});
+
+	describe('surroundingContext', () => {
+		it('should return the whole line when it fits within the context length', () => {
+			expect(StringTools.surroundingContext('- Owner: [[Bob]] (won it)', 9, 7, 40)).toEqual({ before: '- Owner: ', after: ' (won it)' });
+		});
+
+		it('should trim both sides and mark the cuts with ellipses', () => {
+			const line = 'abcdefghij[[Link]]klmnopqrst';
+
+			expect(StringTools.surroundingContext(line, 10, 8, 4)).toEqual({ before: '…ghij', after: 'klmn…' });
+		});
+
+		it('should not add an ellipsis when the match is at the start or end of the line', () => {
+			expect(StringTools.surroundingContext('[[Link]]', 0, 8, 5)).toEqual({ before: '', after: '' });
+		});
+	});
 });

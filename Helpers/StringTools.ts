@@ -3,6 +3,17 @@ import { RegexTools } from "./RegexTools";
 
 export abstract class StringTools {
 
+    public static surroundingContext(lineText: string, column: number, matchLength: number, contextLength: number): { before: string; after: string } {
+        const beforeStart = Math.max(0, column - contextLength);
+        const afterStart = column + matchLength;
+        const afterEnd = afterStart + contextLength;
+
+        return {
+            before: (beforeStart > 0 ? "…" : "") + lineText.slice(beforeStart, column),
+            after: lineText.slice(afterStart, afterEnd) + (afterEnd < lineText.length ? "…" : "")
+        };
+    }
+
     public static serialPatch(content: string, edits: { old_content: string; new_content: string; replace_all?: boolean }[]): { result: string; patched: boolean; failure: string } {
         const original = content;
     

@@ -3,6 +3,7 @@ import { AIToolService } from '../../Services/AIServices/AIToolService';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { AITool } from '../../Enums/AITool';
+import { Copy } from '../../Enums/Copy';
 import { TFile, TFolder } from 'obsidian';
 import { Exception } from '../../Helpers/Exception';
 import { AbortService } from '../../Services/AbortService';
@@ -1381,8 +1382,21 @@ describe('AIToolService - Integration Tests', () => {
 				toolCall(AITool.WriteVaultFile, { file_path: 'b.md', content: 'y' }, 'report_2')
 			]);
 
-			expect((responses[0].payload.response as any).continuityReport).toBe('Broken link in a.md');
-			expect((responses[1].payload.response as any)).not.toHaveProperty('continuityReport');
+			expect((responses[0].payload.response as any).unresolvedContinuityIssues).toBe(`${Copy.ContinuityReportPreamble}\nBroken link in a.md`);
+			expect((responses[1].payload.response as any)).not.toHaveProperty('unresolvedContinuityIssues');
+		});
+
+		it('should omit the continuity report when it has no issues', async () => {
+			mockDiffService.proposeChanges.mockImplementation(async (requests: IVaultChangeRequest<TFile>[]) => ({
+				results: await Promise.all(requests.map(request => request.changeAction())),
+				report: { toString: () => '\n' }
+			}));
+
+			const responses = await service.performAITool([
+				toolCall(AITool.WriteVaultFile, { file_path: 'a.md', content: 'x' }, 'report_1')
+			]);
+
+			expect((responses[0].payload.response as any)).not.toHaveProperty('unresolvedContinuityIssues');
 		});
 
 		it('should refuse edits when the chat mode does not allow them', async () => {

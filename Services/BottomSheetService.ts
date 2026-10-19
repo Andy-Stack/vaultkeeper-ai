@@ -34,7 +34,8 @@ export class BottomSheetService {
         let resolveClosed: () => void = () => {};
         const closed = new Promise<void>((resolve) => resolveClosed = resolve);
 
-        const sheet: IBottomSheetExports = mount(BottomSheet, {
+        // Legacy-syntax components don't surface `export function` members in mount()'s return type
+        const sheet = mount(BottomSheet, {
             target: document.body,
             props: {
                 content,
@@ -45,7 +46,7 @@ export class BottomSheetService {
                     resolveClosed();
                 }
             }
-        });
+        }) as IBottomSheetExports;
 
         return {
             close: () => sheet.close(),

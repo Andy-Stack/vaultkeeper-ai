@@ -34,7 +34,7 @@ export class BlockQuoteValidationResult implements IDocumentValidationResult {
 
         const issueLines = this.issues.map(issue =>
             `- ${issue.source} line ${issue.line + 1}: ${issue.original} quotes "${issue.quotedText}" but the block now reads "${issue.blockText}"`);
-        return ["Quotes that no longer match their block once these changes are applied:", ...issueLines].join("\n");
+        return ["Unresolved quotes that no longer match their block once these changes are applied (not fixed yet):", ...issueLines].join("\n");
     }
 
 }

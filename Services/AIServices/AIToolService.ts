@@ -793,8 +793,9 @@ export class AIToolService {
                 Object.assign(response, await pending.postAction());
             }
             // The report covers the whole batch, so only attach it once
-            if (proposal?.report && responses.length === 0) {
-                response.continuityReport = proposal.report.toString();
+            const reportText = proposal?.report?.toString().trim();
+            if (reportText && responses.length === 0) {
+                response.unresolvedContinuityIssues = `${Copy.ContinuityReportPreamble}\n${reportText}`;
             }
 
             responses.push(new AIToolResponse(pending.toolCall.name, new AIToolResponsePayload(response, artifacts), pending.toolCall.toolId));

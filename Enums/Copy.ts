@@ -218,9 +218,11 @@ Execution finished
     DirectiveWebSearchEnabled = "- **Web Search**: ENABLED — you should always prefer to call the web search tool to retrieve current information from the web",
     DirectiveWebSearchDisabled = "- **Web Search**: DISABLED — the web search tool is unavailable; if the user requests it, inform them it is currently turned off in settings",
     DirectiveWebViewerEnabled = "- **Web Viewer**: ENABLED — you may call the web viewer tool to read the content of the page currently open in the Obsidian web viewer; call it proactively when the user asks about a web page",
-    DirectiveAgentContinuityEnabled = "- **Continuity Checks**: ENABLED — vault changes return a continuity report; the user has consented to you fixing its issues without asking, so resolve them, then tell the user which fixes you made and which issues you couldn't fix",
+    DirectiveAgentContinuityEnabled = "- **Continuity Checks**: ENABLED — vault changes return a continuity report listing open problems that nothing has fixed yet; the user has consented to you fixing them without asking, so edit the notes to resolve them, then tell the user which issues you fixed and which you couldn't",
     DirectiveAgentContinuityDisabled = "- **Continuity Checks**: DISABLED — vault changes don't return a continuity report; if the user asks about checking their changes for broken links or similar issues, tell them it can be turned on with \"Enable agent continuity resolution\" in settings",
     DirectiveWebViewerDisabled ="- **Web Viewer**: DISABLED — the web viewer tool is unavailable; if the user requests it, inform them it is currently turned off in settings",
+
+    ContinuityReportPreamble = "CONTINUITY ISSUES FOUND. These are open problems your changes caused. None of them have been fixed. Fix them with further edits, or report any you leave.",
 
     MaxExecutionDepthReached = "Exceeded maximum plan execution attempts - consult with the user on how to continue.",
 

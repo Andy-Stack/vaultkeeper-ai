@@ -44,7 +44,7 @@ export class WikilinkValidationResult implements IDocumentValidationResult {
         }
 
         const issueLines = this.issues.map(issue => `- ${issue.source} line ${issue.line + 1}: ${issue.original} (${issue.reason})`);
-        return ["Broken links once these changes are applied:", ...issueLines].join("\n");
+        return ["Unresolved broken links once these changes are applied (not fixed yet):", ...issueLines].join("\n");
     }
 
 }

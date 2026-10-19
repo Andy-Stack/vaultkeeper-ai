@@ -399,5 +399,5 @@ The web viewer is turned off, so the execution agent can't read open web pages. 
 export const PlanningInstructionAgentContinuity: string = `
 ## Continuity Checks
 
-Every vault change the execution agent makes returns a report of problems in the changed notes, such as wiki-links to notes that don't exist or malformed tags and block quotes. The execution agent fixes these within its step, so don't add verification or link-checking steps. Do plan for them, though: if a step will link to notes that don't exist yet, order the steps so those notes are created first, or say in the step context that the link is meant to stay unresolved.
+Every vault change the execution agent makes returns a report of open problems in the changed notes, such as wiki-links to notes that don't exist or malformed tags and block quotes. The report lists problems, not completed fixes. The execution agent fixes these within its step, so don't add verification or link-checking steps. Do plan for them, though: if a step will link to notes that don't exist yet, order the steps so those notes are created first, or say in the step context that the link is meant to stay unresolved.
 `;

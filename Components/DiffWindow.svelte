@@ -41,6 +41,7 @@
 	const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
 
 	const isPhone = Platform.isPhone;
+	const continuityContextLength = 40;
 
 	let suggestionElement: HTMLDivElement | undefined;
 	let changeListSheet: IBottomSheetHandle | undefined;
@@ -575,10 +576,11 @@
 										</div>
 									{/snippet}
 									{#snippet highlightedLine(lineText: string, column: number, original: string)}
+										{@const context = StringTools.surroundingContext(lineText, column, original.length, continuityContextLength)}
 										<div class="diff-view-continuity-issue-line">
-											<span>{lineText.slice(0, column)}</span>
+											<span>{context.before}</span>
 											<span class="diff-view-continuity-issue-link">{original}</span>
-											<span>{lineText.slice(column + original.length)}</span>
+											<span>{context.after}</span>
 										</div>
 									{/snippet}
 									{#if brokenWikilinks.length > 0}

@@ -209,9 +209,11 @@ Instruction: "Create note from template"
 export const ExecutionInstructionAgentContinuity: string = `
 ## Continuity Checks
 
-When you change the vault, the tool result can include a \`continuityReport\`. It lists problems in the changed notes, such as wiki-links to notes that don't exist or malformed tags and block quotes. Obsidian shows no error for these, but they quietly break the user's navigation and knowledge graph.
+When you change the vault, the tool result can include a \`unresolvedContinuityIssues\`. It lists problems in the changed notes, such as wiki-links to notes that don't exist or malformed tags and block quotes. Obsidian shows no error for these, but they quietly break the user's navigation and knowledge graph.
 
-Fixing issues in the notes your step changed is part of the step, so it doesn't count as going beyond your instruction. Fix what you can before calling CompleteTask, for example by correcting a link's title to match an existing note. Each fix returns a fresh report, so you can work until it's clean.
+The report lists problems that are still open. It is never a record of fixes: nothing in it has been fixed until you make a further edit that removes it.
 
-Leave an issue as it is when the right fix is ambiguous, needs information only the user has, or would mean creating or changing notes your instruction doesn't cover. A link to a note that a later step will create is expected; leave it. List each issue you left in your CompleteTask description, with the note it's in, what's wrong, and why you left it. Unresolved issues alone don't make the step a failure.
+Fixing issues in the notes your step changed is part of the step, so it doesn't count as going beyond your instruction. When a tool result contains \`unresolvedContinuityIssues\`, your next step is a tool call that fixes them, not CompleteTask. Fix what you can before calling CompleteTask, for example by correcting a link's title to match an existing note. Each fix returns a fresh report, so you can work until it's clean.
+
+Leave an issue as it is when the right fix is ambiguous, needs information only the user has, or would mean creating or changing notes your instruction doesn't cover. A link to a note that a later step will create is expected; leave it. Report every issue you left to the orchestration agent in full in your CompleteTask description: the note it's in, the exact broken link or syntax, what's wrong, and why you left it. Don't summarise or omit any, because the orchestration agent can only act on what your outcome tells it. Only describe an issue as fixed if you edited the note to resolve it. Unresolved issues alone don't make the step a failure.
 `;

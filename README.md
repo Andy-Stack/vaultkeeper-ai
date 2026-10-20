@@ -1,5 +1,5 @@
 <p align="center">
-	<img width="1280" height="640" alt="Vaultkeeper AI" src="https://github.com/user-attachments/assets/a4c4e96f-1a5e-4dbd-865b-d3c943611035" />
+	<img width="1280" alt="Vaultkeeper AI" src="https://github.com/user-attachments/assets/a4c4e96f-1a5e-4dbd-865b-d3c943611035" />
 </p>
 
 <h3 align="center">An AI assistant that actually knows your vault, and never changes a note without showing you first.</h3>
@@ -48,7 +48,7 @@ Vaultkeeper AI lives in your sidebar and works *with* your notes. Ask it questio
 When the AI wants to create, edit, move or delete something, you get a clear side-by-side diff. Accept it, reject it, or click **Suggest changes** to send it back with notes. Working on lots of files at once? Review them one by one or accept/reject the rest in bulk.
 
 <p align="center">
-	<img width="1142" height="771" alt="Diff viewer for a proposed new note" src="https://github.com/user-attachments/assets/7b569edf-9798-4aed-8538-0823425fdb68" />
+	<img width="1142" alt="Diff viewer for a proposed new note" src="https://github.com/user-attachments/assets/7b569edf-9798-4aed-8538-0823425fdb68" />
 </p>
 
 ### 🔗 Catches broken links before they land
@@ -56,7 +56,7 @@ When the AI wants to create, edit, move or delete something, you get a clear sid
 Vaultkeeper checks proposed changes for continuity problems, like wikilinks pointing at notes that don't exist, and flags them right in the review screen so your vault doesn't fill up with dead links.
 
 <p align="center">
-	<img width="1142" height="777" alt="Continuity check flagging broken wikilinks in a proposed note" src="https://github.com/user-attachments/assets/b589a5c3-ca1d-499e-a9f8-86336870ba38" />
+	<img width="1142" alt="Continuity check flagging broken wikilinks in a proposed note" src="https://github.com/user-attachments/assets/b589a5c3-ca1d-499e-a9f8-86336870ba38" />
 </p>
 
 ### ↩️ Undo anything
@@ -64,7 +64,7 @@ Vaultkeeper checks proposed changes for continuity problems, like wikilinks poin
 Every note the AI creates, edits or deletes (even PDFs and images) can be restored to its previous or original version, straight from the diff viewer.
 
 <p align="center">
-	<img width="552" height="161" alt="Tracked list of created and changed files" src="https://github.com/user-attachments/assets/a1997adc-3a4a-48d8-8d1b-2b94c78b5ba9" />
+	<img width="552" alt="Tracked list of created and changed files" src="https://github.com/user-attachments/assets/a1997adc-3a4a-48d8-8d1b-2b94c78b5ba9" />
 </p>
 
 ### 📋 Planning Mode for the big jobs
@@ -72,7 +72,7 @@ Every note the AI creates, edits or deletes (even PDFs and images) can be restor
 For larger tasks, a planning agent explores your vault first, asks clarifying questions if it needs to, and proposes a step-by-step plan. You approve it, reject it, or suggest changes. Then it works through the steps one at a time, with a supervising agent checking each result and adjusting the plan if something unexpected comes up.
 
 <p align="center">
-	<img width="571" height="163" alt="Planning mode execution" src="https://github.com/user-attachments/assets/8c7642a0-5b9f-4d88-be1f-429d902c2b56" />
+	<img width="571" alt="Planning mode execution" src="https://github.com/user-attachments/assets/8c7642a0-5b9f-4d88-be1f-429d902c2b56" />
 </p>
 
 ### ⚡ Quick Actions on any note

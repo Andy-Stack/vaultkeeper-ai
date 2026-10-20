@@ -73,6 +73,9 @@
 
   let questionResolver: ((answer: string) => void) | null = null;
 
+  export let isAwaitingUser: boolean = false;
+  $: isAwaitingUser = diffOpen || planApprovalOpen || inputMode === InputMode.Question;
+
   let webSearchActive: boolean = settingsService.settings.enableWebSearch;
   let webSearchUnavailable: boolean = settingsService.settings.provider === AIProvider.Local;
   let editsAllowed: boolean = chatModeAllowsEdits(chatMode);

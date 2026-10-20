@@ -9,74 +9,15 @@
 	import { Greeting } from "Enums/Greeting";
 	import { Role } from "Enums/Role";
   import type { ConversationContent } from "Conversations/ConversationContent";
-	import { onDestroy, tick } from "svelte";
-	import { setIcon, type EventRef } from "obsidian";
+	import { tick } from "svelte";
+	import { setIcon } from "obsidian";
 	import { fade, slide } from "svelte/transition";
 	import GraphAnimation from "./GraphAnimation.svelte";
-	import { EventService } from "Services/EventService";
-	import { Resolve } from "Services/DependencyService";
-	import { Services } from "Services/Services";
-	import { Event } from "Enums/Event";
-	import { AITool } from "Enums/AITool";
-	import { SettingsService } from "Services/SettingsService";
 
   export let messages: ConversationContent[] = [];
   export let isSubmitting: boolean = false;
   export let chatContainer: HTMLDivElement;
-
-  const eventService: EventService = Resolve<EventService>(Services.EventService);
-  const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
-
-  let isIdle = false;
-
-  const toolCallStartedRef: EventRef = eventService.on(Event.ToolCallStarted, (toolName: AITool) => {
-    switch (toolName) {
-        case AITool.ReadMemories:
-        case AITool.UpdateMemories:
-        case AITool.ListVaultFiles:
-        case AITool.SearchVaultFiles:
-        case AITool.ReadVaultFiles:
-        case AITool.GetWebViewerContent:
-        case AITool.CreateVaultFolder:
-        case AITool.ExecuteWorkflow:
-        case AITool.RequestWebSearch:
-        case AITool.CompleteTask:
-        case AITool.CompleteStep:
-        case AITool.SkipStep:
-        case AITool.ReviseStep:
-        case AITool.RevisePlan:
-        case AITool.CompletePlan:
-        case AITool.CancelPlan:
-          isIdle = false;
-          break;
-
-        case AITool.WriteVaultFile:
-        case AITool.PatchVaultFile:
-        case AITool.DeleteVaultFiles:
-        case AITool.MoveVaultFiles:
-        case AITool.DeleteVaultFolder:
-        case AITool.MoveVaultFolder:
-          // Not idle if free edit is enabled
-          isIdle = !settingsService.settings.freeEdit;
-          break;
-
-        case AITool.SubmitPlan:
-        case AITool.AskUserQuestionPlanning:
-        case AITool.AskUserQuestionExecution:
-          isIdle = true;
-          break;
-
-        case AITool.Unknown:
-          isIdle = false;
-    }
-  });
-
-  const thoughtUpdateRef: EventRef = eventService.on(Event.ThoughtUpdate, (thought?: string) => isIdle = thought !== undefined);
-
-  onDestroy(() => {
-    eventService.offref(toolCallStartedRef);
-    eventService.offref(thoughtUpdateRef);
-  });
+  export let isAwaitingUser: boolean = false;
 
   export function resetChatArea() {
     chatContainer.scroll({ top: 0, behavior: "instant" });
@@ -208,8 +149,8 @@
         {#if isLatestTurn}
           {#if isSubmitting}
             <div class="streaming-status" transition:slide>
-              <StreamingIndicator isIdle={isIdle}/>
-              <StreamingLabel isIdle={isIdle}/>
+              <StreamingIndicator isIdle={isAwaitingUser}/>
+              <StreamingLabel isIdle={isAwaitingUser}/>
             </div>
           {/if}
         {/if}

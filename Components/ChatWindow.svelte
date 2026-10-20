@@ -47,6 +47,7 @@
   let hasNoApiKey = false;
   let isSubmitting = false;
   let busyPlanning = false;
+  let isAwaitingUser = false;
 
   let conversation: Conversation = new Conversation();
   let attachments: Attachment[] = [];
@@ -118,9 +119,7 @@
         conversation = conversation;
         chatArea.updateChatAreaLayout();
       },
-      onToolCallStarted: (toolName: string) => {
-        eventService.trigger(Event.ToolCallStarted, fromString(toolName));
-      },
+      onToolCallStarted: (_: string) => {},
       onArtifactProduced: (artifact: Artifact) => {
       if (artifact.action === ArtifactAction.Move && artifact.previousPath) {
         for (const collected of collectedArtifacts) {
@@ -228,12 +227,13 @@
   <ChatPlanArea executionPlanState={executionPlanStore.executionPlanState} {busyPlanning}/>
 
   <div id="chat-container">
-    <ChatArea messages={conversation.contents} bind:this={chatArea} bind:isSubmitting bind:chatContainer/>
+    <ChatArea messages={conversation.contents} bind:this={chatArea} bind:isSubmitting bind:chatContainer {isAwaitingUser}/>
   </div>
 
   <ChatInput
     bind:this={chatInput}
     bind:attachments
+    bind:isAwaitingUser
     {hasNoApiKey}
     {isSubmitting}
     onSubmit={handleSubmit}

@@ -253,239 +253,191 @@ Execution finished
 
     // About Modal Copy
     AboutModalAboutTitle = "About",
-    AboutModalAboutContent = `#### About Vaultkeeper AI
+    AboutModalAboutContent = `Vaultkeeper AI is an assistant that knows your vault. It searches and reads your notes, answers questions about them, and proposes changes that you review before they're applied.
 
-This plugin was originally created for a friend who found it useful, so I have decided to release it to the Obsidian community.
+It began as a plugin built for a friend and is now shared with the wider Obsidian community.
 
-If you find any issues or have a feature request, please feel free to raise them on GitHub:`,
+Found a bug or have an idea? Raise it on GitHub:`,
 
-    AboutModalWhatsNewTitle = "What's New",
-    AboutModalWhatsNewContent = `#### 🚀 What's New
+    AboutModalWhatsNewTitle = "What's new",
+    AboutModalWhatsNewContent = `- **New diff review**: Review every proposed change side by side, then accept it, reject it, or send it back with feedback.
+- **Continuity checks**: Broken links and out-of-date block quotes caused by an edit are flagged in the diff view, and the AI can fix them itself.
+- **Mobile support**: The chat and diff view now have layouts built for phones.
+- **Faster, clearer agent**: The AI can now run several tools at once, and you can follow each step live as it works.
+- **Smarter planning**: Plans are sized to the task, and plan approval happens in one place.
+- **New AI models**: Updated defaults for every provider.
+- **Bug fixes**: Various UI, performance and stability fixes.
 
-- **Paste to attach**: Pasting a large block of text now automatically saves it as a file attachment.
-- **New AI models**: Added the latest releases from Claude, Gemini, and OpenAI.
-- **Better large vault support**: Search, file reads and startup time have been optimised to cope with bigger vaults.
-- **Bug fixes & stability**: Various UI, performance and stability fixes.
+See the [release notes](https://github.com/Andy-Stack/vaultkeeper-ai/releases) for full details.
 
-For further details, see the [release notes](https://github.com/Andy-Stack/vaultkeeper-ai/releases).
-
-Have an issue or a feature request? [Let me know on GitHub](https://github.com/Andy-Stack/vaultkeeper-ai/issues).`,
+Found a bug or have an idea? [Raise it on GitHub](https://github.com/Andy-Stack/vaultkeeper-ai/issues).`,
 
     AboutModalGettingStartedTitle = "Getting started",
-    AboutModalGettingStartedContent = `#### 🏁 Getting started
+    AboutModalGettingStartedContent = `1. **Add a provider**: In the plugin settings, add an API key for Claude, Gemini, OpenAI or Mistral. Or choose **Local** and point it at your own server, with no key needed.
+2. **Choose a model**: Select a model from the dropdown in settings.
+3. **Open the chat**: Click the Vaultkeeper icon in the left sidebar and start asking.
 
-1. **Add an API key**: Go to Settings and add at least one API key (Claude, Gemini, OpenAI, or Mistral) — or select **Local** to connect a self-hosted server instead, no API key required
-2. **Select a model**: Choose your preferred AI model from the dropdown
-3. **Open the chat**: Click the plugin icon in the sidebar to start chatting`,
+> [!tip]
+> The chat starts in **Read-only** mode, so the AI can explore your vault but can't change anything. Switch to **Allow Edits** when you want it to make changes.`,
 
     AboutModalChatModesTitle = "Chat modes",
-    AboutModalChatModesContent = `#### 💬 Chat modes
+    AboutModalChatModesContent = `Switch modes at any time from the input toolbar.
 
-**Read-only (default)** - The AI can safely explore your vault:
-- Search through your notes (including PDFs and Office/ODF documents)
-- Read file contents (including binary files like PDFs, Office documents, and images)
-- List directory structures
-- Cannot modify anything
+##### Read-only (default)
+The AI can explore your vault without changing anything:
+- Search notes, including PDFs and Office/ODF documents
+- Read files, including PDFs, Office documents and images
+- List folders
 
-**Allow Edits** - Switch on when you need the AI to make changes:
+##### Allow Edits
+Everything in Read-only, plus:
 - Create new notes
 - Edit existing content
-- Delete or move files
-- Rename files
+- Move, rename and delete notes and folders
 
-**Planning** - Have the AI plan before acting:
-- A planning agent analyzes your vault and creates a strategy
-- An execution agent carries out the given plan`,
+Each proposed change opens in a side-by-side diff where you can accept it, reject it, or send it back with feedback. To apply changes immediately instead, turn on **Allow changes without asking**.
+
+##### Planning
+For larger, multi-step tasks:
+1. A planning agent explores your vault, asks clarifying questions if needed, and writes a step-by-step plan.
+2. You approve the plan, reject it, or suggest changes.
+3. An execution agent carries out each step.
+4. An orchestration agent checks each result and adjusts the plan if something unexpected comes up.`,
 
     AboutModalReferenceTitle = "Using references",
-    AboutModalReferenceContent = `#### 🔗 Using references
+    AboutModalReferenceContent = `Give the AI context straight away by typing one of these in your message:
 
-Quickly provide context to the AI:
+- \`@filename\`: a specific file
+- \`#tag\`: every note with that tag
+- \`/folder\`: an entire folder
 
-- **@filename** - Reference specific files
-- **&#35;tag** - Reference all notes with a tag
-- **/folder** - Reference entire directories
-
-The autocomplete dropdown supports keyboard navigation.`,
+Autocomplete supports fuzzy search and keyboard navigation.`,
 
     AboutModalCustomInstructionsTitle = "Custom instructions",
-    AboutModalCustomInstructionsContent = `#### 📝 Custom instructions
+    AboutModalCustomInstructionsContent = `Tailor the AI's behaviour to a particular workflow, such as a research assistant or a writing partner:
 
-Customize AI behavior for specific workflows:
+1. Create Markdown files in \`Vaultkeeper AI/User Instructions/\`.
+2. Click the **User Instructions** button in the chat.
+3. Select an instruction set.
+4. The AI follows those instructions in its responses.
 
-1. Create markdown files in **Vaultkeeper AI/User Instructions/**
-2. Click the "User Instructions" button in chat
-3. Select your instruction set
-4. The AI follows these instructions for all interactions
-
-See [[Vaultkeeper AI/User Instructions/EXAMPLE_INSTRUCTIONS|Example Template]] for help getting started.`,
+The folder location can be changed in settings. See [[Vaultkeeper AI/User Instructions/EXAMPLE_INSTRUCTIONS|the example template]] to get started.`,
 
     AboutModalQuickActionsTitle = "Quick actions",
-    AboutModalQuickActionsContent = `#### ⚡ Quick actions
+    AboutModalQuickActionsContent = `Quick actions are one-click AI edits for the note you're working on. Right-click in the editor, or use the editor toolbar button, and pick an action.
 
-Quick actions are one-click AI edits you run on the note you're currently editing. Open the editor menu (right-click, or the command palette) and pick an action. Some actions work on your current selection if you have text selected, otherwise they apply to the whole note.
+**Proofread**, **Beautify** and **Apply links** work on your selection if you have one, otherwise on the whole note. The other actions always use the whole note.
 
 ##### Proofread
-Corrects spelling, grammar, punctuation, and typos without rewriting for style or changing your voice. Works on the selection if you have one, otherwise the whole note.
+Corrects spelling, grammar, punctuation and typos without rewriting for style or changing your voice.
 
 ##### Beautify
-Improves clarity, flow, and readability and adds Markdown formatting (headings, bold, lists, blockquotes) where it helps. Works on the selection if you have one, otherwise the whole note.
+Improves clarity, flow and readability, and adds Markdown formatting (headings, bold, lists, blockquotes) where it helps.
 
 ##### Apply template
-Restructures the note to match a template you choose, fitting your content to the template's headings and structure while preserving the information. If the file you pick doesn't look like a template, no changes are made.
+Restructures the note to match a template you choose, fitting your content to the template's headings while preserving the information. If the file you pick doesn't look like a template, no changes are made.
 
 ##### Apply links
-Scans the note for mentions of pages that already exist in your vault and wraps them in wikilinks. It only links existing pages and never invents new ones. Works on the selection if you have one, otherwise the whole note.
+Wraps mentions of pages that already exist in your vault in wikilinks. It never links to pages that don't exist.
 
 ##### Apply tags
-Chooses tags for the note from the tags that already exist in your vault and merges them into the frontmatter. It won't create new tags — only ones already in use elsewhere.
+Chooses tags for the note from those already used in your vault and merges them into the frontmatter. It never creates new tags.
 
 ##### Suggest tags
-Like Apply tags, but free to suggest new tags as well as reuse existing ones. Suggested tags are merged into the note's frontmatter.
+Like **Apply tags**, but can suggest new tags as well as reuse existing ones.
 
 ##### Generate frontmatter
-Infers YAML frontmatter for the note (aliases, tags, title, summary, created) from its content and merges it into any existing frontmatter.`,
+Infers YAML frontmatter (aliases, tags, title, summary and created date) from the note's content and merges it into any existing frontmatter.`,
 
     AboutModalUploadedFilesTitle = "Uploaded files",
-    AboutModalUploadedFilesContent = `#### 📁 Uploaded files
+    AboutModalUploadedFilesContent = `When you attach files such as PDFs or images to a conversation, they're uploaded to your AI provider. The plugin deletes them automatically when you delete the conversation, but this can occasionally fail because of network issues or rate limits.
 
-When you upload files (PDFs, images) to conversations, they are stored by your AI provider. The plugin automatically attempts to delete these files when you delete conversations, but this may occasionally fail due to network issues or API rate limits.
+> [!tip]
+> Check your provider's dashboard from time to time and remove any files you no longer need. Provider-specific details are in the plugin settings.
 
-**What to do:**
-- Periodically check your provider's dashboard for uploaded files
-- Remove any old files that are no longer needed
-- Provider-specific details can be found in the plugin settings
+##### Provider dashboards
+- **Claude**: [Anthropic Console](https://console.anthropic.com/)
+- **Gemini**: [Google AI Studio](https://aistudio.google.com/)
+- **OpenAI**: [OpenAI Platform](https://platform.openai.com/)
+- **Mistral**: [Mistral Console](https://console.mistral.ai/)
 
-**Provider dashboards:**
-- Claude: [Anthropic Console](https://console.anthropic.com/)
-- Gemini: [Google AI Studio](https://aistudio.google.com/)
-- OpenAI: [OpenAI Platform](https://platform.openai.com/)
-- Mistral: [Mistral Console](https://console.mistral.ai/)
-
-**Local**: Files aren't uploaded anywhere - they're sent inline with your message directly to your local server, so there's nothing to clean up on a dashboard.`,
+> [!note] Local models
+> Files are sent inline with your message directly to your own server, so there's nothing to clean up.`,
 
     AboutModalTroubleshootTitle = "Troubleshooting",
-    AboutModalTroubleshootContent = `#### 🔧 Common issues & solutions
+    AboutModalTroubleshootContent = `##### Invalid API key or authentication errors
+**Fix**:
+- Copy the key again from your provider's console and paste it without extra spaces.
+- Check the key is saved under the correct provider. Keys are provider-specific, so a Claude key only works with Claude models.
 
-##### API key issues
+##### Error 429: Rate limit exceeded
+**Cause**: Too many requests in a short period. This is separate from your token usage or billing limits.
 
-**Problem**: "Invalid API key" or authentication errors
+**Fix**:
+- Wait for the limit to reset (see below).
+- Lower the **Search results limit** and **Snippet size limit** in settings to make each request smaller.
 
-**Solutions**:
-- Verify your API key is correct (copy fresh from provider console)
-- Check you've added the key for the correct provider
-- Ensure no extra spaces when pasting
-- API keys are provider-specific - Claude keys only work with Claude models
+> [!info] Rate limits by provider
+> - **Claude**: Resets within a few hours. Limits rise as your cumulative spend passes each threshold. [Rate limits](https://docs.claude.com/en/api/rate-limits)
+> - **Gemini**: Resets within a few minutes for per-minute limits, or at midnight Pacific Time for daily quotas. Enabling billing moves you to the paid tier, which has much higher limits. [Rate limits](https://ai.google.dev/gemini-api/docs/rate-limits)
+> - **Mistral**: Resets within seconds for per-second limits, within a minute for per-minute token limits, or at the start of the next month for monthly token quotas. The free tier has restrictive limits; upgrading to the Scale plan raises them, and they rise further as your cumulative spend passes each threshold. [Rate limits](https://docs.mistral.ai/deployment/ai-studio/tier)
+> - **OpenAI**: Resets within a few minutes to an hour. Limits rise as you move up usage tiers. [Rate limits](https://platform.openai.com/docs/guides/rate-limits)
 
-##### Error code 429: Rate limit exceeded
+##### Error 503: Service unavailable
+**Cause**: The provider's servers are temporarily overloaded or unavailable. This is outside the plugin's control and is more common with Gemini.
 
-This error means you've made too many API requests in a given time period. This is separate from your token usage limits.
+**Fix**:
+- Wait a few minutes and try again.
+- If it persists, check the provider's status page for ongoing incidents.
 
-**How to resolve:**
-- Wait for your rate limit to reset (see provider-specific details below)
-- Lower the search result and snippet size limits in the plugin settings to reduce request size
-- Understand that rate limits typically increase automatically as you use the API more
+##### Can't connect to a local server
+**Fix**:
+- Make sure your local server (LM Studio, Ollama, vLLM, etc.) is running.
+- Check the **Local URL** in settings, including the port and path (e.g. \`/v1/chat/completions\`).
+- If your server requires authentication, fill in the API key field.
 
-###### Claude
-- **Wait time:** A few hours
-- **Long-term solution:** Rate limits increase significantly after reaching cumulative spending thresholds
-- [Claude Rate Limits Documentation](https://docs.claude.com/en/api/rate-limits)
+##### Local model tool calls fail or loop
+**Cause**: Not every local model handles multi-turn tool calling reliably. This is a model or chat template limitation rather than a plugin bug.
 
-###### OpenAI
-- **Wait time:** A few minutes to an hour
-- **Long-term solution:** Rate limits automatically increase as you progress through usage tiers with higher spending
-- [OpenAI Rate Limits Documentation](https://platform.openai.com/docs/guides/rate-limits)
-
-###### Gemini
-- **Wait time:** A few minutes (per-minute limits) or until midnight Pacific Time (daily quotas)
-- **Long-term solution:** Enable billing to move from free tier to paid tier for significantly higher limits. Paid tier limits increase automatically with cumulative Google Cloud spending
-- [Gemini API Rate Limits Documentation](https://ai.google.dev/gemini-api/docs/rate-limits)
-
-##### Error code 503: Service unavailable
-
-This error indicates a temporary issue with the AI provider's servers.
-
-**What it means:**
-- The provider's service is temporarily unavailable or overloaded
-- This occurs more frequently with Gemini than other providers
-
-**How to resolve:**
-- Wait a few minutes and try again
-- There is no action you can take to prevent this error - it's on the provider's side
-- If the issue persists, check the provider's status page for any ongoing incidents
-
-##### Local model issues
-
-**Problem**: Can't connect to the local server
-
-**Solutions**:
-- Make sure your local server (LM Studio, Ollama, vLLM, etc.) is actually running
-- Double-check the **Local URL** in settings, including the path (e.g. \`/v1/chat/completions\`) and port
-- If your server requires authentication, make sure the API key field is filled in
-
-**Problem**: Tool calls fail, loop, or the AI ignores tool results
-
-**Solutions**:
-- Not all local models support multi-turn tool calling reliably - this is a model/template limitation, not a plugin bug
-- Check your server's chat template settings (e.g. LM Studio's prompt template) and adjust it for tool-calling if needed
-- Try a model known to support tool/function calling well`,
+**Fix**:
+- Adjust your server's chat template for tool calling (e.g. LM Studio's prompt template).
+- Try a model known to support tool/function calling well.`,
 
     AboutModalPrivacyTitle = "Privacy",
-    AboutModalPrivacyContent = `#### 🔒 Privacy & security
+    AboutModalPrivacyContent = `##### Your data, your rules
+**No middleman servers**: With a cloud provider, the content you share goes directly from Obsidian to that provider. Nothing is sent to any other third party, no telemetry is collected, and the full source code is available on GitHub.
 
-##### Data storage
+> [!note] Local models
+> With a local model, nothing leaves your machine.
 
-**Everything stays local** - This plugin does NOT send data to any third-party services except the AI providers you choose. It also doesn't collect any telemetry data and you can review the full source code on GitHub.
+##### Stored in your vault
+- **API keys**: in the plugin settings
+- **Conversation history**: in \`Vaultkeeper AI/Conversations/\`
+- **Custom instructions**: in \`Vaultkeeper AI/User Instructions/\`
+- **Memories**: in \`Vaultkeeper AI/Memories.md\`
+- **Plugin settings**: in \`.obsidian/plugins/vaultkeeper-ai/\`
 
-**What's stored locally**:
-- API keys (stored in your vault's plugin settings)
-- Conversation history (stored in \`Vaultkeeper AI/Conversations/\`)
-- Custom instructions (stored in \`Vaultkeeper AI/User Instructions/\`)
-- Plugin settings (stored in \`.obsidian/plugins/vaultkeeper-ai/\`)
+##### Sent to your provider
+- Your messages and the contents of any files you reference or attach
+- Files the AI reads while working, including PDFs, Office documents and images
+- File and folder names returned by the AI's searches and folder listings
+- Earlier messages in the conversation, for context
+- Your memories, if enabled
 
-##### API communication
-
-**Direct connections only** - The plugin communicates directly with your chosen AI provider:
-
-- **Claude**: Anthropic's API
-- **Gemini**: Google's API
-- **OpenAI**: OpenAI's API
-- **Mistral**: Mistral AI's API
-- **Local**: Your own self-hosted server - no cloud provider is involved at all, so nothing leaves your machine
-
-**What gets sent**:
-- Your messages and referenced file contents (including binary files like PDFs, Office documents, and images)
-- Conversation context (for continuity)
-- File names and directory structures (when AI searches)
-
-**What does NOT get sent**:
-- Files excluded in settings
-- Other plugins' data
-- Your vault structure (unless explicitly requested)
-- API keys to anyone except the respective provider
+Excluded files, other plugins' data and your API keys are never sent, apart from each key going to its own provider.
 
 ##### File exclusions
+Keep sensitive notes private by adding glob patterns in settings. Excluded files are completely invisible to the AI: they won't appear in searches or folder listings and can't be read or modified.
 
-**Protect sensitive information** using glob patterns in settings:
+- \`private/**\`: an entire folder
+- \`journal/personal/**\`: a nested folder
+- \`*.secret.md\`: any file matching a pattern
+- \`.obsidian/workspace.json\`: a single file
 
-**Examples**:
-- \`private/**\` - Exclude entire directories
-- \`*.secret.md\` - Exclude specific file patterns
-- \`journal/personal/**\` - Exclude nested directories
-- \`.obsidian/workspace.json\` - Exclude specific files
-
-**How exclusions work**:
-- Excluded files are completely invisible to the AI
-- The AI cannot read, search, modify, or even list excluded files
-- Exclusions apply to all operations
-
-##### AI provider policies
-
-Each AI provider has their own data policies:
-
+##### Provider privacy policies
 - [Anthropic (Claude)](https://www.anthropic.com/privacy)
 - [Google (Gemini)](https://policies.google.com/privacy)
-- [OpenAI (ChatGPT)](https://openai.com/privacy)
+- [OpenAI](https://openai.com/privacy)
 - [Mistral AI](https://legal.mistral.ai/terms/privacy-policy)`,
 
     // Conversation Modal Copy

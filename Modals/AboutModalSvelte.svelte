@@ -330,9 +330,9 @@
 	}
 
 	.about-modal-banner {
-		margin-top: var(--size-2-2);
-		margin-left: calc(var(--size-4-2) * -1);
-		border-radius: var(--radius-s);
+		margin-left: calc(var(--size-4-3) * -1);
+		margin-right: calc(var(--size-4-2) * -1);
+		border-top-left-radius: var(--radius-s);
 	}
 
 	.about-modal-version-string {

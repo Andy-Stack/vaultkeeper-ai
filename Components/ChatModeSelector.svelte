@@ -126,7 +126,7 @@
                 tabindex="-1"
                 aria-selected={selectedChatMode === ChatMode.ReadOnly}
                 class:current-chat-mode={currentChatMode === ChatMode.ReadOnly}
-                style:background-color={selectedChatMode === ChatMode.ReadOnly ? "var(--interactive-accent)" : "transparent"}
+                style:background-color={selectedChatMode === ChatMode.ReadOnly ? "color-mix(in srgb, var(--color-accent) 30%, transparent)" : "transparent"}
                 on:mouseenter={() => selectedChatMode = ChatMode.ReadOnly}
                 on:mousedown={handleChatModeSelect}
                 on:keydown={() => {}}>
@@ -139,7 +139,7 @@
                 tabindex="-1"
                 aria-selected={selectedChatMode === ChatMode.Edit}
                 class:current-chat-mode={currentChatMode === ChatMode.Edit}
-                style:background-color={selectedChatMode === ChatMode.Edit ? "var(--interactive-accent)" : "transparent"}
+                style:background-color={selectedChatMode === ChatMode.Edit ? "color-mix(in srgb, var(--color-accent) 30%, transparent)" : "transparent"}
                 on:mouseenter={() => selectedChatMode = ChatMode.Edit}
                 on:mousedown={handleChatModeSelect}
                 on:keydown={() => {}}>
@@ -152,7 +152,7 @@
                 tabindex="-1"
                 aria-selected={selectedChatMode === ChatMode.Planning}
                 class:current-chat-mode={currentChatMode === ChatMode.Planning}
-                style:background-color={selectedChatMode === ChatMode.Planning ? "var(--interactive-accent)" : "transparent"}
+                style:background-color={selectedChatMode === ChatMode.Planning ? "color-mix(in srgb, var(--color-accent) 30%, transparent)" : "transparent"}
                 on:mouseenter={() => selectedChatMode = ChatMode.Planning}
                 on:mousedown={handleChatModeSelect}
                 on:keydown={() => {}}>

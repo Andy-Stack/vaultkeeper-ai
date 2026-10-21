@@ -80,7 +80,7 @@
                 tabindex="-1"
                 aria-selected={searchResult === searchState.selectedResult}
                 bind:this={resultElements[index]}
-                style:background-color={searchResult === searchState.selectedResult ? "var(--interactive-accent)" : "transparent"}
+                style:background-color={searchResult === searchState.selectedResult ? "color-mix(in srgb, var(--color-accent) 30%, transparent)" : "transparent"}
                 on:mouseenter={() => searchStateStore.setSelectedResult(index)}
                 on:mousedown={onResultAccept}
                 on:keydown={() => {}}>

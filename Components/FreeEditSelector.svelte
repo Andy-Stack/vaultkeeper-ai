@@ -120,7 +120,7 @@
                 tabindex="-1"
                 aria-selected={!selectedFreeEdit}
                 class:current-free-edit={!currentFreeEdit}
-                style:background-color={!selectedFreeEdit ? "var(--interactive-accent)" : "transparent"}
+                style:background-color={!selectedFreeEdit ? "color-mix(in srgb, var(--color-accent) 30%, transparent)" : "transparent"}
                 on:mouseenter={() => selectedFreeEdit = false}
                 on:mousedown={handleFreeEditSelect}
                 on:keydown={() => {}}>
@@ -133,7 +133,7 @@
                 tabindex="-1"
                 aria-selected={selectedFreeEdit}
                 class:current-free-edit={currentFreeEdit}
-                style:background-color={selectedFreeEdit ? "var(--interactive-accent)" : "transparent"}
+                style:background-color={selectedFreeEdit ? "color-mix(in srgb, var(--color-accent) 30%, transparent)" : "transparent"}
                 on:mouseenter={() => selectedFreeEdit = true}
                 on:mousedown={handleFreeEditSelect}
                 on:keydown={() => {}}>

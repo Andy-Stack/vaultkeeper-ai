@@ -170,7 +170,7 @@
                         tabindex="-1"
                         aria-selected={selectedInstruction === index}
                         class:current-instruction={currentInstruction === userInstruction}
-                        style:background-color={selectedInstruction === index ? "var(--interactive-accent)" : "transparent"}
+                        style:background-color={selectedInstruction === index ? "color-mix(in srgb, var(--color-accent) 30%, transparent)" : "transparent"}
                         bind:this={instructionsElements[index]}
                         on:mouseenter={() => selectedInstruction = index}
                         on:mousedown={handleInstructionSelect}

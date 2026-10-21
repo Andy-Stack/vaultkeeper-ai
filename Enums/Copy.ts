@@ -134,9 +134,9 @@ export enum Copy {
 
     // Effort Selector
     EffortFastTitle = "Fast",
-    EffortFastDesc = "The AI responds quickly with minimal reasoning.",
+    EffortFastDesc = "Faster responses, great for most tasks (recommended)",
     EffortThinkingTitle = "Thinking",
-    EffortThinkingDesc = "The AI reasons through problems more carefully, at the cost of slower responses.",
+    EffortThinkingDesc = "Allows the agent to reason for longer, at the cost of slower responses.",
 
     // Chat Input Placeholders
     InputPlaceholderQuestion = "Provide an answer...",

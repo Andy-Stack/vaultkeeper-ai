@@ -120,7 +120,7 @@
                 tabindex="-1"
                 aria-selected={selectedEffort === AIEffort.Fast}
                 class:current-effort={currentEffort === AIEffort.Fast}
-                style:background-color={selectedEffort === AIEffort.Fast ? "var(--interactive-accent)" : "transparent"}
+                style:background-color={selectedEffort === AIEffort.Fast ? "color-mix(in srgb, var(--color-accent) 30%, transparent)" : "transparent"}
                 on:mouseenter={() => selectedEffort = AIEffort.Fast}
                 on:mousedown={handleEffortSelect}
                 on:keydown={() => {}}>
@@ -133,7 +133,7 @@
                 tabindex="-1"
                 aria-selected={selectedEffort === AIEffort.Thinking}
                 class:current-effort={currentEffort === AIEffort.Thinking}
-                style:background-color={selectedEffort === AIEffort.Thinking ? "var(--interactive-accent)" : "transparent"}
+                style:background-color={selectedEffort === AIEffort.Thinking ? "color-mix(in srgb, var(--color-accent) 30%, transparent)" : "transparent"}
                 on:mouseenter={() => selectedEffort = AIEffort.Thinking}
                 on:mousedown={handleEffortSelect}
                 on:keydown={() => {}}>

@@ -48,7 +48,7 @@ export class OpenAI extends BaseAIClass {
 
         const tools = this.getTools();
 
-        const requestBody = {
+        const requestBody: Record<string, unknown> = {
             model: this.model(),
             instructions: systemPrompt,
             input: input,
@@ -56,6 +56,11 @@ export class OpenAI extends BaseAIClass {
             tool_choice: this.buildOpenAIToolChoice(),
             stream: true
         };
+
+        const effort = this.effort();
+        if (effort) {
+            requestBody.reasoning = { effort };
+        }
 
         const headers = {
             "Authorization": `Bearer ${this.apiKey}`,

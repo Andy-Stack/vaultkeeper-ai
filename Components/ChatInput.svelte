@@ -11,6 +11,9 @@
 	import type { InputService } from "Services/InputService";
 	import UserInstruction from "./UserInstruction.svelte";
   import ChatModeSelector from "./ChatModeSelector.svelte";
+  import FreeEditSelector from "./FreeEditSelector.svelte";
+  import EffortSelector from "./EffortSelector.svelte";
+  import { AIEffort, iconForEffort } from "Enums/AIEffort";
 	import DiffControls from "./InputDisplayDiff.svelte";
 	import PlanApprovalControls from "./InputDisplayPlan.svelte";
 	import type { EventService } from "Services/EventService";
@@ -25,7 +28,7 @@
 	import { AboutModalTopic } from "Enums/AboutModalTopic";
 	import type { IPrompt } from "AIPrompts/IPrompt";
   import type { SettingsService } from "Services/SettingsService";
-  import { ChatMode, chatModeAllowsEdits, iconForChatMode } from "Enums/ChatMode";
+  import { ChatMode, chatModeAllowsEdits, iconForChatMode, iconForFreeEdit } from "Enums/ChatMode";
 	import { hideDrawerElements, restoreDrawerElements } from "Helpers/ElementHelper";
 	import { replaceCopy } from "Helpers/Helpers";
 	import { AIProvider } from "Enums/ApiProvider";
@@ -58,14 +61,18 @@
   let attachmentButton: HTMLButtonElement;
   let chatModeButton: HTMLButtonElement;
   let freeEditButton: HTMLButtonElement;
+  let effortButton: HTMLButtonElement;
 
   let chatModeSelectionAreaActive: boolean = false;
+  let freeEditSelectionAreaActive: boolean = false;
+  let effortSelectionAreaActive: boolean = false;
   let userInstructionAreaActive: boolean = false;
   let userInstructionActive: boolean = true;
 
   let userRequest: string = "";
 
   let freeEdit: boolean = settingsService.settings.freeEdit;
+  let effort: AIEffort = settingsService.settings.effort;
   let chatMode: ChatMode = settingsService.settings.chatMode;
   let inputMode: InputMode = InputMode.Normal;
   let planApprovalOpen: boolean = false;
@@ -102,6 +109,9 @@
         freeEdit = settingsService.settings.freeEdit;
         setIcon(freeEditButton, iconForFreeEdit(freeEdit));
       }
+    }
+    if (changed.includes("effort")) {
+      effort = settingsService.settings.effort;
     }
     if (changed.includes("provider")) {
       webSearchUnavailable = settingsService.settings.provider === AIProvider.Local;
@@ -253,6 +263,10 @@
     setIcon(freeEditButton, iconForFreeEdit(freeEdit))
   }
 
+  $: if (effortButton) {
+    setIcon(effortButton, iconForEffort(effort));
+  }
+
   $: inputPlaceholder = (() => {
     if (inputMode === InputMode.Question) return Copy.InputPlaceholderQuestion;
     return Copy.InputPlaceholderNormal;
@@ -271,10 +285,6 @@
     }
     return isSubmitting ? Copy.ButtonCancel : Copy.ButtonSendMessage;
   })();
-
-  function iconForFreeEdit(freeEdit: boolean) {
-    return freeEdit ? "file-pen" : "file-lock"
-  }
 
   function handleStop() {
     onStop();
@@ -338,11 +348,12 @@
     chatModeSelectionAreaActive = !chatModeSelectionAreaActive;
   }
 
-  function toggleFreeEdit() {
-    const newState = !settingsService.settings.freeEdit;
-    settingsService.updateSettings(settings => {
-      settings.freeEdit = newState;
-    });
+  function toggleEffortSelectionArea() {
+    effortSelectionAreaActive = !effortSelectionAreaActive;
+  }
+
+  function toggleFreeEditSelectionArea() {
+    freeEditSelectionAreaActive = !freeEditSelectionAreaActive;
   }
 
   async function handleKeydown(e: KeyboardEvent) {
@@ -598,6 +609,14 @@
     <ChatModeSelector focusInput={focusInput} bind:chatModeSelectionAreaActive={chatModeSelectionAreaActive} />
   </div>
 
+  <div id="free-edit-selector-container" style:padding-top={freeEditSelectionAreaActive ? "var(--size-4-2)" : 0}>
+    <FreeEditSelector focusInput={focusInput} bind:freeEditSelectionAreaActive={freeEditSelectionAreaActive} />
+  </div>
+
+  <div id="effort-selector-container" style:padding-top={effortSelectionAreaActive ? "var(--size-4-2)" : 0}>
+    <EffortSelector focusInput={focusInput} bind:effortSelectionAreaActive={effortSelectionAreaActive} />
+  </div>
+
   <button
     id="user-instruction-button"
     class:input-button-highlight={userInstructionActive}
@@ -640,13 +659,21 @@
   </div>
 
   <button
-    id="chat-attachment-button"
-    bind:this={attachmentButton}
-    on:click={handleAttachments}
-    disabled={isSubmitting}
-    aria-label={Copy.ButtonAttachFiles}>
+    id="effort-button"
+    bind:this={effortButton}
+    on:click={toggleEffortSelectionArea}
+    aria-label={Copy.ButtonChangeEffort}>
   </button>
 
+  <button
+    id="free-edit-button"
+    class:input-button-highlight={freeEdit}
+    bind:this={freeEditButton}
+    on:click={toggleFreeEditSelectionArea}
+    disabled={!editsAllowed}
+    aria-label={editsAllowed ? Copy.ButtonFreeEdit : Copy.ButtonFreeEditDisabled }>
+  </button>
+  
   <button
     id="chat-mode-button"
     class:input-button-highlight={editsAllowed}
@@ -656,13 +683,14 @@
     aria-label={Copy.ButtonChangeChatMode}>
   </button>
 
+  <div id="input-button-divider" role="separator" aria-orientation="vertical"></div>
+
   <button
-    id="free-edit-button"
-    class:input-button-highlight={freeEdit}
-    bind:this={freeEditButton}
-    on:click={toggleFreeEdit}
-    disabled={!editsAllowed}
-    aria-label={editsAllowed ? Copy.ButtonFreeEdit : Copy.ButtonFreeEditDisabled }>
+    id="chat-attachment-button"
+    bind:this={attachmentButton}
+    on:click={handleAttachments}
+    disabled={isSubmitting}
+    aria-label={Copy.ButtonAttachFiles}>
   </button>
 
   <button
@@ -686,44 +714,58 @@
     grid-column: 1;
     display: grid;
     grid-template-rows: auto auto auto auto auto var(--size-4-3) 1fr var(--size-4-3) auto var(--size-4-3);
-    grid-template-columns: var(--size-4-3) auto var(--size-4-2) auto 1fr auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-3);
+    grid-template-columns: var(--size-4-3) auto var(--size-4-2) auto 1fr auto var(--size-4-2) auto var(--size-4-2) auto var(--size-4-5) auto var(--size-4-2) auto var(--size-4-3);
     border-radius: var(--radius-l);
     background-color: var(--background-primary);
   }
 
   #input-display-container {
     grid-row: 1;
-    grid-column: 2 / 13;
+    grid-column: 2 / 15;
   }
 
   #input-attachments-container {
     grid-row: 2;
-    grid-column: 2 / 13;
+    grid-column: 2 / 15;
   }
 
   #diff-controls-container {
     grid-row: 3;
-    grid-column: 2 / 13;
+    grid-column: 2 / 15;
   }
 
   #input-search-results-container {
     grid-row: 4;
-    grid-column: 2 / 13;
+    grid-column: 2 / 15;
   }
 
   #user-instruction-container {
     grid-row: 4;
-    grid-column: 2 / 13;
+    grid-column: 2 / 15;
   }
 
+  /* Selectors share a grid cell, align to start so closed ones don't stretch over the open one */
   #chat-mode-selector-container {
     grid-row: 5;
-    grid-column: 2 / 13;
+    grid-column: 2 / 15;
+    align-self: start;
+  }
+
+  #free-edit-selector-container {
+    grid-row: 5;
+    grid-column: 2 / 15;
+    align-self: start;
+  }
+
+  #effort-selector-container {
+    grid-row: 5;
+    grid-column: 2 / 15;
+    align-self: start;
   }
 
   #input-field {
     grid-row: 7;
-    grid-column: 2 / 13;
+    grid-column: 2 / 15;
     height: 100%;
     max-height: 30vh;
     border-radius: var(--radius-m);
@@ -802,7 +844,7 @@
     max-height: 2rem;
   }
 
-  #chat-attachment-button {
+  #effort-button {
     grid-row: 9;
     grid-column: 6;
     border-radius: var(--radius-xl);
@@ -811,26 +853,13 @@
     transition-duration: 0.5s;
   }
 
-  :global(.is-mobile) #chat-attachment-button {
-    max-height: 2rem;
-  }
-
-  #chat-mode-button {
-    grid-row: 9;
-    grid-column: 8;
-    border-radius: var(--radius-xl);
-    padding: var(--size-4-2);
-    align-self: end;
-    transition-duration: 0.5s;
-  }
-
-  :global(.is-mobile) #chat-mode-button {
+  :global(.is-mobile) #effort-button {
     max-height: 2rem;
   }
 
   #free-edit-button {
     grid-row: 9;
-    grid-column: 10;
+    grid-column: 8;
     border-radius: var(--radius-xl);
     padding: var(--size-4-2);
     align-self: end;
@@ -841,13 +870,49 @@
     max-height: 2rem;
   }
 
+  #chat-mode-button {
+    grid-row: 9;
+    grid-column: 10;
+    border-radius: var(--radius-xl);
+    padding: var(--size-4-2);
+    align-self: end;
+    transition-duration: 0.5s;
+  }
+
+  :global(.is-mobile) #chat-mode-button {
+    max-height: 2rem;
+  }
+
+  #input-button-divider {
+    grid-row: 9;
+    grid-column: 11;
+    justify-self: center;
+    align-self: end;
+    width: 1px;
+    height: 100%;
+    background-color: var(--background-primary-alt);
+  }
+
+  #chat-attachment-button {
+    grid-row: 9;
+    grid-column: 12;
+    border-radius: var(--radius-xl);
+    padding: var(--size-4-2);
+    align-self: end;
+    transition-duration: 0.5s;
+  }
+
+  :global(.is-mobile) #chat-attachment-button {
+    max-height: 2rem;
+  }
+
   .input-button-highlight {
     box-shadow: 0px 0px 2px 1px var(--color-accent);
   }
 
   #submit-button {
     grid-row: 9;
-    grid-column: 12;
+    grid-column: 14;
     border-radius: var(--radius-xl);
     padding-left: var(--size-4-2);
     padding-right: var(--size-4-2);

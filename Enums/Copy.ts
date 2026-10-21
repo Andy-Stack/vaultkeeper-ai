@@ -126,6 +126,18 @@ export enum Copy {
     ChatModePlanningTitle = "Planning",
     ChatModePlanningDesc = "The AI plans its approach before executing tasks in your vault.",
 
+    // Free Edit Selector
+    FreeEditOffTitle = "Review Changes",
+    FreeEditOffDesc = "Each change is shown as a diff for you to approve before it's applied.",
+    FreeEditOnTitle = "Edit Without Asking",
+    FreeEditOnDesc = "Changes are applied to your vault immediately without review.",
+
+    // Effort Selector
+    EffortFastTitle = "Fast",
+    EffortFastDesc = "The AI responds quickly with minimal reasoning.",
+    EffortThinkingTitle = "Thinking",
+    EffortThinkingDesc = "The AI reasons through problems more carefully, at the cost of slower responses.",
+
     // Chat Input Placeholders
     InputPlaceholderQuestion = "Provide an answer...",
     InputPlaceholderNormal = "Type a message...",
@@ -135,7 +147,8 @@ export enum Copy {
     ButtonSubmitAnswer = "Submit answer",
     ButtonSendMessage = "Send Message",
     ButtonChangeChatMode = "Change the Chat Mode",
-    ButtonFreeEdit = "Allow changes without asking",
+    ButtonFreeEdit = "Change how edits are approved",
+    ButtonChangeEffort = "Change the AI effort",
     ButtonFreeEditDisabled = "Read-only mode enabled",
     ButtonTurnOffPlanningMode = "Turn off Planning Mode",
     ButtonTurnOnPlanningMode = "Turn on Planning Mode",

@@ -3,7 +3,8 @@ import { Services } from "Services/Services";
 import type { IAIClass } from "AIClasses/IAIClass";
 import { type IStreamChunk } from "Services/StreamingService";
 import type { Conversation } from "Conversations/Conversation";
-import type { AIProvider } from "Enums/ApiProvider";
+import { type AIProvider, isValidProviderModel } from "Enums/ApiProvider";
+import { AIEffort, EFFORT_BY_MODEL } from "Enums/AIEffort";
 import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
 import type { ConversationContent } from "Conversations/ConversationContent";
 import type { Attachment } from "Conversations/Attachment";
@@ -207,6 +208,13 @@ export abstract class BaseAIClass implements IAIClass {
             case AgentType.QuickAction:
                 return this.settingsService.settings.quickActionModel;
         }
+    }
+
+    /** The provider-specific effort value for the current model, or undefined when the model has none. */
+    protected effort(): string | undefined {
+        const model = this.model();
+        const effort = this._agentType === AgentType.QuickAction ? AIEffort.Fast : this.settingsService.settings.effort;
+        return isValidProviderModel(model) ? EFFORT_BY_MODEL[model]?.[effort] : undefined;
     }
 
     protected filterConversationContents(conversationContent: ConversationContent[]): ConversationContent[] {

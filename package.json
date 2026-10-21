@@ -14,7 +14,8 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:ui": "vitest --ui",
-		"test:coverage": "vitest run --coverage"
+		"test:coverage": "vitest run --coverage",
+		"test:efforts": "esbuild __tests__/Live/TestModelEfforts.ts --bundle --platform=node --format=esm --log-level=warning | node --input-type=module"
 	},
 	"keywords": [],
 	"author": "",

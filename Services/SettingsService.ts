@@ -13,6 +13,7 @@ import {
     modelMatchesProvider
 } from "Enums/ApiProvider";
 import { SEARCH_SETTINGS_RANGE } from "Enums/SearchSettings";
+import { AIEffort, isValidEffort } from "Enums/AIEffort";
 
 export const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     firstTimeStart: true,
@@ -28,6 +29,7 @@ export const DEFAULT_SETTINGS: IVaultkeeperAISettings = {
     model: AIProviderModel.ClaudeSonnet_5_5,
     planningModel: AIProviderModel.ClaudeOpus_5_5,
     quickActionModel: AIProviderModel.ClaudeHaiku_5_5,
+    effort: AIEffort.Fast,
     
     cachedModelSettings: {
         [AIProvider.Claude]: {
@@ -108,6 +110,7 @@ export interface IVaultkeeperAISettings {
     model: AIProviderModel;
     planningModel: AIProviderModel;
     quickActionModel: AIProviderModel;
+    effort: AIEffort;
 
     cachedModelSettings: Record<AIProvider, ProviderModelCache>;
 
@@ -179,6 +182,7 @@ export class SettingsService {
         this.settingsSnapshot = JSON.stringify(this.settings);
         void this.ensureValidSearchSettings()
         void this.ensureValidModels();
+        void this.ensureValidEffort();
         
         if (!this.settings.pluginVersion || this.settings.pluginVersion !== this.plugin.manifest.version) {
             void this.updateSettings(settings => {
@@ -272,6 +276,12 @@ export class SettingsService {
                 settings.cachedModelSettings[settings.provider].quickActionModel = DEFAULT_QUICK_MODEL_BY_PROVIDER[settings.provider];
             }
         });
+    }
+
+    private async ensureValidEffort() {
+        if (!isValidEffort(this.settings.effort)) {
+            await this.updateSettings(settings => settings.effort = DEFAULT_SETTINGS.effort);
+        }
     }
 
     private async ensureValidSearchSettings() {

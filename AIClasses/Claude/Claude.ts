@@ -68,7 +68,7 @@ export class Claude extends BaseAIClass {
 
         const tools = this.getTools();
 
-        const requestBody = {
+        const requestBody: Record<string, unknown> = {
             model: this.model(),
             max_tokens: 16384,
             system: systemPrompt,
@@ -77,6 +77,11 @@ export class Claude extends BaseAIClass {
             tool_choice: this.buildClaudeToolChoice(),
             stream: true
         };
+
+        const effort = this.effort();
+        if (effort) {
+            requestBody.output_config = { effort };
+        }
 
         // Additional headers for Claude API
         const headers = {

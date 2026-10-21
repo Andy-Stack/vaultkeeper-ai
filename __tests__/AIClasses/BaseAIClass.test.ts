@@ -2,12 +2,17 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { Claude } from '../../AIClasses/Claude/Claude';
 import { OpenAI } from '../../AIClasses/OpenAI/OpenAI';
 import { Gemini } from '../../AIClasses/Gemini/Gemini';
+import { Mistral } from '../../AIClasses/Mistral/Mistral';
+import { Local } from '../../AIClasses/Local/Local';
+import { Conversation } from '../../Conversations/Conversation';
+import { AgentType } from '../../Enums/AgentType';
+import { AIEffort } from '../../Enums/AIEffort';
 import { ConversationContent } from '../../Conversations/ConversationContent';
 import { Role } from '../../Enums/Role';
 import { RegisterSingleton, DeregisterAllServices } from '../../Services/DependencyService';
 import { Services } from '../../Services/Services';
 import { AbortService } from '../../Services/AbortService';
-import { AIProvider } from '../../Enums/ApiProvider';
+import { AIProvider, AIProviderModel } from '../../Enums/ApiProvider';
 import { parseToolCalls, parseFunctionResponse } from '../../Helpers/ResponseHelper';
 
 /**
@@ -20,6 +25,8 @@ describe('BaseAIClass Shared Methods', () => {
     let claude: Claude;
     let openai: OpenAI;
     let gemini: Gemini;
+    let mockSettingsService: any;
+    let mockStreamingService: any;
 
     beforeEach(() => {
         // Mock IPrompt
@@ -33,7 +40,7 @@ describe('BaseAIClass Shared Methods', () => {
         RegisterSingleton(Services.VaultkeeperAIPlugin, {});
 
         // Mock SettingsService
-        const mockSettingsService = {
+        mockSettingsService = {
             settings: {
                 model: 'claude-3-5-sonnet-20241022',
                 apiKeys: {
@@ -58,7 +65,7 @@ describe('BaseAIClass Shared Methods', () => {
         RegisterSingleton(Services.AbortService, abortService);
 
         // Mock StreamingService
-        const mockStreamingService = {
+        mockStreamingService = {
             streamRequest: vi.fn()
         };
         RegisterSingleton(Services.StreamingService, mockStreamingService);
@@ -482,6 +489,78 @@ describe('BaseAIClass Shared Methods', () => {
             // Content should match
             expect(claudeFiltered[0].content).toBe(openaiFiltered[0].content);
             expect(openaiFiltered[0].content).toBe(geminiFiltered[0].content);
+        });
+    });
+
+    describe('effort', () => {
+        async function sentRequestBody(ai: { streamRequest: (conversation: Conversation) => AsyncGenerator<unknown> }) {
+            mockStreamingService.streamRequest.mockImplementation(async function* () {
+                yield { content: '', isComplete: true };
+            });
+            const conversation = new Conversation();
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Hi' }));
+            for await (const _chunk of ai.streamRequest(conversation)) { /* consume */ }
+            return mockStreamingService.streamRequest.mock.calls[0][1];
+        }
+
+        it('maps the setting to the model-specific value', () => {
+            mockSettingsService.settings.model = AIProviderModel.GPT_6_Luna;
+
+            mockSettingsService.settings.effort = AIEffort.Fast;
+            expect((openai as any).effort()).toBe('none');
+
+            mockSettingsService.settings.effort = AIEffort.Thinking;
+            expect((openai as any).effort()).toBe('medium');
+        });
+
+        it('always uses Fast for quick actions', () => {
+            mockSettingsService.settings.quickActionModel = AIProviderModel.ClaudeHaiku_5_5;
+            mockSettingsService.settings.effort = AIEffort.Thinking;
+            claude.agentType = AgentType.QuickAction;
+
+            expect((claude as any).effort()).toBe('low');
+        });
+
+        it('returns undefined for models without an effort mapping', () => {
+            mockSettingsService.settings.model = 'some-local-model';
+            mockSettingsService.settings.effort = AIEffort.Thinking;
+
+            expect((claude as any).effort()).toBeUndefined();
+        });
+
+        it('sends output_config.effort to Claude', async () => {
+            mockSettingsService.settings.model = AIProviderModel.ClaudeSonnet_5_5;
+            mockSettingsService.settings.effort = AIEffort.Thinking;
+
+            expect((await sentRequestBody(claude)).output_config).toEqual({ effort: 'medium' });
+        });
+
+        it('sends reasoning.effort to OpenAI', async () => {
+            mockSettingsService.settings.model = AIProviderModel.GPT_6_1_Sol;
+            mockSettingsService.settings.effort = AIEffort.Fast;
+
+            expect((await sentRequestBody(openai)).reasoning).toEqual({ effort: 'low' });
+        });
+
+        it('sends thinkingConfig.thinkingLevel to Gemini', async () => {
+            mockSettingsService.settings.model = AIProviderModel.GeminiFlash_3_5_Lite;
+            mockSettingsService.settings.effort = AIEffort.Fast;
+
+            expect((await sentRequestBody(gemini)).generationConfig).toEqual({ thinkingConfig: { thinkingLevel: 'minimal' } });
+        });
+
+        it('sends reasoning_effort to Mistral', async () => {
+            mockSettingsService.settings.model = AIProviderModel.MistralLarge;
+            mockSettingsService.settings.effort = AIEffort.Thinking;
+
+            expect((await sentRequestBody(new Mistral())).reasoning_effort).toBe('high');
+        });
+
+        it('sends no effort field to local models', async () => {
+            mockSettingsService.settings.localModels = { model: 'some-local-model', planningModel: '', quickActionModel: '' };
+            mockSettingsService.settings.effort = AIEffort.Thinking;
+
+            expect((await sentRequestBody(new Local())).reasoning_effort).toBeUndefined();
         });
     });
 });

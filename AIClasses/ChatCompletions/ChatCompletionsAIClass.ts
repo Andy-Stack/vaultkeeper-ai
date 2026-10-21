@@ -46,6 +46,11 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
             stream: true
         };
 
+        const effort = this.effort();
+        if (effort) {
+            requestBody.reasoning_effort = effort;
+        }
+
         // Only include tools if there are definitions
         if (tools.length > 0) {
             requestBody.tools = tools;

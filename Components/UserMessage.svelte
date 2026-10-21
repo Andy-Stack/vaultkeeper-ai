@@ -14,8 +14,8 @@
   let hasFocus = false;
 
   async function copyMessage() {
-    if (message.content) {
-      await navigator.clipboard.writeText(message.content);
+    if (message.displayContent) {
+      await navigator.clipboard.writeText(message.displayContent);
       new Notice("Copied to clipboard");
     }
     (document.activeElement as HTMLElement | null)?.blur();

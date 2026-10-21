@@ -133,6 +133,11 @@ export class Gemini extends BaseAIClass {
       requestBody.tool_config = this.buildGeminiToolConfig();
     }
 
+    const effort = this.effort();
+    if (effort) {
+      requestBody.generationConfig = { thinkingConfig: { thinkingLevel: effort } };
+    }
+
     yield* this.streamingService.streamRequest(
       `${AIProviderURL.Gemini}/${this.model()}:streamGenerateContent?key=${this.apiKey}&alt=sse`,
       requestBody,

@@ -18,3 +18,7 @@ export function iconForChatMode(mode: ChatMode) {
             return "list-checks";
     }
 }
+
+export function iconForFreeEdit(freeEdit: boolean) {
+    return freeEdit ? "file-pen" : "file-lock";
+}

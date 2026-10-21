@@ -10,6 +10,7 @@ import {
     DEFAULT_PLANNING_MODEL_BY_PROVIDER,
     DEFAULT_QUICK_MODEL_BY_PROVIDER
 } from '../../Enums/ApiProvider';
+import { AIEffort } from '../../Enums/AIEffort';
 
 describe('SettingsService', () => {
     let settingsService: SettingsService;
@@ -172,6 +173,24 @@ describe('SettingsService', () => {
                 planningModel: AIProviderModel.None,
                 quickActionModel: AIProviderModel.None
             });
+        });
+
+        it('should default effort to Fast', () => {
+            settingsService = new SettingsService({});
+
+            expect(settingsService.settings.effort).toBe(AIEffort.Fast);
+        });
+
+        it('should keep a valid loaded effort', () => {
+            settingsService = new SettingsService({ effort: AIEffort.Thinking });
+
+            expect(settingsService.settings.effort).toBe(AIEffort.Thinking);
+        });
+
+        it('should reset an invalid loaded effort to the default', () => {
+            settingsService = new SettingsService({ effort: 'max' as AIEffort });
+
+            expect(settingsService.settings.effort).toBe(DEFAULT_SETTINGS.effort);
         });
     });
 

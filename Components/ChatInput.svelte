@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from "svelte";
-  import { Platform, setIcon, ToggleComponent, type EventRef } from "obsidian";
+  import { Platform, setIcon, type EventRef } from "obsidian";
 	import type { UserInputService } from "Services/UserInputService";
 	import type { ISearchState, SearchStateStore } from "Stores/SearchStateStore";
 	import { Resolve } from "Services/DependencyService";
@@ -18,7 +18,6 @@
 	import PlanApprovalControls from "./InputDisplayPlan.svelte";
 	import type { EventService } from "Services/EventService";
 	import { Event } from "Enums/Event";
-	import type { DiffService } from "Services/DiffService";
 	import { Attachment } from "Conversations/Attachment";
 	import ChatAttachments from "./ChatAttachments.svelte";
 	import InputDisplay from "./InputDisplay.svelte";
@@ -47,7 +46,6 @@
   const settingsService: SettingsService = Resolve<SettingsService>(Services.SettingsService);
   const userInputService: UserInputService = Resolve<UserInputService>(Services.UserInputService);
   const searchStateStore: SearchStateStore = Resolve<SearchStateStore>(Services.SearchStateStore);
-  const diffService: DiffService = Resolve<DiffService>(Services.DiffService);
   const eventService: EventService = Resolve<EventService>(Services.EventService);
   const aiPrompt: IPrompt = Resolve<IPrompt>(Services.IPrompt);
 
@@ -84,7 +82,7 @@
   $: isAwaitingUser = diffOpen || planApprovalOpen || inputMode === InputMode.Question;
 
   let webSearchActive: boolean = settingsService.settings.enableWebSearch;
-  let webSearchUnavailable: boolean = settingsService.settings.provider === AIProvider.Local;
+  let usingLocalProvider: boolean = settingsService.settings.provider === AIProvider.Local;
   let editsAllowed: boolean = chatModeAllowsEdits(chatMode);
 
   let countdownIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -114,7 +112,7 @@
       effort = settingsService.settings.effort;
     }
     if (changed.includes("provider")) {
-      webSearchUnavailable = settingsService.settings.provider === AIProvider.Local;
+      usingLocalProvider = settingsService.settings.provider === AIProvider.Local;
     }
     if (changed.includes("enableWebSearch")) {
       webSearchActive = settingsService.settings.enableWebSearch;
@@ -234,7 +232,7 @@
   }
 
   $: if (webSearchButton) {
-    setIcon(webSearchButton, webSearchUnavailable ? "globe-lock" : "globe");
+    setIcon(webSearchButton, usingLocalProvider ? "globe-lock" : "globe");
   }
 
   $: userInstructionAreaActive, (() => {
@@ -334,7 +332,7 @@
   }
 
   function toggleWebSearch() {
-    if (webSearchUnavailable) {
+    if (usingLocalProvider) {
       return;
     }
     const newState = !settingsService.settings.enableWebSearch;
@@ -627,11 +625,11 @@
 
   <button
     id="web-search-button"
-    class:input-button-highlight={webSearchActive && !webSearchUnavailable}
+    class:input-button-highlight={webSearchActive && !usingLocalProvider}
     bind:this={webSearchButton}
-    disabled={webSearchUnavailable}
+    disabled={usingLocalProvider}
     on:click={toggleWebSearch}
-    aria-label={webSearchUnavailable ? Copy.ButtonWebSearchUnavailable : (webSearchActive ? Copy.ButtonTurnOffWebSearch : Copy.ButtonTurnOnWebSearch)}>
+    aria-label={usingLocalProvider ? Copy.ButtonWebSearchUnavailable : (webSearchActive ? Copy.ButtonTurnOffWebSearch : Copy.ButtonTurnOnWebSearch)}>
   </button>
 
   <div
@@ -660,9 +658,10 @@
 
   <button
     id="effort-button"
+    disabled={usingLocalProvider}
     bind:this={effortButton}
     on:click={toggleEffortSelectionArea}
-    aria-label={Copy.ButtonChangeEffort}>
+    aria-label={usingLocalProvider ? Copy.ButtonChangeEffortUnavailable : Copy.ButtonChangeEffort}>
   </button>
 
   <button

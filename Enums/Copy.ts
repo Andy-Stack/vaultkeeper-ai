@@ -149,6 +149,7 @@ export enum Copy {
     ButtonChangeChatMode = "Change the Chat Mode",
     ButtonFreeEdit = "Change how edits are approved",
     ButtonChangeEffort = "Change the AI effort",
+    ButtonChangeEffortUnavailable = "Effort is not supported for local models",
     ButtonFreeEditDisabled = "Read-only mode enabled",
     ButtonTurnOffPlanningMode = "Turn off Planning Mode",
     ButtonTurnOnPlanningMode = "Turn on Planning Mode",

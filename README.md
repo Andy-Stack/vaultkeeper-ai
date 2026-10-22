@@ -1,5 +1,5 @@
 <p align="center">
-	<img width="1280" alt="Vaultkeeper AI" src="https://github.com/user-attachments/assets/a4c4e96f-1a5e-4dbd-865b-d3c943611035" />
+	<img width="1280" alt="Vaultkeeper AI" src="https://github.com/user-attachments/assets/14b2958b-362c-405b-a94c-0a6f229936cc" />
 </p>
 
 <h3 align="center">An AI assistant that actually knows your vault, and never changes a note without showing you first.</h3>

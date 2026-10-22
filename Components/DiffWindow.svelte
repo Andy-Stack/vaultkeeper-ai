@@ -348,6 +348,23 @@
 			toggleContinuityExpander();
 		}
 	}
+
+	async function toggleAgentContinuity() {
+		const value = !enableAgentContinuity;
+		await settingsService.updateSettings(settings => {
+			settings.enableAgentContinuity = value;
+			if (value) {
+				settings.enableContinuity = true;
+			}
+		});
+	}
+
+	function handleAgentContinuityKeydown(event: KeyboardEvent) {
+		if (event.key === "Enter" || event.key === " ") {
+			event.preventDefault();
+			void toggleAgentContinuity();
+		}
+	}
 </script>
 
 <div id="diff-view-grid" class="mobile-navbar-clearance" class:diff-view-phone={isPhone}>
@@ -357,7 +374,12 @@
 			<span id="diff-view-banner-label">{issueCount} continuity {StringTools.pluralise("issue", issueCount)}{isPhone ? "." : " found in this change."}</span>
 			<div id="diff-view-banner-setting">
 			<span id="diff-view-banner-setting-ellipse" class="diff-view-ellipse"></span>
-				<span id="diff-view-banner-setting-label">Auto-resolve {enableAgentContinuity ? "on" : "off"}</span>
+			<span
+				id="diff-view-banner-setting-label"
+				onclick={toggleAgentContinuity}
+				onkeydown={handleAgentContinuityKeydown}
+				role="button"
+				tabindex="0">Auto-resolve {enableAgentContinuity ? "on" : "off"}</span>
 			</div>
 		</div>
 	{/if}
@@ -727,6 +749,7 @@
 		color: var(--color-accent-1);
 		font-size: var(--font-smallest);
 		line-height: 1;
+		cursor: pointer;
 	}
 
 	#diff-view-panel {

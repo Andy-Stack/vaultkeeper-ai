@@ -28,7 +28,7 @@
 </script>
 
 {#if !isIdle && thoughtText.length > 0}
-  <div id="streaming-thoughts-container" in:slide out:slide={{duration: 1000}}>
+  <div id="streaming-thoughts-container" in:slide out:slide={{duration: 500}}>
     <span id="streaming-thoughts-label">{thoughtText}</span>
     <div id="streaming-thoughts-fade"></div>
   </div>

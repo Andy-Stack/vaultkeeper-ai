@@ -9,7 +9,7 @@
 	import { Greeting } from "Enums/Greeting";
 	import { Role } from "Enums/Role";
   import type { ConversationContent } from "Conversations/ConversationContent";
-	import { tick } from "svelte";
+	import { tick, onDestroy } from "svelte";
 	import { setIcon } from "obsidian";
 	import { fade, slide } from "svelte/transition";
 	import GraphAnimation from "./GraphAnimation.svelte";
@@ -31,22 +31,19 @@
 
     requestAnimationFrame(() => {
       if (behavior) {
-        scrollToLatestTurn(behavior);
+        scrollToBottom(behavior);
       }
       tick().then(updateScrolledState);
     });
   }
 
-  function scrollToLatestTurn(behavior: ScrollBehavior) {
-    const latestTurn = chatContainer.querySelector<HTMLElement>(".message-group.latest");
-    if (!latestTurn) {
-      return;
-    }
-    const paddingTop = parseFloat(getComputedStyle(chatContainer).paddingTop) || 0;
-    chatContainer.scroll({ top: latestTurn.offsetTop - paddingTop, behavior });
+  function scrollToTop(behavior: ScrollBehavior) {
+    isFollowingContent = false;
+    chatContainer.scroll({ top: 0, behavior });
   }
 
   function scrollToBottom(behavior: ScrollBehavior) {
+    isFollowingContent = true;
     chatContainer.scroll({ top: chatContainer.scrollHeight, behavior });
   }
 
@@ -58,8 +55,36 @@
     scrolledToBottom = !isScrollable || Math.abs(chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < 100;
   }
 
-  let scrolledToBottom: boolean = true;
+  function handleScroll() {
+    const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight < 10;
+    if (isAtBottom) {
+      isFollowingContent = true;
+    } else if (chatContainer.scrollTop < previousScrollTop) {
+      isFollowingContent = false;
+    }
+    previousScrollTop = chatContainer.scrollTop;
+    updateScrolledState();
+  }
 
+  const contentResizeObserver = new ResizeObserver(() => {
+    if (isFollowingContent) {
+      scrollToBottom("instant");
+    }
+  });
+
+  // Observing each turn rather than one wrapper, since a wrapper would break the latest turn's min-height: 100%
+  function followResizes(element: HTMLElement) {
+    contentResizeObserver.observe(element);
+    return { destroy: () => contentResizeObserver.unobserve(element) };
+  }
+
+  onDestroy(() => contentResizeObserver.disconnect());
+
+  let scrolledToBottom: boolean = true;
+  let isFollowingContent: boolean = true;
+  let previousScrollTop: number = 0;
+
+  let scrollToTopButton: HTMLButtonElement;
   let scrollToBottomButton: HTMLButtonElement;
 
   type Turn = { id: number, messages: ConversationContent[] };
@@ -115,8 +140,11 @@
     }
   }
 
+  $: if (scrollToTopButton) {
+    setIcon(scrollToTopButton, "chevron-up");
+  }
   $: if (scrollToBottomButton) {
-    setIcon(scrollToBottomButton, "arrow-down");
+    setIcon(scrollToBottomButton, "chevron-down");
   }
 </script>
 
@@ -124,10 +152,10 @@
   {#if messages.length > 0}
     <div class="top-fade"></div>
   {/if}
-  <div class="chat-area" bind:this={chatContainer} on:scroll={updateScrolledState}>
+  <div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll}>
     {#each turns as turn, turnIndex (turn.id)}
       {@const isLatestTurn = turnIndex === turns.length - 1}
-      <div class="message-group" class:latest={isLatestTurn}>
+      <div class="message-group" class:latest={isLatestTurn} use:followResizes>
         {#each turn.messages as message, messageIndex (message.id)}
           {@const content = message.getDisplayContent()}
           {#if message.shouldDisplayContent && content.trim() !== ""}
@@ -181,6 +209,12 @@
   {#if !scrolledToBottom}
     <div class="scroll-to-bottom-container" transition:fade>
       <button
+        id="scroll-to-top-button"
+        bind:this={scrollToTopButton}
+        on:click={() => scrollToTop("smooth")}
+        aria-label="Scroll to top">
+      </button>
+      <button
         id="scroll-to-bottom-button"
         bind:this={scrollToBottomButton}
         on:click={() => scrollToBottom("smooth")}
@@ -199,7 +233,8 @@
   }
 
   .scroll-to-bottom-container {
-    background-color: color-mix(in srgb, var(--background-primary) 70%, transparent);
+    display: flex;
+    background-color: var(--background-primary);
     border-radius: var(--radius-l);
     padding: var(--size-4-2);
     position: absolute;
@@ -207,8 +242,14 @@
     right: 0px;
   }
 
+  #scroll-to-top-button {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
   #scroll-to-bottom-button {
-    background-color: var(--interactive-accent);
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
   }
 
   .chat-area-wrapper {

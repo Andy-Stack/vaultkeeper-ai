@@ -38,6 +38,7 @@ describe('Multi-Agent Integration Tests', () => {
 		onSubmit: vi.fn(),
 		onStreamingUpdate: vi.fn(),
 		onToolCallStarted: vi.fn(),
+		onThought: vi.fn(),
 		onArtifactProduced: vi.fn(),
 		onPlanningStarted: vi.fn(),
 		onPlanningFinished: vi.fn(),

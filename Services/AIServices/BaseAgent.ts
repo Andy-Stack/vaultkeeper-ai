@@ -4,6 +4,8 @@ import type { IAIClass } from "AIClasses/IAIClass";
 import type { IPrompt } from "AIPrompts/IPrompt";
 import type { Conversation } from "Conversations/Conversation";
 import { ConversationContent } from "Conversations/ConversationContent";
+import { type Thought, thoughtsToConversationString } from "Conversations/Thought";
+import { providerContentToConversationString } from "Conversations/ProviderContent";
 import { AgentType } from "Enums/AgentType";
 import { Copy } from "Enums/Copy";
 import { Role } from "Enums/Role";
@@ -158,6 +160,8 @@ export abstract class BaseAgent {
 
         let accumulatedContent = "";
         const capturedToolCalls: AIToolCall[] = [];
+        const capturedThoughts: Thought[] = [];
+        const capturedProviderBlocks: unknown[] = [];
         let capturedShouldContinue = false;
 
         for await (const chunk of this.ai.streamRequest(conversation)) {
@@ -172,6 +176,18 @@ export abstract class BaseAgent {
             if (chunk.toolCallStarted) {
                 this.debugService?.log("ToolCallStarted", `Tool call started: ${chunk.toolCallStarted}`);
                 callbacks.onToolCallStarted(chunk.toolCallStarted);
+            }
+
+            if (chunk.thought) {
+                callbacks.onThought(chunk.thought);
+            }
+
+            if (chunk.completedThought) {
+                capturedThoughts.push(chunk.completedThought);
+            }
+
+            if (chunk.providerBlocks) {
+                capturedProviderBlocks.push(...chunk.providerBlocks);
             }
 
             if (chunk.toolCalls) {
@@ -197,6 +213,15 @@ export abstract class BaseAgent {
                     conversation.contents.pop();
                 } else {
                     conversationContent.content = sanitizedContent;
+                    if (capturedThoughts.length > 0) {
+                        conversationContent.thoughts = thoughtsToConversationString(capturedThoughts);
+                    }
+                    if (capturedProviderBlocks.length > 0) {
+                        conversationContent.providerContent = providerContentToConversationString({
+                            provider: this.ai.currentProvider,
+                            blocks: capturedProviderBlocks
+                        });
+                    }
                     if (capturedToolCalls.length > 0) {
                         conversationContent.toolCalls = AIToolCall.toConversationString(capturedToolCalls);
                         conversationContent.shouldDisplayContent = sanitizedContent.trim() !== "";

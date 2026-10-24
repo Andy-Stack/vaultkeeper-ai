@@ -14,3 +14,9 @@ export interface ClaudeListFilesResponse {
     first_id?: string;
     last_id?: string;
 }
+
+export interface ClaudeInputTransformation {
+    type: string;
+    path: string;
+    reason: string;
+}

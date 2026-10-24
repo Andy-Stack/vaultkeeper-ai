@@ -11,11 +11,32 @@ import { replaceCopy } from "Helpers/Helpers";
 import { StringTools } from "Helpers/StringTools";
 import { pdfToImages } from "Helpers/DocumentHelper";
 import { arrayBufferToBase64 } from "obsidian";
+import { ThinkTagSplitter, type ThinkTagSplit } from "Helpers/ThinkTagSplitter";
+import type { Conversation } from "Conversations/Conversation";
+import type { IStreamChunk } from "Services/StreamingService";
 
 export class Local extends ChatCompletionsAIClass {
 
+    private readonly thinkTagSplitter = new ThinkTagSplitter();
+
     public constructor() {
         super(AIProvider.Local);
+    }
+
+    public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
+        this.thinkTagSplitter.reset();
+        yield* super.streamRequest(conversation);
+    }
+
+    // Some local servers write reasoning inline as <think>…</think> instead of a separate field
+    protected splitInlineThinking(text: string, isFinalChunk: boolean): ThinkTagSplit {
+        const split = this.thinkTagSplitter.split(text);
+        if (isFinalChunk) {
+            const remainder = this.thinkTagSplitter.flush();
+            split.content += remainder.content;
+            split.thought += remainder.thought;
+        }
+        return split;
     }
 
     protected get apiUrl(): string {

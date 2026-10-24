@@ -4,7 +4,7 @@
   import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
   import type { ConversationContent } from "Conversations/ConversationContent";
   import { setElementIcon } from "Helpers/ElementHelper";
-  import { fade } from "svelte/transition";
+  import { fade, slide } from "svelte/transition";
   import { ArtifactAction, artifactActionToCopy } from "Enums/ArtifactAction";
   import { basename } from "path-browserify";
 	import type { Artifact } from "Conversations/Artifact";
@@ -63,7 +63,7 @@
     </div>
     {#if message.artifacts.length > 0}
       {@const artifactTally = tallyArtifactsByAction(message.artifacts)}
-      <div class="artifacts-container" in:fade={{ duration: 300 }}>
+      <div class="artifacts-container" in:slide>
         <span class="artifacts-container-title">{message.artifacts.length} FILES CHANGED</span>
         <div class="artifacts-tally">
           <div class="artifacts-tally-flex">

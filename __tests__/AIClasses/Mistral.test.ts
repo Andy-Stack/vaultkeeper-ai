@@ -111,6 +111,23 @@ describe('Mistral', () => {
     });
 
     describe('parseStreamChunk', () => {
+        it('should assemble the turn as streamed, without thinking, for replay', () => {
+            const chunk = (delta: Record<string, unknown>, finishReason: string | null = null) =>
+                (mistral as any).parseStreamChunk(JSON.stringify({ choices: [{ delta, finish_reason: finishReason }] }));
+
+            chunk({ content: [{ type: 'thinking', thinking: [{ type: 'text', text: 'Plan' }] }] });
+            chunk({ content: 'Looking ' });
+            chunk({ content: 'now', tool_calls: [{ index: 0, id: 'abc123def', type: 'function', function: { name: 'search_vault_files', arguments: '{"query":' } }] });
+            chunk({ tool_calls: [{ index: 0, function: { arguments: '"notes"}' } }] });
+            const final = chunk({}, 'tool_calls');
+
+            expect(final.providerBlocks).toEqual([{
+                role: 'assistant',
+                content: 'Looking now',
+                tool_calls: [{ id: 'abc123def', type: 'function', function: { name: 'search_vault_files', arguments: '{"query":"notes"}' } }]
+            }]);
+        });
+
         it('should handle [DONE] chunk as completion', () => {
             const result = (mistral as any).parseStreamChunk('[DONE]');
             expect(result.content).toBe('');
@@ -132,7 +149,7 @@ describe('Mistral', () => {
             expect(result.isComplete).toBe(false);
         });
 
-        it('should extract text and drop thinking from array-shaped delta content', () => {
+        it('should route thinking to thought and text to content from array-shaped delta content', () => {
             const thinkingChunk = JSON.stringify({
                 choices: [{
                     delta: {
@@ -150,8 +167,37 @@ describe('Mistral', () => {
                 }]
             });
 
-            expect((mistral as any).parseStreamChunk(thinkingChunk).content).toBe('');
-            expect((mistral as any).parseStreamChunk(textChunk).content).toBe('Hello there');
+            const thinkingResult = (mistral as any).parseStreamChunk(thinkingChunk);
+            expect(thinkingResult.content).toBe('');
+            expect(thinkingResult.thought).toBe('The user greets me');
+
+            const textResult = (mistral as any).parseStreamChunk(textChunk);
+            expect(textResult.content).toBe('Hello there');
+            expect(textResult.thought).toBe('');
+        });
+
+        it('should emit the accumulated thought as completedThought when the turn finishes', () => {
+            const thinkingChunk = (text: string) => JSON.stringify({
+                choices: [{ delta: { content: [{ type: 'thinking', thinking: [{ type: 'text', text }] }] }, finish_reason: null }]
+            });
+
+            expect((mistral as any).parseStreamChunk(thinkingChunk('First ')).completedThought).toBeUndefined();
+            (mistral as any).parseStreamChunk(thinkingChunk('second'));
+
+            const finalResult = (mistral as any).parseStreamChunk(JSON.stringify({
+                choices: [{ delta: { content: 'Answer' }, finish_reason: 'stop' }]
+            }));
+
+            expect(finalResult.content).toBe('Answer');
+            expect(finalResult.completedThought).toEqual({ provider: AIProvider.Mistral, text: 'First second' });
+        });
+
+        it('should not emit completedThought for a turn without thinking', () => {
+            const result = (mistral as any).parseStreamChunk(JSON.stringify({
+                choices: [{ delta: { content: 'Answer' }, finish_reason: 'stop' }]
+            }));
+
+            expect(result.completedThought).toBeUndefined();
         });
 
         it('should handle tool call start and accumulate arguments', () => {
@@ -312,6 +358,18 @@ describe('Mistral', () => {
     });
 
     describe('extractContents', () => {
+        it('should replay a Mistral turn exactly as it was received', async () => {
+            const message = { role: 'assistant', content: 'Original', tool_calls: [{ id: 'abc123def', type: 'function', function: { name: 'search_vault_files', arguments: '{"query":"notes"}' } }] };
+            const contents = [
+                new ConversationContent({ role: Role.User, content: 'Find notes' }),
+                new ConversationContent({ role: Role.Assistant, content: 'Sanitized', providerContent: JSON.stringify({ provider: AIProvider.Mistral, blocks: [message] }) })
+            ];
+
+            const result = await (mistral as any).extractContents(contents);
+
+            expect(result[result.length - 1]).toEqual(message);
+        });
+
         it('should convert simple text content to Mistral message format', async () => {
             const contents = [
                 new ConversationContent({ role: Role.User, content: 'Hello', displayContent: 'Hello' }),
@@ -900,7 +958,7 @@ describe('Mistral', () => {
                 expect.any(String), // URL
                 expect.objectContaining({
                     model: 'mistral-large-latest',
-                    max_tokens: 16384,
+                    max_tokens: 64000,
                     messages: expect.any(Array),
                     stream: true
                 }),

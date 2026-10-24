@@ -24,6 +24,7 @@ export interface IChatServiceCallbacks {
 	onSubmit: () => void;
 	onStreamingUpdate: () => void;
 	onToolCallStarted: (toolName: string) => void;
+	onThought: (text: string) => void;
 	onArtifactProduced: (artifact: Artifact) => void;
 	onPlanningStarted: () => void;
 	onPlanningFinished: () => void;
@@ -79,6 +80,7 @@ export class ChatService {
 
 			await this.abortService.abortableOperation(async () => {
 				const firstMessage = conversation.contents.length === 0;
+				conversation.closeInterruptedToolCalls();
 
 				const conversationContent = new ConversationContent({
 					role: Role.User,

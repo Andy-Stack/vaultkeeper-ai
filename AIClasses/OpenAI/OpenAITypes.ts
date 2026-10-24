@@ -12,6 +12,16 @@ export interface ResponseOutputTextDelta extends ResponseEvent {
     delta: string;
 }
 
+export interface ResponseReasoningSummaryTextDelta extends ResponseEvent {
+    type: "response.reasoning_summary_text.delta";
+    delta: string;
+}
+
+export interface ResponseReasoningSummaryPartAdded extends ResponseEvent {
+    type: "response.reasoning_summary_part.added";
+    summary_index: number;
+}
+
 export interface ResponseToolCallArgumentsDone extends ResponseEvent {
     type: "response.function_call_arguments.done";
     item_id: string;
@@ -38,13 +48,17 @@ export interface ResponseOutputItemDone extends ResponseEvent {
     type: "response.output_item.done";
     item_id: string;
     output_index: number;
-    item: {
-        id: string;
-        type: string;
-        name?: string;
-        call_id?: string;
-        arguments?: string;
-    };
+    item: ResponsesAPIOutputItem;
+}
+
+// Kept whole so it can be sent back as an input item exactly as received
+export interface ResponsesAPIOutputItem {
+    id: string;
+    type: string;
+    name?: string;
+    call_id?: string;
+    arguments?: string;
+    [field: string]: unknown;
 }
 
 export interface ResponseDone extends ResponseEvent {
@@ -132,7 +146,8 @@ export interface ResponsesAPIToolCallOutputInput {
 export type ResponsesAPIInput =
     | ResponsesAPIMessageInput
     | ResponsesAPIToolCallInput
-    | ResponsesAPIToolCallOutputInput;
+    | ResponsesAPIToolCallOutputInput
+    | ResponsesAPIOutputItem;
 
 /**
  * File API Types

@@ -8,6 +8,7 @@ import { AITool } from '../../Enums/AITool';
 import { MimeType } from '../../Enums/MimeType';
 import { StringTools } from '../../Helpers/StringTools';
 import { Attachment } from '../../Conversations/Attachment';
+import { Copy } from '../../Enums/Copy';
 
 describe('Conversation', () => {
 	describe('constructor', () => {
@@ -624,6 +625,108 @@ describe('Conversation', () => {
 				expect(conversation.contents[0].role).toBe(Role.User);
 				expect(conversation.contents[0].attachments).toHaveLength(0);
 			});
+		});
+	});
+	describe('closeInterruptedToolCalls', () => {
+		const userMessage = (content: string) => new ConversationContent({ role: Role.User, content });
+		const toolCallTurn = (...ids: (string | undefined)[]) => new ConversationContent({
+			role: Role.Assistant,
+			content: '',
+			toolCalls: JSON.stringify(ids.map(id => ({ toolCall: { id: id ?? '', name: AITool.SearchVaultFiles, args: {} } })))
+		});
+		const response = (toolId?: string) => new ConversationContent({
+			role: Role.User,
+			functionResponse: new AIToolResponse(AITool.SearchVaultFiles, new AIToolResponsePayload({ results: [] }), toolId).toConversationString(),
+			toolId
+		});
+		const conversationOf = (...contents: ConversationContent[]) => {
+			const conversation = new Conversation();
+			conversation.contents = contents;
+			return conversation;
+		};
+		const isInterruptedResponse = (content: ConversationContent) =>
+			JSON.parse(content.functionResponse!).functionResponse.response.result.error === Copy.ToolCallInterrupted;
+
+		it('should leave a valid history unchanged', () => {
+			const contents = [userMessage('Search'), toolCallTurn('call_1'), response('call_1'), new ConversationContent({ role: Role.Assistant, content: 'Found it' })];
+			const conversation = conversationOf(...contents);
+
+			conversation.closeInterruptedToolCalls();
+
+			expect(conversation.contents).toEqual(contents);
+		});
+
+		it('should answer tool calls left unanswered by a stopped request', () => {
+			const conversation = conversationOf(userMessage('Search'), toolCallTurn('call_1', 'call_2'));
+
+			conversation.closeInterruptedToolCalls();
+
+			expect(conversation.contents).toHaveLength(4);
+			expect(conversation.contents.slice(2).map(content => content.toolId)).toEqual(['call_1', 'call_2']);
+			expect(conversation.contents.slice(2).every(isInterruptedResponse)).toBe(true);
+		});
+
+		it('should only answer the calls missing a response, after the existing responses', () => {
+			const existingResponse = response('call_1');
+			const conversation = conversationOf(userMessage('Search'), toolCallTurn('call_1', 'call_2'), existingResponse);
+
+			conversation.closeInterruptedToolCalls();
+
+			expect(conversation.contents[2]).toBe(existingResponse);
+			expect(conversation.contents[3].toolId).toBe('call_2');
+			expect(isInterruptedResponse(conversation.contents[3])).toBe(true);
+		});
+
+		it('should answer calls without ids in call order', () => {
+			const conversation = conversationOf(userMessage('Search'), toolCallTurn(undefined, undefined, undefined), response());
+
+			conversation.closeInterruptedToolCalls();
+
+			expect(conversation.contents).toHaveLength(5);
+			expect(conversation.contents.slice(3).every(isInterruptedResponse)).toBe(true);
+		});
+
+		it('should repair an interrupted turn in the middle of an older conversation', () => {
+			const laterMessage = userMessage('Try again');
+			const conversation = conversationOf(userMessage('Search'), toolCallTurn('call_1'), laterMessage);
+
+			conversation.closeInterruptedToolCalls();
+
+			expect(conversation.contents).toHaveLength(4);
+			expect(isInterruptedResponse(conversation.contents[2])).toBe(true);
+			expect(conversation.contents[3]).toBe(laterMessage);
+		});
+
+		it('should drop responses without a call and empty turns', () => {
+			const conversation = conversationOf(
+				userMessage('Hello'),
+				response('orphan'),
+				new ConversationContent({ role: Role.Assistant, content: '' }),
+				new ConversationContent({ role: Role.Assistant, content: 'Hi' })
+			);
+
+			conversation.closeInterruptedToolCalls();
+
+			expect(conversation.contents.map(content => content.content)).toEqual(['Hello', 'Hi']);
+		});
+
+		it('should keep a turn that only has provider content', () => {
+			const providerOnlyTurn = new ConversationContent({ role: Role.Assistant, providerContent: '{"provider":"Claude","blocks":[]}' });
+			const conversation = conversationOf(userMessage('Hello'), providerOnlyTurn);
+
+			conversation.closeInterruptedToolCalls();
+
+			expect(conversation.contents).toContain(providerOnlyTurn);
+		});
+
+		it('should change nothing when run a second time', () => {
+			const conversation = conversationOf(userMessage('Search'), toolCallTurn('call_1', 'call_2'), response('call_1'));
+
+			conversation.closeInterruptedToolCalls();
+			const repaired = [...conversation.contents];
+			conversation.closeInterruptedToolCalls();
+
+			expect(conversation.contents).toEqual(repaired);
 		});
 	});
 });

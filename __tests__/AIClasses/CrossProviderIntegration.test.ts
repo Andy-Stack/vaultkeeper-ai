@@ -1674,58 +1674,6 @@ describe('Cross-Provider Integration - Thought Signature Support', () => {
             expect(openaiResult).toHaveLength(1);
         });
 
-        it('should filter out function response with mismatched toolId', async () => {
-            // Function call with one ID, response with different ID
-            // The new filtering logic should filter out the mismatched response
-            const conversation = [
-                (() => {
-                    const content = new ConversationContent({
-                role: Role.Assistant,
-                content: '',
-                displayContent: '',
-                toolCalls: JSON.stringify([{
-                            toolCall: {
-                                id: 'call-123',
-                                name: 'search_vault_files',
-                                args: { query: 'test' }
-                            }
-                        }]),
-                timestamp: new Date(),
-                shouldDisplayContent: true,
-                toolId: 'call-123'
-            });
-                    return content;
-                })(),
-                (() => {
-                    const responseContent = JSON.stringify({
-                        id: 'call-456',  // DIFFERENT ID
-                        functionResponse: {
-                            name: 'search_vault_files',
-                            response: ['file.md']
-                        }
-                    });
-                    const content = new ConversationContent({
-                        role: Role.User,
-                        content: responseContent,
-                        displayContent: responseContent,
-                        functionResponse: responseContent,
-                        toolId: 'call-456'  // Mismatched toolId
-                    });
-                    return content;
-                })()
-            ];
-
-            // The mismatched response should be filtered out, leaving only the orphaned function call
-            // But orphaned function calls (without responses) are also filtered unless they're the last item
-            const claude = new Claude();
-            const claudeResult = await (claude as any).extractContents(conversation);
-            expect(claudeResult).toHaveLength(0);
-
-            const openai = new OpenAI();
-            const openaiResult = await (openai as any).extractContents(conversation);
-            expect(openaiResult).toHaveLength(0);
-        });
-
         it('should handle Claude → Mistral provider switch with invalid tool call ID', async () => {
             // Test the specific scenario from the bug report:
             // Claude tool call with ID like "toolu_01EWDB2npEv6uLdEkkt56xxp" should be converted to text for Mistral

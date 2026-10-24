@@ -1,4 +1,5 @@
 import type { AIToolCall } from "AIClasses/AIToolCall";
+import type { Thought } from "Conversations/Thought";
 import { Event } from "Enums/Event";
 import { Exception } from "Helpers/Exception";
 import { ApiError, ApiErrorType } from "Types/ApiError";
@@ -16,6 +17,9 @@ export interface IStreamChunk {
   toolCalls?: AIToolCall[];
   toolCallStarted?: string;
   shouldContinue?: boolean;
+  thought?: string;
+  completedThought?: Thought;
+  providerBlocks?: unknown[];
 }
 
 export class StreamingService {

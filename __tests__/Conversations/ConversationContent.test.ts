@@ -224,6 +224,20 @@ describe('ConversationContent', () => {
 			expect(ConversationContent.isConversationContentData(validData)).toBe(true);
 		});
 
+		it('should accept string thoughts and reject any other type', () => {
+			const base = { role: 'assistant', timestamp: '2024-01-01T00:00:00.000Z' };
+
+			expect(ConversationContent.isConversationContentData({ ...base, thoughts: '[]' })).toBe(true);
+			expect(ConversationContent.isConversationContentData({ ...base, thoughts: [] })).toBe(false);
+		});
+
+		it('should accept string provider content and reject any other type', () => {
+			const base = { role: 'assistant', timestamp: '2024-01-01T00:00:00.000Z' };
+
+			expect(ConversationContent.isConversationContentData({ ...base, providerContent: '{}' })).toBe(true);
+			expect(ConversationContent.isConversationContentData({ ...base, providerContent: {} })).toBe(false);
+		});
+
 		it('should return false when data is null', () => {
 			expect(ConversationContent.isConversationContentData(null)).toBe(false);
 		});

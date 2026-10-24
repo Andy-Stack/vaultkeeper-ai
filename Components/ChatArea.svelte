@@ -13,11 +13,13 @@
 	import { setIcon } from "obsidian";
 	import { fade, slide } from "svelte/transition";
 	import GraphAnimation from "./GraphAnimation.svelte";
+	import StreamingThoughts from "./StreamingThoughts.svelte";
 
   export let messages: ConversationContent[] = [];
   export let isSubmitting: boolean = false;
   export let chatContainer: HTMLDivElement;
   export let isAwaitingUser: boolean = false;
+  export let streamingThoughts: string = "";
 
   export function resetChatArea() {
     chatContainer.scroll({ top: 0, behavior: "instant" });
@@ -148,6 +150,7 @@
 
         {#if isLatestTurn}
           {#if isSubmitting}
+            <StreamingThoughts streamingThoughts={streamingThoughts} isIdle={isAwaitingUser} isSubmitting={isSubmitting}/>
             <div class="streaming-status" transition:slide>
               <StreamingIndicator isIdle={isAwaitingUser}/>
               <StreamingLabel isIdle={isAwaitingUser}/>

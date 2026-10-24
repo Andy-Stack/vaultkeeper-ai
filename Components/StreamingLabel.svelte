@@ -108,7 +108,7 @@
   .streaming-label {
     --shine-duration: 2.3s;
     color: var(--text-muted);
-    font-size: var(--font-ui-small);
+    font-size: var(--font-smaller);
     white-space: nowrap;
   }
 

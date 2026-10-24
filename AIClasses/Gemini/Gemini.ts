@@ -88,6 +88,7 @@ export class Gemini extends BaseAIClass {
     const requestWebSearch = this.accumulatedToolCalls.some(toolCall => isAITool(toolCall.name, AITool.RequestWebSearch));
 
     this.accumulatedToolCalls = [];
+    this.resetThought();
 
     // Refresh file cache only if conversation has attachments
     if (conversation.hasAttachments()) {
@@ -135,7 +136,7 @@ export class Gemini extends BaseAIClass {
 
     const effort = this.effort();
     if (effort) {
-      requestBody.generationConfig = { thinkingConfig: { thinkingLevel: effort } };
+      requestBody.generationConfig = { thinkingConfig: { thinkingLevel: effort, includeThoughts: true } };
     }
 
     yield* this.streamingService.streamRequest(
@@ -152,20 +153,22 @@ export class Gemini extends BaseAIClass {
       const data = JSON.parse(chunk) as { candidates?: Candidate[] };
 
       let text = "";
+      let thought = "";
       let toolCalls: AIToolCall[] | undefined = undefined;
       let toolCallStarted: string | undefined = undefined;
       const candidate = data.candidates?.[0];
 
       if (candidate) {
-        // Check for text content
-        if (candidate.content?.parts?.[0]?.text) {
-          text = candidate.content.parts[0].text;
-        }
-
         // Accumulate every function call, parallel calls arrive as separate parts
         // Gemini delivers a whole call - name, args, and finishReason - in a single chunk, so this must NOT short-circuit the finalize logic below
         const parts = candidate.content?.parts || [];
         for (const part of parts) {
+          if (part.text && part.thought) {
+            thought += this.appendThought(part.text);
+          } else if (part.text) {
+            text += part.text;
+          }
+
           if (!part.functionCall) {
             continue;
           }
@@ -198,6 +201,7 @@ export class Gemini extends BaseAIClass {
       const finishReason = candidate?.finishReason;
 
       const shouldContinue = isComplete && finishReason !== FinishReason.STOP;
+      const completedThought = isComplete ? this.completeThought() : undefined;
 
       // If streaming is complete and we have accumulated function calls, return them
       if (isComplete && this.accumulatedToolCalls.length > 0) {
@@ -217,6 +221,10 @@ export class Gemini extends BaseAIClass {
         toolCalls: toolCalls,
         toolCallStarted: toolCallStarted,
         shouldContinue: shouldContinue,
+        thought: thought,
+        completedThought: completedThought,
+        // Parts are kept unmerged, a signature can arrive on its own part and must be sent back where it came
+        providerBlocks: candidate?.content?.parts?.length ? candidate.content.parts : undefined
       };
     } catch (error) {
       return this.createErrorChunk(error);
@@ -226,7 +234,13 @@ export class Gemini extends BaseAIClass {
   protected async extractContents(conversationContent: ConversationContent[]): Promise<{ role: Role, parts: Part[] }[]> {
     const results = [];
 
-    for (const content of this.filterConversationContents(conversationContent)) {
+    for (const content of conversationContent) {
+        const providerBlocks = this.ownProviderBlocks(content);
+        if (providerBlocks) {
+          results.push({ role: Role.Model, parts: providerBlocks as Part[] });
+          continue;
+        }
+
         const parts: Part[] = [];
         const contentToExtract = content.content ?? "";
 

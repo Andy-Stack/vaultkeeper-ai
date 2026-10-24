@@ -184,6 +184,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 					role: Role.Assistant,
 					content: 'Function call',
 					toolCalls: JSON.stringify([toolCall]),
+					thoughts: JSON.stringify([{ provider: 'Claude', text: 'Plan' }]),
+providerContent: JSON.stringify({ provider: 'Claude', blocks: [{ type: 'text', text: 'Calling function' }] }),
 					timestamp: new Date('2024-01-01T10:02:00Z'),
 					toolId: 'tool_123'
 				})
@@ -198,6 +200,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 				role: Role.Assistant,
 				content: 'Function call',
 				toolCalls: JSON.stringify([toolCall]),
+				thoughts: JSON.stringify([{ provider: 'Claude', text: 'Plan' }]),
+providerContent: JSON.stringify({ provider: 'Claude', blocks: [{ type: 'text', text: 'Calling function' }] }),
 				timestamp: '2024-01-01T10:02:00.000Z',
 				toolId: 'tool_123'
 			});
@@ -500,6 +504,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 						role: Role.Assistant,
 						content: 'Calling function',
 						toolCalls: JSON.stringify([{ name: 'test_func', arguments: {} }]),
+						thoughts: JSON.stringify([{ provider: 'Claude', text: 'Plan' }]),
+providerContent: JSON.stringify({ provider: 'Claude', blocks: [{ type: 'text', text: 'Calling function' }] }),
 						timestamp: '2024-01-01T10:00:00.000Z',
 						toolId: 'tool_1',
 						attachments: [],
@@ -525,6 +531,8 @@ describe('ConversationFileSystemService - Integration Tests', () => {
 				arguments: {}
 			}]);
 			expect(conversations[0].contents[1].functionResponse).toBeDefined();
+			expect(JSON.parse(conversations[0].contents[0].thoughts!)).toEqual([{ provider: 'Claude', text: 'Plan' }]);
+			expect(JSON.parse(conversations[0].contents[0].providerContent!)).toEqual({ provider: 'Claude', blocks: [{ type: 'text', text: 'Calling function' }] });
 		});
 	});
 

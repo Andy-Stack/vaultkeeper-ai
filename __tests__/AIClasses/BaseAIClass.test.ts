@@ -89,6 +89,29 @@ describe('BaseAIClass Shared Methods', () => {
         DeregisterAllServices();
     });
 
+    describe('thought accumulation', () => {
+        it('should accumulate appended text into one completed thought for the provider', () => {
+            expect((claude as any).appendThought('First ')).toBe('First ');
+            (claude as any).appendThought('second');
+
+            expect((claude as any).completeThought()).toEqual({ provider: AIProvider.Claude, text: 'First second' });
+        });
+
+        it('should start a new thought after completing one', () => {
+            (openai as any).appendThought('Earlier');
+            (openai as any).completeThought();
+
+            expect((openai as any).completeThought()).toBeUndefined();
+        });
+
+        it('should discard accumulated text on reset', () => {
+            (gemini as any).appendThought('Stale');
+            (gemini as any).resetThought();
+
+            expect((gemini as any).completeThought()).toBeUndefined();
+        });
+    });
+
     describe('parseToolCalls', () => {
         it('should parse Claude-style function call (with id)', () => {
             const claudeCall = JSON.stringify([{
@@ -283,175 +306,6 @@ describe('BaseAIClass Shared Methods', () => {
         });
     });
 
-    describe('filterConversationContents', () => {
-        it('should filter out empty content', () => {
-            const contents = [
-                new ConversationContent({ role: Role.User, content: 'Hello', displayContent: 'Hello' }),
-                new ConversationContent({ role: Role.Assistant, content: '' }),  // Empty - will be filtered
-                new ConversationContent({ role: Role.Assistant }),  // No content - will be filtered
-                new ConversationContent({ role: Role.User, content: 'World', displayContent: 'World' })
-            ];
-
-            const result = (claude as any).filterConversationContents(contents);
-
-            expect(result).toHaveLength(2);
-            expect(result[0].content).toBe('Hello');
-            expect(result[1].content).toBe('World');
-        });
-
-        it('should filter orphaned calls from different providers', () => {
-            const contents = [
-                new ConversationContent({ role: Role.User, content: 'Test', displayContent: 'Test' }),
-
-                // Orphaned Claude function call (no response)
-                new ConversationContent({
-                    role: Role.Assistant,
-                    content: '',
-                    displayContent: '',
-                    toolCalls: JSON.stringify([{
-                        toolCall: {
-                            id: 'toolu_orphan',
-                            name: 'search',
-                            args: {}
-                        }
-                    }]),
-                    toolId: 'toolu_orphan'
-                }),
-
-                new ConversationContent({ role: Role.User, content: 'Next question', displayContent: 'Next question' })
-            ];
-
-            const result = (claude as any).filterConversationContents(contents);
-
-            // Orphaned call should be excluded
-            expect(result).toHaveLength(2);
-            expect(result[0].content).toBe('Test');
-            expect(result[1].content).toBe('Next question');
-        });
-
-        it('should preserve most recent call regardless of provider', () => {
-            const contents = [
-                new ConversationContent({ role: Role.User, content: 'Test', displayContent: 'Test' }),
-
-                // Most recent function call (at end, so kept even without response)
-                new ConversationContent({
-                    role: Role.Assistant,
-                    content: '',
-                    displayContent: '',
-                    toolCalls: JSON.stringify([{
-                        toolCall: {
-                            id: 'call_recent',
-                            name: 'search',
-                            args: {}
-                        }
-                    }]),
-                    toolId: 'call_recent'
-                })
-            ];
-
-            const result = (openai as any).filterConversationContents(contents);
-
-            // Most recent call should be included
-            expect(result).toHaveLength(2);
-            expect(result[1].toolCalls).toBeDefined();
-        });
-
-        it('should handle function call with response correctly', () => {
-            const contents = [
-                new ConversationContent({ role: Role.User, content: 'Search', displayContent: 'Search' }),
-
-                // Function call with response (should be kept)
-                new ConversationContent({
-                    role: Role.Assistant,
-                    content: '',
-                    displayContent: '',
-                    toolCalls: JSON.stringify([{
-                        toolCall: {
-                            id: 'call_with_response',
-                            name: 'search',
-                            args: { query: 'test' }
-                        }
-                    }]),
-                    toolId: 'call_with_response'
-                }),
-
-                // Corresponding response
-                new ConversationContent({
-                    role: Role.User,
-                    content: JSON.stringify({
-                        id: 'call_with_response',
-                        functionResponse: { name: 'search', response: [] }
-                    }),
-                    functionResponse: JSON.stringify({
-                        id: 'call_with_response',
-                        functionResponse: { name: 'search', response: [] }
-                    }),
-                    toolId: 'call_with_response'
-                })
-            ];
-
-            const result = (gemini as any).filterConversationContents(contents);
-
-            // All three should be kept
-            expect(result).toHaveLength(3);
-        });
-
-        it('should handle mixed orphaned and complete calls', () => {
-            const contents = [
-                new ConversationContent({ role: Role.User, content: 'Start', displayContent: 'Start' }),
-
-                // Orphaned call 1
-                new ConversationContent({
-                    role: Role.Assistant,
-                    content: '',
-                    displayContent: '',
-                    toolCalls: JSON.stringify([{
-                        toolCall: { id: 'orphan1', name: 'search', args: {} }
-                    }]),
-                    toolId: 'orphan1'
-                }),
-
-                new ConversationContent({ role: Role.User, content: 'Middle', displayContent: 'Middle' }),
-
-                // Complete call with response
-                new ConversationContent({
-                    role: Role.Assistant,
-                    content: '',
-                    displayContent: '',
-                    toolCalls: JSON.stringify([{
-                        toolCall: { id: 'complete1', name: 'read', args: {} }
-                    }]),
-                    toolId: 'complete1'
-                }),
-
-                new ConversationContent({
-                    role: Role.User,
-                    content: JSON.stringify({
-                        id: 'complete1',
-                        functionResponse: { name: 'read', response: 'data' }
-                    }),
-                    functionResponse: JSON.stringify({
-                        id: 'complete1',
-                        functionResponse: { name: 'read', response: 'data' }
-                    }),
-                    toolId: 'complete1'
-                }),
-
-                new ConversationContent({ role: Role.User, content: 'End', displayContent: 'End' })
-            ];
-
-            const result = (claude as any).filterConversationContents(contents);
-
-            // Should have: Start, Middle, complete call, complete response, End
-            expect(result).toHaveLength(5);
-            expect(result[0].content).toBe('Start');
-            expect(result[1].content).toBe('Middle');
-            expect(result[2].toolCalls).toBeDefined();
-            expect(result[3].functionResponse).toBeDefined();
-            expect(result[4].content).toBe('End');
-        });
-    });
-
     describe('Cross-Provider Consistency', () => {
         it('should parse same function call JSON consistently across providers', () => {
             const sharedToolCall = JSON.stringify([{
@@ -470,26 +324,6 @@ describe('BaseAIClass Shared Methods', () => {
             expect(result![0].toolCall.args).toEqual({ query: 'consistent test' });
         });
 
-        it('should filter conversations consistently across providers', () => {
-            const sharedConversation = [
-                new ConversationContent({ role: Role.User, content: 'Test', displayContent: 'Test' }),
-                new ConversationContent({ role: Role.Assistant, content: '' }),  // Empty
-                new ConversationContent({ role: Role.User, content: 'More', displayContent: 'More' })
-            ];
-
-            const claudeFiltered = (claude as any).filterConversationContents(sharedConversation);
-            const openaiFiltered = (openai as any).filterConversationContents(sharedConversation);
-            const geminiFiltered = (gemini as any).filterConversationContents(sharedConversation);
-
-            // All should filter to same length
-            expect(claudeFiltered).toHaveLength(2);
-            expect(openaiFiltered).toHaveLength(2);
-            expect(geminiFiltered).toHaveLength(2);
-
-            // Content should match
-            expect(claudeFiltered[0].content).toBe(openaiFiltered[0].content);
-            expect(openaiFiltered[0].content).toBe(geminiFiltered[0].content);
-        });
     });
 
     describe('effort', () => {
@@ -535,18 +369,18 @@ describe('BaseAIClass Shared Methods', () => {
             expect((await sentRequestBody(claude)).output_config).toEqual({ effort: 'medium' });
         });
 
-        it('sends reasoning.effort to OpenAI', async () => {
+        it('sends reasoning.effort and a reasoning summary request to OpenAI', async () => {
             mockSettingsService.settings.model = AIProviderModel.GPT_6_1_Sol;
             mockSettingsService.settings.effort = AIEffort.Fast;
 
-            expect((await sentRequestBody(openai)).reasoning).toEqual({ effort: 'low' });
+            expect((await sentRequestBody(openai)).reasoning).toEqual({ effort: 'low', summary: 'auto' });
         });
 
-        it('sends thinkingConfig.thinkingLevel to Gemini', async () => {
+        it('sends thinkingConfig.thinkingLevel and includeThoughts to Gemini', async () => {
             mockSettingsService.settings.model = AIProviderModel.GeminiFlash_3_5_Lite;
             mockSettingsService.settings.effort = AIEffort.Fast;
 
-            expect((await sentRequestBody(gemini)).generationConfig).toEqual({ thinkingConfig: { thinkingLevel: 'minimal' } });
+            expect((await sentRequestBody(gemini)).generationConfig).toEqual({ thinkingConfig: { thinkingLevel: 'minimal', includeThoughts: true } });
         });
 
         it('sends reasoning_effort to Mistral', async () => {

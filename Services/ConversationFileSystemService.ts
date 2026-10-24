@@ -72,6 +72,8 @@ export class ConversationFileSystemService {
                     content: content.content,
                     displayContent: content.displayContent,
                     toolCalls: content.toolCalls,
+                    thoughts: content.thoughts,
+                    providerContent: content.providerContent,
                     functionResponse: content.functionResponse,
                     artifacts: content.artifacts.map(artifact => ({
                         filePath: artifact.filePath,
@@ -334,6 +336,8 @@ export class ConversationFileSystemService {
                     content: content.content,
                     displayContent: content.displayContent,
                     toolCalls: content.toolCalls,
+                    thoughts: content.thoughts,
+                    providerContent: content.providerContent,
                     functionResponse: content.functionResponse,
                     artifacts: artifacts,
                     attachments: attachments,

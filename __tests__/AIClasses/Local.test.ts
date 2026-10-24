@@ -381,6 +381,69 @@ describe('Local', () => {
         });
     });
 
+    describe('parseStreamChunk thoughts', () => {
+        it('should keep only the answer text in the turn kept for replay', () => {
+            const chunk = (delta: Record<string, unknown>, finishReason: string | null = null) =>
+                (local as any).parseStreamChunk(JSON.stringify({ choices: [{ delta, finish_reason: finishReason }] }));
+
+            chunk({ content: '<think>Plan</think>Hello' });
+            chunk({ reasoning_content: 'More reasoning' });
+            const final = chunk({ content: ' there' }, 'stop');
+
+            expect(final.providerBlocks).toEqual([{ role: 'assistant', content: 'Hello there' }]);
+        });
+
+        const deltaChunk = (delta: Record<string, unknown>, finishReason: string | null = null) =>
+            JSON.stringify({ choices: [{ delta, finish_reason: finishReason }] });
+
+        it('should route reasoning_content to thought', () => {
+            const result = (local as any).parseStreamChunk(deltaChunk({ reasoning_content: 'Thinking it over' }));
+
+            expect(result.thought).toBe('Thinking it over');
+            expect(result.content).toBe('');
+        });
+
+        it('should route reasoning to thought', () => {
+            const result = (local as any).parseStreamChunk(deltaChunk({ reasoning: 'Thinking it over' }));
+
+            expect(result.thought).toBe('Thinking it over');
+        });
+
+        it('should split inline think tags that are broken across chunks', () => {
+            const parts = ['<thi', 'nk>Plan the ', 'answer</th', 'ink>Hello'].map(content =>
+                (local as any).parseStreamChunk(deltaChunk({ content })));
+
+            expect(parts.map(part => part.content).join('')).toBe('Hello');
+            expect(parts.map(part => part.thought).join('')).toBe('Plan the answer');
+        });
+
+        it('should complete the inline thought and flush held back text on finish', () => {
+            (local as any).parseStreamChunk(deltaChunk({ content: '<think>Plan</think>Answer <' }));
+
+            const result = (local as any).parseStreamChunk(deltaChunk({}, 'stop'));
+
+            expect(result.content).toBe('<');
+            expect(result.completedThought).toEqual({ provider: AIProvider.Local, text: 'Plan' });
+        });
+
+        it('should reset an unfinished think tag at the start of a new stream', async () => {
+            (local as any).parseStreamChunk(deltaChunk({ content: '<think>Unfinished' }));
+
+            mockStreamingService.streamRequest.mockImplementation(async function* () {
+                yield { content: '', isComplete: true };
+            });
+            const conversation = new Conversation();
+            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test message' }));
+            for await (const _chunk of local.streamRequest(conversation)) {
+                // consume
+            }
+
+            const result = (local as any).parseStreamChunk(deltaChunk({ content: 'Fresh answer' }));
+            expect(result.content).toBe('Fresh answer');
+            expect(result.thought).toBe('');
+        });
+    });
+
     describe('streamRequest (inherited from ChatCompletionsAIClass)', () => {
         it('should call streamingService with the local URL and free-text model', async () => {
             const conversation = new Conversation();
@@ -404,7 +467,7 @@ describe('Local', () => {
                 'http://localhost:1234/v1/chat/completions',
                 expect.objectContaining({
                     model: 'local-main-model',
-                    max_tokens: 16384,
+                    max_tokens: 64000,
                     messages: expect.any(Array),
                     stream: true
                 }),

@@ -126,6 +126,121 @@ describe('Claude', () => {
     });
 
     describe('parseStreamChunk', () => {
+        const parse = (event: Record<string, unknown>) => (claude as any).parseStreamChunk(JSON.stringify(event));
+
+        it('should stream thinking deltas as thought and keep the signed block for replay', () => {
+            parse({ type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '', signature: '' } });
+
+            const delta = parse({ type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'Weighing options' } });
+            expect(delta.thought).toBe('Weighing options');
+            expect(delta.content).toBe('');
+
+            parse({ type: 'content_block_delta', index: 0, delta: { type: 'signature_delta', signature: 'sig-abc' } });
+
+            const stop = parse({ type: 'content_block_stop', index: 0 });
+            expect(stop.completedThought).toEqual({ provider: AIProvider.Claude, text: 'Weighing options' });
+            expect(stop.providerBlocks).toEqual([{ type: 'thinking', thinking: 'Weighing options', signature: 'sig-abc' }]);
+        });
+
+        it('should keep a signed thinking block that has no text for replay only', () => {
+            parse({ type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '', signature: '' } });
+            parse({ type: 'content_block_delta', index: 0, delta: { type: 'signature_delta', signature: 'sig-empty' } });
+
+            const stop = parse({ type: 'content_block_stop', index: 0 });
+            expect(stop.completedThought).toBeUndefined();
+            expect(stop.providerBlocks).toEqual([{ type: 'thinking', thinking: '', signature: 'sig-empty' }]);
+        });
+
+        it('should keep a redacted thinking block for replay', () => {
+            parse({ type: 'content_block_start', index: 0, content_block: { type: 'redacted_thinking', data: 'opaque-data' } });
+
+            const stop = parse({ type: 'content_block_stop', index: 0 });
+            expect(stop.completedThought).toBeUndefined();
+            expect(stop.providerBlocks).toEqual([{ type: 'redacted_thinking', data: 'opaque-data' }]);
+        });
+
+        it('should build every block of a web search turn in the order it streamed', () => {
+            const searchResult = { type: 'web_search_tool_result', tool_use_id: 'srvtoolu_1', content: [{ type: 'web_search_result', url: 'https://example.com', title: 'Example', encrypted_content: 'enc' }] };
+            const citation = { type: 'web_search_result_location', url: 'https://example.com', title: 'Example', encrypted_index: 'idx', cited_text: 'Fact' };
+            const events = [
+                { type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '', signature: '' } },
+                { type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'Need to search' } },
+                { type: 'content_block_delta', index: 0, delta: { type: 'signature_delta', signature: 'sig-1' } },
+                { type: 'content_block_stop', index: 0 },
+                { type: 'content_block_start', index: 1, content_block: { type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: {} } },
+                { type: 'content_block_delta', index: 1, delta: { type: 'input_json_delta', partial_json: '{"query":' } },
+                { type: 'content_block_delta', index: 1, delta: { type: 'input_json_delta', partial_json: '"latest news"}' } },
+                { type: 'content_block_stop', index: 1 },
+                { type: 'content_block_start', index: 2, content_block: searchResult },
+                { type: 'content_block_stop', index: 2 },
+                { type: 'content_block_start', index: 3, content_block: { type: 'thinking', thinking: '', signature: '' } },
+                { type: 'content_block_delta', index: 3, delta: { type: 'thinking_delta', thinking: 'Found it' } },
+                { type: 'content_block_delta', index: 3, delta: { type: 'signature_delta', signature: 'sig-2' } },
+                { type: 'content_block_stop', index: 3 },
+                { type: 'content_block_start', index: 4, content_block: { type: 'text', text: '', citations: null } },
+                { type: 'content_block_delta', index: 4, delta: { type: 'citations_delta', citation } },
+                { type: 'content_block_delta', index: 4, delta: { type: 'text_delta', text: 'Fact' } },
+                { type: 'content_block_stop', index: 4 },
+                { type: 'content_block_start', index: 5, content_block: { type: 'text', text: '', citations: null } },
+                { type: 'content_block_delta', index: 5, delta: { type: 'text_delta', text: ' Saving it.' } },
+                { type: 'content_block_stop', index: 5 },
+                { type: 'content_block_start', index: 6, content_block: { type: 'tool_use', id: 'toolu_1', name: 'write_vault_file', input: {} } },
+                { type: 'content_block_delta', index: 6, delta: { type: 'input_json_delta', partial_json: '{"path":"news.md"}' } },
+                { type: 'content_block_stop', index: 6 }
+            ];
+
+            const results = events.map(parse);
+            const blocks = results.flatMap(result => result.providerBlocks ?? []);
+
+            expect(blocks).toEqual([
+                { type: 'thinking', thinking: 'Need to search', signature: 'sig-1' },
+                { type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: { query: 'latest news' } },
+                searchResult,
+                { type: 'thinking', thinking: 'Found it', signature: 'sig-2' },
+                { type: 'text', text: 'Fact', citations: [citation] },
+                { type: 'text', text: ' Saving it.', citations: null },
+                { type: 'tool_use', id: 'toolu_1', name: 'write_vault_file', input: { path: 'news.md' } }
+            ]);
+            expect(results.map(result => result.content).join('')).toBe('Fact Saving it.');
+            expect(results.flatMap(result => result.toolCalls ?? []).map(toolCall => toolCall.toolId)).toEqual(['toolu_1']);
+        });
+
+        it('should not emit a thinking block that never reached content_block_stop', () => {
+            parse({ type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '', signature: '' } });
+            parse({ type: 'content_block_delta', index: 0, delta: { type: 'thinking_delta', thinking: 'Cut off' } });
+
+            const results = [
+                parse({ type: 'message_delta', delta: { stop_reason: 'end_turn' } }),
+                parse({ type: 'message_stop' })
+            ];
+            expect(results.every(result => result.completedThought === undefined)).toBe(true);
+        });
+
+        it('should finish a tool call after a thinking block without treating it as thinking', () => {
+            parse({ type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '', signature: '' } });
+            parse({ type: 'content_block_delta', index: 0, delta: { type: 'signature_delta', signature: 'sig-abc' } });
+            parse({ type: 'content_block_stop', index: 0 });
+
+            parse({ type: 'content_block_start', index: 1, content_block: { type: 'tool_use', name: 'search_vault_files', id: 'tool_1' } });
+            parse({ type: 'content_block_delta', index: 1, delta: { type: 'input_json_delta', partial_json: '{"query":"notes"}' } });
+
+            const stop = parse({ type: 'content_block_stop', index: 1 });
+            expect(stop.completedThought).toBeUndefined();
+            expect(stop.toolCalls).toHaveLength(1);
+        });
+
+        it('should warn about thinking blocks the API dropped', () => {
+            const warnSpy = vi.spyOn(Exception, 'warn').mockImplementation(() => {});
+
+            parse({
+                type: 'message_start',
+                message: { input_transformations: [{ type: 'thinking_dropped', path: 'messages.1.content.0', reason: 'prefix_binding_mismatch' }] }
+            });
+
+            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('messages.1.content.0'));
+            warnSpy.mockRestore();
+        });
+
         it('should parse text_delta chunks', () => {
             const chunk = JSON.stringify({
                 type: 'content_block_delta',
@@ -199,26 +314,18 @@ describe('Claude', () => {
         });
 
         it('should handle content_block_stop and finalize function call', () => {
-            // Setup
-            (claude as any).accumulatedFunctionName = 'search_vault_files';
-            (claude as any).accumulatedFunctionArgs = '{"param":"value"}';
-            (claude as any).accumulatedFunctionId = 'func_456';
+            parse({ type: 'content_block_start', index: 0, content_block: { type: 'tool_use', name: 'search_vault_files', id: 'func_456', input: {} } });
+            parse({ type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: '{"param":"value"}' } });
 
-            const chunk = JSON.stringify({
-                type: 'content_block_stop'
-            });
-
-            const result = (claude as any).parseStreamChunk(chunk);
+            const result = parse({ type: 'content_block_stop', index: 0 });
 
             expect(result.toolCalls).toBeDefined();
             expect(result.toolCalls?.[0].name).toBe('search_vault_files');
             expect(result.toolCalls?.[0].arguments).toEqual({ param: 'value' });
             expect(result.toolCalls?.[0].toolId).toBe('func_456');
 
-            // Should reset accumulation
-            expect((claude as any).accumulatedFunctionName).toBeNull();
-            expect((claude as any).accumulatedFunctionArgs).toBe('');
-            expect((claude as any).accumulatedFunctionId).toBeNull();
+            // The next block starts fresh
+            expect(parse({ type: 'content_block_stop', index: 1 }).toolCalls).toBeUndefined();
         });
 
         it('should handle message_delta with stop_reason', () => {
@@ -256,20 +363,16 @@ describe('Claude', () => {
         });
 
         it('should handle invalid JSON in function arguments gracefully', () => {
-            // Setup
-            (claude as any).accumulatedFunctionName = 'search_vault_files';
-            (claude as any).accumulatedFunctionArgs = 'invalid json {';
-            (claude as any).accumulatedFunctionId = 'func_789';
+            parse({ type: 'content_block_start', index: 0, content_block: { type: 'tool_use', name: 'search_vault_files', id: 'func_789', input: {} } });
+            parse({ type: 'content_block_delta', index: 0, delta: { type: 'input_json_delta', partial_json: 'invalid json {' } });
 
             const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
 
-            const chunk = JSON.stringify({
-                type: 'content_block_stop'
-            });
+            const result = parse({ type: 'content_block_stop', index: 0 });
 
-            const result = (claude as any).parseStreamChunk(chunk);
-
+            // The block is discarded with its call, so no unanswered tool_use is replayed
             expect(result.toolCalls).toBeUndefined();
+            expect(result.providerBlocks).toBeUndefined();
             expect(exceptionSpy).toHaveBeenCalled();
 
             exceptionSpy.mockRestore();
@@ -285,6 +388,44 @@ describe('Claude', () => {
     });
 
     describe('extractContents', () => {
+        it('should replay a Claude turn exactly as it was received', async () => {
+            const blocks = [
+                { type: 'thinking', thinking: 'Plan', signature: 'sig-1' },
+                { type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: { query: 'news' } },
+                { type: 'web_search_tool_result', tool_use_id: 'srvtoolu_1', content: [] },
+                { type: 'text', text: 'Original text', citations: null },
+                { type: 'tool_use', id: 'call_1', name: 'search_vault_files', input: { query: 'notes' } }
+            ];
+            const contents = [
+                new ConversationContent({ role: Role.User, content: 'Hello' }),
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: 'Sanitized text',
+                    toolCalls: JSON.stringify([{ toolCall: { id: 'call_1', name: 'search_vault_files', args: { query: 'notes' } } }]),
+                    providerContent: JSON.stringify({ provider: AIProvider.Claude, blocks })
+                })
+            ];
+
+            const result = await (claude as any).extractContents(contents);
+
+            expect(result[1]).toEqual({ role: Role.Assistant, content: blocks });
+        });
+
+        it('should build the turn from its neutral fields when another provider produced it', async () => {
+            const contents = [
+                new ConversationContent({ role: Role.User, content: 'Hello' }),
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: 'From Gemini',
+                    providerContent: JSON.stringify({ provider: AIProvider.Gemini, blocks: [{ text: 'From Gemini' }] })
+                })
+            ];
+
+            const result = await (claude as any).extractContents(contents);
+
+            expect(result[1]).toEqual({ role: Role.Assistant, content: [{ type: 'text', text: 'From Gemini' }] });
+        });
+
         it('should convert simple text content to Claude message format', async () => {
             const contents = [
                 new ConversationContent({ role: Role.User, content: 'Hello', displayContent: 'Hello' }),
@@ -627,35 +768,6 @@ describe('Claude', () => {
             expect(result[1].content[0].text).toBe(expected);
         });
 
-        it('should exclude orphaned function calls without responses', async () => {
-            const contents = [
-                new ConversationContent({ role: Role.User, content: 'Search for files', displayContent: 'Search for files' }),
-                // Function call without response (orphaned)
-                new ConversationContent({
-                    role: Role.Assistant,
-                    content: '',
-                    displayContent: '',
-                    toolCalls: JSON.stringify([{
-                        toolCall: {
-                            id: 'call_orphaned',
-                            name: 'search_vault_files',
-                            args: { query: 'test' }
-                        }
-                    }]),
-                    timestamp: new Date(),
-                    shouldDisplayContent: false
-                }),
-                new ConversationContent({ role: Role.User, content: 'What about this?', displayContent: 'What about this?' })
-            ];
-
-            const result = await (claude as any).extractContents(contents);
-
-            // Orphaned function call excluded, leaving two user messages merged into one
-            expect(result).toHaveLength(1);
-            expect(result[0].content[0].text).toBe('Search for files');
-            expect(result[0].content[1].text).toBe('What about this?');
-        });
-
         it('should include function call when it has a corresponding response', async () => {
             const contents = [
                 new ConversationContent({ role: Role.User, content: 'Search for files', displayContent: 'Search for files' }),
@@ -727,52 +839,6 @@ describe('Claude', () => {
             expect(result).toHaveLength(2);
             expect(result[1].content[0].type).toBe('tool_use');
             expect(result[1].content[0].id).toBe('call_latest');
-        });
-
-        it('should handle multiple orphaned function calls correctly', async () => {
-            const contents = [
-                new ConversationContent({ role: Role.User, content: 'First message', displayContent: 'First message' }),
-                // Orphaned function call #1
-                new ConversationContent({
-                    role: Role.Assistant,
-                    content: '',
-                    displayContent: '',
-                    toolCalls: JSON.stringify([{
-                        toolCall: {
-                            id: 'call_orphan1',
-                            name: 'search_vault_files',
-                            args: { query: 'test1' }
-                        }
-                    }]),
-                    timestamp: new Date(),
-                    shouldDisplayContent: false
-                }),
-                new ConversationContent({ role: Role.User, content: 'Second message', displayContent: 'Second message' }),
-                // Orphaned function call #2
-                new ConversationContent({
-                    role: Role.Assistant,
-                    content: '',
-                    displayContent: '',
-                    toolCalls: JSON.stringify([{
-                        toolCall: {
-                            id: 'call_orphan2',
-                            name: 'read_file',
-                            args: { path: 'test.md' }
-                        }
-                    }]),
-                    timestamp: new Date(),
-                    shouldDisplayContent: false
-                }),
-                new ConversationContent({ role: Role.User, content: 'Third message', displayContent: 'Third message' })
-            ];
-
-            const result = await (claude as any).extractContents(contents);
-
-            // Both orphaned calls excluded, leaving three user messages merged into one
-            expect(result).toHaveLength(1);
-            expect(result[0].content[0].text).toBe('First message');
-            expect(result[0].content[1].text).toBe('Second message');
-            expect(result[0].content[2].text).toBe('Third message');
         });
 
         it('should handle attachments with images correctly', async () => {
@@ -1181,7 +1247,7 @@ describe('Claude', () => {
                 expect.any(String), // URL
                 expect.objectContaining({
                     model: 'claude-opus-4-20250514',
-                    max_tokens: 16384,
+                    max_tokens: 64000,
                     system: [
                         {
                             type: 'text',
@@ -1191,12 +1257,14 @@ describe('Claude', () => {
                     ],
                     messages: expect.any(Array),
                     tools: expect.any(Array),
+                    thinking: { type: 'adaptive', display: 'summarized', block_binding: { prefix_mismatch_behavior: 'drop_block' } },
                     stream: true
                 }),
                 expect.any(Function), // parseStreamChunk
                 expect.objectContaining({
                     'x-api-key': 'test-claude-key',
                     'anthropic-version': '2023-06-01',
+                    'anthropic-beta': 'files-api-2025-04-14,thinking-binding-controls-2026-08-01',
                     'anthropic-dangerous-direct-browser-access': 'true'
                 }),
                 expect.any(Function) // extractRetryDelay
@@ -1204,10 +1272,8 @@ describe('Claude', () => {
         });
 
         it('should reset accumulation state at start of streamRequest', async () => {
-            // Set some accumulated state
-            (claude as any).accumulatedFunctionName = 'old_func';
-            (claude as any).accumulatedFunctionArgs = 'old_args';
-            (claude as any).accumulatedFunctionId = 'old_id';
+            // Leave a block unfinished
+            (claude as any).parseStreamChunk(JSON.stringify({ type: 'content_block_start', index: 0, content_block: { type: 'tool_use', name: 'old_func', id: 'old_id', input: {} } }));
 
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test' }));
@@ -1221,10 +1287,10 @@ describe('Claude', () => {
             // Start consuming
             await generator.next();
 
-            // State should be reset
-            expect((claude as any).accumulatedFunctionName).toBeNull();
-            expect((claude as any).accumulatedFunctionArgs).toBe('');
-            expect((claude as any).accumulatedFunctionId).toBeNull();
+            // The unfinished block is gone, so a stray stop finishes nothing
+            const result = (claude as any).parseStreamChunk(JSON.stringify({ type: 'content_block_stop', index: 0 }));
+            expect(result.toolCalls).toBeUndefined();
+            expect(result.providerBlocks).toBeUndefined();
         });
     });
 

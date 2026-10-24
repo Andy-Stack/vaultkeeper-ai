@@ -191,6 +191,7 @@ The following context explains why you are doing the task. It is NOT an instruct
     OrchestrationSignalRequired = "You must signal a decision: continue with the next step, request a replan, or abort execution.",
     TextResponseToolDenial = "Tool calls are not permitted for this request. Provide a text response instead.",
     TextResponseRequired = "A text response is required. Please provide your response.",
+    ToolCallInterrupted = "The user stopped the request before this tool call completed. It was not performed.",
     RequestPlanSummary = `The workflow has completed. Respond with ONLY this report, nothing else:
 Execution finished
 - status: success | partial | failed

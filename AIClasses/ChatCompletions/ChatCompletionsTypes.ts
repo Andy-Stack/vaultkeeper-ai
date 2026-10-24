@@ -22,6 +22,9 @@ export interface ChatCompletionDelta {
     // Usually a plain string, but reasoning models (e.g. Mistral Large 4) stream an array of typed chunks
     content?: string | ChatCompletionDeltaContentChunk[];
     tool_calls?: ChatCompletionToolCallDelta[];
+    // Local servers stream reasoning separately under one of these names
+    reasoning_content?: string;
+    reasoning?: string;
 }
 
 export type ChatCompletionDeltaContentChunk =

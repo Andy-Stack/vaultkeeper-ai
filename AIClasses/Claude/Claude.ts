@@ -16,6 +16,8 @@ import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { parseToolCalls, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { Copy } from "Enums/Copy";
 import { replaceCopy } from 'Helpers/Helpers';
+import type { Thought } from "Conversations/Thought";
+import type { ClaudeInputTransformation } from "./ClaudeTypes";
 
 export class Claude extends BaseAIClass {
 
@@ -34,9 +36,9 @@ export class Claude extends BaseAIClass {
         return this.SUPPORTED_MIMETYPES;
     }
 
-    private accumulatedFunctionName: string | null = null;
-    private accumulatedFunctionArgs: string = "";
-    private accumulatedFunctionId: string | null = null;
+    // The content block being streamed, built exactly as Claude sends it so it can be sent back unchanged
+    private currentBlock: Record<string, unknown> | null = null;
+    private currentBlockJson: string = "";
 
     public constructor() {
         super(AIProvider.Claude);
@@ -44,9 +46,9 @@ export class Claude extends BaseAIClass {
 
     public async* streamRequest(conversation: Conversation): AsyncGenerator<IStreamChunk, void, unknown> {
         
-        this.accumulatedFunctionName = null;
-        this.accumulatedFunctionArgs = "";
-        this.accumulatedFunctionId = null;
+        this.currentBlock = null;
+        this.currentBlockJson = "";
+        this.resetThought();
 
         // Refresh file cache only if conversation has attachments
         if (conversation.hasAttachments()) {
@@ -70,11 +72,13 @@ export class Claude extends BaseAIClass {
 
         const requestBody: Record<string, unknown> = {
             model: this.model(),
-            max_tokens: 16384,
+            max_tokens: 64000,
             system: systemPrompt,
             messages: messages,
             tools: tools,
             tool_choice: this.buildClaudeToolChoice(),
+            // Drop thinking blocks whose earlier history changed (e.g. settings altered the tools) instead of rejecting the request
+            thinking: { type: "adaptive", display: "summarized", block_binding: { prefix_mismatch_behavior: "drop_block" } },
             stream: true
         };
 
@@ -87,7 +91,7 @@ export class Claude extends BaseAIClass {
         const headers = {
             "x-api-key": this.apiKey,
             "anthropic-version": "2023-06-01",
-            "anthropic-beta": "files-api-2025-04-14",
+            "anthropic-beta": "files-api-2025-04-14,thinking-binding-controls-2026-08-01",
             "anthropic-dangerous-direct-browser-access": "true"
         };
 
@@ -105,59 +109,72 @@ export class Claude extends BaseAIClass {
             const data = JSON.parse(chunk) as RawMessageStreamEvent;
 
             let text = "";
+            let thought = "";
             let toolCalls: AIToolCall[] | undefined = undefined;
             let isComplete = false;
             let shouldContinue = false;
+            let completedThought: Thought | undefined = undefined;
+            let providerBlocks: unknown[] | undefined = undefined;
 
-            // Handle content_block_start - detect tool_use blocks
+            if (data.type === "message_start") {
+                this.logDroppedThinkingBlocks(data.message as { input_transformations?: ClaudeInputTransformation[] });
+            }
+
             if (data.type === "content_block_start") {
-                const startEvent = data;
-                if (startEvent.content_block.type === "tool_use") {
-                    const toolBlock = startEvent.content_block;
-                    this.accumulatedFunctionName = toolBlock.name || null;
-                    this.accumulatedFunctionArgs = "";
-                    this.accumulatedFunctionId = toolBlock.id || null;
+                this.currentBlock = { ...data.content_block };
+                this.currentBlockJson = "";
 
-                    // Return immediately to signal tool call has started
+                if (data.content_block.type === "tool_use") {
                     return {
                         content: "",
                         isComplete: false,
-                        toolCallStarted: toolBlock.name
+                        toolCallStarted: data.content_block.name
                     };
                 }
             }
 
-            // Handle content_block_delta - accumulate text or tool arguments
             if (data.type === "content_block_delta") {
-                const deltaEvent = data;
-                if (deltaEvent.delta.type === "text_delta") {
-                    const textDelta = deltaEvent.delta;
-                    text = textDelta.text || "";
-                } else if (deltaEvent.delta.type === "input_json_delta") {
-                    const inputDelta = deltaEvent.delta;
-                    this.accumulatedFunctionArgs += inputDelta.partial_json || "";
+                const delta = data.delta;
+                switch (delta.type) {
+                    case "text_delta":
+                        text = delta.text;
+                        this.appendToCurrentBlock("text", delta.text);
+                        break;
+                    case "citations_delta":
+                        if (this.currentBlock) {
+                            this.currentBlock.citations = [...(this.currentBlock.citations as unknown[] | null ?? []), delta.citation];
+                        }
+                        break;
+                    case "thinking_delta":
+                        thought = this.appendThought(delta.thinking);
+                        this.appendToCurrentBlock("thinking", delta.thinking);
+                        break;
+                    case "signature_delta":
+                        this.appendToCurrentBlock("signature", delta.signature);
+                        break;
+                    case "input_json_delta":
+                        this.currentBlockJson += delta.partial_json;
+                        break;
                 }
             }
 
-            // Handle content_block_stop - finalize tool calls, each tool_use block in a turn is its own call
-            if (data.type === "content_block_stop") {
-                if (this.accumulatedFunctionName) {
-                    try {
-                        // A tool without arguments streams no input deltas
-                        const args = JSON.parse(this.accumulatedFunctionArgs || "{}") as Record<string, unknown>;
+            // Each finished block is kept for replay, and tool calls and thoughts are taken from it
+            if (data.type === "content_block_stop" && this.currentBlock) {
+                const block = this.finishCurrentBlock();
+
+                if (block) {
+                    providerBlocks = [block];
+
+                    if (block.type === "tool_use") {
                         toolCalls = [new AIToolCall(
-                            aiToolFromString(this.accumulatedFunctionName),
-                            args,
-                            this.accumulatedFunctionId || undefined,
+                            aiToolFromString(block.name as string),
+                            block.input as Record<string, unknown>,
+                            block.id as string,
                             undefined  // thoughtSignature not used by Claude
                         )];
-                    } catch (error) {
-                        Exception.log(error);
+                    } else if (block.type === "thinking") {
+                        completedThought = this.completeThought();
                     }
-                    // Reset accumulation for next potential tool use
-                    this.accumulatedFunctionName = null;
-                    this.accumulatedFunctionArgs = "";
-                    this.accumulatedFunctionId = null;
                 }
             }
 
@@ -181,6 +198,9 @@ export class Claude extends BaseAIClass {
                 isComplete: isComplete,
                 toolCalls: toolCalls,
                 shouldContinue: shouldContinue,
+                thought: thought,
+                completedThought: completedThought,
+                providerBlocks: providerBlocks
             };
         } catch (error) {
             return this.createErrorChunk(error);
@@ -190,7 +210,13 @@ export class Claude extends BaseAIClass {
     protected async extractContents(conversationContent: ConversationContent[]): Promise<{ role: Role; content: ContentBlockParam[]; }[]> {
         const results = [];
 
-        for (const content of this.filterConversationContents(conversationContent)) {
+        for (const content of conversationContent) {
+            const providerBlocks = this.ownProviderBlocks(content);
+            if (providerBlocks) {
+                results.push({ role: Role.Assistant, content: providerBlocks as ContentBlockParam[] });
+                continue;
+            }
+
             const contentBlocks: ContentBlockParam[] = [];
             const contentToExtract = content.content ?? "";
 
@@ -280,6 +306,38 @@ export class Claude extends BaseAIClass {
             (target, source) => target.content = [...target.content, ...source.content]);
     }
 
+    private appendToCurrentBlock(field: string, text: string) {
+        if (this.currentBlock) {
+            this.currentBlock[field] = `${this.currentBlock[field] as string | undefined ?? ""}${text}`;
+        }
+    }
+
+    // Tool inputs stream as JSON, a block whose input can't be parsed is discarded with its tool call
+    private finishCurrentBlock(): Record<string, unknown> | undefined {
+        const block = this.currentBlock!;
+        const json = this.currentBlockJson;
+        this.currentBlock = null;
+        this.currentBlockJson = "";
+
+        if (json === "") {
+            return block;
+        }
+        try {
+            return { ...block, input: JSON.parse(json) as unknown };
+        } catch (error) {
+            Exception.log(error);
+            return undefined;
+        }
+    }
+
+    private logDroppedThinkingBlocks(message: { input_transformations?: ClaudeInputTransformation[] }) {
+        for (const transformation of message.input_transformations ?? []) {
+            if (transformation.type === "thinking_dropped") {
+                Exception.warn(`Claude dropped thinking block at ${transformation.path}: ${transformation.reason}`);
+            }
+        }
+    }
+
     protected mapFunctionDefinitions(aiToolDefinitions: IAIToolDefinition[]): Tool[] {
         return aiToolDefinitions.map((functionDefinition) => ({
             name: functionDefinition.name,
@@ -367,10 +425,15 @@ export class Claude extends BaseAIClass {
         const lastContentIndex = contentLength - 1;
         const lastContentBlock = secondToLastMessage.content[lastContentIndex];
 
+        // Thinking blocks can't be cached, which only happens if a replayed turn ended in thought
+        if (lastContentBlock.type === "thinking" || lastContentBlock.type === "redacted_thinking") {
+            return messages;
+        }
+
         secondToLastMessage.content[lastContentIndex] = {
             ...lastContentBlock,
             cache_control: { type: "ephemeral" }
-        } as ContentBlockParam;
+        };
 
         return cachedMessages;
     }

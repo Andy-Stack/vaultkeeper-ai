@@ -7,7 +7,7 @@ import { AIProvider, AIProviderURL } from "Enums/ApiProvider";
 import { AIToolCall } from "AIClasses/AIToolCall";
 import { fromString as aiToolFromString } from "Enums/AITool";
 import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinition";
-import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemAdded, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, ResponseIncompleteEvent, OpenAIToolTool, ResponsesAPIInput } from "./OpenAITypes";
+import type { ResponseEvent, ResponseOutputTextDelta, ResponseOutputItemAdded, ResponseOutputItemDone, ResponseErrorEvent, ResponseFailedEvent, ResponseIncompleteEvent, ResponseReasoningSummaryTextDelta, ResponseReasoningSummaryPartAdded, ResponsesAPIOutputItem, OpenAIToolTool, ResponsesAPIInput } from "./OpenAITypes";
 import { Exception } from "Helpers/Exception";
 import { ApiErrorType } from "Types/ApiError";
 import { MimeType, toMimeType } from "Enums/MimeType";
@@ -16,6 +16,7 @@ import { MimeTypeToFileTypes } from "Enums/FileTypeMimeTypeMapping";
 import { parseToolCalls, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { replaceCopy } from 'Helpers/Helpers';
 import { Copy } from "Enums/Copy";
+import type { Thought } from "Conversations/Thought";
 
 export class OpenAI extends BaseAIClass {
 
@@ -42,6 +43,8 @@ export class OpenAI extends BaseAIClass {
             await this.aiFileService.refreshCache();
         }
 
+        this.resetThought();
+
         const systemPrompt = `${this.systemPrompt}\n\n${this.userInstruction}`;
 
         const input = await this.extractContents(conversation.contents);
@@ -59,7 +62,7 @@ export class OpenAI extends BaseAIClass {
 
         const effort = this.effort();
         if (effort) {
-            requestBody.reasoning = { effort };
+            requestBody.reasoning = { effort, summary: "auto" };
         }
 
         const headers = {
@@ -86,9 +89,12 @@ export class OpenAI extends BaseAIClass {
             const event = JSON.parse(chunk) as ResponseEvent;
 
             let text = "";
+            let thought = "";
             let toolCalls: AIToolCall[] | undefined = undefined;
             let isComplete = false;
             let shouldContinue = false;
+            let completedThought: Thought | undefined = undefined;
+            let providerBlocks: unknown[] | undefined = undefined;
 
             // Handle different event types
             switch (event.type) {
@@ -96,6 +102,21 @@ export class OpenAI extends BaseAIClass {
                     // Text content streaming
                     const deltaEvent = event as ResponseOutputTextDelta;
                     text = deltaEvent.delta;
+                    break;
+                }
+
+                case "response.reasoning_summary_text.delta": {
+                    const summaryDeltaEvent = event as ResponseReasoningSummaryTextDelta;
+                    thought = this.appendThought(summaryDeltaEvent.delta);
+                    break;
+                }
+
+                case "response.reasoning_summary_part.added": {
+                    // Keep separate summary parts from running together
+                    const summaryPartEvent = event as ResponseReasoningSummaryPartAdded;
+                    if (summaryPartEvent.summary_index > 0) {
+                        thought = this.appendThought("\n\n");
+                    }
                     break;
                 }
 
@@ -176,6 +197,11 @@ export class OpenAI extends BaseAIClass {
                 case "response.output_item.done": {
                     // Complete output item received - this includes function calls with name, each call in a turn is its own item
                     const itemDoneEvent = event as ResponseOutputItemDone;
+                    providerBlocks = [itemDoneEvent.item];
+
+                    if (itemDoneEvent.item.type === "reasoning") {
+                        completedThought = this.completeThought();
+                    }
 
                     // Check if this is a function call
                     if (itemDoneEvent.item.type === "function_call" && itemDoneEvent.item.name) {
@@ -190,6 +216,8 @@ export class OpenAI extends BaseAIClass {
                             // When we receive a function call, we should continue the conversation
                             shouldContinue = true;
                         } catch (error) {
+                            // Discarded with its call, so no unanswered function_call is replayed
+                            providerBlocks = undefined;
                             Exception.log(error);
                         }
                     }
@@ -201,6 +229,8 @@ export class OpenAI extends BaseAIClass {
                 case "response.content_part.added":
                 case "response.content_part.done":
                 case "response.output_text.done":
+                case "response.reasoning_summary_text.done":
+                case "response.reasoning_summary_part.done":
                 case "response.web_search_call.in_progress":
                 case "response.web_search_call.searching":
                 case "response.web_search_call.completed":
@@ -219,6 +249,9 @@ export class OpenAI extends BaseAIClass {
                 isComplete: isComplete,
                 toolCalls: toolCalls,
                 shouldContinue: shouldContinue,
+                thought: thought,
+                completedThought: completedThought,
+                providerBlocks: providerBlocks
             };
         } catch (error) {
             return this.createErrorChunk(error);
@@ -228,7 +261,13 @@ export class OpenAI extends BaseAIClass {
     protected async extractContents(conversationContent: ConversationContent[]): Promise<ResponsesAPIInput[]> {
         const results: ResponsesAPIInput[] = [];
 
-        for (const content of this.filterConversationContents(conversationContent)) {
+        for (const content of conversationContent) {
+            const providerBlocks = this.ownProviderBlocks(content);
+            if (providerBlocks) {
+                results.push(...providerBlocks as ResponsesAPIOutputItem[]);
+                continue;
+            }
+
             const contentToExtract = content.content ?? "";
 
             // Case 1: Assistant message with function calls

@@ -107,6 +107,61 @@ describe('Gemini', () => {
     });
 
     describe('parseStreamChunk', () => {
+        it('should keep every part of every chunk unmerged for replay', () => {
+            const chunks = [
+                [{ text: 'Thinking about it', thought: true }],
+                [{ text: 'Hello' }],
+                [{ text: ' there' }, { text: '', thoughtSignature: 'sig-text' }],
+                [{ functionCall: { name: 'search_vault_files', args: { query: 'notes' } }, thoughtSignature: 'sig-call' }]
+            ];
+
+            const blocks = chunks.flatMap((parts, index) => (gemini as any).parseStreamChunk(JSON.stringify({
+                candidates: [{ content: { parts }, ...(index === chunks.length - 1 ? { finishReason: 'STOP' } : {}) }]
+            })).providerBlocks ?? []);
+
+            expect(blocks).toEqual(chunks.flat());
+        });
+
+        it('should not emit provider blocks for a chunk without parts', () => {
+            const result = (gemini as any).parseStreamChunk(JSON.stringify({ candidates: [{ finishReason: 'STOP' }] }));
+
+            expect(result.providerBlocks).toBeUndefined();
+        });
+
+        it('should route thought parts to thought and join every answer text part', () => {
+            const result = (gemini as any).parseStreamChunk(JSON.stringify({
+                candidates: [{
+                    content: {
+                        parts: [
+                            { text: 'Considering the vault', thought: true },
+                            { text: 'Hello' },
+                            { text: ' there' }
+                        ]
+                    }
+                }]
+            }));
+
+            expect(result.thought).toBe('Considering the vault');
+            expect(result.content).toBe('Hello there');
+            expect(result.completedThought).toBeUndefined();
+        });
+
+        it('should emit the accumulated thought as completedThought on finish', () => {
+            (gemini as any).parseStreamChunk(JSON.stringify({
+                candidates: [{ content: { parts: [{ text: 'Step one. ', thought: true }] } }]
+            }));
+            (gemini as any).parseStreamChunk(JSON.stringify({
+                candidates: [{ content: { parts: [{ text: 'Step two.', thought: true }] } }]
+            }));
+
+            const result = (gemini as any).parseStreamChunk(JSON.stringify({
+                candidates: [{ content: { parts: [{ text: 'Answer' }] }, finishReason: 'STOP' }]
+            }));
+
+            expect(result.content).toBe('Answer');
+            expect(result.completedThought).toEqual({ provider: AIProvider.Gemini, text: 'Step one. Step two.' });
+        });
+
         it('should parse text from nested content.parts structure', () => {
             const chunk = JSON.stringify({
                 candidates: [{
@@ -466,6 +521,22 @@ describe('Gemini', () => {
     });
 
     describe('Message Format Conversion', () => {
+        it('should replay a Gemini turn exactly as it was received', async () => {
+            const parts = [
+                { text: 'Thinking about it', thought: true },
+                { text: 'Hello' },
+                { text: '', thoughtSignature: 'sig-text' }
+            ];
+            const contents = [
+                new ConversationContent({ role: Role.User, content: 'Hi' }),
+                new ConversationContent({ role: Role.Assistant, content: 'Hello', providerContent: JSON.stringify({ provider: AIProvider.Gemini, blocks: parts }) })
+            ];
+
+            const result = await (gemini as any).extractContents(contents);
+
+            expect(result[1]).toEqual({ role: 'model', parts });
+        });
+
         it('should convert roles to User/Model', async () => {
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Hello', displayContent: 'Hello' }));
@@ -825,34 +896,6 @@ describe('Gemini', () => {
             expect(result[0].parts[1].text).toBe('World');
         });
 
-        it('should exclude orphaned function calls without responses', async () => {
-            const contents = [
-                new ConversationContent({ role: Role.User, content: 'Search for files', displayContent: 'Search for files' }),
-                // Function call without response (orphaned)
-                new ConversationContent({
-                    role: Role.Assistant,
-                    content: '',
-                    displayContent: '',
-                    toolCalls: JSON.stringify([{
-                        toolCall: {
-                            name: 'search_vault_files',
-                            args: { query: 'test' }
-                        }
-                    }]),
-                    timestamp: new Date(),
-                    shouldDisplayContent: false
-                }),
-                new ConversationContent({ role: Role.User, content: 'What about this?', displayContent: 'What about this?' })
-            ];
-
-            const result = await (gemini as any).extractContents(contents);
-
-            // Orphaned function call excluded, leaving two user messages merged into one
-            expect(result).toHaveLength(1);
-            expect(result[0].parts[0].text).toBe('Search for files');
-            expect(result[0].parts[1].text).toBe('What about this?');
-        });
-
         it('should include function call when it has a corresponding response', async () => {
             const contents = [
                 new ConversationContent({ role: Role.User, content: 'Search for files', displayContent: 'Search for files' }),
@@ -928,50 +971,6 @@ describe('Gemini', () => {
                 },
                 thoughtSignature: 'latestCallSignature=='
             });
-        });
-
-        it('should handle multiple orphaned function calls correctly', async () => {
-            const contents = [
-                new ConversationContent({ role: Role.User, content: 'First message', displayContent: 'First message' }),
-                // Orphaned function call #1
-                new ConversationContent({
-                    role: Role.Assistant,
-                    content: '',
-                    displayContent: '',
-                    toolCalls: JSON.stringify([{
-                        toolCall: {
-                            name: 'search_vault_files',
-                            args: { query: 'test1' }
-                        }
-                    }]),
-                    timestamp: new Date(),
-                    shouldDisplayContent: false
-                }),
-                new ConversationContent({ role: Role.User, content: 'Second message', displayContent: 'Second message' }),
-                // Orphaned function call #2
-                new ConversationContent({
-                    role: Role.Assistant,
-                    content: '',
-                    displayContent: '',
-                    toolCalls: JSON.stringify([{
-                        toolCall: {
-                            name: 'read_file',
-                            args: { path: 'test.md' }
-                        }
-                    }]),
-                    timestamp: new Date(),
-                    shouldDisplayContent: false
-                }),
-                new ConversationContent({ role: Role.User, content: 'Third message', displayContent: 'Third message' })
-            ];
-
-            const result = await (gemini as any).extractContents(contents);
-
-            // Both orphaned calls excluded, leaving three user messages merged into one
-            expect(result).toHaveLength(1);
-            expect(result[0].parts[0].text).toBe('First message');
-            expect(result[0].parts[1].text).toBe('Second message');
-            expect(result[0].parts[2].text).toBe('Third message');
         });
 
     });

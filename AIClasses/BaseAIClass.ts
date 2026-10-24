@@ -18,7 +18,8 @@ import type { IAIFileService } from "./IAIFileService";
 import { AgentType } from "Enums/AgentType";
 import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import type { MimeType } from "Enums/MimeType";
-import { parseToolCalls } from "Helpers/ResponseHelper";
+import type { Thought } from "Conversations/Thought";
+import { parseProviderContent } from "Conversations/ProviderContent";
 
 export abstract class BaseAIClass implements IAIClass {
 
@@ -35,6 +36,7 @@ export abstract class BaseAIClass implements IAIClass {
     private _agentType: AgentType = AgentType.Main;
     private _aiToolDefinitions: IAIToolDefinition[] = [];
     private _aiToolUsageMode: AIToolUsageMode = AIToolUsageMode.Auto;
+    private accumulatedThoughtText: string = "";
 
     protected constructor(provider: AIProvider) {
         this.provider = provider;
@@ -217,69 +219,25 @@ export abstract class BaseAIClass implements IAIClass {
         return isValidProviderModel(model) ? EFFORT_BY_MODEL[model]?.[effort] : undefined;
     }
 
-    protected filterConversationContents(conversationContent: ConversationContent[]): ConversationContent[] {
-        const results: ConversationContent[] = [];
-        let index = 0;
-
-        while (index < conversationContent.length) {
-            const content = conversationContent[index];
-
-            if (!content.content && !content.toolCalls && !content.functionResponse && (!content.attachments || content.attachments.length === 0)) {
-                index++;
-                continue; // Filter out empty content
-            }
-
-            if (content.functionResponse) { // Filter out 'lone' function responses, valid ones are consumed with their calls below
-                Exception.warn(`[Filter Debug] Filtered orphaned function response at index ${index}/${conversationContent.length}:\n` +
-                    `  ToolId: ${content.toolId}\n` +
-                    `  Response: ${content.functionResponse}`);
-                index++;
-                continue;
-            }
-
-            if (!content.toolCalls) {
-                results.push(content); // Keep non-function-calls
-                index++;
-                continue;
-            }
-
-            // Every call made in a turn is answered by a contiguous run of responses
-            let groupEnd = index + 1;
-            while (groupEnd < conversationContent.length && conversationContent[groupEnd].functionResponse) {
-                groupEnd++;
-            }
-            const responses = conversationContent.slice(index + 1, groupEnd);
-
-            if (responses.length === 0 && groupEnd === conversationContent.length) {
-                results.push(content); // Keep if it's the last item (most recent)
-            } else if (this.isAnsweredToolCallGroup(content, responses)) {
-                results.push(content, ...responses);
-            } else {
-                Exception.warn(`[Filter Debug] Filtered unanswered function calls at index ${index}/${conversationContent.length}:\n` +
-                    `  Calls: ${content.toolCalls}\n` +
-                    `  Response toolIds: ${responses.map(response => response.toolId).join(", ")}`);
-            }
-            index = groupEnd;
-        }
-
-        return results;
+    protected appendThought(text: string): string {
+        this.accumulatedThoughtText += text;
+        return text;
     }
 
-    // Calls with ids are matched to responses by id, providers without ids (Gemini) answer in call order
-    private isAnsweredToolCallGroup(content: ConversationContent, responses: ConversationContent[]): boolean {
-        const toolCalls = parseToolCalls(content.toolCalls ?? "");
-        if (!toolCalls || toolCalls.length !== responses.length) {
-            return false;
-        }
+    protected completeThought(): Thought | undefined {
+        const text = this.accumulatedThoughtText;
+        this.accumulatedThoughtText = "";
+        return text === "" ? undefined : { provider: this.provider, text };
+    }
 
-        const hasId = (id: string | undefined) => !!id && id.trim() !== "";
+    protected resetThought() {
+        this.accumulatedThoughtText = "";
+    }
 
-        if (toolCalls.every(toolCall => hasId(toolCall.toolCall.id))) {
-            const responseIds = new Set(responses.map(response => response.toolId));
-            return toolCalls.every(toolCall => responseIds.has(toolCall.toolCall.id));
-        }
-
-        return responses.every(response => !hasId(response.toolId));
+    // A turn this provider produced is sent back exactly as it was received
+    protected ownProviderBlocks(content: ConversationContent): unknown[] | undefined {
+        const providerContent = content.providerContent ? parseProviderContent(content.providerContent) : undefined;
+        return providerContent?.provider === this.provider ? providerContent.blocks : undefined;
     }
 
     /**

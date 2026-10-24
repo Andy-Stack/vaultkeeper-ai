@@ -7,7 +7,10 @@ import type { IAIToolDefinition } from "AIClasses/ToolDefinitions/IAIToolDefinit
 import type { ConversationContent } from "Conversations/ConversationContent";
 import { Exception } from "Helpers/Exception";
 import { parseToolCalls, parseFunctionResponse } from "Helpers/ResponseHelper";
+import type { Thought } from "Conversations/Thought";
+import type { ThinkTagSplit } from "Helpers/ThinkTagSplitter";
 import type {
+    ChatCompletionToolCall,
     ChatCompletionToolCallDelta,
     ChatCompletionStreamChunk,
     ChatCompletionToolDefinition,
@@ -24,11 +27,13 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
 
     /** Max output tokens to request. Subclasses may override. */
     protected get maxTokens(): number {
-        return 16384;
+        return 64000;
     }
 
     // Accumulation state for streaming tool calls, keyed in the order the calls started
     private accumulatedToolCalls: Map<number, { id: string; name: string; args: string }> = new Map();
+    // The answer text as streamed, before any sanitising, so the turn can be sent back as it was received
+    private accumulatedAnswerText: string = "";
     // Keys for which toolCallStarted has already been emitted this stream
     private startedToolCalls: Set<number> = new Set();
     // Maps the index a server sent to the key of the call it is currently streaming
@@ -78,6 +83,8 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
         this.startedToolCalls.clear();
         this.toolCallKeys.clear();
         this.latestToolCallKey = undefined;
+        this.resetThought();
+        this.accumulatedAnswerText = "";
 
         // Refresh file cache only if conversation has attachments
         if (conversation.hasAttachments()) {
@@ -93,6 +100,11 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
         ];
     }
 
+    // Separates reasoning a server writes inline with the answer text. Subclasses may override.
+    protected splitInlineThinking(text: string, isFinalChunk: boolean): ThinkTagSplit {
+        return { content: text, thought: "" };
+    }
+
     protected parseStreamChunk(chunk: string): IStreamChunk {
         try {
             // Chat Completions sends "[DONE]" as the final message
@@ -103,10 +115,13 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
             const data = JSON.parse(chunk) as ChatCompletionStreamChunk;
 
             let text = "";
+            let thought = "";
             let toolCalls: AIToolCall[] | undefined = undefined;
             let isComplete = false;
             let shouldContinue = false;
             let toolCallStarted: string | undefined = undefined;
+            let completedThought: Thought | undefined = undefined;
+            let providerBlocks: unknown[] | undefined = undefined;
 
             if (!data.choices || data.choices.length === 0) {
                 return { content: "", isComplete: false };
@@ -118,12 +133,21 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
             if (typeof choice.delta.content === "string") {
                 text = choice.delta.content;
             } else if (Array.isArray(choice.delta.content)) {
-                // Thinking chunks are deliberately dropped for now; only the answer text is surfaced
-                text = choice.delta.content
-                    .filter((part): part is { type: "text"; text: string } => part.type === "text")
-                    .map(part => part.text)
-                    .join("");
+                for (const part of choice.delta.content) {
+                    if (part.type === "text") {
+                        text += part.text;
+                    } else {
+                        thought += part.thinking.map(thinkingPart => thinkingPart.text).join("");
+                    }
+                }
             }
+
+            // Servers that separate reasoning from content use one of these fields
+            thought += choice.delta.reasoning_content ?? choice.delta.reasoning ?? "";
+
+            const inlineSplit = this.splitInlineThinking(text, !!choice.finish_reason);
+            text = inlineSplit.content;
+            thought += inlineSplit.thought;
 
             // Handle tool call deltas
             if (choice.delta.tool_calls) {
@@ -155,9 +179,16 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
                 }
             }
 
+            if (thought) {
+                this.appendThought(thought);
+            }
+            this.accumulatedAnswerText += text;
+
             // Handle completion
             if (choice.finish_reason) {
                 isComplete = true;
+                completedThought = this.completeThought();
+                const nativeToolCalls: ChatCompletionToolCall[] = [];
 
                 if (choice.finish_reason === this.STOP_REASON_TOOL_CALLS) {
                     shouldContinue = true;
@@ -177,6 +208,11 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
                                 accumulatedToolCall.id || undefined,
                                 undefined
                             ));
+                            nativeToolCalls.push({
+                                id: accumulatedToolCall.id,
+                                type: "function",
+                                function: { name: accumulatedToolCall.name, arguments: accumulatedToolCall.args }
+                            });
                         } catch (error) {
                             Exception.log(error);
                         }
@@ -186,6 +222,14 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
                     this.toolCallKeys.clear();
                     this.latestToolCallKey = undefined;
                 }
+
+                // Reasoning isn't included, servers differ on whether they accept it back
+                const message: ChatCompletionMessage = { role: "assistant", content: this.accumulatedAnswerText };
+                if (nativeToolCalls.length > 0) {
+                    message.tool_calls = nativeToolCalls;
+                }
+                providerBlocks = [message];
+                this.accumulatedAnswerText = "";
             }
 
             return {
@@ -193,7 +237,10 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
                 isComplete: isComplete,
                 toolCalls: toolCalls,
                 shouldContinue: shouldContinue,
-                toolCallStarted: toolCallStarted
+                toolCallStarted: toolCallStarted,
+                thought: thought,
+                completedThought: completedThought,
+                providerBlocks: providerBlocks
             };
         } catch (error) {
             return this.createErrorChunk(error);
@@ -228,7 +275,13 @@ export abstract class ChatCompletionsAIClass extends BaseAIClass {
     protected async extractContents(conversationContent: ConversationContent[]): Promise<ChatCompletionMessage[]> {
         const results: ChatCompletionMessage[] = [];
 
-        for (const content of this.filterConversationContents(conversationContent)) {
+        for (const content of conversationContent) {
+            const providerBlocks = this.ownProviderBlocks(content);
+            if (providerBlocks) {
+                results.push(...providerBlocks as ChatCompletionMessage[]);
+                continue;
+            }
+
             const contentToExtract = content.content ?? "";
 
             // Case 1: Assistant message with tool calls

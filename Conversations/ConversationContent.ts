@@ -11,6 +11,8 @@ type ConversationContentInit = {
     content?: string;
     displayContent?: string;
     toolCalls?: string;
+    thoughts?: string;
+    providerContent?: string;
     functionResponse?: string;
     artifacts?: Artifact[];
     attachments?: Attachment[];
@@ -30,6 +32,8 @@ export class ConversationContent {
     public content: string | undefined;
     public displayContent: string | undefined;
     public toolCalls: string | undefined;
+    public thoughts: string | undefined;
+    public providerContent: string | undefined;
     public functionResponse: string | undefined;
     public artifacts: Artifact[];
     public attachments: Attachment[];
@@ -47,6 +51,8 @@ export class ConversationContent {
      * @param init.content - The content to be displayed and/or sent to the AI provider
      * @param init.displayContent - Display content is used when content needs to be formatted differently when displayed versus as a prompt
      * @param init.toolCalls - JSON array string of every function call made in the turn (only set for function/tool calls)
+     * @param init.thoughts - JSON array string of every thought the provider returned in the turn
+     * @param init.providerContent - JSON string of the turn exactly as the provider returned it, sent back unchanged to the same provider
      * @param init.functionResponse - JSON string of the function call response data (only set for function/tool responses)
      * @param init.artifacts - Array of artefacts that track edits to files made by the agent during the turn
      * @param init.attachments - Array of file attachments associated with this message (defaults to empty array)
@@ -62,6 +68,8 @@ export class ConversationContent {
         this.content = init.content;
         this.displayContent = init.displayContent;
         this.toolCalls = init.toolCalls;
+        this.thoughts = init.thoughts;
+        this.providerContent = init.providerContent;
         this.functionResponse = init.functionResponse;
         this.artifacts = init.artifacts ?? [];
         this.attachments = init.attachments ?? [];
@@ -84,6 +92,8 @@ export class ConversationContent {
         content?: string;
         displayContent?: string;
         toolCalls?: string;
+        thoughts?: string;
+        providerContent?: string;
         functionResponse?: string;
         artifacts?: unknown[];
         attachments?: unknown[];
@@ -103,6 +113,8 @@ export class ConversationContent {
             (!("content" in data) || typeof data.content === "string") &&
             (!("displayContent" in data) || typeof data.displayContent === "string") &&
             (!("toolCalls" in data) || typeof data.toolCalls === "string") &&
+            (!("thoughts" in data) || typeof data.thoughts === "string") &&
+            (!("providerContent" in data) || typeof data.providerContent === "string") &&
             (!("functionResponse" in data) || typeof data.functionResponse === "string") &&
             (!("artifacts" in data) || Array.isArray(data.artifacts)) &&
             (!("attachments" in data) || Array.isArray(data.attachments)) &&

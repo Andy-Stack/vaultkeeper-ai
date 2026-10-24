@@ -111,6 +111,63 @@ describe('OpenAI', () => {
     });
 
     describe('parseStreamChunk', () => {
+        it('should keep every completed output item whole for replay', () => {
+            const items = [
+                { id: 'rs_1', type: 'reasoning', summary: [{ type: 'summary_text', text: 'Plan' }], encrypted_content: 'enc' },
+                { id: 'ws_1', type: 'web_search_call', status: 'completed', action: { type: 'search', query: 'news' } },
+                { id: 'msg_1', type: 'message', role: 'assistant', phase: 'commentary', content: [{ type: 'output_text', text: 'Searching', annotations: [] }] },
+                { id: 'fc_1', type: 'function_call', call_id: 'call_1', name: 'search_vault_files', arguments: '{"query":"notes"}' }
+            ];
+
+            const blocks = items.flatMap(item => (openai as any).parseStreamChunk(JSON.stringify({
+                type: 'response.output_item.done', item_id: item.id, output_index: 0, item
+            })).providerBlocks);
+
+            expect(blocks).toEqual(items);
+        });
+
+        it('should not keep a function call whose arguments cannot be parsed', () => {
+            const exceptionSpy = vi.spyOn(Exception, 'log').mockImplementation(() => {});
+
+            const result = (openai as any).parseStreamChunk(JSON.stringify({
+                type: 'response.output_item.done',
+                item_id: 'fc_1',
+                output_index: 0,
+                item: { id: 'fc_1', type: 'function_call', call_id: 'call_1', name: 'search_vault_files', arguments: 'invalid {' }
+            }));
+
+            expect(result.toolCalls).toBeUndefined();
+            expect(result.providerBlocks).toBeUndefined();
+            exceptionSpy.mockRestore();
+        });
+
+        it('should route reasoning summary deltas to thought', () => {
+            const result = (openai as any).parseStreamChunk(JSON.stringify({
+                type: 'response.reasoning_summary_text.delta',
+                delta: 'Looking at the files'
+            }));
+
+            expect(result.thought).toBe('Looking at the files');
+            expect(result.content).toBe('');
+        });
+
+        it('should separate summary parts and complete the thought when the reasoning item is done', () => {
+            (openai as any).parseStreamChunk(JSON.stringify({ type: 'response.reasoning_summary_part.added', summary_index: 0 }));
+            (openai as any).parseStreamChunk(JSON.stringify({ type: 'response.reasoning_summary_text.delta', delta: 'First part' }));
+
+            const separator = (openai as any).parseStreamChunk(JSON.stringify({ type: 'response.reasoning_summary_part.added', summary_index: 1 }));
+            expect(separator.thought).toBe('\n\n');
+
+            (openai as any).parseStreamChunk(JSON.stringify({ type: 'response.reasoning_summary_text.delta', delta: 'Second part' }));
+
+            const result = (openai as any).parseStreamChunk(JSON.stringify({
+                type: 'response.output_item.done',
+                item: { type: 'reasoning' }
+            }));
+
+            expect(result.completedThought).toEqual({ provider: AIProvider.OpenAI, text: 'First part\n\nSecond part' });
+        });
+
         it('should handle [DONE] message', () => {
             const result = (openai as any).parseStreamChunk('[DONE]');
 
@@ -344,6 +401,25 @@ describe('OpenAI', () => {
     });
 
     describe('Message Format Conversion', () => {
+        it('should replay an OpenAI turn as its original output items', async () => {
+            const items = [
+                { id: 'rs_1', type: 'reasoning', summary: [], encrypted_content: 'enc' },
+                { id: 'fc_1', type: 'function_call', call_id: 'call_1', name: 'search_vault_files', arguments: '{"query":"notes"}' }
+            ];
+            const contents = [
+                new ConversationContent({ role: Role.User, content: 'Find notes' }),
+                new ConversationContent({
+                    role: Role.Assistant,
+                    toolCalls: JSON.stringify([{ toolCall: { id: 'call_1', name: 'search_vault_files', args: { query: 'notes' } } }]),
+                    providerContent: JSON.stringify({ provider: AIProvider.OpenAI, blocks: items })
+                })
+            ];
+
+            const result = await (openai as any).extractContents(contents);
+
+            expect(result.slice(1)).toEqual(items);
+        });
+
         it('should include system prompt in instructions field', async () => {
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Hello' }));
@@ -556,39 +632,6 @@ describe('OpenAI', () => {
             expect(requestBody.input).toHaveLength(2);
         });
 
-        it('should exclude orphaned function calls without responses', async () => {
-            const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Search for files' }));
-            // Function call without response (orphaned)
-            const orphanedCall = new ConversationContent({
-                role: Role.Assistant,
-                toolCalls: JSON.stringify([{
-                    toolCall: {
-                        id: 'call_orphaned',
-                        name: 'search_vault_files',
-                        args: { query: 'test' }
-                    }
-                }])
-            });
-            conversation.contents.push(orphanedCall);
-            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'What about this?' }));
-
-            mockStreamingService.streamRequest.mockImplementation(async function* () {
-                yield { content: 'done', isComplete: true };
-            });
-
-            const generator = openai.streamRequest(conversation);
-            for await (const chunk of generator) {}
-
-            const callArgs = mockStreamingService.streamRequest.mock.calls[0];
-            const requestBody = callArgs[1];
-
-            // Should only have 2 messages (orphaned function call excluded)
-            expect(requestBody.input).toHaveLength(2);
-            expect(requestBody.input[0].content).toBe('Search for files');
-            expect(requestBody.input[1].content).toBe('What about this?');
-        });
-
         it('should include function call when it has a corresponding response', async () => {
             const conversation = new Conversation();
             conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Search for files' }));
@@ -686,53 +729,6 @@ describe('OpenAI', () => {
                 name: 'search_vault_files',
                 arguments: '{"query":"test"}'
             });
-        });
-
-        it('should handle multiple orphaned function calls correctly', async () => {
-            const conversation = new Conversation();
-            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'First message' }));
-            // Orphaned function call #1
-            const orphan1 = new ConversationContent({
-                role: Role.Assistant,
-                toolCalls: JSON.stringify([{
-                    toolCall: {
-                        id: 'call_orphan1',
-                        name: 'search_vault_files',
-                        args: { query: 'test1' }
-                    }
-                }])
-            });
-            conversation.contents.push(orphan1);
-            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Second message' }));
-            // Orphaned function call #2
-            const orphan2 = new ConversationContent({
-                role: Role.Assistant,
-                toolCalls: JSON.stringify([{
-                    toolCall: {
-                        id: 'call_orphan2',
-                        name: 'read_file',
-                        args: { path: 'test.md' }
-                    }
-                }])
-            });
-            conversation.contents.push(orphan2);
-            conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Third message' }));
-
-            mockStreamingService.streamRequest.mockImplementation(async function* () {
-                yield { content: 'done', isComplete: true };
-            });
-
-            const generator = openai.streamRequest(conversation);
-            for await (const chunk of generator) {}
-
-            const callArgs = mockStreamingService.streamRequest.mock.calls[0];
-            const requestBody = callArgs[1];
-
-            // Should only have the 3 user messages (both orphaned calls excluded)
-            expect(requestBody.input).toHaveLength(3);
-            expect(requestBody.input[0].content).toBe('First message');
-            expect(requestBody.input[1].content).toBe('Second message');
-            expect(requestBody.input[2].content).toBe('Third message');
         });
 
         describe('Responses API Format Edge Cases', () => {

@@ -4,6 +4,11 @@ import { RegisterSingleton, DeregisterAllServices } from '../../Services/Depende
 import { Services } from '../../Services/Services';
 import { AITool, fromString } from '../../Enums/AITool';
 import { AbortService } from '../../Services/AbortService';
+import { Conversation } from '../../Conversations/Conversation';
+import { ConversationContent } from '../../Conversations/ConversationContent';
+import { Role } from '../../Enums/Role';
+import { ChatMode } from '../../Enums/ChatMode';
+import { Copy } from '../../Enums/Copy';
 
 /**
  * INTEGRATION TESTS - Simplified
@@ -83,6 +88,27 @@ describe('ChatService - Integration Tests (Sync Methods Only)', () => {
 
 		it('should initialize onNameChanged as undefined', () => {
 			expect(service.onNameChanged).toBeUndefined();
+		});
+	});
+
+	describe('submit', () => {
+		it('should answer tool calls left by a stopped request before adding the new message', async () => {
+			const conversation = new Conversation();
+			conversation.contents.push(
+				new ConversationContent({ role: Role.User, content: 'Search' }),
+				new ConversationContent({
+					role: Role.Assistant,
+					toolCalls: JSON.stringify([{ toolCall: { id: 'call_1', name: AITool.SearchVaultFiles, args: {} } }])
+				})
+			);
+			const callbacks = new Proxy({}, { get: () => vi.fn() }) as any;
+
+			await service.submit(conversation, ChatMode.Edit, 'Try again', 'Try again', [], callbacks);
+
+			const [, , interruptedResponse, newMessage] = conversation.contents;
+			expect(interruptedResponse.toolId).toBe('call_1');
+			expect(interruptedResponse.functionResponse).toContain(Copy.ToolCallInterrupted);
+			expect(newMessage.displayContent).toBe('Try again');
 		});
 	});
 

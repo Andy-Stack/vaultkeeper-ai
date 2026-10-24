@@ -10,6 +10,7 @@ import { AIToolCall } from '../../AIClasses/AIToolCall';
 import { AIToolResponse } from '../../AIClasses/ToolDefinitions/AIToolResponse';
 import { AIToolResponsePayload } from '../../AIClasses/ToolDefinitions/AIToolResponsePayload';
 import { ChatMode } from '../../Enums/ChatMode';
+import { AIProvider } from '../../Enums/ApiProvider';
 
 /**
  * INTEGRATION TESTS - AIControllerService
@@ -32,6 +33,7 @@ describe('AIControllerService - Integration Tests', () => {
 		onSubmit: vi.fn(),
 		onStreamingUpdate: vi.fn(),
 		onToolCallStarted: vi.fn(),
+		onThought: vi.fn(),
 		onArtifactProduced: vi.fn(),
 		onPlanningStarted: vi.fn(),
 		onPlanningFinished: vi.fn(),
@@ -190,6 +192,62 @@ describe('AIControllerService - Integration Tests', () => {
 			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
 
 			expect(callbacks.onToolCallStarted).toHaveBeenCalledWith(AITool.SearchVaultFiles);
+		});
+
+		it('should report thought deltas and store completed thoughts apart from the content', async () => {
+			const conversation = new Conversation();
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Think first' }));
+			const completedThought = { provider: AIProvider.Claude, text: 'Considering' };
+
+			mockAI.streamRequest.mockImplementation(async function* () {
+				yield { content: '', thought: 'Considering', isComplete: false };
+				yield { content: '', completedThought, isComplete: false };
+				yield { content: 'Answer', isComplete: true };
+			});
+
+			service.resolveAIProvider();
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
+
+			const assistantContent = conversation.contents.find(content => content.role === Role.Assistant)!;
+			expect(callbacks.onThought).toHaveBeenCalledWith('Considering');
+			expect(assistantContent.content).toBe('Answer');
+			expect(JSON.parse(assistantContent.thoughts!)).toEqual([completedThought]);
+		});
+
+		it('should store the provider\'s blocks only for a turn that completes', async () => {
+			const conversation = new Conversation();
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Hello' }));
+			mockAI.currentProvider = AIProvider.Claude;
+
+			mockAI.streamRequest.mockImplementation(async function* () {
+				yield { content: 'Hi', providerBlocks: [{ type: 'text', text: 'Hi' }], isComplete: false };
+				yield { content: '', providerBlocks: [{ type: 'thinking', thinking: '', signature: 'sig' }], isComplete: true };
+			});
+
+			service.resolveAIProvider();
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
+
+			const assistantContent = conversation.contents.find(content => content.role === Role.Assistant)!;
+			expect(JSON.parse(assistantContent.providerContent!)).toEqual({
+				provider: AIProvider.Claude,
+				blocks: [{ type: 'text', text: 'Hi' }, { type: 'thinking', thinking: '', signature: 'sig' }]
+			});
+		});
+
+		it('should not store provider blocks for a turn that never completes', async () => {
+			const conversation = new Conversation();
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Hello' }));
+
+			mockAI.streamRequest.mockImplementation(async function* () {
+				yield { content: 'Partial', providerBlocks: [{ type: 'text', text: 'Partial' }], isComplete: false };
+			});
+
+			service.resolveAIProvider();
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
+
+			const assistantContent = conversation.contents.find(content => content.role === Role.Assistant)!;
+			expect(assistantContent.content).toBe('Partial');
+			expect(assistantContent.providerContent).toBeUndefined();
 		});
 
 		it('should handle streaming errors gracefully', async () => {

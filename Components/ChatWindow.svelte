@@ -23,9 +23,6 @@
 	import { ConversationContent } from "Conversations/ConversationContent";
 	import { Role } from "Enums/Role";
 	import { ArtifactAction } from "Enums/ArtifactAction";
-	import { EventService } from "Services/EventService";
-	import { Event } from "Enums/Event";
-	import { fromString } from "Enums/AITool";
 
   const plugin: VaultkeeperAIPlugin = Resolve<VaultkeeperAIPlugin>(Services.VaultkeeperAIPlugin);
   const executionPlanStore: ExecutionPlanStore = Resolve<ExecutionPlanStore>(Services.ExecutionPlanStore);
@@ -35,7 +32,6 @@
   const workSpaceService: WorkSpaceService = Resolve<WorkSpaceService>(Services.WorkSpaceService);
   const conversationService: ConversationFileSystemService = Resolve<ConversationFileSystemService>(Services.ConversationFileSystemService);
   const streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
-    const eventService: EventService = Resolve<EventService>(Services.EventService);
   const abortService: AbortService = Resolve<AbortService>(Services.AbortService);
 
   let collectedArtifacts: Artifact[] = [];
@@ -48,6 +44,7 @@
   let isSubmitting = false;
   let busyPlanning = false;
   let isAwaitingUser = false;
+  let streamingThoughts = "";
 
   let conversation: Conversation = new Conversation();
   let attachments: Attachment[] = [];
@@ -120,6 +117,9 @@
         chatArea.updateChatAreaLayout();
       },
       onToolCallStarted: (_: string) => {},
+      onThought: (thought: string) => {
+        streamingThoughts = thought;
+      },
       onArtifactProduced: (artifact: Artifact) => {
       if (artifact.action === ArtifactAction.Move && artifact.previousPath) {
         for (const collected of collectedArtifacts) {
@@ -227,7 +227,7 @@
   <ChatPlanArea executionPlanState={executionPlanStore.executionPlanState} {busyPlanning}/>
 
   <div id="chat-container">
-    <ChatArea messages={conversation.contents} bind:this={chatArea} bind:isSubmitting bind:chatContainer {isAwaitingUser}/>
+    <ChatArea messages={conversation.contents} streamingThoughts={streamingThoughts} bind:this={chatArea} bind:isSubmitting bind:chatContainer {isAwaitingUser}/>
   </div>
 
   <ChatInput

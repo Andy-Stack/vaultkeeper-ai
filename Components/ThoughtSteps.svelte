@@ -5,7 +5,7 @@
 <script lang="ts">
   import { setElementIcon } from "Helpers/ElementHelper";
   import { StringTools } from "Helpers/StringTools";
-  import { fade, slide } from "svelte/transition";
+  import { slide } from "svelte/transition";
 
   export let steps: ThoughtStep[] = [];
   export let isLive: boolean = false;

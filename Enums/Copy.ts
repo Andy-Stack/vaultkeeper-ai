@@ -275,7 +275,16 @@ It began as a plugin built for a friend and is now shared with the wider Obsidia
 Found a bug or have an idea? Raise it on GitHub:`,
 
     AboutModalWhatsNewTitle = "What's new",
-    AboutModalWhatsNewContent = `- **New diff review**: Review every proposed change side by side, then accept it, reject it, or send it back with feedback.
+    AboutModalWhatsNewContent = `**2.0.1**
+
+- Agent thoughts now appear while the agent is thinking.
+- Auto continuity fix can be toggled in the diff window.
+- Chat area now follows the agent output unless scrolled up.
+- Added a copy button to agent messages and moved the user message copy button to be more obvious.
+
+**2.0.0**
+
+- **New diff review**: Review every proposed change side by side, then accept it, reject it, or send it back with feedback.
 - **Continuity checks**: Broken links and out-of-date block quotes caused by an edit are flagged in the diff view, and the AI can fix them itself.
 - **Mobile support**: The chat and diff view now have layouts built for phones.
 - **Faster, clearer agent**: The AI can now run several tools at once, and you can follow each step live as it works.

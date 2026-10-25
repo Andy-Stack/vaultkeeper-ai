@@ -250,6 +250,68 @@ describe('AIControllerService - Integration Tests', () => {
 			expect(assistantContent.providerContent).toBeUndefined();
 		});
 
+		it('should resume a paused turn by sending it back without a continue message', async () => {
+			const conversation = new Conversation();
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Latest news?' }));
+			mockAI.currentProvider = AIProvider.Claude;
+			const sentContents: ConversationContent[][] = [];
+
+			let callCount = 0;
+			mockAI.streamRequest.mockImplementation(async function* (sentConversation: Conversation) {
+				sentContents.push([...sentConversation.contents]);
+				callCount++;
+				if (callCount === 1) {
+					yield { content: '', providerBlocks: [{ type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: {} }], isPaused: true, isComplete: true };
+				} else {
+					yield { content: 'Here is the news', providerBlocks: [{ type: 'text', text: 'Here is the news' }], isComplete: true };
+				}
+			});
+
+			service.resolveAIProvider();
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
+
+			expect(callCount).toBe(2);
+			const [, pausedTurn, continuation] = conversation.contents;
+			expect(conversation.contents).toHaveLength(3);
+			expect(pausedTurn.providerContent).toBeDefined();
+			expect(pausedTurn.shouldDisplayContent).toBe(false);
+			expect(continuation.content).toBe('Here is the news');
+			// The paused turn was the last message the resume request was built from
+			expect(sentContents[1].slice(0, -1).at(-1)).toBe(pausedTurn);
+		});
+
+		it('should stop resuming a turn that keeps pausing', async () => {
+			const conversation = new Conversation();
+			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Latest news?' }));
+			mockAI.currentProvider = AIProvider.Claude;
+
+			mockAI.streamRequest.mockImplementation(async function* () {
+				yield { content: '', providerBlocks: [{ type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: {} }], isPaused: true, isComplete: true };
+			});
+
+			service.resolveAIProvider();
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
+
+			// The first request plus five resumes
+			expect(mockAI.streamRequest).toHaveBeenCalledTimes(6);
+		});
+
+		it('should only remove an empty turn once when completion is signalled twice', async () => {
+			const conversation = new Conversation();
+			const userMessage = new ConversationContent({ role: Role.User, content: 'Hello' });
+			conversation.contents.push(userMessage);
+
+			mockAI.streamRequest.mockImplementation(async function* () {
+				yield { content: '', isComplete: true };
+				yield { content: '', isComplete: true };
+			});
+
+			service.resolveAIProvider();
+			await service.runMainAgent(conversation, ChatMode.Edit, callbacks);
+
+			expect(conversation.contents).toEqual([userMessage]);
+		});
+
 		it('should handle streaming errors gracefully', async () => {
 			const conversation = new Conversation();
 			conversation.contents.push(new ConversationContent({ role: Role.User, content: 'Test' }));

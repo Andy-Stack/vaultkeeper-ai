@@ -128,6 +128,14 @@ describe('Claude', () => {
     describe('parseStreamChunk', () => {
         const parse = (event: Record<string, unknown>) => (claude as any).parseStreamChunk(JSON.stringify(event));
 
+        it('should report a paused turn as complete and paused, not as a tool call', () => {
+            const result = parse({ type: 'message_delta', delta: { stop_reason: 'pause_turn' } });
+
+            expect(result.isComplete).toBe(true);
+            expect(result.isPaused).toBe(true);
+            expect(result.shouldContinue).toBe(false);
+        });
+
         it('should stream thinking deltas as thought and keep the signed block for replay', () => {
             parse({ type: 'content_block_start', index: 0, content_block: { type: 'thinking', thinking: '', signature: '' } });
 
@@ -388,6 +396,78 @@ describe('Claude', () => {
     });
 
     describe('extractContents', () => {
+        it('should leave out an unanswered server tool call once a new message follows the paused turn', async () => {
+            const thinking = { type: 'thinking', thinking: 'Searching', signature: 'sig-1' };
+            const answeredCall = { type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: { query: 'first' } };
+            const answer = { type: 'web_search_tool_result', tool_use_id: 'srvtoolu_1', content: [] };
+            const unansweredCall = { type: 'server_tool_use', id: 'srvtoolu_2', name: 'web_search', input: { query: 'second' } };
+            const contents = [
+                new ConversationContent({ role: Role.User, content: 'Latest news?' }),
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    providerContent: JSON.stringify({ provider: AIProvider.Claude, blocks: [thinking, answeredCall, answer, unansweredCall] })
+                }),
+                new ConversationContent({ role: Role.User, content: 'Never mind' })
+            ];
+
+            const result = await (claude as any).extractContents(contents);
+
+            expect(result[1]).toEqual({ role: Role.Assistant, content: [thinking, answeredCall, answer] });
+        });
+
+        it('should drop a paused turn left empty and keep the user messages around it together', async () => {
+            const contents = [
+                new ConversationContent({ role: Role.User, content: 'Latest news?' }),
+                new ConversationContent({
+                    role: Role.Assistant,
+                    content: '',
+                    providerContent: JSON.stringify({ provider: AIProvider.Claude, blocks: [{ type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: {} }] })
+                }),
+                new ConversationContent({ role: Role.User, content: 'Never mind' })
+            ];
+
+            const result = await (claude as any).extractContents(contents);
+
+            expect(result).toEqual([{
+                role: Role.User,
+                content: [{ type: 'text', text: 'Latest news?' }, { type: 'text', text: 'Never mind' }]
+            }]);
+        });
+
+        it('should send a paused turn last so Claude resumes it', async () => {
+            const pausedBlocks = [
+                { type: 'thinking', thinking: 'Searching', signature: 'sig-1' },
+                { type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: { query: 'news' } }
+            ];
+            const contents = [
+                new ConversationContent({ role: Role.User, content: 'Latest news?' }),
+                new ConversationContent({ role: Role.Assistant, content: '', providerContent: JSON.stringify({ provider: AIProvider.Claude, blocks: pausedBlocks }) })
+            ];
+
+            const result = await (claude as any).extractContents(contents);
+
+            expect(result[result.length - 1]).toEqual({ role: Role.Assistant, content: pausedBlocks });
+        });
+
+        it('should join a paused turn and its continuation into one assistant message', async () => {
+            const pausedBlocks = [{ type: 'server_tool_use', id: 'srvtoolu_1', name: 'web_search', input: { query: 'news' } }];
+            const continuationBlocks = [
+                { type: 'web_search_tool_result', tool_use_id: 'srvtoolu_1', content: [] },
+                { type: 'text', text: 'Here is the news', citations: null }
+            ];
+            const contents = [
+                new ConversationContent({ role: Role.User, content: 'Latest news?' }),
+                new ConversationContent({ role: Role.Assistant, content: '', providerContent: JSON.stringify({ provider: AIProvider.Claude, blocks: pausedBlocks }) }),
+                new ConversationContent({ role: Role.Assistant, content: 'Here is the news', providerContent: JSON.stringify({ provider: AIProvider.Claude, blocks: continuationBlocks }) })
+            ];
+
+            const result = await (claude as any).extractContents(contents);
+
+            expect(result).toHaveLength(2);
+            expect(result[1]).toEqual({ role: Role.Assistant, content: [...pausedBlocks, ...continuationBlocks] });
+        });
+
         it('should replay a Claude turn exactly as it was received', async () => {
             const blocks = [
                 { type: 'thinking', thinking: 'Plan', signature: 'sig-1' },

@@ -21,6 +21,8 @@ import { AIToolUsageMode } from "Enums/AIToolUsageMode";
 import type { SettingsService } from "Services/SettingsService";
 
 export abstract class BaseAgent {
+
+    private static readonly MAX_CONSECUTIVE_RESUMES = 5;
     
     protected ai: IAIClass | undefined;
     protected readonly aiPrompt: IPrompt;
@@ -67,18 +69,30 @@ export abstract class BaseAgent {
 
         await this.saveConversation(agentType, conversation);
 
-        while (response.toolCalls.length > 0 || response.shouldContinue) {
-            if (response.toolCalls.length > 0) {
-                this.debugService?.log("ToolCall", `${agentType} received ${response.toolCalls.length} function call(s): ${response.toolCalls.map(toolCall => toolCall.name).join(", ")}`);
-                const result = await handleToolCalls(response.toolCalls);
-                if (result.shouldExit) {
-                    this.debugService?.log("AgentLoop", `${agentType} exiting loop (shouldExit: true)`);
-                    await this.saveConversation(agentType, conversation);
-                    return;
+        let consecutiveResumes = 0;
+
+        while (response.toolCalls.length > 0 || response.shouldContinue || response.isPaused) {
+            if (response.isPaused) {
+                if (++consecutiveResumes > BaseAgent.MAX_CONSECUTIVE_RESUMES) {
+                    this.debugService?.log("AgentLoop", `${agentType} stopped resuming a paused turn after ${BaseAgent.MAX_CONSECUTIVE_RESUMES} attempts`);
+                    break;
+                }
+            } else {
+                consecutiveResumes = 0;
+                if (response.toolCalls.length > 0) {
+                    this.debugService?.log("ToolCall", `${agentType} received ${response.toolCalls.length} function call(s): ${response.toolCalls.map(toolCall => toolCall.name).join(", ")}`);
+                    const result = await handleToolCalls(response.toolCalls);
+                    if (result.shouldExit) {
+                        this.debugService?.log("AgentLoop", `${agentType} exiting loop (shouldExit: true)`);
+                        await this.saveConversation(agentType, conversation);
+                        return;
+                    }
                 }
             }
 
-            response = await this.streamRequestResponse(agentType, this.ensureCorrectConversationStructure(conversation), callbacks);
+            // A paused turn resumes when it is sent back as the last message, a "Continue" message would start a new turn instead
+            const nextConversation = response.isPaused ? conversation : this.ensureCorrectConversationStructure(conversation);
+            response = await this.streamRequestResponse(agentType, nextConversation, callbacks);
 
             await this.saveConversation(agentType, conversation);
         }
@@ -150,9 +164,9 @@ export abstract class BaseAgent {
     }
 
     private async streamRequestResponse(agentType: AgentType, conversation: Conversation, callbacks: IChatServiceCallbacks
-    ): Promise<{ toolCalls: AIToolCall[], shouldContinue: boolean }> {
+    ): Promise<{ toolCalls: AIToolCall[], shouldContinue: boolean, isPaused: boolean }> {
         if (!this.ai) { // this should never happen
-            return { toolCalls: [], shouldContinue: false };
+            return { toolCalls: [], shouldContinue: false, isPaused: false };
         }
 
         const conversationContent = new ConversationContent({ role: Role.Assistant });
@@ -163,6 +177,7 @@ export abstract class BaseAgent {
         const capturedThoughts: Thought[] = [];
         const capturedProviderBlocks: unknown[] = [];
         let capturedShouldContinue = false;
+        let capturedIsPaused = false;
 
         for await (const chunk of this.ai.streamRequest(conversation)) {
             if (chunk.error && chunk.errorType) {
@@ -201,6 +216,10 @@ export abstract class BaseAgent {
                 capturedShouldContinue = true;
             }
 
+            if (chunk.isPaused) {
+                capturedIsPaused = true;
+            }
+
             if (chunk.content) {
                 accumulatedContent += chunk.content;
                 conversationContent.content = accumulatedContent;
@@ -209,8 +228,12 @@ export abstract class BaseAgent {
             if (chunk.isComplete) {
                 const sanitizedContent = sanitizeToolCallContent(accumulatedContent, capturedToolCalls);
 
-                if (sanitizedContent.trim() === "" && capturedToolCalls.length === 0) {
-                    conversation.contents.pop();
+                // A paused turn is kept even without text, it is sent back to resume
+                if (sanitizedContent.trim() === "" && capturedToolCalls.length === 0 && !capturedIsPaused) {
+                    // Providers can signal completion more than once, only the first may remove the turn
+                    if (conversation.contents.at(-1) === conversationContent) {
+                        conversation.contents.pop();
+                    }
                 } else {
                     conversationContent.content = sanitizedContent;
                     if (capturedThoughts.length > 0) {
@@ -238,7 +261,7 @@ export abstract class BaseAgent {
 
         callbacks.onStreamingUpdate();
 
-        return { toolCalls: capturedToolCalls, shouldContinue: capturedShouldContinue };
+        return { toolCalls: capturedToolCalls, shouldContinue: capturedShouldContinue, isPaused: capturedIsPaused };
     }
 
     // Returns a response for each call, in call order

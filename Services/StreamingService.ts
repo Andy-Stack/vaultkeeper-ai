@@ -17,6 +17,7 @@ export interface IStreamChunk {
   toolCalls?: AIToolCall[];
   toolCallStarted?: string;
   shouldContinue?: boolean;
+  isPaused?: boolean;
   thought?: string;
   completedThought?: Thought;
   providerBlocks?: unknown[];

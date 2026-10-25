@@ -17,11 +17,13 @@ import { parseToolCalls, parseFunctionResponse } from "Helpers/ResponseHelper";
 import { Copy } from "Enums/Copy";
 import { replaceCopy } from 'Helpers/Helpers';
 import type { Thought } from "Conversations/Thought";
-import type { ClaudeInputTransformation } from "./ClaudeTypes";
+import type { ClaudeInputTransformation, ClaudeMessage } from "./ClaudeTypes";
 
 export class Claude extends BaseAIClass {
 
     private readonly STOP_REASON_TOOL_USE: string = "tool_use";
+    private readonly STOP_REASON_PAUSE_TURN: string = "pause_turn";
+    private readonly SERVER_TOOL_CALL_TYPES: string[] = ["server_tool_use", "mcp_tool_use"];
     
     private readonly SUPPORTED_MIMETYPES = [
         MimeType.TEXT_PLAIN,
@@ -113,6 +115,7 @@ export class Claude extends BaseAIClass {
             let toolCalls: AIToolCall[] | undefined = undefined;
             let isComplete = false;
             let shouldContinue = false;
+            let isPaused = false;
             let completedThought: Thought | undefined = undefined;
             let providerBlocks: unknown[] | undefined = undefined;
 
@@ -185,6 +188,7 @@ export class Claude extends BaseAIClass {
                 if (stopReason) {
                     isComplete = true;
                     shouldContinue = stopReason === this.STOP_REASON_TOOL_USE;
+                    isPaused = stopReason === this.STOP_REASON_PAUSE_TURN;
                 }
             }
 
@@ -198,6 +202,7 @@ export class Claude extends BaseAIClass {
                 isComplete: isComplete,
                 toolCalls: toolCalls,
                 shouldContinue: shouldContinue,
+                isPaused: isPaused,
                 thought: thought,
                 completedThought: completedThought,
                 providerBlocks: providerBlocks
@@ -207,7 +212,7 @@ export class Claude extends BaseAIClass {
         }
     }
 
-    protected async extractContents(conversationContent: ConversationContent[]): Promise<{ role: Role; content: ContentBlockParam[]; }[]> {
+    protected async extractContents(conversationContent: ConversationContent[]): Promise<ClaudeMessage[]> {
         const results = [];
 
         for (const content of conversationContent) {
@@ -302,8 +307,32 @@ export class Claude extends BaseAIClass {
         }
 
         // Results for every call in a turn must share a single user message
-        return this.mergeConsecutiveRoles(results.filter(message => message.content.length > 0),
-            (target, source) => target.content = [...target.content, ...source.content]);
+        const mergeInto = (target: ClaudeMessage, source: ClaudeMessage) => target.content = [...target.content, ...source.content];
+        const messages = this.mergeConsecutiveRoles(results.filter(message => message.content.length > 0), mergeInto);
+
+        // Removing an emptied turn can leave two user messages together, so merge again
+        return this.mergeConsecutiveRoles(this.closeInterruptedServerToolCalls(messages), mergeInto);
+    }
+
+    /**
+     * A paused turn ends with a server tool call that only runs if the turn is resumed. When the user sends a new
+     * message instead, that call is never answered and Claude rejects the request, so it is left out. Everything
+     * else in the turn is kept unchanged, and a paused turn that is still last is left alone so it can be resumed.
+     */
+    private closeInterruptedServerToolCalls(messages: ClaudeMessage[]): ClaudeMessage[] {
+        return messages
+            .map((message, index) => {
+                if (message.role !== Role.Assistant || index === messages.length - 1) {
+                    return message;
+                }
+
+                const answeredIds = new Set(message.content.flatMap(block => "tool_use_id" in block ? [block.tool_use_id] : []));
+                const content = message.content.filter(block =>
+                    !(this.SERVER_TOOL_CALL_TYPES.includes(block.type) && "id" in block && !answeredIds.has(block.id)));
+
+                return { ...message, content };
+            })
+            .filter(message => message.content.length > 0);
     }
 
     private appendToCurrentBlock(field: string, text: string) {
@@ -403,8 +432,8 @@ export class Claude extends BaseAIClass {
 
     // Adds cache control to the last content block of the second-to-last message.
     private addCacheControlToMessages(
-        messages: { role: Role; content: ContentBlockParam[]; }[]
-    ): { role: Role; content: ContentBlockParam[]; }[] {
+        messages: ClaudeMessage[]
+    ): ClaudeMessage[] {
         if (messages.length < 2) {
             return messages;
         }
@@ -455,7 +484,7 @@ export class Claude extends BaseAIClass {
     private buildClaudeToolChoice(): { type: string } {
         return this.buildToolChoice<{ type: string }>({
             auto: { type: "auto" },
-            enabled: { type: "any" },
+            enabled: { type: "auto" },
             disabled: { type: "none" }
         });
     }

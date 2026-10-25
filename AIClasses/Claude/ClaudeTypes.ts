@@ -1,3 +1,11 @@
+import type { ContentBlockParam } from "@anthropic-ai/sdk/resources/messages";
+import type { Role } from "Enums/Role";
+
+export interface ClaudeMessage {
+    role: Role;
+    content: ContentBlockParam[];
+}
+
 export interface ClaudeFile {
     id: string;
     type: "file";

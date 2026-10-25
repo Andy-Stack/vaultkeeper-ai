@@ -4,14 +4,16 @@
   import type { StreamingMarkdownService } from "Services/StreamingMarkdownService";
   import type { ConversationContent } from "Conversations/ConversationContent";
   import { setElementIcon } from "Helpers/ElementHelper";
-  import { fade, slide } from "svelte/transition";
+  import { slide } from "svelte/transition";
   import { ArtifactAction, artifactActionToCopy } from "Enums/ArtifactAction";
   import { basename } from "path-browserify";
 	import type { Artifact } from "Conversations/Artifact";
 	import type { DiffService } from "Services/DiffService";
+	import { Notice } from "obsidian";
 
   export let message: ConversationContent;
   export let isSubmitting: boolean = false;
+  export let copyText: string | undefined = undefined;
 
   let streamingMarkdownService: StreamingMarkdownService = Resolve<StreamingMarkdownService>(Services.StreamingMarkdownService);
   let diffService: DiffService = Resolve<DiffService>(Services.DiffService);
@@ -52,7 +54,14 @@
   }
 
   function handleArtifactCardClick(artifact: Artifact) {
-    diffService.showArtifactDiff(artifact); // need to handle a nice UI for move
+    diffService.showArtifactDiff(artifact);
+  }
+
+  async function copyMessage() {
+    if (copyText) {
+      await navigator.clipboard.writeText(copyText);
+      new Notice("Copied to clipboard");
+    }
   }
 </script>
 
@@ -61,6 +70,15 @@
     <div class="markdown-content">
       <div use:messageRenderAction={message} class="streaming-content"></div>
     </div>
+    {#if copyText}
+      <div class="assistant-message-ribbon" transition:slide>
+        <button
+          class="transparent-button assistant-message-ribbon-button"
+          aria-label="Copy message"
+          use:setElementIcon={"clipboard"}
+          onclick={copyMessage}></button>
+      </div>
+    {/if}
     {#if message.artifacts.length > 0}
       {@const artifactTally = tallyArtifactsByAction(message.artifacts)}
       <div class="artifacts-container" in:slide>
@@ -83,11 +101,10 @@
               <div
                 class="artifact-card"
                 aria-label="{artifact.filePath}"
-                on:click={() => handleArtifactCardClick(artifact)}
-                on:keydown={(e) => e.key === 'Enter' && handleArtifactCardClick(artifact)}
+                onclick={() => handleArtifactCardClick(artifact)}
+                onkeydown={(e) => e.key === 'Enter' && handleArtifactCardClick(artifact)}
                 role="button"
-                tabindex="0"
-              >
+                tabindex="0">
                 <span class="artifact-ellipse artifact-ellipse-{artifact.action}"></span>
                 <div
                  class="artifact-icon"
@@ -149,6 +166,22 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  .assistant-message-ribbon {
+    display: flex;
+  }
+
+  .assistant-message-ribbon-button {
+    translate: -25% 0;
+    color: var(--text-muted);
+    transition: color 0.5s ease-out;
+  }
+
+  .assistant-message-ribbon-button:hover {
+    translate: -25% 0;
+    color: var(--text-normal);
+    transition: color 0.5s ease-out;
   }
 
   .artifacts-container {

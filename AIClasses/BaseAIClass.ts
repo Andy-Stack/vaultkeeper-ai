@@ -212,10 +212,10 @@ export abstract class BaseAIClass implements IAIClass {
         }
     }
 
-    /** The provider-specific effort value for the current model, or undefined when the model has none. */
     protected effort(): string | undefined {
         const model = this.model();
-        const effort = this._agentType === AgentType.QuickAction ? AIEffort.Fast : this.settingsService.settings.effort;
+        const effort = this._agentType === AgentType.QuickAction || 
+            this._agentType === AgentType.Execution ? AIEffort.Fast : this.settingsService.settings.effort;
         return isValidProviderModel(model) ? EFFORT_BY_MODEL[model]?.[effort] : undefined;
     }
 

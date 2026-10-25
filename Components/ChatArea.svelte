@@ -119,6 +119,14 @@
     });
   }
 
+  function isVisibleMessage(message: ConversationContent): boolean {
+    return message.shouldDisplayContent && message.getDisplayContent().trim() !== "";
+  }
+
+  function visibleAssistantMessages(turn: Turn): ConversationContent[] {
+    return turn.messages.filter(message => message.role !== Role.User && isVisibleMessage(message));
+  }
+
   function getGreetingByTime(): string {
     const hour = new Date().getHours();
 
@@ -155,14 +163,21 @@
   <div class="chat-area" bind:this={chatContainer} on:scroll={handleScroll}>
     {#each turns as turn, turnIndex (turn.id)}
       {@const isLatestTurn = turnIndex === turns.length - 1}
+      {@const assistantMessages = visibleAssistantMessages(turn)}
+      {@const isReplyComplete = !(isLatestTurn && isSubmitting)}
       <div class="message-group" class:latest={isLatestTurn} use:followResizes>
         {#each turn.messages as message, messageIndex (message.id)}
-          {@const content = message.getDisplayContent()}
-          {#if message.shouldDisplayContent && content.trim() !== ""}
+          {#if isVisibleMessage(message)}
             {#if message.role === Role.User}
               <UserMessage {message} />
             {:else}
-              <AssistantMessage {message} {isSubmitting} />
+              <!-- A reply can span several messages, so only its last one offers to copy all of them -->
+              <AssistantMessage
+                {message}
+                {isSubmitting}
+                copyText={isReplyComplete && message === assistantMessages.at(-1)
+                  ? assistantMessages.map(assistantMessage => assistantMessage.getDisplayContent()).join("\n\n")
+                  : undefined}/>
             {/if}
           {/if}
 

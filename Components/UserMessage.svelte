@@ -2,7 +2,6 @@
   import { setElementIcon } from "Helpers/ElementHelper";
   import type { ConversationContent } from "Conversations/ConversationContent";
 	import { Notice } from "obsidian";
-  import { slide } from "svelte/transition";
 
   export let message: ConversationContent;
 
@@ -10,15 +9,12 @@
 
   let isScrolledToTop = true;
   let isScrolledToBottom = true;
-  let isHovered = false;
-  let hasFocus = false;
 
   async function copyMessage() {
     if (message.displayContent) {
       await navigator.clipboard.writeText(message.displayContent);
       new Notice("Copied to clipboard");
     }
-    (document.activeElement as HTMLElement | null)?.blur();
   }
 
   function updateScrollFade(element: HTMLElement) {
@@ -41,16 +37,7 @@
 
 <div class="user-message">
   <div class="user-message-container">
-    <!-- focusin lets a tap on mobile reveal the copy button -->
-    <div
-      class="user-message-bubble"
-      tabindex="-1"
-      role="group"
-      on:pointerenter={(event) => isHovered = event.pointerType === "mouse"}
-      on:pointerleave={() => isHovered = false}
-      on:focusin={() => hasFocus = true}
-      on:focusout={() => hasFocus = false}
-    >
+    <div class="user-message-bubble">
       <div class="message-text-user-wrapper">
         <div class="message-text-user-container" contenteditable="false" use:messageTextScrollAction>
           <div class="message-text-user">
@@ -60,17 +47,6 @@
         <div class="message-text-fade top" class:hidden={isScrolledToTop}></div>
         <div class="message-text-fade bottom" class:hidden={isScrolledToBottom}></div>
       </div>
-      {#if isHovered || hasFocus}
-        <!-- preventDefault on mousedown keeps focus on the bubble so the button isn't removed before click fires on mobile -->
-        <button
-          class="user-message-copy"
-          aria-label="Copy message"
-          use:setElementIcon={"copy"}
-          on:mousedown|preventDefault
-          on:click={copyMessage}
-          transition:slide
-        ></button>
-      {/if}
       {#if message.references.length > 0}
         <hr class="message-attachment-break"/>
         <div class="message-attachments-container">
@@ -89,6 +65,13 @@
         </div>
       {/if}
     </div>
+    <div class="user-message-ribbon">
+      <button
+        class="transparent-button user-message-ribbon-button"
+        aria-label="Copy message"
+        use:setElementIcon={"clipboard"}
+        onclick={copyMessage}></button>
+    </div>
   </div>
 </div>
 
@@ -101,9 +84,8 @@
 
   .user-message-container {
     display: flex;
+    flex-direction: column;
     text-align: left;
-    margin: 0;
-    justify-content: flex-end;
     animation: fadeIn 0.5s ease-out forwards;
   }
 
@@ -120,6 +102,7 @@
 
   .user-message-bubble {
     position: relative;
+    margin-left: auto;
     word-wrap: break-word;
     max-width: 70%;
     border: var(--border-width) solid var(--background-modifier-border);
@@ -225,13 +208,24 @@
     color: var(--text-muted);
   }
 
-  .user-message-copy {
-    display: flex;
-    margin-left: auto;
-    margin-bottom: var(--size-4-2);
-  }
-
   .user-message-bubble:focus {
     outline: none;
+  }
+
+  .user-message-ribbon {
+    display: flex;
+    margin-left: auto;
+  }
+
+  .user-message-ribbon-button {
+    translate: 25% 0;
+    color: var(--text-muted);
+    transition: color 0.5s ease-out;
+  }
+
+  .user-message-ribbon-button:hover {
+    translate: 25% 0;
+    color: var(--text-normal);
+    transition: color 0.5s ease-out;
   }
 </style>

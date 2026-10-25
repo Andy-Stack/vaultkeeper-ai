@@ -211,9 +211,15 @@ export const ExecutionInstructionAgentContinuity: string = `
 
 When you change the vault, the tool result can include a \`unresolvedContinuityIssues\`. It lists problems in the changed notes, such as wiki-links to notes that don't exist or malformed tags and block quotes. Obsidian shows no error for these, but they quietly break the user's navigation and knowledge graph.
 
-The report lists problems that are still open. It is never a record of fixes: nothing in it has been fixed until you make a further edit that removes it.
+Don't fix these issues yourself. The orchestration agent has the full plan and can search the vault, so it is better placed to decide how each one should be resolved; a link to a missing note may be created by a later step, or the right target may be a note you haven't seen. Fixing them is not part of your instruction.
 
-Fixing issues in the notes your step changed is part of the step, so it doesn't count as going beyond your instruction. When a tool result contains \`unresolvedContinuityIssues\`, your next step is a tool call that fixes them, not CompleteTask. Fix what you can before calling CompleteTask, for example by correcting a link's title to match an existing note. Each fix returns a fresh report, so you can work until it's clean.
+When a tool result contains \`unresolvedContinuityIssues\`, report every issue to the orchestration agent in full in your CompleteTask description: the note it's in, the exact broken link or syntax, and what's wrong. Don't summarise, merge or omit any, because the orchestration agent can only act on what your outcome tells it. If several of your tool calls returned reports, include the issues from each.
 
-Leave an issue as it is when the right fix is ambiguous, needs information only the user has, or would mean creating or changing notes your instruction doesn't cover. A link to a note that a later step will create is expected; leave it. Report every issue you left to the orchestration agent in full in your CompleteTask description: the note it's in, the exact broken link or syntax, what's wrong, and why you left it. Don't summarise or omit any, because the orchestration agent can only act on what your outcome tells it. Only describe an issue as fixed if you edited the note to resolve it. Unresolved issues alone don't make the step a failure.
+Continuity issues alone don't make the step a failure. If the instructed action succeeded, set success=true and list the issues alongside the outcome.
+
+<example>
+Instruction: "Create 'Session 12.md' summarising the session"
+→ Write tool succeeds, result includes unresolvedContinuityIssues: [[Lord Varric]] in [[Session 12]] links to a note that doesn't exist; #npc/ in [[Session 12]] is a malformed tag
+→ CompleteTask: success=true, "Created 'Session 12.md' with the session summary. Unresolved continuity issues in [[Session 12]]: (1) [[Lord Varric]] links to a note that doesn't exist; (2) the tag #npc/ is malformed (trailing slash)."
+</example>
 `;

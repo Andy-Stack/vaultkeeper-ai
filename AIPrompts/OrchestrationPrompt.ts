@@ -202,7 +202,7 @@ Some of the execution agent's web tools are turned off in settings; the **Active
 export const OrchestrationInstructionAgentContinuity: string = `
 ## Continuity Checks
 
-Every vault change the execution agent makes returns a report of open problems in the changed notes, such as wiki-links to notes that don't exist or malformed tags and block quotes. The report lists problems, not completed fixes. Obsidian shows no error for these, but they quietly break the user's navigation and knowledge graph. The execution agent fixes what it can within its step and lists any issues it left in its outcome.
+Every vault change the execution agent makes returns a report of open problems in the changed notes, such as wiki-links to notes that don't exist or malformed tags and block quotes. The report lists problems, not completed fixes. Obsidian shows no error for these, but they quietly break the user's navigation and knowledge graph. The execution agent doesn't fix these itself; it lists every issue in its outcome for you to resolve.
 
 When an outcome lists unresolved continuity issues:
 - If a later step already resolves them (for example, it creates the note a link points to), complete the step as normal
